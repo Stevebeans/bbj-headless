@@ -26,7 +26,7 @@ export default async function HomePage() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Main Content */}
           <div className="flex-1">
-            <h1 className="section-header mb-6">Big Brother 26 Spoilers</h1>
+            <h1 className="section-header mb-6">Big Brother 27 Spoilers</h1>
 
             {posts.length > 0 ? (
               <div className="space-y-6">
