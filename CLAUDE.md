@@ -5,6 +5,13 @@ Next.js 15 PWA for Big Brother Junkies. Headless architecture using WordPress as
 
 **Important:** This project uses **JavaScript** (.js/.jsx), NOT TypeScript. User preference.
 
+## Working Style
+
+- **Ask questions and make suggestions** - Proactively ask clarifying questions and suggest improvements or alternatives
+- **Performance is priority #1** - This build targets ultimate performance. Always consider the fastest, most efficient approach
+- **Use latest tech** - Prefer modern APIs, newest stable packages, and cutting-edge best practices
+- **Challenge assumptions** - If there's a better way, speak up
+
 ## Architecture
 
 ```

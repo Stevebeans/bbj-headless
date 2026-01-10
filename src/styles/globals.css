@@ -2,74 +2,224 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Google Fonts - loaded via next/font in layout.tsx for optimization */
-
 @layer base {
   html {
     scroll-behavior: smooth;
   }
 
+  html,
   body {
-    @apply bg-slate-100 text-gray-900 dark:bg-slate-800 dark:text-gray-100;
+    max-width: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
+  body {
+    @apply bg-slate-200 text-gray-900 dark:bg-slate-700 dark:text-gray-100;
+  }
+
+  img,
+  video,
+  iframe,
+  table {
+    max-width: 100%;
+    height: auto;
+  }
+
+  a {
+    @apply text-primary-500 transition hover:text-secondary-500 dark:text-primary-400 dark:hover:text-secondary-500;
+  }
+
+  .flex-cnt {
+    @apply flex items-center justify-center;
   }
 }
 
 @layer components {
-  /* Primary button */
+  .v2-primary-container {
+    @apply mx-auto mb-4 mt-4 max-w-screen-xl px-2;
+  }
+
+  .v2-primary-container-inner {
+    @apply relative overflow-hidden rounded-lg bg-white shadow dark:border dark:border-gray-700 dark:bg-gray-800;
+  }
+
+  .v2-sidebar-container {
+    @apply relative overflow-hidden rounded-lg bg-white shadow dark:border dark:border-gray-700 dark:bg-gray-800;
+  }
+
+  .v2-primary-subheader {
+    @apply font-mainHead text-2xl uppercase text-primary-500;
+  }
+
+  .v2-ad-subheader {
+    @apply mb-2 w-full border-b border-gray-200 text-center font-mainHead text-sm uppercase text-primary-500;
+  }
+
+  .v2-btn {
+    @apply rounded-lg bg-primary-500 px-4 py-1.5 text-secondary-500 hover:cursor-pointer hover:bg-primary-400 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700;
+  }
+
+  .bbj-btn {
+    @apply rounded-lg border border-primary-500 bg-secondary-500 px-4 py-1.5 text-primary-500 hover:cursor-pointer hover:bg-secondary-600 hover:text-white focus:outline-none focus:ring-4 focus:ring-blue-300;
+  }
+
+  .v2-input-text {
+    @apply block w-full appearance-none rounded-lg border border-gray-300 bg-gray-50 p-1 text-center text-xs text-gray-900 dark:bg-gray-700 dark:text-gray-100;
+  }
+
+  .v2-input-select {
+    @apply block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 py-1 text-left text-xs text-gray-900 dark:bg-gray-800 dark:text-gray-300;
+  }
+
+  .v2-highlight-text {
+    @apply font-semibold text-secondary-500 underline hover:text-secondary-600 dark:text-secondary-500 dark:hover:text-secondary-600;
+  }
+
+  .v2-feed-update-container {
+    @apply flex flex-col gap-2 border-b-0 border-l border-r border-t border-gray-200 p-4 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700;
+  }
+
+  .v2-ad-container {
+    @apply mx-auto flex items-center justify-center border-b border-t border-gray-300 dark:border-gray-700 dark:bg-gray-900;
+  }
+
+  .front-card {
+    @apply rounded-sm bg-white shadow-md dark:bg-gray-800;
+  }
+
+  .bbj-title {
+    @apply p-2 font-mainHead text-2xl font-extrabold text-primary-500 dark:text-primary-400;
+  }
+
+  .bbj-spoiler-bar {
+    @apply mx-auto w-full max-w-screen-xl overflow-hidden rounded-b-md bg-white shadow-md dark:border-gray-700 dark:bg-gray-800;
+  }
+
+  .spoilerbar-hoh {
+    @apply border-green-500 bg-green-500 text-white;
+  }
+
+  .spoilerbar-pov {
+    @apply border-amber-400 bg-amber-400 text-primary-500;
+  }
+
+  .spoilerbar-active {
+    @apply border-slate-100 bg-slate-100 text-black dark:border-slate-700 dark:bg-slate-800 dark:text-white;
+  }
+
+  .spoilerbar-nom {
+    @apply border-rose-400 bg-rose-400 text-white;
+  }
+
+  .spoilerbar-evicted {
+    @apply border-gray-200 bg-gray-200 text-gray-800;
+  }
+
+  .spoilerbar-jury {
+    @apply border-purple-300 bg-purple-300 text-white;
+  }
+
+  .spoilerbar-safe {
+    @apply border-amber-400 bg-slate-100 text-green-600 dark:border-amber-600 dark:bg-slate-800 dark:text-green-400;
+  }
+
+  .spoilerbar-winner {
+    @apply border-green-500 bg-green-500 text-white;
+  }
+
+  .spoilerbar-second {
+    @apply border-sky-400 bg-sky-400 text-white;
+  }
+
+  .spoilerbar-afp {
+    @apply border-rose-400 bg-rose-400 text-white;
+  }
+
+  .desktop-nav a {
+    @apply text-yellow-400 hover:text-yellow-600 dark:text-yellow-300 dark:hover:text-yellow-100;
+  }
+
+  .desktop-nav ul {
+    @apply m-0 flex list-none flex-wrap p-0;
+  }
+
+  .desktop-nav li {
+    @apply px-2;
+  }
+
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 text-white font-osw uppercase tracking-wider
-           px-6 py-3 rounded-lg transition-all duration-200
-           hover:-translate-y-0.5 hover:shadow-lg;
+    @apply bg-primary-500 hover:bg-primary-600 text-white font-osw uppercase tracking-wider px-6 py-3 rounded-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg;
   }
 
-  /* Secondary button */
   .btn-secondary {
-    @apply bg-secondary-500 hover:bg-secondary-600 text-primary-600 font-osw uppercase tracking-wider
-           px-6 py-3 rounded-lg transition-all duration-200
-           hover:-translate-y-0.5 hover:shadow-lg;
+    @apply bg-secondary-500 hover:bg-secondary-600 text-primary-600 font-osw uppercase tracking-wider px-6 py-3 rounded-lg transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg;
   }
 
-  /* Card container */
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-4
-           border border-gray-200 dark:border-gray-700;
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700;
   }
 
-  /* Section header */
   .section-header {
-    @apply font-osw text-2xl font-semibold text-primary-500 dark:text-secondary-500
-           uppercase tracking-wide;
+    @apply font-osw text-2xl font-semibold text-primary-500 dark:text-secondary-500 uppercase tracking-wide;
   }
 
-  /* Link styles */
   .link {
-    @apply text-primary-500 hover:text-primary-600 dark:text-secondary-500
-           dark:hover:text-secondary-400 transition-colors;
+    @apply text-primary-500 hover:text-primary-600 dark:text-secondary-500 dark:hover:text-secondary-400 transition-colors;
   }
 
-  /* Input fields */
   .input {
-    @apply w-full px-4 py-3 bg-gray-50 dark:bg-gray-700
-           border border-gray-200 dark:border-gray-600 rounded-xl
-           text-gray-900 dark:text-white
-           placeholder-gray-400 dark:placeholder-gray-500
-           focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20
-           transition-all;
+    @apply w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all;
   }
 }
 
 @layer utilities {
-  /* Hide scrollbar but keep functionality */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
+  .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
 
-  /* Gradient text */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   .gradient-text {
     @apply bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent;
+  }
+
+  .closing-bar {
+    @apply z-20 mx-auto flex h-1.5 w-full max-w-[1050px] bg-gradient-to-b from-yellow-100 via-yellow-300 to-yellow-400 shadow lg:w-[1000px];
+  }
+
+  .winner {
+    @apply text-green-500;
+  }
+
+  .hoh {
+    @apply text-green-500;
+  }
+
+  .second, .pov {
+    @apply text-cyan-600;
+  }
+
+  .afp {
+    @apply text-rose-500;
+  }
+
+  .nom {
+    @apply text-amber-500;
+  }
+
+  .jury {
+    @apply text-purple-600;
+  }
+
+  .evic {
+    @apply text-gray-400;
+  }
+
+  .bbj-feed-content {
+    white-space: pre-line;
   }
 }

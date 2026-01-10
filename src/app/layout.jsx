@@ -2,8 +2,8 @@ import { Roboto, Oswald, Yanone_Kaffeesatz, Caveat } from "next/font/google";
 import "@/styles/globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { ThemeScript } from "@/components/layout/ThemeScript";
 
-// Font configurations
 const roboto = Roboto({
   subsets: ["latin"],
   weight: ["400", "500", "700"],
@@ -39,7 +39,7 @@ export const metadata = {
   },
   description:
     "Your source for Big Brother live feed updates, spoilers, recaps, and community discussion.",
-  keywords: ["Big Brother", "BB26", "live feeds", "spoilers", "CBS", "reality TV"],
+  keywords: ["Big Brother", "BB27", "live feeds", "spoilers", "CBS", "reality TV"],
   authors: [{ name: "Steve Beans" }],
   openGraph: {
     type: "website",
@@ -65,9 +65,14 @@ export default function RootLayout({ children }) {
       className={`${roboto.variable} ${oswald.variable} ${yanone.variable} ${caveat.variable}`}
       suppressHydrationWarning
     >
-      <body className="font-sans antialiased min-h-screen flex flex-col">
+      <head>
+        <ThemeScript />
+      </head>
+      <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
         <Header />
-        <main className="flex-1">{children}</main>
+        <main id="main-content" className="flex-1">
+          {children}
+        </main>
         <Footer />
       </body>
     </html>
