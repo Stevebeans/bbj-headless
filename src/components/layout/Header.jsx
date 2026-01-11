@@ -7,12 +7,14 @@ import { ThemeToggle } from "./ThemeToggle";
 import { MobileMenuWrapper } from "./MobileMenu";
 import { SearchBar, MobileSearchButton } from "../search/SearchBar";
 import { MobileSearchModal } from "../search/MobileSearchModal";
+import { useAuth } from "@/context/AuthContext";
 
 const LOGO_URL = "https://bigbrotherjunkies.com/wp-content/themes/BBJ/images/bbjlogo2020.png";
 const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
 
 export function Header() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const { user, isAuthenticated, logout, isAdmin } = useAuth();
   const bbTime = new Date().toLocaleString("en-US", {
     timeZone: "America/Los_Angeles",
     weekday: "short",
@@ -103,16 +105,46 @@ export function Header() {
 
               <ThemeToggle />
 
-              <Link
-                href="/login"
-                className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500"
-                aria-label="Log In"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <span className="hidden md:inline">Log In</span>
-              </Link>
+              {isAuthenticated ? (
+                <div className="flex items-center gap-2">
+                  {isAdmin() && (
+                    <Link
+                      href="/admin"
+                      className="text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500"
+                    >
+                      Admin
+                    </Link>
+                  )}
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <div className="w-7 h-7 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                      <span className="text-primary-600 dark:text-primary-400 font-bold text-xs">
+                        {user?.user_display_name?.charAt(0) || "?"}
+                      </span>
+                    </div>
+                    <span className="hidden md:inline">{user?.user_display_name}</span>
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="text-sm text-gray-500 hover:text-red-500"
+                    aria-label="Log Out"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500"
+                  aria-label="Log In"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="hidden md:inline">Log In</span>
+                </Link>
+              )}
 
               <MobileMenuWrapper />
             </div>
@@ -141,8 +173,12 @@ export function Header() {
               <li role="none"><Link href="/" className="px-2 py-1">Home</Link></li>
               <li role="none"><Link href="/feed-updates" className="px-2 py-1">Feed Updates</Link></li>
               <li role="none"><Link href="/players" className="px-2 py-1">Players</Link></li>
-              <li role="none"><Link href="/login" className="px-2 py-1">Log In</Link></li>
-              <li role="none"><Link href="/register" className="px-2 py-1">Register</Link></li>
+              {!isAuthenticated && (
+                <>
+                  <li role="none"><Link href="/login" className="px-2 py-1">Log In</Link></li>
+                  <li role="none"><Link href="/register" className="px-2 py-1">Register</Link></li>
+                </>
+              )}
             </ul>
 
             {/* Go Ad Free */}
