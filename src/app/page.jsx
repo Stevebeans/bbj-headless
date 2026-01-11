@@ -3,11 +3,11 @@ import { PostCard } from "@/components/posts/PostCard";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
 import { getPosts } from "@/lib/api/posts";
-import { getSpoilerBar } from "@/lib/api/spoiler-bar";
+import { getSpoilerBar } from "@/lib/api/players";
 
 export default async function HomePage() {
   let posts = [];
-  let spoilerData = [];
+  let spoilerData = { season: null, players: [] };
 
   try {
     const results = await Promise.all([
@@ -23,7 +23,7 @@ export default async function HomePage() {
   return (
     <>
       {/* Spoiler Bar */}
-      {spoilerData.length > 0 && <SpoilerBar players={spoilerData} />}
+      {spoilerData.players.length > 0 && <SpoilerBar players={spoilerData.players} season={spoilerData.season} />}
 
       {/* Below Header Ad */}
       <div className="max-w-screen-xl mx-auto mt-4">

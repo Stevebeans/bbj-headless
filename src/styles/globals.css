@@ -96,44 +96,68 @@
     @apply mx-auto w-full max-w-screen-xl overflow-hidden rounded-b-md bg-white shadow-md dark:border-gray-700 dark:bg-gray-800;
   }
 
+  /* HoH - Vibrant green for power */
   .spoilerbar-hoh {
-    @apply border-green-500 bg-green-500 text-white;
+    @apply border-emerald-600 bg-emerald-600 text-white;
   }
 
+  /* PoV - Golden for the veto medallion */
   .spoilerbar-pov {
-    @apply border-amber-400 bg-amber-400 text-primary-500;
+    @apply border-yellow-500 bg-yellow-500 text-yellow-950;
   }
 
+  /* Active - Neutral, clean look */
   .spoilerbar-active {
-    @apply border-slate-100 bg-slate-100 text-black dark:border-slate-700 dark:bg-slate-800 dark:text-white;
+    @apply border-slate-300 bg-slate-200 text-slate-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200;
   }
 
+  /* Nominated - Red for danger */
   .spoilerbar-nom {
-    @apply border-rose-400 bg-rose-400 text-white;
+    @apply border-red-500 bg-red-500 text-white;
   }
 
+  /* Evicted - Muted grey, paired with greyscale image */
   .spoilerbar-evicted {
-    @apply border-gray-200 bg-gray-200 text-gray-800;
+    @apply border-slate-400 bg-slate-400 text-white;
   }
 
+  /* Jury - Deep purple/indigo, dignified */
   .spoilerbar-jury {
-    @apply border-purple-300 bg-purple-300 text-white;
+    @apply border-indigo-500 bg-indigo-500 text-white;
   }
 
+  /* Safe - Light green, secure feeling */
   .spoilerbar-safe {
-    @apply border-amber-400 bg-slate-100 text-green-600 dark:border-amber-600 dark:bg-slate-800 dark:text-green-400;
+    @apply border-green-400 bg-green-100 text-green-700 dark:border-green-500 dark:bg-green-900 dark:text-green-300;
   }
 
+  /* Winner - Rich green with gold accent feel */
   .spoilerbar-winner {
-    @apply border-green-500 bg-green-500 text-white;
+    @apply border-emerald-600 bg-emerald-600 text-white;
   }
 
+  /* Runner-up / Second place - Silver/blue */
   .spoilerbar-second {
-    @apply border-sky-400 bg-sky-400 text-white;
+    @apply border-sky-500 bg-sky-500 text-white;
   }
 
+  /* AFP - Pink/rose for fan favorite */
   .spoilerbar-afp {
-    @apply border-rose-400 bg-rose-400 text-white;
+    @apply border-pink-500 bg-pink-500 text-white;
+  }
+
+  /* Have-not - Muted, uncomfortable */
+  .spoilerbar-havenot {
+    @apply border-amber-700 bg-amber-700 text-white;
+  }
+
+  /* Image effects for eliminated players */
+  .spoilerbar-evicted-img {
+    @apply grayscale opacity-70;
+  }
+
+  .spoilerbar-jury-img {
+    @apply grayscale-[50%] opacity-80;
   }
 
   .desktop-nav a {

@@ -39,3 +39,10 @@ export async function bbjFetch(endpoint, options = {}) {
 export async function wpRestFetch(endpoint, options = {}) {
   return wpFetch(`/wp/v2${endpoint}`, options);
 }
+
+/**
+ * Fetch from BBJ Data plugin endpoints (bbjd/v1)
+ */
+export async function bbjdFetch(endpoint, options = {}) {
+  return wpFetch(`/bbjd/v1${endpoint}`, options);
+}

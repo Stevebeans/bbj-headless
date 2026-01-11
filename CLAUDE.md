@@ -1,9 +1,17 @@
 # BBJ App - Next.js PWA
 
 ## Overview
+
 Next.js 15 PWA for Big Brother Junkies. Headless architecture using WordPress as the CMS/API backend.
 
 **Important:** This project uses **JavaScript** (.js/.jsx), NOT TypeScript. User preference.
+
+## Structure
+
+This build will be taking a lot of data from my wordpress theme at `C:\xampp\htdocs\bbj\wp-content\themes\BBJ` and likely a lot of data from both plugins at:
+`C:\xampp\htdocs\bbj\wp-content\plugins\bbj-tools` and `C:\xampp\htdocs\bbj\wp-content\plugins\bbj-v2`. Anything NEW that is created in PHP data (APIs, etc) I want to be placed in the latest plugin: `C:\xampp\htdocs\bbj\wp-content\plugins\bigbrotherjunkies-data` as I would like to just upload -data to my server and use that for all the NEXT.js calls
+
+Yea I w
 
 ## Working Style
 
@@ -44,6 +52,7 @@ Next.js 15 PWA for Big Brother Junkies. Headless architecture using WordPress as
 The site is **100% static** until content changes. No polling, no timed revalidation.
 
 **Rebuild triggers (via webhook to /api/revalidate):**
+
 - Blog post published/updated → rebuild home + post page
 - Spoiler bar updated → rebuild spoiler bar
 - Feed update posted → rebuild feed section
@@ -52,24 +61,27 @@ The site is **100% static** until content changes. No polling, no timed revalida
 ## Current Status
 
 ### Built & Working
-| Page | Status |
-|------|--------|
-| `/` (home) | ✅ Fetches posts from WP API |
-| `/posts/[slug]` | ✅ Dynamic post pages working |
-| `/api/revalidate` | ✅ Webhook endpoint ready |
-| Spoiler bar component | ✅ Working |
-| Header/Footer | ✅ Working |
+
+| Page                  | Status                        |
+| --------------------- | ----------------------------- |
+| `/` (home)            | ✅ Fetches posts from WP API  |
+| `/posts/[slug]`       | ✅ Dynamic post pages working |
+| `/api/revalidate`     | ✅ Webhook endpoint ready     |
+| Spoiler bar component | ✅ Working                    |
+| Header/Footer         | ✅ Working                    |
 
 ### Placeholder Pages (need building)
-| Page | Status |
-|------|--------|
-| `/players` | Placeholder |
-| `/feed-updates` | Placeholder |
-| `/login` | Placeholder |
-| `/contact` | Placeholder |
+
+| Page              | Status      |
+| ----------------- | ----------- |
+| `/players`        | Placeholder |
+| `/feed-updates`   | Placeholder |
+| `/login`          | Placeholder |
+| `/contact`        | Placeholder |
 | `/privacy-policy` | Placeholder |
 
 ### Not Yet Created
+
 - `/players/[slug]` - Single player page
 - `/seasons/[slug]` - Single season page
 - `/register` - Registration page
@@ -79,28 +91,31 @@ The site is **100% static** until content changes. No polling, no timed revalida
 ## API Endpoints
 
 ### WordPress REST API
+
 Base URL: `https://bigbrotherjunkies.com/wp-json`
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/wp/v2/posts` | GET | Blog posts |
-| `/wp/v2/comments` | GET/POST | Comments |
-| `/bbj/v1/next_spoiler_bar` | GET | Spoiler bar data |
-| `/bbj/v1/feed-update` | GET/POST | Live feed updates |
-| `/bbj/v1/players` | GET | Player data |
-| `/bbj/v1/seasons` | GET | Season data |
-| `/jwt-auth/v1/token` | POST | JWT login |
-| `/bbjd/v1/auth/google` | POST | Google OAuth |
+| Endpoint                   | Method   | Description       |
+| -------------------------- | -------- | ----------------- |
+| `/wp/v2/posts`             | GET      | Blog posts        |
+| `/wp/v2/comments`          | GET/POST | Comments          |
+| `/bbj/v1/next_spoiler_bar` | GET      | Spoiler bar data  |
+| `/bbj/v1/feed-update`      | GET/POST | Live feed updates |
+| `/bbj/v1/players`          | GET      | Player data       |
+| `/bbj/v1/seasons`          | GET      | Season data       |
+| `/jwt-auth/v1/token`       | POST     | JWT login         |
+| `/bbjd/v1/auth/google`     | POST     | Google OAuth      |
 
 ### Ad System API (bbjd/v1)
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/bbjd/v1/ad/{slot}` | GET | Get ad for specific slot (e.g., `sidebar-top`, `in-content-1`) |
-| `/bbjd/v1/ads?slots=a,b,c` | GET | Get multiple slots at once |
-| `/bbjd/v1/ad-scripts` | GET | Get header/footer ad network scripts |
-| `/bbjd/v1/ads/should-show` | GET | Check if current user should see ads |
+
+| Endpoint                   | Method | Description                                                    |
+| -------------------------- | ------ | -------------------------------------------------------------- |
+| `/bbjd/v1/ad/{slot}`       | GET    | Get ad for specific slot (e.g., `sidebar-top`, `in-content-1`) |
+| `/bbjd/v1/ads?slots=a,b,c` | GET    | Get multiple slots at once                                     |
+| `/bbjd/v1/ad-scripts`      | GET    | Get header/footer ad network scripts                           |
+| `/bbjd/v1/ads/should-show` | GET    | Check if current user should see ads                           |
 
 **Ad API Response Format:**
+
 ```javascript
 // GET /bbjd/v1/ad/sidebar-top
 {
@@ -119,6 +134,7 @@ Base URL: `https://bigbrotherjunkies.com/wp-json`
 ```
 
 ### Revalidation Webhook
+
 ```
 POST /api/revalidate
 Body: { secret: "xxx", type: "post", slug: "post-slug" }
@@ -146,14 +162,36 @@ colors: {
 }
 ```
 
+### Houseguest Status Colors
+
+Used for spoiler bar, player cards, and any status indicators throughout the site.
+
+| Status | Tailwind Class | Hex | Usage |
+|--------|----------------|-----|-------|
+| **HoH** | `emerald-600` | #059669 | Head of Household - power/winning |
+| **Winner** | `emerald-600` | #059669 | Season winner - same as HoH |
+| **PoV** | `yellow-500` | #EAB308 | Power of Veto - golden medallion |
+| **Nominated** | `red-500` | #EF4444 | On the block - danger |
+| **Active** | `slate-200/700` | #E2E8F0 | Still in the game, no special status |
+| **Safe** | `green-100/400` | #DCFCE7 | Safe for the week |
+| **Jury** | `indigo-500` | #6366F1 | Jury member - dignified purple |
+| **Evicted** | `slate-400` | #94A3B8 | Out of the game - muted grey |
+| **Have-Not** | `amber-700` | #B45309 | Have-not status - uncomfortable |
+| **Runner-up** | `sky-500` | #0EA5E9 | Second place - silver/blue |
+| **AFP** | `pink-500` | #EC4899 | America's Favorite Player |
+
+**Image effects for eliminated players:**
+- Evicted: `grayscale opacity-70`
+- Jury: `grayscale-[50%] opacity-80`
+
 ## Typography
 
-| Font | Usage | CSS Class |
-|------|-------|-----------|
-| Roboto | Body text | `font-sans` |
-| Oswald | Headings, nav | `font-osw` |
-| Yanone Kaffeesatz | Primary headers | `font-display` |
-| Caveat | Handwritten accents | `font-hand` |
+| Font              | Usage               | CSS Class      |
+| ----------------- | ------------------- | -------------- |
+| Roboto            | Body text           | `font-sans`    |
+| Oswald            | Headings, nav       | `font-osw`     |
+| Yanone Kaffeesatz | Primary headers     | `font-display` |
+| Caveat            | Handwritten accents | `font-hand`    |
 
 ## Actual Folder Structure (Current)
 
@@ -195,18 +233,19 @@ src/
 
 Defined in `globals.css`:
 
-| Class | Usage |
-|-------|-------|
-| `.btn-primary` | Primary blue button |
-| `.btn-secondary` | Yellow button |
-| `.card` | White card with shadow |
-| `.section-header` | Section title styling |
-| `.link` | Styled link |
-| `.input` | Form input styling |
+| Class             | Usage                  |
+| ----------------- | ---------------------- |
+| `.btn-primary`    | Primary blue button    |
+| `.btn-secondary`  | Yellow button          |
+| `.card`           | White card with shadow |
+| `.section-header` | Section title styling  |
+| `.link`           | Styled link            |
+| `.input`          | Form input styling     |
 
 ## Data Models
 
 ### Post
+
 ```javascript
 {
   id: number,
@@ -223,6 +262,7 @@ Defined in `globals.css`:
 ```
 
 ### SpoilerPlayer
+
 ```javascript
 {
   player_id: number,
@@ -237,6 +277,7 @@ Defined in `globals.css`:
 ## Authentication Flow
 
 1. **Email/Password Login:**
+
    - POST to `/jwt-auth/v1/token`
    - Store JWT in httpOnly cookie
    - Validate on protected routes
@@ -270,10 +311,84 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
 ## Reference Files (WordPress)
 
 When implementing features, reference the WordPress installation:
+
 - Colors: `../bbj/wp-content/themes/BBJ/tailwind.config.js`
 - Components: `../bbj/wp-content/themes/BBJ/template-parts/`
 - API endpoints: `../bbj/wp-content/plugins/bbj-v2/includes/Routes/`
 - Auth system: `../bbj/wp-content/plugins/bigbrotherjunkies-data/src/Auth/`
+
+## SEO Guidelines
+
+**This site relies heavily on search traffic. Follow these rules strictly.**
+
+### Timestamps & Dates
+
+| Element | Treatment | Why |
+|---------|-----------|-----|
+| BB Time (header/nav) | `data-nosnippet` attribute | Prevents Google from misreading as article date |
+| Blog post dates | JSON-LD `datePublished` + `dateModified` | Proper structured data for search results |
+| Feed update dates | JSON-LD `datePublished` + `dateModified` | Shows in search as "X hours ago" |
+| Comment dates | `data-nosnippet` or exclude from schema | Don't confuse with article dates |
+
+### Structured Data (JSON-LD)
+
+Always include on content pages:
+
+```javascript
+// Blog posts - use BlogPosting schema
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Post Title",
+  "datePublished": "2024-07-15T10:30:00-07:00",  // ISO 8601 with timezone
+  "dateModified": "2024-07-15T14:20:00-07:00",
+  "author": { "@type": "Person", "name": "Author Name" },
+  "image": "https://...",
+  "description": "..."
+}
+
+// Feed updates - use LiveBlogPosting for the container
+{
+  "@context": "https://schema.org",
+  "@type": "LiveBlogPosting",
+  "liveBlogUpdate": [...]
+}
+```
+
+### Meta Tags
+
+Every page needs:
+- `<title>` - Unique, descriptive, 50-60 chars
+- `<meta name="description">` - Unique, 150-160 chars
+- `<link rel="canonical">` - Prevent duplicate content
+- Open Graph tags for social sharing
+
+### Images
+
+- Always use descriptive `alt` text
+- Use Next.js `<Image>` for automatic optimization
+- Include `width` and `height` to prevent CLS
+- Use WebP format (Next.js does this automatically)
+
+### Performance (Core Web Vitals)
+
+- **LCP**: Use `priority` on above-fold images (logo, hero)
+- **CLS**: Always specify image dimensions, avoid layout shifts
+- **INP**: Keep JavaScript minimal, use React Server Components
+
+### What NOT to Do
+
+- Never use `<time>` elements for non-content dates without `data-nosnippet`
+- Never duplicate title/description across pages
+- Never block Googlebot from static assets
+- Never use hidden text or keyword stuffing
+- Never forget trailing slashes consistency (pick one, stick with it)
+
+### Sitemap & Robots
+
+- Sitemap auto-generated at `/sitemap.xml`
+- Robots.txt should allow all crawlers for public content
+- Use `noindex` only for user dashboard, login, etc.
 
 ## Key Notes
 

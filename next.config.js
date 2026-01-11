@@ -7,6 +7,10 @@ const nextConfig = {
         hostname: "bigbrotherjunkies.com",
       },
       {
+        protocol: "http",
+        hostname: "bbj.localhost",
+      },
+      {
         protocol: "https",
         hostname: "*.gravatar.com",
       },
