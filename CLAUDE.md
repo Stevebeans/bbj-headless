@@ -133,6 +133,41 @@ Base URL: `https://bigbrotherjunkies.com/wp-json`
 { show: false, reason: "slot_not_found" }
 ```
 
+### Home Page API (bbjd/v1)
+
+| Endpoint                 | Method | Description                                |
+| ------------------------ | ------ | ------------------------------------------ |
+| `/bbjd/v1/hero-post`     | GET    | Get featured/hero post for homepage        |
+| `/bbjd/v1/feed-updates`  | GET    | Get live feed updates (per_page param)     |
+| `/bbjd/v1/houseboard`    | GET    | Get HoH, PoV, Nominees, Have Nots          |
+| `/bbjd/v1/season-stats`  | GET    | Get season progress and player standings   |
+
+### Search API (bbjd/v1)
+
+| Endpoint                     | Method | Description                                |
+| ---------------------------- | ------ | ------------------------------------------ |
+| `/bbjd/v1/search?query=term` | GET    | Search across all content types            |
+
+**Search API Response Format:**
+
+```javascript
+// GET /bbjd/v1/search?query=janelle
+{
+  general: [        // Posts & Pages
+    { id, title, permalink, excerpt, date }
+  ],
+  players: [        // Big Brother Players
+    { id, title, permalink, player_image, abbreviation }
+  ],
+  seasons: [        // Big Brother Seasons
+    { id, title, permalink }
+  ],
+  feed_updates: [   // Live Feed Updates
+    { id, title, permalink, excerpt, thumbnail, date, time }
+  ]
+}
+```
+
 ### Revalidation Webhook
 
 ```

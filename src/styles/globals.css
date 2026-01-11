@@ -41,11 +41,11 @@
   }
 
   .v2-primary-container-inner {
-    @apply relative overflow-hidden rounded-lg bg-white shadow dark:border dark:border-gray-700 dark:bg-gray-800;
+    @apply relative overflow-hidden rounded-lg bg-white shadow hover:shadow-md dark:border dark:border-gray-700 dark:bg-gray-800 transition-shadow duration-200;
   }
 
   .v2-sidebar-container {
-    @apply relative overflow-hidden rounded-lg bg-white shadow dark:border dark:border-gray-700 dark:bg-gray-800;
+    @apply relative overflow-hidden rounded-lg bg-white shadow hover:shadow-md dark:border dark:border-gray-700 dark:bg-gray-800 transition-shadow duration-200;
   }
 
   .v2-primary-subheader {

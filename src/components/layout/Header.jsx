@@ -1,11 +1,18 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ThemeToggle } from "./ThemeToggle";
 import { MobileMenuWrapper } from "./MobileMenu";
+import { SearchBar, MobileSearchButton } from "../search/SearchBar";
+import { MobileSearchModal } from "../search/MobileSearchModal";
 
 const LOGO_URL = "https://bigbrotherjunkies.com/wp-content/themes/BBJ/images/bbjlogo2020.png";
+const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
 
 export function Header() {
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const bbTime = new Date().toLocaleString("en-US", {
     timeZone: "America/Los_Angeles",
     weekday: "short",
@@ -67,9 +74,14 @@ export function Header() {
             {/* Logo */}
             <Link href="/" className="shrink-0 block" aria-label="Big Brother Junkies - Home">
               {/* Mobile logo - compact */}
-              <span className="md:hidden font-display text-2xl font-bold text-primary-500 dark:text-primary-400">
-                BBJ
-              </span>
+              <Image
+                src={MOBILE_LOGO_URL}
+                alt="Big Brother Junkies"
+                width={40}
+                height={40}
+                className="md:hidden h-10 w-auto"
+                priority
+              />
               {/* Desktop logo - full */}
               <Image
                 src={LOGO_URL}
@@ -82,27 +94,13 @@ export function Header() {
             </Link>
 
             {/* Search bar - desktop only */}
-            <div className="hidden lg:flex grow mx-8 max-w-md">
-              <div className="relative w-full">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-full px-4 py-2 rounded-full border border-primary-500 bg-gray-50 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-500"
-                  aria-label="Search"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <SearchBar className="hidden lg:block grow mx-8 max-w-md" />
 
             {/* Right side controls */}
             <div className="flex items-center gap-2">
+              {/* Mobile search button */}
+              <MobileSearchButton onClick={() => setIsMobileSearchOpen(true)} />
+
               <ThemeToggle />
 
               <Link
@@ -152,6 +150,12 @@ export function Header() {
           </div>
         </div>
       </nav>
+
+      {/* Mobile search modal */}
+      <MobileSearchModal
+        isOpen={isMobileSearchOpen}
+        onClose={() => setIsMobileSearchOpen(false)}
+      />
     </header>
   );
 }

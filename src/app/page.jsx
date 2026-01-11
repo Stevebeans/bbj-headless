@@ -1,61 +1,115 @@
 import { SpoilerBar } from "@/components/spoiler-bar/SpoilerBar";
-import { PostCard } from "@/components/posts/PostCard";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
 import { getPosts } from "@/lib/api/posts";
 import { getSpoilerBar } from "@/lib/api/players";
+import { getHeroPost, getFeedUpdates, getHouseboard, getSeasonStats, getRecentComments } from "@/lib/api/home";
+import {
+  Hero,
+  FeedUpdatesSection,
+  MoreStories,
+  SocialFollow,
+  Houseboard,
+  WatchLiveFeeds,
+  SeasonStats,
+  RecentComments,
+} from "@/components/home";
 
 export default async function HomePage() {
-  let posts = [];
+  // Fetch all data in parallel
   let spoilerData = { season: null, players: [] };
+  let heroData = { post: null, season: null };
+  let feedUpdatesData = { updates: [], total: 0 };
+  let houseboardData = { season: null, houseboard: null };
+  let statsData = { season: null, players: [] };
+  let recentCommentsData = { comments: [], total: 0 };
+  let posts = [];
 
   try {
     const results = await Promise.all([
-      getPosts({ limit: 10 }),
       getSpoilerBar(),
+      getHeroPost(),
+      getFeedUpdates(15),
+      getHouseboard(),
+      getSeasonStats(),
+      getRecentComments(5),
+      getPosts({ limit: 10 }),
     ]);
-    posts = results[0];
-    spoilerData = results[1];
+
+    spoilerData = results[0];
+    heroData = results[1];
+    feedUpdatesData = results[2];
+    houseboardData = results[3];
+    statsData = results[4];
+    recentCommentsData = results[5];
+    posts = results[6];
   } catch (error) {
-    console.error("Failed to fetch data:", error);
+    console.error("Failed to fetch homepage data:", error);
   }
+
+  const heroPostId = heroData.post?.id;
 
   return (
     <>
       {/* Spoiler Bar */}
-      {spoilerData.players.length > 0 && <SpoilerBar players={spoilerData.players} season={spoilerData.season} />}
-
-      {/* Below Header Ad */}
-      <div className="max-w-screen-xl mx-auto mt-4">
-        <AdPlaceholder slot="header-below" minHeight="100px" className="mb-4" />
-      </div>
+      {spoilerData.players.length > 0 && (
+        <SpoilerBar players={spoilerData.players} season={spoilerData.season} />
+      )}
 
       {/* Main Content Area */}
-      <div className="v2-primary-container">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Main Content */}
-          <section className="flex-1 min-w-0">
-            <div className="v2-primary-container-inner p-4">
-              <h1 className="v2-primary-subheader mb-6">Big Brother 27 Spoilers</h1>
+      <main className="v2-primary-container">
+        <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">
+          {/* Main Left Column */}
+          <section id="main-left" className="flex-grow space-y-4">
+            {/* Hero Section */}
+            {heroData.post && (
+              <Hero post={heroData.post} season={heroData.season} />
+            )}
 
-              {posts.length > 0 ? (
-                <div className="space-y-6">
-                  {posts.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 dark:text-gray-400">No posts available.</p>
-                </div>
-              )}
+            {/* Top Ad */}
+            <AdPlaceholder slot="index-top" minHeight="100px" />
+
+            {/* Feed Updates + Right Widgets (2 column layout) */}
+            <div className="flex flex-col lg:flex-row lg:gap-4">
+              {/* Feed Updates */}
+              <FeedUpdatesSection updates={feedUpdatesData.updates} />
+
+              {/* Right Side Widgets - Sticky on desktop */}
+              <div className="w-full lg:w-[300px] lg:shrink-0 space-y-4 mt-4 lg:mt-0 lg:self-start lg:sticky lg:top-28">
+                {/* Social Follow */}
+                <SocialFollow />
+
+                {/* Houseboard */}
+                <Houseboard
+                  houseboard={houseboardData.houseboard}
+                  seasonName={houseboardData.season?.name}
+                />
+
+                {/* Watch Live Feeds */}
+                <WatchLiveFeeds />
+
+                {/* Season Stats */}
+                <SeasonStats
+                  season={statsData.season}
+                  players={statsData.players}
+                />
+
+                {/* Recent Comments */}
+                <RecentComments comments={recentCommentsData.comments} />
+              </div>
             </div>
+
+            {/* Mid Ad */}
+            <AdPlaceholder slot="index-mid" minHeight="100px" />
+
+            {/* More Stories */}
+            <MoreStories posts={posts} heroId={heroPostId} />
           </section>
 
-          {/* Sidebar */}
+          {/* Right Sidebar */}
           <Sidebar />
         </div>
-      </div>
+      </main>
     </>
   );
 }

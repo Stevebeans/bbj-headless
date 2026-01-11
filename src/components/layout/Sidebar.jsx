@@ -4,7 +4,7 @@ import { AdPlaceholder } from "../ads/AdPlaceholder";
 // Server Component - Sidebar with widgets
 export function Sidebar({ user = null }) {
   return (
-    <aside className="w-full lg:w-80 flex-shrink-0 space-y-4" aria-label="Sidebar">
+    <aside className="w-full lg:w-80 flex-shrink-0 lg:self-start lg:sticky lg:top-28 space-y-4" aria-label="Sidebar">
       {/* User Welcome Widget */}
       <div className="v2-sidebar-container p-4">
         {user ? (
@@ -74,9 +74,7 @@ export function Sidebar({ user = null }) {
       </div>
 
       {/* Ad Placeholder - Bottom */}
-      <div className="lg:sticky lg:top-20">
-        <AdPlaceholder slot="sidebar-bottom" minHeight="250px" />
-      </div>
+      <AdPlaceholder slot="sidebar-bottom" minHeight="250px" />
     </aside>
   );
 }
