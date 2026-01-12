@@ -1,4 +1,5 @@
 import { wpRestFetch } from "./wordpress";
+import { decodeHtml, stripHtml } from "../utils/decodeHtml";
 
 /**
  * Transform WP post to our format
@@ -11,7 +12,7 @@ function transformPost(wpPost) {
   return {
     id: wpPost.id,
     slug: wpPost.slug,
-    title: wpPost.title?.rendered || "",
+    title: decodeHtml(wpPost.title?.rendered || ""),
     excerpt: wpPost.excerpt?.rendered || "",
     content: wpPost.content?.rendered || "",
     date: wpPost.date,
@@ -23,7 +24,9 @@ function transformPost(wpPost) {
     },
     featuredImage: featuredMedia?.source_url || null,
     categories: categories?.map((cat) => cat.name) || [],
+    categoryIds: categories?.map((cat) => cat.id) || [],
     commentCount: wpPost.comment_count || 0,
+    liveFeedThread: wpPost.live_feed_thread || false,
   };
 }
 
@@ -83,6 +86,27 @@ export async function getAllPostSlugs() {
     return posts.map((post) => post.slug);
   } catch (error) {
     console.error("Failed to fetch post slugs:", error);
+    return [];
+  }
+}
+
+/**
+ * Get related posts from same category
+ */
+export async function getRelatedPosts(postId, categoryId, limit = 4) {
+  if (!categoryId) return [];
+
+  try {
+    const posts = await wpRestFetch(
+      `/posts?_embed&per_page=${limit}&categories=${categoryId}&exclude=${postId}`,
+      {
+        tags: ["posts"],
+      }
+    );
+
+    return posts.map(transformPost);
+  } catch (error) {
+    console.error("Failed to fetch related posts:", error);
     return [];
   }
 }

@@ -247,3 +247,66 @@
     white-space: pre-line;
   }
 }
+
+/* Feed Updates Block (from bbj-tools/lib/blocks/feed-updates.php) */
+/* Main container */
+.feed-updates {
+  @apply relative my-6 rounded-xl bg-gradient-to-br from-primary-500/5 via-transparent to-secondary-500/5
+         border-2 border-primary-500/20 dark:border-primary-400/30 p-4 shadow-inner;
+}
+
+/* Header "Live Feed Updates For [date]" */
+.feed-updates > div:first-child {
+  @apply font-display text-xl text-primary-500 dark:text-primary-400 mb-4 pb-2
+         border-b-2 border-dashed border-secondary-500/50 flex items-center gap-2;
+}
+
+.feed-updates > div:first-child::before {
+  content: "📺";
+  font-size: 1.125rem;
+}
+
+/* Individual feed update items */
+.feed-updates > .my-4 {
+  @apply relative rounded-lg border-l-4 border-l-secondary-500 bg-white dark:bg-slate-800
+         p-3 shadow-sm hover:shadow-md transition-all duration-200
+         border-t-0 border-b-0 border-r-0;
+}
+
+.feed-updates > .my-4:hover {
+  @apply translate-x-1 border-l-secondary-600;
+}
+
+/* Date/time and author header inside each update */
+.feed-updates > .my-4 > .bg-gray-100 {
+  @apply bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800
+         rounded-md p-2 mb-2 -mx-1 -mt-1;
+}
+
+/* Time ago coloring */
+.feed-updates .text-green-500 { @apply text-emerald-600 dark:text-emerald-400 font-medium; }
+.feed-updates .text-yellow-500 { @apply text-amber-600 dark:text-amber-400; }
+.feed-updates .text-red-500 { @apply text-red-600 dark:text-red-400; }
+
+/* Update content */
+.feed-updates > .my-4 > div:not(.bg-gray-100):not(.text-center) {
+  @apply text-gray-800 dark:text-gray-200;
+}
+
+/* Footer link */
+.feed-updates .end-feed-updates {
+  @apply mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 text-center text-sm
+         bg-slate-50 dark:bg-slate-800/50 -mx-4 -mb-4 p-3 rounded-b-lg;
+}
+
+/* Hide empty ad containers from WordPress (show_impact_radius, etc.) */
+.feed-updates > div:empty,
+.feed-updates > div:not([class*="my-"]):not(.end-feed-updates):not(.text-lg):has(> :empty) {
+  display: none;
+}
+
+/* Also hide specific empty ad wrapper patterns */
+div.max-w-screen-xl.py-1.flex.items-center.justify-center:empty,
+div.max-w-screen-xl.py-1.flex.items-center.justify-center:has(> :only-child:empty) {
+  display: none;
+}
