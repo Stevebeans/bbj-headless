@@ -20,7 +20,7 @@ export function Hero({ post, season }) {
 
       {/* Hero Image */}
       <div className="relative h-[250px] md:h-[333px] bg-gray-100 dark:bg-gray-800 overflow-hidden group/hero">
-        <Link href={post.permalink} className="absolute inset-0">
+        <Link href={`/posts/${post.slug}`} className="absolute inset-0">
           {post.featured_image?.desktop && (
             <Image
               src={post.featured_image.desktop}
@@ -50,7 +50,7 @@ export function Hero({ post, season }) {
         {/* Read More Button */}
         <div className="absolute bottom-4 right-4 z-10">
           <Link
-            href={post.permalink}
+            href={`/posts/${post.slug}`}
             className="inline-flex items-center text-sm md:text-base rounded px-3 md:px-4 py-1.5 font-bold text-white bg-gradient-to-r from-red-400 to-red-700 hover:from-red-500 hover:to-red-800 transition-colors"
           >
             Read More
@@ -61,7 +61,7 @@ export function Hero({ post, season }) {
       {/* Post Info */}
       <div className="p-3">
         <h2 className="font-display text-2xl md:text-4xl text-primary-500 dark:text-primary-400">
-          <Link href={post.permalink} className="hover:underline">
+          <Link href={`/posts/${post.slug}`} className="hover:underline">
             {post.title}
           </Link>
         </h2>
