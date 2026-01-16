@@ -30,9 +30,16 @@ export default function LoginView() {
   // Initialize Google Sign-In
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId || typeof window === "undefined") return;
+    console.log("[Google Auth] Client ID exists:", !!clientId);
+
+    if (!clientId || typeof window === "undefined") {
+      console.log("[Google Auth] Skipping - no client ID or not in browser");
+      return;
+    }
 
     const initGoogle = () => {
+      console.log("[Google Auth] initGoogle called, google object:", !!window.google?.accounts?.id);
+
       if (window.google?.accounts?.id) {
         window.google.accounts.id.initialize({
           client_id: clientId,
@@ -40,15 +47,19 @@ export default function LoginView() {
           auto_select: false,
         });
 
+        const btnContainer = document.getElementById("google-signin-btn");
+        console.log("[Google Auth] Button container found:", !!btnContainer);
+
         window.google.accounts.id.renderButton(
-          document.getElementById("google-signin-btn"),
+          btnContainer,
           {
             theme: "outline",
             size: "large",
-            width: "100%",
+            width: 320,
             text: "continue_with",
           }
         );
+        console.log("[Google Auth] Button rendered");
       }
     };
 

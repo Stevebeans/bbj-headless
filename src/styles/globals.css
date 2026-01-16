@@ -164,6 +164,10 @@
     @apply text-yellow-400 hover:text-yellow-600 dark:text-yellow-300 dark:hover:text-yellow-100;
   }
 
+  .desktop-nav a:hover {
+    @apply underline text-white;
+  }
+
   .desktop-nav ul {
     @apply m-0 flex list-none flex-wrap p-0;
   }
@@ -223,7 +227,8 @@
     @apply text-green-500;
   }
 
-  .second, .pov {
+  .second,
+  .pov {
     @apply text-cyan-600;
   }
 
@@ -284,9 +289,15 @@
 }
 
 /* Time ago coloring */
-.feed-updates .text-green-500 { @apply text-emerald-600 dark:text-emerald-400 font-medium; }
-.feed-updates .text-yellow-500 { @apply text-amber-600 dark:text-amber-400; }
-.feed-updates .text-red-500 { @apply text-red-600 dark:text-red-400; }
+.feed-updates .text-green-500 {
+  @apply text-emerald-600 dark:text-emerald-400 font-medium;
+}
+.feed-updates .text-yellow-500 {
+  @apply text-amber-600 dark:text-amber-400;
+}
+.feed-updates .text-red-500 {
+  @apply text-red-600 dark:text-red-400;
+}
 
 /* Update content */
 .feed-updates > .my-4 > div:not(.bg-gray-100):not(.text-center) {

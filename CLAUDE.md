@@ -6,12 +6,32 @@ Next.js 15 PWA for Big Brother Junkies. Headless architecture using WordPress as
 
 **Important:** This project uses **JavaScript** (.js/.jsx), NOT TypeScript. User preference.
 
+## CRITICAL: MCP MySQL Database Configuration
+
+**For this project (bbj-app), ONLY use the `duesaptjae` database.**
+
+### Database Rules
+
+| Database | Usage | Rule |
+|----------|-------|------|
+| `duesaptjae` | BBJ Live (production) | **USE THIS** - All queries for this project |
+| `ca_db` | Different work project | **DO NOT USE** - Completely off-limits |
+| `bbj_db` | Local BBJ dev | Ignore for now |
+
+### Query Format
+```sql
+-- Correct: Query live BBJ database
+SELECT * FROM duesaptjae.wp_posts LIMIT 10;
+SELECT * FROM duesaptjae.wp_bbj_players;
+
+-- NEVER do this (wrong project):
+SELECT * FROM ca_db.wp_posts;
+```
+
 ## Structure
 
 This build will be taking a lot of data from my wordpress theme at `C:\xampp\htdocs\bbj\wp-content\themes\BBJ` and likely a lot of data from both plugins at:
 `C:\xampp\htdocs\bbj\wp-content\plugins\bbj-tools` and `C:\xampp\htdocs\bbj\wp-content\plugins\bbj-v2`. Anything NEW that is created in PHP data (APIs, etc) I want to be placed in the latest plugin: `C:\xampp\htdocs\bbj\wp-content\plugins\bigbrotherjunkies-data` as I would like to just upload -data to my server and use that for all the NEXT.js calls
-
-Yea I w
 
 ## Working Style
 
@@ -425,6 +445,39 @@ Every page needs:
 - Robots.txt should allow all crawlers for public content
 - Use `noindex` only for user dashboard, login, etc.
 
+## Development Standards
+
+### Required for All Components
+
+| Standard | Implementation |
+|----------|----------------|
+| **Skeleton loading** | Use skeleton states for async data |
+| **Image optimization** | Always use `next/image` with width/height |
+| **Error boundaries** | Wrap components that fetch data |
+| **Reusable code** | Extract common patterns into shared components |
+
+### Performance Targets
+
+- LCP < 2.5s
+- CLS < 0.1
+- INP < 200ms
+
+### Code Patterns
+
+```jsx
+// Always use skeleton loading for async content
+{isLoading ? <Skeleton /> : <Content />}
+
+// Always use Next.js Image
+import Image from 'next/image';
+<Image src={url} alt="descriptive text" width={300} height={200} />
+
+// Wrap data-fetching components in error boundaries
+<ErrorBoundary fallback={<ErrorState />}>
+  <DataComponent />
+</ErrorBoundary>
+```
+
 ## Key Notes
 
 - **JavaScript only** - no TypeScript
@@ -435,11 +488,26 @@ Every page needs:
 - Site should remain 100% static, only rebuild via webhook triggers
 - PWA features (service worker, push notifications) not yet implemented
 
-## Next Steps to Build
+## Roadmap
 
-1. **Players page** - Fetch from `/bbj/v1/players`, create player cards
-2. **Feed updates page** - Real-time feed display
-3. **Login/Register** - Connect to JWT auth endpoints
-4. **PWA service worker** - Add next-pwa or serwist
-5. **Push notifications** - For spoiler alerts
-6. **WordPress webhooks** - Trigger revalidation on content save
+**Full roadmap:** `.claude/projects/roadmap.md`
+
+**Target:** Launch before BB28 (July 2026)
+
+### Current Phase: Core User Experience
+
+| Priority | Feature | Status |
+|----------|---------|--------|
+| High | Comment system enhancements | In Progress |
+| High | Ad system & "Go Ad-Free" CTAs | Not Started |
+| High | Login/Registration with Google OAuth | Not Started |
+| High | Mailpoet subscription integration | Not Started |
+
+### Next Up: Content Pages
+
+- Player Directory & Profiles
+- Season Directory & Profiles
+- Stats Page
+- Feed Updates Hub
+
+See roadmap for full breakdown and timeline.
