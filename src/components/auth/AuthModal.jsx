@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { FaTimes } from "react-icons/fa";
 import { useAuthModal } from "@/context/AuthModalContext";
 import LoginView from "./LoginView";
@@ -10,6 +10,8 @@ import LinkAccountView from "./LinkAccountView";
 
 export default function AuthModal() {
   const { isOpen, view, closeModal } = useAuthModal();
+  const backdropRef = useRef(null);
+  const mouseDownTarget = useRef(null);
 
   // Handle escape key
   useEffect(() => {
@@ -32,8 +34,17 @@ export default function AuthModal() {
 
   if (!isOpen) return null;
 
+  // Track where mousedown started to prevent closing when dragging text
+  const handleMouseDown = (e) => {
+    mouseDownTarget.current = e.target;
+  };
+
+  // Only close if both mousedown and mouseup were on the backdrop
   const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
+    if (
+      e.target === backdropRef.current &&
+      mouseDownTarget.current === backdropRef.current
+    ) {
       closeModal();
     }
   };
@@ -66,7 +77,9 @@ export default function AuthModal() {
 
   return (
     <div
+      ref={backdropRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onMouseDown={handleMouseDown}
       onClick={handleBackdropClick}
     >
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
