@@ -8,6 +8,7 @@ import { MobileMenuWrapper } from "./MobileMenu";
 import { SearchBar, MobileSearchButton } from "../search/SearchBar";
 import { MobileSearchModal } from "../search/MobileSearchModal";
 import { useAuth } from "@/context/AuthContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 
 const LOGO_URL = "https://bigbrotherjunkies.com/wp-content/themes/BBJ/images/bbjlogo2020.png";
 const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
@@ -15,6 +16,7 @@ const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
 export function Header() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const { user, isAuthenticated, logout, isAdmin } = useAuth();
+  const { openLogin, openRegister } = useAuthModal();
   const bbTime = new Date().toLocaleString("en-US", {
     timeZone: "America/Los_Angeles",
     weekday: "short",
@@ -134,8 +136,8 @@ export function Header() {
                   </button>
                 </div>
               ) : (
-                <Link
-                  href="/login"
+                <button
+                  onClick={() => openLogin()}
                   className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500"
                   aria-label="Log In"
                 >
@@ -143,7 +145,7 @@ export function Header() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                   <span className="hidden md:inline">Log In</span>
-                </Link>
+                </button>
               )}
 
               <MobileMenuWrapper />
@@ -175,8 +177,8 @@ export function Header() {
               <li role="none"><Link href="/players" className="px-2 py-1">Players</Link></li>
               {!isAuthenticated && (
                 <>
-                  <li role="none"><Link href="/login" className="px-2 py-1">Log In</Link></li>
-                  <li role="none"><Link href="/register" className="px-2 py-1">Register</Link></li>
+                  <li role="none"><button onClick={() => openLogin()} className="px-2 py-1 text-secondary-500 hover:text-white">Log In</button></li>
+                  <li role="none"><button onClick={() => openRegister()} className="px-2 py-1 text-secondary-500 hover:text-white">Register</button></li>
                 </>
               )}
             </ul>

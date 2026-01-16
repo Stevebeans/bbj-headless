@@ -68,11 +68,11 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || "Login failed");
       }
 
-      // Store token
-      localStorage.setItem("bbj_token", data.token);
-
-      // Get user info from token validation
+      // Validate token BEFORE storing to prevent race condition
       const userData = await validateToken(data.token);
+
+      // Only store if validation succeeds
+      localStorage.setItem("bbj_token", data.token);
 
       setUser({
         ...userData,
@@ -83,6 +83,8 @@ export function AuthProvider({ children }) {
 
       return { success: true };
     } catch (err) {
+      // Ensure no stale token remains on error
+      localStorage.removeItem("bbj_token");
       setError(err.message);
       return { success: false, error: err.message };
     } finally {
@@ -134,6 +136,17 @@ export function AuthProvider({ children }) {
     setError(null);
   }, []);
 
+  // Set user from registration/external auth response
+  const setUserFromResponse = useCallback((data) => {
+    if (data.token) {
+      localStorage.setItem("bbj_token", data.token);
+    }
+    setUser({
+      ...data.user,
+      token: data.token,
+    });
+  }, []);
+
   // Get auth header for API calls
   const getAuthHeader = useCallback(() => {
     if (user?.token) {
@@ -172,6 +185,7 @@ export function AuthProvider({ children }) {
     login,
     loginWithGoogle,
     logout,
+    setUserFromResponse,
     getAuthHeader,
     hasRole,
     hasAnyRole,
