@@ -117,13 +117,16 @@ export function Header() {
                       Admin
                     </Link>
                   )}
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
+                    title={`ID: ${user?.id || user?.user_id} | Email: ${user?.user_email || user?.email}`}
+                  >
                     <div className="w-7 h-7 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
                       <span className="text-primary-600 dark:text-primary-400 font-bold text-xs">
-                        {user?.user_display_name?.charAt(0) || "?"}
+                        {user?.user_display_name?.charAt(0) || user?.display_name?.charAt(0) || "?"}
                       </span>
                     </div>
-                    <span className="hidden md:inline">{user?.user_display_name}</span>
+                    <span className="hidden md:inline">{user?.user_display_name || user?.display_name}</span>
                   </div>
                   <button
                     onClick={logout}

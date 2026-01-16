@@ -6,8 +6,9 @@ const AuthModalContext = createContext(null);
 
 export function AuthModalProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [view, setView] = useState("login"); // 'login' | 'register' | 'forgot-password'
+  const [view, setView] = useState("login"); // 'login' | 'register' | 'forgot-password' | 'link'
   const [redirectPath, setRedirectPath] = useState(null);
+  const [googleData, setGoogleData] = useState(null); // Stores Google credential and user info for linking
 
   const openLogin = useCallback((redirect = null) => {
     setView("login");
@@ -38,12 +39,26 @@ export function AuthModalProvider({ children }) {
     setView("forgot-password");
   }, []);
 
+  // Open link account view with Google data
+  const openLinkAccount = useCallback((data, redirect = null) => {
+    setGoogleData(data);
+    setView("link");
+    setRedirectPath(redirect);
+    setIsOpen(true);
+  }, []);
+
+  const switchToLinkAccount = useCallback((data) => {
+    setGoogleData(data);
+    setView("link");
+  }, []);
+
   const closeModal = useCallback(() => {
     setIsOpen(false);
     // Reset after animation completes
     setTimeout(() => {
       setView("login");
       setRedirectPath(null);
+      setGoogleData(null);
     }, 200);
   }, []);
 
@@ -51,12 +66,15 @@ export function AuthModalProvider({ children }) {
     isOpen,
     view,
     redirectPath,
+    googleData,
     openLogin,
     openRegister,
     openForgotPassword,
+    openLinkAccount,
     switchToLogin,
     switchToRegister,
     switchToForgotPassword,
+    switchToLinkAccount,
     closeModal,
   };
 

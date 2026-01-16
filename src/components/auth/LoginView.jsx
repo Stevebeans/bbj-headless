@@ -9,7 +9,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 export default function LoginView() {
   const router = useRouter();
   const { login, loginWithGoogle, isAuthenticated, loading: authLoading } = useAuth();
-  const { closeModal, switchToRegister, switchToForgotPassword, redirectPath } = useAuthModal();
+  const { closeModal, switchToRegister, switchToForgotPassword, switchToLinkAccount, redirectPath } = useAuthModal();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -91,7 +91,13 @@ export default function LoginView() {
 
     try {
       const result = await loginWithGoogle(response.credential);
-      if (!result.success) {
+      if (result.needs_linking) {
+        // No account found - switch to link account view
+        switchToLinkAccount({
+          credential: result.credential,
+          google_user: result.google_user,
+        });
+      } else if (!result.success) {
         setError(result.error || "Google sign-in failed");
       }
     } catch (err) {

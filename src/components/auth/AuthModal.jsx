@@ -6,6 +6,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import LoginView from "./LoginView";
 import RegisterView from "./RegisterView";
 import ForgotPasswordView from "./ForgotPasswordView";
+import LinkAccountView from "./LinkAccountView";
 
 export default function AuthModal() {
   const { isOpen, view, closeModal } = useAuthModal();
@@ -43,6 +44,8 @@ export default function AuthModal() {
         return "Create Account";
       case "forgot-password":
         return "Reset Password";
+      case "link":
+        return "Link Your Account";
       default:
         return "Log In";
     }
@@ -54,6 +57,8 @@ export default function AuthModal() {
         return <RegisterView />;
       case "forgot-password":
         return <ForgotPasswordView />;
+      case "link":
+        return <LinkAccountView />;
       default:
         return <LoginView />;
     }

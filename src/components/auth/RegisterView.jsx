@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { register, checkUsername, checkEmail } from "@/lib/api/auth";
+
+const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
 export default function RegisterView() {
   const router = useRouter();
@@ -24,6 +26,7 @@ export default function RegisterView() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [success, setSuccess] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const recaptchaLoaded = useRef(false);
 
   // Close modal if user becomes authenticated
   useEffect(() => {
@@ -78,6 +81,42 @@ export default function RegisterView() {
       document.body.appendChild(script);
     }
   }, []);
+
+  // Load reCAPTCHA v3 script
+  useEffect(() => {
+    if (!RECAPTCHA_SITE_KEY || recaptchaLoaded.current) return;
+
+    const existingScript = document.querySelector('script[src*="recaptcha/api.js"]');
+    if (existingScript) {
+      recaptchaLoaded.current = true;
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+    script.async = true;
+    script.onload = () => {
+      recaptchaLoaded.current = true;
+    };
+    document.body.appendChild(script);
+  }, []);
+
+  // Get reCAPTCHA token
+  const getRecaptchaToken = async () => {
+    if (!RECAPTCHA_SITE_KEY || !window.grecaptcha) {
+      console.warn("reCAPTCHA not loaded");
+      return null;
+    }
+
+    try {
+      await window.grecaptcha.ready(() => {});
+      const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: "register" });
+      return token;
+    } catch (err) {
+      console.error("reCAPTCHA error:", err);
+      return null;
+    }
+  };
 
   const handleGoogleResponse = async (response) => {
     if (!response.credential) return;
@@ -213,12 +252,21 @@ export default function RegisterView() {
     setLoading(true);
 
     try {
+      // Get reCAPTCHA token
+      const recaptchaToken = await getRecaptchaToken();
+      if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
+        setError("Security verification failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+
       const result = await register({
         username: formData.username.toLowerCase(),
         email: formData.email,
         password: formData.password,
         displayName: formData.displayName,
         subscribeNewsletter: formData.subscribeNewsletter,
+        recaptchaToken,
       });
 
       if (result.success) {

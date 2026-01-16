@@ -3,7 +3,7 @@ const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrother
 /**
  * Register a new user
  */
-export async function register({ username, email, password, displayName, subscribeNewsletter }) {
+export async function register({ username, email, password, displayName, subscribeNewsletter, recaptchaToken }) {
   const response = await fetch(`${API_URL}/bbjd/v1/auth/register`, {
     method: "POST",
     headers: {
@@ -15,6 +15,7 @@ export async function register({ username, email, password, displayName, subscri
       password,
       display_name: displayName,
       subscribe_newsletter: subscribeNewsletter,
+      recaptcha_token: recaptchaToken,
     }),
   });
 

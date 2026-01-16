@@ -112,12 +112,103 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || "Google login failed");
       }
 
+      // Check if account linking is needed
+      if (data.needs_linking) {
+        return {
+          success: false,
+          needs_linking: true,
+          credential: credential,
+          google_user: data.google_user,
+        };
+      }
+
       // Store token
       localStorage.setItem("bbj_token", data.token);
 
       setUser({
         ...data.user,
         token: data.token,
+        // Normalize property names to match email/password login
+        user_display_name: data.user.display_name,
+        user_email: data.user.email,
+      });
+
+      return { success: true };
+    } catch (err) {
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Link Google account to existing BBJ account
+  const linkGoogleAccount = useCallback(async (credential, username, password) => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/bbjd/v1/auth/link-google`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ credential, username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to link account");
+      }
+
+      // Store token
+      localStorage.setItem("bbj_token", data.token);
+
+      setUser({
+        ...data.user,
+        token: data.token,
+        user_display_name: data.user.display_name,
+        user_email: data.user.email,
+      });
+
+      return { success: true };
+    } catch (err) {
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Create new BBJ account from Google
+  const createFromGoogle = useCallback(async (credential) => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/bbjd/v1/auth/create-from-google`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ credential }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create account");
+      }
+
+      // Store token
+      localStorage.setItem("bbj_token", data.token);
+
+      setUser({
+        ...data.user,
+        token: data.token,
+        user_display_name: data.user.display_name,
+        user_email: data.user.email,
       });
 
       return { success: true };
@@ -184,6 +275,8 @@ export function AuthProvider({ children }) {
     error,
     login,
     loginWithGoogle,
+    linkGoogleAccount,
+    createFromGoogle,
     logout,
     setUserFromResponse,
     getAuthHeader,
