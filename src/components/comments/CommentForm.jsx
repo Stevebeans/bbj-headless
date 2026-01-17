@@ -2,14 +2,46 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 import { postComment } from "@/lib/api/comments";
-import Link from "next/link";
+import Image from "next/image";
+import MediaUploader from "./MediaUploader";
+import GiphyPicker from "./GiphyPicker";
+import EmojiPicker from "./EmojiPicker";
 
 export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, placeholder = "Write a comment...", buttonText = "Post Comment", compact = false }) {
   const { user, isAuthenticated } = useAuth();
+  const { openLogin } = useAuthModal();
   const [content, setContent] = useState("");
+  const [media, setMedia] = useState(null);
+  const [showMediaUploader, setShowMediaUploader] = useState(false);
+  const [showGiphyPicker, setShowGiphyPicker] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const handleMediaChange = (newMedia) => {
+    setMedia(newMedia);
+    if (!newMedia) {
+      setShowMediaUploader(false);
+    }
+  };
+
+  const handleGiphySelect = (giphyMedia) => {
+    setMedia(giphyMedia);
+    setShowGiphyPicker(false);
+    setShowMediaUploader(false);
+  };
+
+  const handleRemoveMedia = () => {
+    setMedia(null);
+    setShowMediaUploader(false);
+    setShowGiphyPicker(false);
+  };
+
+  const handleEmojiSelect = (emoji) => {
+    setContent((prev) => prev + emoji);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,8 +55,12 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
     setError(null);
 
     try {
-      const result = await postComment(postId, content, parentId);
+      const result = await postComment(postId, content, parentId, media?.id || null);
       setContent("");
+      setMedia(null);
+      setShowMediaUploader(false);
+      setShowGiphyPicker(false);
+      setShowEmojiPicker(false);
       onSubmit?.(result.comment);
     } catch (err) {
       setError(err.message);
@@ -40,12 +76,12 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
         <p className="text-slate-600 dark:text-slate-400 mb-3">
           Please log in to join the discussion
         </p>
-        <Link
-          href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "")}`}
-          className="inline-block px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
+        <button
+          onClick={() => openLogin()}
+          className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
         >
           Log In
-        </Link>
+        </button>
       </div>
     );
   }
@@ -61,10 +97,22 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
       <div className="flex gap-3">
         {!compact && (
           <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
-              <span className="text-primary-600 dark:text-primary-400 font-bold">
-                {user?.user_display_name?.charAt(0) || "?"}
-              </span>
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+              {user?.avatar || user?.user_avatar ? (
+                <Image
+                  src={user.avatar || user.user_avatar}
+                  alt={user?.user_display_name || "User"}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                  <span className="text-primary-600 dark:text-primary-400 font-bold">
+                    {user?.user_display_name?.charAt(0) || "?"}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -78,23 +126,154 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
           />
 
-          <div className="flex items-center justify-end gap-2 mt-2">
-            {onCancel && (
+          {/* Media preview (for Giphy or uploaded) */}
+          {media && (
+            <div className="mt-2">
+              <div className="relative inline-block max-w-xs">
+                <div className="relative rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                  {media.type === "giphy" || media.type === "gif" ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={media.url}
+                      alt="Attached media"
+                      className="max-w-full max-h-48 object-contain"
+                    />
+                  ) : (
+                    <Image
+                      src={media.url}
+                      alt="Attached media"
+                      width={media.width || 200}
+                      height={media.height || 200}
+                      className="max-w-full max-h-48 object-contain"
+                    />
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveMedia}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-colors"
+                  aria-label="Remove media"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Media uploader (for file uploads) */}
+          {showMediaUploader && !media && (
+            <div className="mt-2">
+              <MediaUploader onMediaChange={handleMediaChange} disabled={loading} />
+            </div>
+          )}
+
+          {/* Giphy picker */}
+          {showGiphyPicker && !media && (
+            <div className="mt-2 relative">
+              <GiphyPicker
+                onSelect={handleGiphySelect}
+                onClose={() => setShowGiphyPicker(false)}
+              />
+            </div>
+          )}
+
+          {/* Emoji picker */}
+          {showEmojiPicker && (
+            <div className="mt-2 relative">
+              <EmojiPicker
+                onSelect={handleEmojiSelect}
+                onClose={() => setShowEmojiPicker(false)}
+              />
+            </div>
+          )}
+
+          <div className="flex items-center justify-between mt-2">
+            {/* Media buttons */}
+            <div className="flex items-center gap-1">
+              {!media && (
+                <>
+                  {/* Image upload button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMediaUploader(!showMediaUploader);
+                      setShowGiphyPicker(false);
+                      setShowEmojiPicker(false);
+                    }}
+                    className={`p-1.5 rounded transition-colors ${
+                      showMediaUploader
+                        ? "text-primary-500 bg-primary-50 dark:bg-primary-900/30"
+                        : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    }`}
+                    title="Add image"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+
+                  {/* GIF button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowGiphyPicker(!showGiphyPicker);
+                      setShowMediaUploader(false);
+                      setShowEmojiPicker(false);
+                    }}
+                    className={`p-1.5 rounded transition-colors ${
+                      showGiphyPicker
+                        ? "text-primary-500 bg-primary-50 dark:bg-primary-900/30"
+                        : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    }`}
+                    title="Add GIF"
+                  >
+                    <span className="text-xs font-bold">GIF</span>
+                  </button>
+                </>
+              )}
+
+              {/* Emoji button - always visible */}
               <button
                 type="button"
-                onClick={onCancel}
-                className="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                onClick={() => {
+                  setShowEmojiPicker(!showEmojiPicker);
+                  setShowMediaUploader(false);
+                  setShowGiphyPicker(false);
+                }}
+                className={`p-1.5 rounded transition-colors ${
+                  showEmojiPicker
+                    ? "text-primary-500 bg-primary-50 dark:bg-primary-900/30"
+                    : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+                title="Add emoji"
               >
-                Cancel
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </button>
-            )}
-            <button
-              type="submit"
-              disabled={loading || !content.trim()}
-              className="px-4 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? "Posting..." : buttonText}
-            </button>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2">
+              {onCancel && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={loading || !content.trim()}
+                className="px-4 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? "Posting..." : buttonText}
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -39,13 +39,16 @@ export default function CommentSection({ postId, initialCommentCount = 0 }) {
   };
 
   const handleNewComment = (comment) => {
-    // Add new comment to the top if sorting by newest
-    if (sort === "newest") {
-      setComments([comment, ...comments]);
-    } else {
-      // Otherwise add to bottom
-      setComments([...comments, comment]);
+    // Only add top-level comments to the main list
+    // Replies are handled by CommentCard's local state
+    if (!comment.parent_id || comment.parent_id === 0) {
+      if (sort === "newest") {
+        setComments([comment, ...comments]);
+      } else {
+        setComments([...comments, comment]);
+      }
     }
+    // Always update total count
     setPagination({ ...pagination, total: pagination.total + 1 });
   };
 

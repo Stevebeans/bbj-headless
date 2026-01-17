@@ -3,14 +3,23 @@
 import { AuthProvider } from "@/context/AuthContext";
 import { AuthModalProvider } from "@/context/AuthModalContext";
 import { AuthModal } from "@/components/auth";
+import { useSessionHeartbeat } from "@/hooks/useSessionHeartbeat";
+
+// Component that runs the heartbeat hook (must be inside AuthProvider)
+function SessionHeartbeat({ children }) {
+  useSessionHeartbeat();
+  return children;
+}
 
 export function Providers({ children }) {
   return (
     <AuthProvider>
-      <AuthModalProvider>
-        {children}
-        <AuthModal />
-      </AuthModalProvider>
+      <SessionHeartbeat>
+        <AuthModalProvider>
+          {children}
+          <AuthModal />
+        </AuthModalProvider>
+      </SessionHeartbeat>
     </AuthProvider>
   );
 }

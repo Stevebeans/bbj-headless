@@ -28,6 +28,10 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50">
+      {/* DEV BANNER - Remove before merging */}
+      <div className="bg-purple-600 text-white text-center py-1 text-sm font-bold">
+        Hi, this is branch: feature/comment-system-v2
+      </div>
       <nav aria-label="Main navigation">
         {/* Top utility bar */}
         <div className="bg-white dark:bg-gray-900">

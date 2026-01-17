@@ -6,6 +6,9 @@ import { FaReply, FaFlag, FaEllipsisV, FaEdit, FaTrash } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import VoteButtons from "./VoteButtons";
 import RankBadge from "./RankBadge";
+import ReactionButtons from "./ReactionButtons";
+import OnlineIndicator from "./OnlineIndicator";
+import AuthorModal from "./AuthorModal";
 import CommentForm from "./CommentForm";
 import ReportModal from "./ReportModal";
 import { editComment, deleteComment } from "@/lib/api/comments";
@@ -14,6 +17,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
   const { user, isAuthenticated } = useAuth();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showAuthorModal, setShowAuthorModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
@@ -86,7 +90,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
       <div className="py-4">
         <div className="flex gap-3">
           {/* Avatar */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 relative w-10 h-10">
             <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
               {comment.author.avatar ? (
                 <Image
@@ -102,15 +106,29 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
                 </div>
               )}
             </div>
+            {/* Online indicator */}
+            {comment.author.is_online && (
+              <OnlineIndicator
+                isOnline={true}
+                size="sm"
+                className="absolute bottom-0 right-0"
+              />
+            )}
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
             {/* Header */}
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="font-semibold text-slate-800 dark:text-white">
+              <button
+                onClick={() => comment.author.id > 0 && setShowAuthorModal(true)}
+                className={`font-semibold text-slate-800 dark:text-white ${
+                  comment.author.id > 0 ? "hover:text-primary-500 cursor-pointer" : ""
+                }`}
+                disabled={comment.author.id === 0}
+              >
                 {comment.author.name}
-              </span>
+              </button>
               {comment.author.rank && (
                 <RankBadge rank={comment.author.rank} size="xs" />
               )}
@@ -153,6 +171,42 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
               </div>
             )}
 
+            {/* Attached Media */}
+            {comment.media && (
+              <div className="mt-2">
+                <div className="inline-block max-w-sm rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                  {comment.media.type === "giphy" ? (
+                    // Giphy - use regular img for animated GIFs
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={comment.media.url}
+                      alt="GIF"
+                      className="max-w-full max-h-64 object-contain"
+                      loading="lazy"
+                    />
+                  ) : comment.media.type === "gif" ? (
+                    // Uploaded GIF - use regular img to preserve animation
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={comment.media.url}
+                      alt="Attached image"
+                      className="max-w-full max-h-64 object-contain"
+                      loading="lazy"
+                    />
+                  ) : (
+                    // Regular image - use Next.js Image for optimization
+                    <Image
+                      src={comment.media.url}
+                      alt="Attached image"
+                      width={comment.media.width || 400}
+                      height={comment.media.height || 300}
+                      className="max-w-full max-h-64 w-auto h-auto object-contain"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             {!isEditing && (
               <div className="flex items-center gap-4 mt-2">
@@ -161,6 +215,15 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
                   commentId={comment.id}
                   votes={comment.votes}
                   userVote={comment.user_vote}
+                  onLoginRequired={onLoginRequired}
+                />
+
+                {/* Reactions */}
+                <ReactionButtons
+                  commentId={comment.id}
+                  reactions={comment.reactions}
+                  reactionTotal={comment.reaction_total}
+                  userReaction={comment.user_reaction}
                   onLoginRequired={onLoginRequired}
                 />
 
@@ -285,6 +348,13 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
         onClose={() => setShowReportModal(false)}
         commentId={comment.id}
         commentAuthor={comment.author.name}
+      />
+
+      {/* Author Modal */}
+      <AuthorModal
+        userId={comment.author.id}
+        isOpen={showAuthorModal}
+        onClose={() => setShowAuthorModal(false)}
       />
     </div>
   );
