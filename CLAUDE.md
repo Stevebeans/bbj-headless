@@ -40,6 +40,31 @@ This build will be taking a lot of data from my wordpress theme at `C:\xampp\htd
 - **Use latest tech** - Prefer modern APIs, newest stable packages, and cutting-edge best practices
 - **Challenge assumptions** - If there's a better way, speak up
 
+## Git Workflow - Worktrees
+
+**When starting a new feature/project, ask the user if they want to create a git worktree instead of just a branch.**
+
+Worktrees allow running multiple branches simultaneously on different ports, which is useful for:
+- Testing features in parallel
+- Running multiple Claude instances on different features
+- A/B comparisons between branches
+
+Current worktree setup:
+| Folder | Branch | Port |
+|--------|--------|------|
+| `bbj-app` | `main` | 3000 |
+| `bbj-app-ads` | `feature/ad-go-ad-free-cta` | 3010 |
+| `bbj-app-comments` | `feature/comment-system-v2` | 3011 |
+| `bbj-app-pages` | `adding-pages` | 3012 |
+
+To create a new worktree:
+```bash
+git worktree add ../bbj-app-{name} {branch-name}
+cp .env.local ../bbj-app-{name}/.env.local
+cd ../bbj-app-{name} && npm install
+npm run dev -- -p {port}
+```
+
 ## Architecture
 
 ```

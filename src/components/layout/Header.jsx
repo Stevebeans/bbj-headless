@@ -67,6 +67,11 @@ export function Header() {
               </a>
             </div>
 
+            {/* DEV: Branch indicator */}
+            <div className="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+              ADS BRANCH
+            </div>
+
             {/* Right side - BB Time (data-nosnippet prevents Google from indexing this as article timestamp) */}
             <div className="text-xs" data-nosnippet>
               <span className="hidden md:inline">Current BB Time: </span>
@@ -121,17 +126,28 @@ export function Header() {
                       Admin
                     </Link>
                   )}
-                  <div
-                    className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500 transition-colors"
                     title={`ID: ${user?.id || user?.user_id} | Email: ${user?.user_email || user?.email}`}
                   >
-                    <div className="w-7 h-7 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
-                      <span className="text-primary-600 dark:text-primary-400 font-bold text-xs">
-                        {user?.user_display_name?.charAt(0) || user?.display_name?.charAt(0) || "?"}
-                      </span>
-                    </div>
+                    {user?.avatar ? (
+                      <Image
+                        src={user.avatar}
+                        alt={user?.user_display_name || user?.display_name || "User"}
+                        width={28}
+                        height={28}
+                        className="w-7 h-7 rounded-full object-cover ring-2 ring-transparent hover:ring-primary-300 transition-all"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center ring-2 ring-transparent hover:ring-primary-300 transition-all">
+                        <span className="text-primary-600 dark:text-primary-400 font-bold text-xs">
+                          {user?.user_display_name?.charAt(0) || user?.display_name?.charAt(0) || "?"}
+                        </span>
+                      </div>
+                    )}
                     <span className="hidden md:inline">{user?.user_display_name || user?.display_name}</span>
-                  </div>
+                  </Link>
                   <button
                     onClick={logout}
                     className="text-sm text-gray-500 hover:text-red-500"
