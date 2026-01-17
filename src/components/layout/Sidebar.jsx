@@ -42,7 +42,7 @@ export function Sidebar({ user = null }) {
       </div>
 
       {/* Ad Placeholder - Top */}
-      <AdPlaceholder slot="sidebar-top" minHeight="250px" />
+      <AdPlaceholder slot="sidebar_top" minHeight="250px" />
 
       {/* Newsletter Signup Placeholder */}
       <div className="v2-sidebar-container p-4">
@@ -74,7 +74,7 @@ export function Sidebar({ user = null }) {
       </div>
 
       {/* Ad Placeholder - Bottom */}
-      <AdPlaceholder slot="sidebar-bottom" minHeight="250px" />
+      <AdPlaceholder slot="sidebar_bottom" minHeight="250px" />
     </aside>
   );
 }

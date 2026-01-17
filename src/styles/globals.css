@@ -82,6 +82,24 @@
 
   .v2-ad-container {
     @apply mx-auto flex items-center justify-center border-b border-t border-gray-300 dark:border-gray-700 dark:bg-gray-900;
+    /* CLS prevention: reserve space using CSS custom properties from AdPlaceholder */
+    min-height: var(--ad-height-mobile, 250px);
+  }
+
+  /* Desktop: use larger height */
+  @media (min-width: 768px) {
+    .v2-ad-container {
+      min-height: var(--ad-height-desktop, 250px);
+    }
+  }
+
+  /* Branded ad container with header/footer */
+  .ad-branded-container {
+    @apply overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800;
+  }
+
+  .ad-branded-container .v2-ad-container {
+    @apply border-0;
   }
 
   .front-card {
