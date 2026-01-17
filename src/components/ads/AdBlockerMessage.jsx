@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useAdBlockDetector } from "@/hooks/useAdBlockDetector";
 
@@ -31,31 +32,31 @@ function BlockerMessage() {
 }
 
 /**
- * Wrapper that shows ad content or blocker message
- *
- * @param {boolean} hasRealAd - Whether there's actual ad content to show
- * @param {string} slot - Slot name (for placeholder display)
- * @param {React.ReactNode} children - The actual ad content
+ * Placeholder shown while checking ad blocker status
  */
-export function AdBlockerWrapper({ hasRealAd, slot, children }) {
+function AdPlaceholderLoading({ slot }) {
+  return (
+    <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 p-4">
+      <p className="text-[10px] text-gray-300 dark:text-gray-600">{slot}</p>
+    </div>
+  );
+}
+
+/**
+ * Inner component that uses the ad blocker hook
+ * Separated to allow Suspense boundary around useSearchParams
+ */
+function AdBlockerWrapperInner({ hasRealAd, slot, children }) {
   const { isBlocked, isChecked } = useAdBlockDetector();
 
-  // Not checked yet - show nothing or placeholder to avoid flash
+  // Not checked yet - show placeholder to avoid flash
   if (!isChecked) {
-    return (
-      <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 p-4">
-        <p className="text-[10px] text-gray-300 dark:text-gray-600">{slot}</p>
-      </div>
-    );
+    return <AdPlaceholderLoading slot={slot} />;
   }
 
   // No real ad assigned - always show placeholder with slot name
   if (!hasRealAd) {
-    return (
-      <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 p-4">
-        <p className="text-[10px] text-gray-300 dark:text-gray-600">{slot}</p>
-      </div>
-    );
+    return <AdPlaceholderLoading slot={slot} />;
   }
 
   // Real ad assigned but blocked - show friendly message
@@ -65,4 +66,22 @@ export function AdBlockerWrapper({ hasRealAd, slot, children }) {
 
   // Real ad assigned and not blocked - show the ad
   return <>{children}</>;
+}
+
+/**
+ * Wrapper that shows ad content or blocker message
+ * Wrapped in Suspense for Next.js 15 useSearchParams compatibility
+ *
+ * @param {boolean} hasRealAd - Whether there's actual ad content to show
+ * @param {string} slot - Slot name (for placeholder display)
+ * @param {React.ReactNode} children - The actual ad content
+ */
+export function AdBlockerWrapper({ hasRealAd, slot, children }) {
+  return (
+    <Suspense fallback={<AdPlaceholderLoading slot={slot} />}>
+      <AdBlockerWrapperInner hasRealAd={hasRealAd} slot={slot}>
+        {children}
+      </AdBlockerWrapperInner>
+    </Suspense>
+  );
 }
