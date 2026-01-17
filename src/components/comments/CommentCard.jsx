@@ -90,7 +90,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
       <div className="py-4">
         <div className="flex gap-3">
           {/* Avatar */}
-          <div className="flex-shrink-0 relative">
+          <div className="flex-shrink-0 relative w-10 h-10">
             <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
               {comment.author.avatar ? (
                 <Image

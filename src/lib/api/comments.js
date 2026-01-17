@@ -431,13 +431,14 @@ export async function getReactions(commentId) {
 export async function sendHeartbeat() {
   const token = localStorage.getItem("bbj_token");
   if (!token) {
-    return null; // Don't send heartbeat if not logged in
+    return null;
   }
 
   try {
     const response = await fetch(`${API_URL}/bbjd/v1/session/heartbeat`, {
       method: "POST",
       headers: {
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
     });

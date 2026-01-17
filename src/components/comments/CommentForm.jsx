@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 import { postComment } from "@/lib/api/comments";
-import Link from "next/link";
 import Image from "next/image";
 import MediaUploader from "./MediaUploader";
 import GiphyPicker from "./GiphyPicker";
@@ -11,6 +11,7 @@ import EmojiPicker from "./EmojiPicker";
 
 export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, placeholder = "Write a comment...", buttonText = "Post Comment", compact = false }) {
   const { user, isAuthenticated } = useAuth();
+  const { openLogin } = useAuthModal();
   const [content, setContent] = useState("");
   const [media, setMedia] = useState(null);
   const [showMediaUploader, setShowMediaUploader] = useState(false);
@@ -75,12 +76,12 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
         <p className="text-slate-600 dark:text-slate-400 mb-3">
           Please log in to join the discussion
         </p>
-        <Link
-          href={`/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "")}`}
-          className="inline-block px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
+        <button
+          onClick={() => openLogin()}
+          className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
         >
           Log In
-        </Link>
+        </button>
       </div>
     );
   }
@@ -96,10 +97,22 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
       <div className="flex gap-3">
         {!compact && (
           <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
-              <span className="text-primary-600 dark:text-primary-400 font-bold">
-                {user?.user_display_name?.charAt(0) || "?"}
-              </span>
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+              {user?.avatar || user?.user_avatar ? (
+                <Image
+                  src={user.avatar || user.user_avatar}
+                  alt={user?.user_display_name || "User"}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                  <span className="text-primary-600 dark:text-primary-400 font-bold">
+                    {user?.user_display_name?.charAt(0) || "?"}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { FaCrown, FaMedal, FaGem, FaShieldAlt, FaStar } from "react-icons/fa";
+import { FaCrown, FaMedal, FaGem, FaShieldAlt, FaStar, FaTrophy } from "react-icons/fa";
 
 // Icon mapping
 const iconMap = {
@@ -9,6 +9,7 @@ const iconMap = {
   gem: FaGem,
   shield: FaShieldAlt,
   star: FaStar,
+  trophy: FaTrophy,
 };
 
 // Color mapping for Tailwind classes
@@ -23,6 +24,7 @@ const colorClasses = {
   "red-600": "text-red-600",
   "blue-600": "text-blue-600",
   "pink-600": "text-pink-600",
+  "amber-500": "text-amber-500",
   // Background colors
   "gray-100": "bg-gray-100 dark:bg-gray-800",
   "orange-100": "bg-orange-100 dark:bg-orange-900/30",
@@ -33,7 +35,14 @@ const colorClasses = {
   "red-100": "bg-red-100 dark:bg-red-900/30",
   "blue-100": "bg-blue-100 dark:bg-blue-900/30",
   "amber-100": "bg-amber-100 dark:bg-amber-900/30",
+  "amber-200": "bg-amber-200 dark:bg-amber-800/40",
   "pink-100": "bg-pink-100 dark:bg-pink-900/30",
+};
+
+// Ring colors for special ranks (must be explicit for Tailwind JIT)
+const ringClasses = {
+  "orange-400": "ring-2 ring-orange-400 ring-offset-1",
+  "amber-400": "ring-2 ring-amber-400 ring-offset-1",
 };
 
 export default function RankBadge({ rank, showLabel = true, size = "sm" }) {
@@ -58,7 +67,7 @@ export default function RankBadge({ rank, showLabel = true, size = "sm" }) {
 
   // Special styling for special ranks
   const isSpecial = rank.is_special;
-  const ringClass = rank.ring ? `ring-2 ring-${rank.ring} ring-offset-1` : "";
+  const ringClass = rank.ring ? ringClasses[rank.ring] || "" : "";
 
   return (
     <span
@@ -67,7 +76,7 @@ export default function RankBadge({ rank, showLabel = true, size = "sm" }) {
         ${sizeClasses[size]}
         ${bgColor}
         ${textColor}
-        ${isSpecial ? ringClass : ""}
+        ${ringClass}
       `}
     >
       {Icon && <Icon className={iconSizes[size]} />}

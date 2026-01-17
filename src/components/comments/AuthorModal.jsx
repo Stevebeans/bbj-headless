@@ -163,6 +163,15 @@ export default function AuthorModal({ userId, isOpen, onClose }) {
 
               <h2 className="text-xl font-bold text-white text-center">{profile.name}</h2>
 
+              {/* Last active */}
+              <p className="text-sm text-white/70 text-center mt-1">
+                {profile.is_online ? (
+                  <span className="text-green-300">Online now</span>
+                ) : profile.last_active ? (
+                  <>Last active: {profile.last_active}</>
+                ) : null}
+              </p>
+
               {profile.rank && (
                 <div className="flex justify-center mt-2">
                   <RankBadge rank={profile.rank} size="sm" />
