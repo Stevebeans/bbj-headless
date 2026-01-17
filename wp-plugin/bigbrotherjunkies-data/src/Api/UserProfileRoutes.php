@@ -156,11 +156,17 @@ class UserProfileRoutes
             ));
         }
 
-        // Check online status
-        $isOnline = (bool) $wpdb->get_var($wpdb->prepare(
-            "SELECT 1 FROM {$sessionsTable} WHERE user_id = %d AND last_activity > DATE_SUB(NOW(), INTERVAL 5 MINUTE)",
+        // Check online status and get last activity
+        $sessionData = $wpdb->get_row($wpdb->prepare(
+            "SELECT last_activity, last_activity > DATE_SUB(NOW(), INTERVAL 5 MINUTE) as is_online FROM {$sessionsTable} WHERE user_id = %d",
             $userId
-        ));
+        ), ARRAY_A);
+
+        $isOnline = (bool) ($sessionData['is_online'] ?? false);
+        $lastActive = null;
+        if ($sessionData && $sessionData['last_activity']) {
+            $lastActive = human_time_diff(strtotime($sessionData['last_activity']), time()) . ' ago';
+        }
 
         // Get recent comments (last 5)
         $recentComments = $wpdb->get_results($wpdb->prepare("
@@ -199,6 +205,7 @@ class UserProfileRoutes
                 'avatar' => get_avatar_url($userId, ['size' => 128]),
                 'bio' => $bio,
                 'is_online' => $isOnline,
+                'last_active' => $lastActive,
                 'member_since' => $user->user_registered,
                 'member_since_formatted' => date('F Y', strtotime($user->user_registered)),
                 'rank' => $rank ? [

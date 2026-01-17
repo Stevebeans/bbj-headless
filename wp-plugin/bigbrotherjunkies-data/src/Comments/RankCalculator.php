@@ -5,13 +5,14 @@ namespace BigBrotherJunkies\Data\Comments;
 /**
  * Calculates user ranks based on comment count and karma
  *
- * Rank Requirements (Option B - Comment Count + Karma):
+ * Rank Requirements:
  * - Newbie: 0-9 comments
  * - Bronze: 10+ comments AND 25+ karma
- * - Silver: 50+ comments AND 100+ karma
- * - Gold: 150+ comments AND 300+ karma
- * - Platinum: 500+ comments AND 1000+ karma
- * - Diamond: 1000+ comments AND 2500+ karma
+ * - Silver: 75+ comments AND 150+ karma
+ * - Gold: 300+ comments AND 600+ karma
+ * - Platinum: 1000+ comments AND 2000+ karma
+ * - Diamond: 2500+ comments AND 5000+ karma
+ * - Legend: 5000+ comments AND 10000+ karma (Top 0.5%)
  *
  * Karma = (upvotes received) - (downvotes received) on user's comments
  */
@@ -19,6 +20,15 @@ class RankCalculator
 {
     /**
      * Rank definitions with requirements
+     *
+     * Thresholds designed for exclusivity:
+     * - Legend: Top 0.5% (~6 users with 5000+)
+     * - Diamond: Top 1.3% (~15 users)
+     * - Platinum: Top 3% (~35 users)
+     * - Gold: Top 7% (~80 users)
+     * - Silver: Top 15% (~180 users)
+     * - Bronze: Top 25% (~300 users)
+     * - Newbie: Everyone else
      */
     public const RANKS = [
         'newbie' => [
@@ -39,35 +49,44 @@ class RankCalculator
         ],
         'silver' => [
             'name' => 'Silver Contributor',
-            'min_comments' => 50,
-            'min_karma' => 100,
+            'min_comments' => 75,
+            'min_karma' => 150,
             'color' => 'cyan-600',
             'bg_color' => 'cyan-100',
             'icon' => 'medal',
         ],
         'gold' => [
             'name' => 'Gold Contributor',
-            'min_comments' => 150,
-            'min_karma' => 300,
+            'min_comments' => 300,
+            'min_karma' => 600,
             'color' => 'yellow-600',
             'bg_color' => 'yellow-100',
             'icon' => 'medal',
         ],
         'platinum' => [
             'name' => 'Platinum Contributor',
-            'min_comments' => 500,
-            'min_karma' => 1000,
+            'min_comments' => 1000,
+            'min_karma' => 2000,
             'color' => 'purple-600',
             'bg_color' => 'purple-100',
             'icon' => 'gem',
         ],
         'diamond' => [
             'name' => 'Diamond Contributor',
-            'min_comments' => 1000,
-            'min_karma' => 2500,
+            'min_comments' => 2500,
+            'min_karma' => 5000,
             'color' => 'teal-600',
             'bg_color' => 'teal-100',
             'icon' => 'gem',
+        ],
+        'legend' => [
+            'name' => 'Legend',
+            'min_comments' => 5000,
+            'min_karma' => 10000,
+            'color' => 'amber-500',
+            'bg_color' => 'amber-200',
+            'icon' => 'trophy',
+            'ring' => 'amber-400',
         ],
     ];
 
@@ -117,6 +136,25 @@ class RankCalculator
                 'key' => $specialRank,
                 'is_special' => true,
             ]);
+        }
+
+        // Auto-detect admins and moderators (only if no special rank set)
+        $user = get_userdata($userId);
+        if ($user) {
+            // Check if user is an administrator
+            if (in_array('administrator', $user->roles, true)) {
+                return array_merge(self::SPECIAL_RANKS['admin'], [
+                    'key' => 'admin',
+                    'is_special' => true,
+                ]);
+            }
+            // Check if user can moderate comments (editors, custom moderator role)
+            if (user_can($userId, 'moderate_comments')) {
+                return array_merge(self::SPECIAL_RANKS['admin'], [
+                    'key' => 'admin',
+                    'is_special' => true,
+                ]);
+            }
         }
 
         // Get user stats

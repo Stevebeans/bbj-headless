@@ -63,11 +63,12 @@ class SessionRoutes
         global $wpdb;
         $userId = get_current_user_id();
         $table = CommentSchema::table(CommentSchema::TABLE_SESSIONS);
-        $now = current_time('mysql');
+        // Use GMT time to match MySQL NOW() in queries
+        $now = current_time('mysql', true);
 
         // Check for existing session
         $existingSession = $wpdb->get_var($wpdb->prepare(
-            "SELECT id FROM {$table} WHERE user_id = %d",
+            "SELECT user_id FROM {$table} WHERE user_id = %d",
             $userId
         ));
 

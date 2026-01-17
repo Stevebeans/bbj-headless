@@ -4,7 +4,8 @@ namespace BigBrotherJunkies\Data\Comments;
 
 /**
  * Handles media uploads for comments
- * Supports JPG/GIF only, 2MB max, 1 per comment
+ * Supports JPG/PNG/GIF, 2MB max, 1 per comment
+ * Compresses and converts to WebP for performance
  */
 class MediaUploader
 {
@@ -19,10 +20,17 @@ class MediaUploader
     public const MAX_FILE_SIZE = 2 * 1024 * 1024;
 
     /**
+     * WebP compression quality (0-100)
+     * 80 gives good balance of quality vs file size
+     */
+    public const WEBP_QUALITY = 80;
+
+    /**
      * Allowed MIME types
      */
     public const ALLOWED_TYPES = [
         'image/jpeg' => 'jpg',
+        'image/png' => 'png',
         'image/gif' => 'gif',
     ];
 
@@ -47,15 +55,30 @@ class MediaUploader
             return $uploadDir;
         }
 
-        // Generate unique filename
-        $extension = self::ALLOWED_TYPES[$file['type']];
-        $filename = self::generateFilename($userId, $extension);
+        $originalExtension = self::ALLOWED_TYPES[$file['type']];
+        $isGif = $originalExtension === 'gif';
+
+        // GIFs stay as GIF (to preserve animation), others convert to WebP
+        $finalExtension = $isGif ? 'gif' : 'webp';
+        $filename = self::generateFilename($userId, $finalExtension);
         $filepath = $uploadDir['path'] . '/' . $filename;
         $fileurl = $uploadDir['url'] . '/' . $filename;
 
-        // Move uploaded file
-        if (!move_uploaded_file($file['tmp_name'], $filepath)) {
-            return new \WP_Error('upload_failed', 'Failed to save uploaded file');
+        if ($isGif) {
+            // Move GIF as-is (preserve animation)
+            if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+                return new \WP_Error('upload_failed', 'Failed to save uploaded file');
+            }
+            $finalSize = filesize($filepath);
+            $mimeType = 'image/gif';
+        } else {
+            // Convert JPG/PNG to compressed WebP
+            $convertResult = self::convertToWebP($file['tmp_name'], $filepath, $file['type']);
+            if (is_wp_error($convertResult)) {
+                return $convertResult;
+            }
+            $finalSize = filesize($filepath);
+            $mimeType = 'image/webp';
         }
 
         // Get image dimensions
@@ -69,12 +92,12 @@ class MediaUploader
 
         $result = $wpdb->insert($table, [
             'user_id' => $userId,
-            'media_type' => $extension === 'gif' ? 'gif' : 'image',
+            'media_type' => $isGif ? 'gif' : 'image',
             'file_name' => $filename,
             'file_path' => $filepath,
             'file_url' => $fileurl,
-            'file_size' => $file['size'],
-            'mime_type' => $file['type'],
+            'file_size' => $finalSize,
+            'mime_type' => $mimeType,
             'width' => $width,
             'height' => $height,
             'storage_type' => 'local',
@@ -92,11 +115,59 @@ class MediaUploader
             'id' => $mediaId,
             'url' => $fileurl,
             'filename' => $filename,
-            'type' => $extension === 'gif' ? 'gif' : 'image',
-            'size' => $file['size'],
+            'type' => $isGif ? 'gif' : 'image',
+            'size' => $finalSize,
             'width' => $width,
             'height' => $height,
         ];
+    }
+
+    /**
+     * Convert image to WebP format with compression
+     *
+     * @param string $sourcePath Path to source image
+     * @param string $destPath Path for WebP output
+     * @param string $mimeType Original MIME type
+     * @return true|WP_Error
+     */
+    private static function convertToWebP(string $sourcePath, string $destPath, string $mimeType): bool|\WP_Error
+    {
+        // Check if WebP is supported
+        if (!function_exists('imagewebp')) {
+            return new \WP_Error('webp_unsupported', 'WebP conversion is not supported on this server');
+        }
+
+        // Create image resource based on type
+        switch ($mimeType) {
+            case 'image/jpeg':
+                $image = @imagecreatefromjpeg($sourcePath);
+                break;
+            case 'image/png':
+                $image = @imagecreatefrompng($sourcePath);
+                // Preserve transparency
+                if ($image) {
+                    imagepalettetotruecolor($image);
+                    imagealphablending($image, true);
+                    imagesavealpha($image, true);
+                }
+                break;
+            default:
+                return new \WP_Error('invalid_type', 'Cannot convert this image type');
+        }
+
+        if (!$image) {
+            return new \WP_Error('image_load_failed', 'Failed to load image for conversion');
+        }
+
+        // Convert to WebP with compression
+        $result = imagewebp($image, $destPath, self::WEBP_QUALITY);
+        imagedestroy($image);
+
+        if (!$result) {
+            return new \WP_Error('webp_failed', 'Failed to convert image to WebP');
+        }
+
+        return true;
     }
 
     /**
@@ -294,10 +365,10 @@ class MediaUploader
     /**
      * Validate uploaded file
      *
-     * @param array $file $_FILES element
+     * @param array &$file $_FILES element (passed by reference to update type)
      * @return true|WP_Error
      */
-    private static function validateFile(array $file): bool|\WP_Error
+    private static function validateFile(array &$file): bool|\WP_Error
     {
         // Check for upload errors
         if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -324,10 +395,10 @@ class MediaUploader
         $actualType = $finfo->file($file['tmp_name']);
 
         if (!array_key_exists($actualType, self::ALLOWED_TYPES)) {
-            return new \WP_Error('invalid_type', 'Only JPG and GIF files are allowed');
+            return new \WP_Error('invalid_type', 'Only JPG, PNG and GIF files are allowed');
         }
 
-        // Update file type to actual detected type
+        // Update file type to actual detected type (passed by reference)
         $file['type'] = $actualType;
 
         return true;

@@ -4,7 +4,9 @@ namespace BigBrotherJunkies\Data\Api;
 
 use BigBrotherJunkies\Data\Auth\GoogleOAuth;
 use BigBrotherJunkies\Data\Auth\Integrations\MailPoetSubscriber;
+use BigBrotherJunkies\Data\Comments\RankCalculator;
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 /**
  * REST API routes for authentication
@@ -13,10 +15,12 @@ use Firebase\JWT\JWT;
  * - Google OAuth sign-in
  * - Email/password registration
  * - Password reset
+ * - Token validation (for Next.js auth context)
  */
 class AuthRoutes
 {
     private const NAMESPACE = 'bbjd/v1';
+    private const NAMESPACE_V3 = 'bbj/v3';
 
     /**
      * Register the routes
@@ -140,6 +144,20 @@ class AuthRoutes
                     'required' => true,
                     'type' => 'string',
                     'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
+        ]);
+
+        // Validate JWT token and return user data (for Next.js auth context)
+        // Uses bbj/v3 namespace for frontend compatibility
+        register_rest_route(self::NAMESPACE_V3, '/validate-token', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handleValidateToken'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'token' => [
+                    'required' => true,
+                    'type' => 'string',
                 ],
             ],
         ]);
@@ -764,6 +782,94 @@ class AuthRoutes
             ],
             'is_new_user' => true,
         ], 201);
+    }
+
+    /**
+     * Validate JWT token and return user data
+     * Used by Next.js auth context to restore session on page load
+     *
+     * @return array|\WP_Error User data if valid, error if invalid
+     */
+    public function handleValidateToken(\WP_REST_Request $request)
+    {
+        $token = $request->get_param('token');
+
+        $secretKey = defined('JWT_AUTH_SECRET_KEY') ? JWT_AUTH_SECRET_KEY : false;
+
+        if (!$secretKey) {
+            return new \WP_Error(
+                'jwt_not_configured',
+                __('JWT authentication is not configured.', 'bigbrotherjunkies-data'),
+                ['status' => 500]
+            );
+        }
+
+        try {
+            $algorithm = apply_filters('jwt_auth_algorithm', 'HS256');
+            $decoded = JWT::decode($token, new Key($secretKey, $algorithm));
+
+            // Verify the issuer
+            if ($decoded->iss !== get_bloginfo('url')) {
+                return new \WP_Error(
+                    'jwt_invalid_iss',
+                    __('Token issuer mismatch.', 'bigbrotherjunkies-data'),
+                    ['status' => 403]
+                );
+            }
+
+            // Get user ID from token
+            if (!isset($decoded->data->user->id)) {
+                return new \WP_Error(
+                    'jwt_invalid_data',
+                    __('Invalid token data.', 'bigbrotherjunkies-data'),
+                    ['status' => 403]
+                );
+            }
+
+            $userId = $decoded->data->user->id;
+            $user = get_user_by('ID', $userId);
+
+            if (!$user) {
+                return new \WP_Error(
+                    'user_not_found',
+                    __('User not found.', 'bigbrotherjunkies-data'),
+                    ['status' => 404]
+                );
+            }
+
+            // Get user's rank
+            $rank = RankCalculator::calculateRank($userId);
+
+            // Return user data for auth context
+            return [
+                'user_id' => $user->ID,
+                'user_email' => $user->user_email,
+                'user_login' => $user->user_login,
+                'user_display_name' => $user->display_name,
+                'user_avatar' => get_avatar_url($user->ID, ['size' => 96]),
+                'user_roles' => $user->roles,
+                'rank' => $rank ? [
+                    'key' => $rank['key'],
+                    'name' => $rank['name'],
+                    'color' => $rank['color'],
+                    'bg_color' => $rank['bg_color'],
+                    'icon' => $rank['icon'] ?? null,
+                    'is_special' => $rank['is_special'],
+                ] : null,
+            ];
+        } catch (\Firebase\JWT\ExpiredException $e) {
+            return new \WP_Error(
+                'jwt_expired',
+                __('Token has expired.', 'bigbrotherjunkies-data'),
+                ['status' => 401]
+            );
+        } catch (\Exception $e) {
+            return new \WP_Error(
+                'jwt_invalid',
+                __('Invalid token.', 'bigbrotherjunkies-data'),
+                ['status' => 403]
+            );
+        }
     }
 
     /**
