@@ -67,7 +67,7 @@ export default async function HomePage() {
             )}
 
             {/* Top Ad */}
-            <AdPlaceholder slot="index-top" minHeight="100px" />
+            <AdPlaceholder slot="index_top" minHeight="100px" />
 
             {/* Feed Updates + Right Widgets (2 column layout) */}
             <div className="flex flex-col lg:flex-row lg:gap-4">
@@ -100,7 +100,7 @@ export default async function HomePage() {
             </div>
 
             {/* Mid Ad */}
-            <AdPlaceholder slot="index-mid" minHeight="100px" />
+            <AdPlaceholder slot="index_mid" minHeight="100px" />
 
             {/* More Stories */}
             <MoreStories posts={posts} heroId={heroPostId} />

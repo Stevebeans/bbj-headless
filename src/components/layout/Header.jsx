@@ -63,6 +63,11 @@ export function Header() {
               </a>
             </div>
 
+            {/* DEV: Branch indicator */}
+            <div className="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+              ADS BRANCH
+            </div>
+
             {/* Right side - BB Time (data-nosnippet prevents Google from indexing this as article timestamp) */}
             <div className="text-xs" data-nosnippet>
               <span className="hidden md:inline">Current BB Time: </span>

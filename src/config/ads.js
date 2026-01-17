@@ -2,6 +2,7 @@
  * Ad Configuration
  *
  * Define where ads appear throughout the site
+ * Includes sizes for CLS (Cumulative Layout Shift) prevention
  */
 
 export const adConfig = {
@@ -19,24 +20,69 @@ export const adConfig = {
   // Minimum paragraphs required to show in-content ads
   minParagraphs: 5,
 
-  // Slots used in different locations
+  /**
+   * Slot definitions with sizes for CLS prevention
+   * Heights are reserved to prevent layout shift when ads load
+   *
+   * Common ad sizes:
+   * - Leaderboard: 728x90
+   * - Medium Rectangle: 300x250
+   * - Large Rectangle: 336x280
+   * - Mobile Banner: 320x100
+   */
   slots: {
-    // Homepage
-    indexTop: "index-top",
-    indexMid: "index-mid",
+    // Homepage - horizontal banners
+    index_top: {
+      desktop: { height: 280 },   // 336x280 large rectangle
+      mobile: { height: 100 },    // 320x100 mobile banner
+    },
+    index_mid: {
+      desktop: { height: 280 },
+      mobile: { height: 100 },
+    },
 
-    // Sidebar
-    sidebarTop: "sidebar-top",
-    sidebarBottom: "sidebar-bottom",
+    // Sidebar - medium rectangles (only show on desktop)
+    sidebar_top: {
+      desktop: { height: 250 },   // 300x250 medium rectangle
+      mobile: { height: 0 },      // Hidden on mobile
+    },
+    sidebar_bottom: {
+      desktop: { height: 250 },
+      mobile: { height: 0 },
+    },
 
     // Single post
-    beforeContent: "before-content",
-    afterContent: "after-content",
+    before_content: {
+      desktop: { height: 90 },    // 728x90 leaderboard
+      mobile: { height: 100 },
+    },
+    after_post: {
+      desktop: { height: 280 },
+      mobile: { height: 250 },
+    },
 
-    // Feed updates
-    feedInterval: "feed-interval"
-  }
+    // Feed updates - in-feed ads
+    between_feeds: {
+      desktop: { height: 280 },
+      mobile: { height: 250 },
+    },
+
+    // In-content ads (default for dynamic slots)
+    default: {
+      desktop: { height: 280 },
+      mobile: { height: 250 },
+    },
+  },
 };
+
+/**
+ * Get slot configuration with size info
+ * @param {string} slotSlug - The slot identifier
+ * @returns {object} Slot config with desktop/mobile heights
+ */
+export function getSlotConfig(slotSlug) {
+  return adConfig.slots[slotSlug] || adConfig.slots.default;
+}
 
 /**
  * Get in-content ad placements for a given paragraph count
