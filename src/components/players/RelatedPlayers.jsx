@@ -80,14 +80,13 @@ function PlayerCard({ player }) {
   const statusLabel = getStatusLabel(status);
 
   // Convert WordPress URL to local path
-  let href = permalink || `/players/${id}`;
+  let href = permalink || `/bigbrother-players/${id}`;
   try {
     const url = new URL(href);
     href = url.pathname;
   } catch {
     // Already a path, use as-is
   }
-  href = href.replace(/^\/bigbrother-players\//, "/players/");
 
   return (
     <Link

@@ -47,7 +47,7 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title,
       description,
-      url: `${SITE_URL}/players/${slug}`,
+      url: `${SITE_URL}/bigbrother-players/${slug}`,
       type: "profile",
       images: player.photo?.url
         ? [
@@ -67,7 +67,7 @@ export async function generateMetadata({ params }) {
       images: player.photo?.url ? [player.photo.url] : [],
     },
     alternates: {
-      canonical: `${SITE_URL}/players/${slug}`,
+      canonical: `${SITE_URL}/bigbrother-players/${slug}`,
     },
   };
 }

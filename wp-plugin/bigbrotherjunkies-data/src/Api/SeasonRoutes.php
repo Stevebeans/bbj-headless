@@ -204,12 +204,12 @@ class SeasonRoutes
 
         $post = $posts[0];
 
-        // Get season data from custom table using post_id
+        // Get season data from custom table using id (which IS the post ID)
         global $wpdb;
         $table = defined('BBJ_V2_TABLE_SEASONS') ? BBJ_V2_TABLE_SEASONS : $wpdb->prefix . 'bbj_seasons';
 
         $season = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$table} WHERE post_id = %d",
+            "SELECT * FROM {$table} WHERE id = %d",
             $post->ID
         ), ARRAY_A);
 

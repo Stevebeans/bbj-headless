@@ -15,15 +15,16 @@ export function useFormState(initialValues, options = {}) {
   const { validate, onSubmit } = options;
 
   const [values, setValues] = useState(initialValues);
+  const [savedValues, setSavedValues] = useState(initialValues); // Track last saved state
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
-  // Check if form has been modified
+  // Check if form has been modified from last saved state
   const isDirty = useMemo(() => {
-    return JSON.stringify(values) !== JSON.stringify(initialValues);
-  }, [values, initialValues]);
+    return JSON.stringify(values) !== JSON.stringify(savedValues);
+  }, [values, savedValues]);
 
   // Update a single field value
   const setValue = useCallback((field, value) => {
@@ -56,12 +57,13 @@ export function useFormState(initialValues, options = {}) {
 
   // Reset form to initial values
   const reset = useCallback((newInitialValues) => {
-    const resetTo = newInitialValues || initialValues;
+    const resetTo = newInitialValues || savedValues;
     setValues(resetTo);
+    setSavedValues(resetTo);
     setErrors({});
     setTouched({});
     setSubmitError(null);
-  }, [initialValues]);
+  }, [savedValues]);
 
   // Validate form
   const validateForm = useCallback(() => {
@@ -95,6 +97,14 @@ export function useFormState(initialValues, options = {}) {
 
     try {
       const result = await onSubmit(values);
+      // Only mark values as saved if the submission was successful
+      if (result?.success !== false) {
+        setSavedValues(values);
+      } else {
+        // If onSubmit returned a failure, propagate the error
+        setSubmitError(result?.message || result?.error || "Submit failed");
+        return { success: false, error: result?.message || result?.error };
+      }
       return { success: true, data: result };
     } catch (err) {
       const errorMessage = err.message || "Submit failed";

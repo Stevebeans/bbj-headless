@@ -74,19 +74,19 @@ export async function POST(request) {
       case "player":
         revalidateTag("players");
         if (slug) {
-          revalidatePath(`/players/${slug}`);
+          revalidatePath(`/bigbrother-players/${slug}`);
         }
-        revalidatePath("/players");
+        revalidatePath("/bigbrother-players");
         break;
 
       case "season":
         revalidateTag("seasons");
         if (slug) {
-          revalidatePath(`/seasons/${slug}`);
-          revalidatePath(`/seasons/${slug}/edit`);
+          revalidatePath(`/bigbrother-seasons/${slug}`);
+          revalidatePath(`/bigbrother-seasons/${slug}/edit`);
           revalidateTag(`season-${slug}`);
         }
-        revalidatePath("/seasons");
+        revalidatePath("/bigbrother-seasons");
         // Also revalidate spoiler bar since it depends on season data
         revalidateTag("spoiler-bar");
         break;

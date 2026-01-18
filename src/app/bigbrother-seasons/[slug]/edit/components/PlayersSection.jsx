@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { FormSection, SearchSelect } from "@/components/forms";
 import { PlayerBadge } from "@/components/players";
 import { searchPlayers } from "@/lib/api/seasons";
@@ -18,6 +18,9 @@ export function PlayersSection({ seasonId, players, onAddPlayer, onRemovePlayer 
 
   const debouncedQuery = useDebounce(searchQuery, 300);
 
+  // Create a stable string of player IDs to use as dependency
+  const excludeIdsString = players.map((p) => p.id).join(",");
+
   // Search for players when debounced query changes
   useEffect(() => {
     const doSearch = async () => {
@@ -28,8 +31,8 @@ export function PlayersSection({ seasonId, players, onAddPlayer, onRemovePlayer 
 
       setIsSearching(true);
       try {
-        // Get IDs of players already in the season to exclude
-        const excludeIds = players.map((p) => p.id);
+        // Parse the IDs back from the string for the API call
+        const excludeIds = excludeIdsString ? excludeIdsString.split(",").map(Number) : [];
         const { players: results } = await searchPlayers(debouncedQuery, excludeIds);
         setSearchResults(results || []);
       } catch (error) {
@@ -41,7 +44,7 @@ export function PlayersSection({ seasonId, players, onAddPlayer, onRemovePlayer 
     };
 
     doSearch();
-  }, [debouncedQuery, players]);
+  }, [debouncedQuery, excludeIdsString]);
 
   // Handle player selection
   const handleSelectPlayer = async (player) => {

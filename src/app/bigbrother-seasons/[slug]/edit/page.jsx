@@ -30,8 +30,8 @@ export default async function SeasonEditPage({ params }) {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <SeasonEditForm season={season} players={players} />
+    <main className="min-h-screen bg-slate-200 dark:bg-gray-900">
+      <SeasonEditForm season={season} players={players} slug={slug} />
     </main>
   );
 }

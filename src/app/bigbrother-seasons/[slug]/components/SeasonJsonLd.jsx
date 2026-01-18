@@ -11,7 +11,7 @@ export function SeasonJsonLd({ season, siteUrl }) {
     numberOfEpisodes: season.total_days || undefined,
     startDate: season.start_date || undefined,
     endDate: season.end_date || undefined,
-    url: `${siteUrl}/seasons/${season.slug}`,
+    url: `${siteUrl}/bigbrother-seasons/${season.slug}`,
     partOfSeries: {
       "@type": "TVSeries",
       name: "Big Brother",

@@ -121,8 +121,17 @@ export function PlayerCard({ player, showStats = true, size = "default" }) {
 
   // Wrap in Link if permalink exists
   if (player.permalink) {
+    // Convert full URL to local path
+    let href = player.permalink;
+    try {
+      const url = new URL(player.permalink);
+      href = url.pathname;
+    } catch {
+      // Already a path, use as-is
+    }
+
     return (
-      <Link href={player.permalink} className="block">
+      <Link href={href} className="block">
         {cardContent}
       </Link>
     );

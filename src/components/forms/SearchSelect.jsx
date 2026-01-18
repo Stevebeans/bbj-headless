@@ -4,37 +4,55 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 /**
- * Searchable select component with async search
- * Used for player selection with image previews
+ * Searchable select component
+ * Supports two modes:
+ * 1. Pre-fetched options mode: Pass `options` array and `onSelect` callback
+ * 2. Async search mode: Pass `onSearch` function
  */
 export function SearchSelect({
   label,
   value,
   onChange,
-  onSearch,
+  options,        // Pre-fetched options array
+  onSelect,       // Callback when option selected (for pre-fetched mode)
+  onSearch,       // Async search function (for search mode)
   exclude = [],
   error,
   placeholder = "Search...",
+  isLoading = false,
+  emptyText = "No results found",
   debounceMs = 300,
   minChars = 2,
 }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const [query, setQuery] = useState(value || "");
+  const [asyncResults, setAsyncResults] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const containerRef = useRef(null);
   const timeoutRef = useRef(null);
 
-  // Debounced search
+  // Sync query with controlled value
   useEffect(() => {
-    if (query.length < minChars) {
-      setResults([]);
+    if (value !== undefined && value !== query) {
+      setQuery(value);
+    }
+  }, [value]);
+
+  // Async search mode - debounced search (only runs if onSearch is provided)
+  useEffect(() => {
+    // Skip entirely if using pre-fetched options mode
+    if (!onSearch) {
       return;
     }
 
-    setIsLoading(true);
+    if (query.length < minChars) {
+      setAsyncResults([]);
+      setIsSearching(false);
+      return;
+    }
 
-    // Clear previous timeout
+    setIsSearching(true);
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -42,12 +60,12 @@ export function SearchSelect({
     timeoutRef.current = setTimeout(async () => {
       try {
         const searchResults = await onSearch(query, exclude);
-        setResults(searchResults);
+        setAsyncResults(searchResults);
       } catch (error) {
         console.error("Search failed:", error);
-        setResults([]);
+        setAsyncResults([]);
       } finally {
-        setIsLoading(false);
+        setIsSearching(false);
       }
     }, debounceMs);
 
@@ -56,7 +74,7 @@ export function SearchSelect({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [query, exclude, onSearch, debounceMs, minChars]);
+  }, [query, onSearch, debounceMs, minChars]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -70,11 +88,28 @@ export function SearchSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Determine which results to display
+  const displayResults = options || asyncResults;
+  const showLoading = isLoading || isSearching;
+
   const handleSelect = (item) => {
-    onChange(item);
+    if (onSelect) {
+      onSelect(item);
+    } else if (onChange) {
+      onChange(item);
+    }
     setQuery("");
     setIsOpen(false);
-    setResults([]);
+    setAsyncResults([]);
+  };
+
+  const handleInputChange = (e) => {
+    const newValue = e.target.value;
+    setQuery(newValue);
+    setIsOpen(true);
+    if (onChange) {
+      onChange(e);
+    }
   };
 
   return (
@@ -89,10 +124,7 @@ export function SearchSelect({
         <input
           type="text"
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setIsOpen(true);
-          }}
+          onChange={handleInputChange}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
           className={`
@@ -109,12 +141,8 @@ export function SearchSelect({
 
         {/* Search icon or loading spinner */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-          {isLoading ? (
-            <svg
-              className="w-5 h-5 animate-spin"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
+          {showLoading ? (
+            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle
                 className="opacity-25"
                 cx="12"
@@ -143,11 +171,11 @@ export function SearchSelect({
       </div>
 
       {/* Results dropdown */}
-      {isOpen && results.length > 0 && (
+      {isOpen && displayResults.length > 0 && (
         <div className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-auto">
-          {results.map((item) => (
+          {displayResults.map((item) => (
             <button
-              key={item.id}
+              key={item.id || item.value}
               type="button"
               onClick={() => handleSelect(item)}
               className="w-full px-4 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors"
@@ -155,19 +183,19 @@ export function SearchSelect({
               {item.image ? (
                 <Image
                   src={item.image}
-                  alt={item.name}
+                  alt={item.name || item.label}
                   width={32}
                   height={32}
                   className="w-8 h-8 rounded-full object-cover"
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-sm font-medium text-gray-500">
-                  {item.name?.charAt(0) || "?"}
+                  {(item.name || item.label)?.charAt(0) || "?"}
                 </div>
               )}
               <div>
                 <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  {item.name}
+                  {item.name || item.label}
                 </div>
                 {item.nickname && (
                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -180,10 +208,10 @@ export function SearchSelect({
         </div>
       )}
 
-      {/* No results message */}
-      {isOpen && query.length >= minChars && !isLoading && results.length === 0 && (
+      {/* Empty state message */}
+      {isOpen && query.length >= minChars && !showLoading && displayResults.length === 0 && (
         <div className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-          No results found
+          {emptyText}
         </div>
       )}
 

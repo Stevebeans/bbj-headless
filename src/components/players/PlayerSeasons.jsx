@@ -14,14 +14,20 @@ export function PlayerSeasons({ seasons, className = "" }) {
       key: "season_name",
       header: "Season",
       align: "left",
-      render: (value, row) => (
-        <Link
-          href={`/seasons/${row.season_slug || row.season_id}`}
-          className="hover:underline text-accent-red visited:text-accent-red font-medium"
-        >
-          {value || row.season_abbr || `Season ${row.season_id}`}
-        </Link>
-      ),
+      render: (value, row) => {
+        // Extract slug from permalink as fallback (e.g., /bigbrother-seasons/big-brother-27/)
+        const slug = row.season_slug ||
+          row.season_permalink?.split('/').filter(Boolean).pop() ||
+          row.season_id;
+        return (
+          <Link
+            href={`/bigbrother-seasons/${slug}`}
+            className="hover:underline text-accent-red visited:text-accent-red font-medium"
+          >
+            {value || row.season_abbr || `Season ${row.season_id}`}
+          </Link>
+        );
+      },
     },
     {
       key: "age_during",

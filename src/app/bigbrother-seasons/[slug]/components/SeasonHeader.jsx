@@ -1,11 +1,14 @@
 import Image from "next/image";
+import { AdminEditButton } from "./AdminEditButton";
 
 /**
  * Season header with banner image, name, and status chips
  */
-export function SeasonHeader({ season, playerCount }) {
+export function SeasonHeader({ season, playerCount, slug }) {
   // Calculate player counts
   const activeCount = playerCount || 0;
+  // Use provided slug or fall back to season.slug
+  const seasonSlug = slug || season.slug;
 
   return (
     <div className="v2-primary-container-inner rounded-lg overflow-hidden">
@@ -25,9 +28,12 @@ export function SeasonHeader({ season, playerCount }) {
 
       {/* Header Content */}
       <div className={`bg-primary-500 p-4 ${!season.banner_image ? "rounded-t-lg" : ""}`}>
-        <h1 className="text-2xl md:text-4xl font-display text-white">
-          {season.name} - Season Hub
-        </h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-2xl md:text-4xl font-display text-white">
+            {season.name} - Season Hub
+          </h1>
+          <AdminEditButton slug={seasonSlug} />
+        </div>
 
         {/* Status Chips */}
         <div className="flex mt-3 flex-wrap gap-2">
