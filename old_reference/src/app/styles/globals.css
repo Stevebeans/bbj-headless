@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+  body {
+    @apply bg-slate-800 text-slate-100;
+  }
+}
+
+/* Base layer styles */
+@layer base {
+  body {
+    @apply bg-slate-200 text-slate-900;
+  }
+
+  a {
+    @apply text-primary500 hover:text-primary600;
+  }
+}
+
+/* Custom utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+input[type="text"] {
+  @apply border rounded-md;
+}
+
+.spinner-border {
+  border-top-color: #3498db; /* Customize the color as needed */
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+}
+
+h1 {
+  @apply text-4xl;
+}
+
+.btn {
+  @apply px-2 py-1 rounded-md bg-primary500  text-white w-fit hover:bg-primary600 hover:text-secondary400 hover:shadow-md flex items-center justify-center;
+}
+
+.btn-off {
+  @apply px-2 py-1 rounded-md bg-secondary500 text-white w-fit hover:bg-gray-600 hover:text-secondary400 hover:shadow-md flex items-center justify-center;
+}
+
+.btn-cancel {
+  @apply px-2 py-1 rounded-md bg-red-500 text-white w-fit hover:bg-red-600 hover:text-secondary400 hover:shadow-md flex items-center justify-center;
+}
+
+/* INPUT STLYES */
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  @apply border rounded-md border-primary600 bg-slate-100 p-1;
+}
+
+.comment-reply {
+  @apply p-1 w-full;
+}
+
+.comment-reply:focus {
+  @apply border-0 outline-none;
+}
+
+/* Specific Elements */
+
+.main-post-card p {
+  @apply text-sm my-2;
+}
+
+.nav-button {
+  @apply m-2 px-2 py-1 rounded-md;
+}
+
+.mobile-nav-button {
+  @apply m-2 px-2 py-1 rounded-md;
+}
+
+.nav-button .active {
+  @apply border-b-2 border-primary500 pb-2;
+}
+
+.mobile-nav-button .active {
+  @apply border-l-4 border-primary500 pl-2 font-bold;
+}
+
+nav a:hover {
+  @apply text-primary400;
+}
+
+nav a {
+  @apply text-primary500;
+}
+
+.badge {
+  @apply ml-2 border py-0.5 px-1 rounded-md h-fit;
+}
+
+.container {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: 96rem; /* 6xl is 96rem */
+  transform: translateY(0);
+  justify-content: center;
+  background-color: #ffffff; /* white */
+  padding: 0.25rem; /* p-1 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* shadow-md */
+  display: grid;
+  grid-template-columns: repeat(8, 1fr); /* grid-cols-8 */
+  gap: 0.25rem; /* gap-1 */
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 0.5rem; /* md:p-2 */
+    gap: 0.5rem; /* md:gap-2 */
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    grid-template-columns: repeat(16, 1fr); /* lg:grid-cols-16 */
+  }
+}
+
+.winner img,
+.hoh img {
+  @apply border-2 border-green-600;
+}
+.winner h4,
+.hoh h4 {
+  @apply text-green-600 font-semibold;
+}
+
+.second h4,
+.pov h4 {
+  @apply text-cyan-600;
+}
+
+.second img,
+.pov img {
+  @apply border-2 border-sky-400  dark:opacity-60;
+}
+
+.afp img {
+  @apply border-2 border-rose-400  dark:opacity-60;
+}
+
+.afp h4 {
+  @apply text-rose-500;
+}
+
+.nom img {
+  @apply border-2 border-amber-400  dark:opacity-60;
+}
+
+.nom h4 {
+  @apply text-amber-500;
+}
+
+.jury img {
+  @apply border-2 border-purple-400  opacity-40 dark:grayscale;
+}
+
+.jury h4 {
+  @apply text-purple-600;
+}
+
+.evic img {
+  @apply border border-gray-400 opacity-50 grayscale;
+}
+
+.evic h4 {
+  @apply text-gray-400;
+}

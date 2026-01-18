@@ -20,6 +20,7 @@ class CommentSchema
     public const TABLE_USER_STATS = 'bbj_user_stats';
     public const TABLE_FOLLOWS = 'bbj_user_follows';
     public const TABLE_PINNED = 'bbj_pinned_comments';
+    public const TABLE_AVATARS = 'bbj_user_avatars';
 
     /**
      * Get full table name with prefix
@@ -281,6 +282,26 @@ class CommentSchema
     }
 
     /**
+     * Get the user avatars table schema
+     * Stores user avatars with consistent sizing and WebP format
+     */
+    public static function getAvatarsTableSchema(): string
+    {
+        $table = self::table(self::TABLE_AVATARS);
+        $charset = self::getCharset();
+
+        return "CREATE TABLE {$table} (
+            user_id BIGINT(20) UNSIGNED NOT NULL,
+            file_path VARCHAR(255) NOT NULL,
+            file_url VARCHAR(500) NOT NULL,
+            original_filename VARCHAR(255) DEFAULT NULL,
+            file_size INT(11) UNSIGNED NOT NULL,
+            uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id)
+        ) {$charset};";
+    }
+
+    /**
      * Get all table schemas
      */
     public static function getAllSchemas(): array
@@ -296,6 +317,7 @@ class CommentSchema
             self::TABLE_USER_STATS => self::getUserStatsTableSchema(),
             self::TABLE_FOLLOWS => self::getFollowsTableSchema(),
             self::TABLE_PINNED => self::getPinnedTableSchema(),
+            self::TABLE_AVATARS => self::getAvatarsTableSchema(),
         ];
     }
 
@@ -312,6 +334,7 @@ class CommentSchema
             self::TABLE_USER_STATS => self::getUserStatsTableSchema(),
             self::TABLE_FOLLOWS => self::getFollowsTableSchema(),
             self::TABLE_PINNED => self::getPinnedTableSchema(),
+            self::TABLE_AVATARS => self::getAvatarsTableSchema(),
         ];
     }
 

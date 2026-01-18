@@ -26,6 +26,8 @@ use BigBrotherJunkies\Data\Auth\AuthManager;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
 use BigBrotherJunkies\Data\Comments\MediaRoutes;
+use BigBrotherJunkies\Data\Api\AvatarRoutes;
+use BigBrotherJunkies\Data\Comments\AvatarUploader;
 
 /**
  * Main plugin class
@@ -82,6 +84,9 @@ class Plugin
 
         // Initialize REST API routes
         $this->initApiRoutes();
+
+        // Initialize avatar system hooks
+        $this->initAvatarHooks();
 
         // Load admin functionality
         if (is_admin()) {
@@ -162,6 +167,57 @@ class Plugin
     }
 
     /**
+     * Initialize avatar system hooks
+     * Hooks into WordPress get_avatar_url to use BBJ avatar table first
+     */
+    private function initAvatarHooks(): void
+    {
+        add_filter('get_avatar_url', function ($url, $id_or_email, $args) {
+            // Prevent infinite recursion
+            static $processing = [];
+
+            // Get user ID from various input types
+            $userId = 0;
+            if (is_numeric($id_or_email)) {
+                $userId = (int) $id_or_email;
+            } elseif (is_string($id_or_email)) {
+                $user = get_user_by('email', $id_or_email);
+                if ($user) {
+                    $userId = $user->ID;
+                }
+            } elseif ($id_or_email instanceof \WP_User) {
+                $userId = $id_or_email->ID;
+            } elseif ($id_or_email instanceof \WP_Post) {
+                $userId = (int) $id_or_email->post_author;
+            } elseif ($id_or_email instanceof \WP_Comment) {
+                $userId = (int) $id_or_email->user_id;
+            }
+
+            // Skip if no user ID or already processing this user (recursion guard)
+            if ($userId <= 0 || isset($processing[$userId])) {
+                return $url;
+            }
+
+            // Check for custom avatar (single query that returns URL or null)
+            global $wpdb;
+            $table = \BigBrotherJunkies\Data\Comments\CommentSchema::table(
+                \BigBrotherJunkies\Data\Comments\CommentSchema::TABLE_AVATARS
+            );
+
+            $customAvatarUrl = $wpdb->get_var($wpdb->prepare(
+                "SELECT file_url FROM {$table} WHERE user_id = %d",
+                $userId
+            ));
+
+            if ($customAvatarUrl) {
+                return $customAvatarUrl;
+            }
+
+            return $url;
+        }, 10, 3);
+    }
+
+    /**
      * Initialize the Auth Manager
      */
     private function initAuth(): void
@@ -213,6 +269,10 @@ class Plugin
         // Comment media routes (uploads, giphy)
         $mediaRoutes = new MediaRoutes();
         $mediaRoutes->register();
+
+        // Avatar routes (upload, get, delete)
+        $avatarRoutes = new AvatarRoutes();
+        $avatarRoutes->register();
     }
 
     /**
