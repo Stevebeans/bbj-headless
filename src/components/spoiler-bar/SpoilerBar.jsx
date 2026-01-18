@@ -153,9 +153,20 @@ function PlayerCard({ player }) {
   );
 
   // Wrap in link if permalink exists
+  // Convert full URL to local path (e.g., https://bigbrotherjunkies.com/bigbrother-players/name/ -> /players/name/)
   if (player.permalink) {
+    let href = player.permalink;
+    try {
+      const url = new URL(player.permalink);
+      href = url.pathname;
+    } catch {
+      // If it's already a path, use as-is
+    }
+    // Map WordPress post type path to Next.js route
+    href = href.replace(/^\/bigbrother-players\//, "/players/");
+
     return (
-      <Link href={player.permalink} title={player.name}>
+      <Link href={href} title={player.name}>
         {cardContent}
       </Link>
     );

@@ -94,3 +94,55 @@ export async function getSeasonPlayers(seasonId, options = {}) {
     return { season: null, players: [], count: 0 };
   }
 }
+
+/**
+ * Get single player profile by slug
+ * Returns full player data with stats, seasons, and related content
+ *
+ * @param {string} slug - Player slug
+ * @returns {Promise<Object|null>} { player, related_posts, related_players } or null
+ */
+export async function getPlayerBySlug(slug) {
+  try {
+    const response = await bbjdFetch(`/players/${slug}`, {
+      tags: ["players", `player-${slug}`],
+    });
+
+    if (!response.success) {
+      console.warn(`Player ${slug} fetch unsuccessful:`, response.message);
+      return null;
+    }
+
+    return {
+      player: response.player,
+      related_posts: response.related_posts || [],
+      related_players: response.related_players || [],
+    };
+  } catch (error) {
+    console.error(`Failed to fetch player ${slug}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get all player slugs for static generation
+ *
+ * @returns {Promise<string[]>} Array of player slugs
+ */
+export async function getAllPlayerSlugs() {
+  try {
+    const response = await bbjdFetch("/players?fields=slug&per_page=500", {
+      tags: ["players"],
+    });
+
+    if (!response.success) {
+      console.warn("Player slugs fetch unsuccessful:", response.message);
+      return [];
+    }
+
+    return response.players?.map((p) => p.slug) || [];
+  } catch (error) {
+    console.error("Failed to fetch player slugs:", error);
+    return [];
+  }
+}
