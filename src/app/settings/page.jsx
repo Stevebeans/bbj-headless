@@ -137,7 +137,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-gray-950 py-8">
+    <main className="min-h-screen bg-slate-200 dark:bg-gray-950 py-8">
       <div className="max-w-screen-xl mx-auto px-4">
         {/* Toast notification */}
         {toast && (
