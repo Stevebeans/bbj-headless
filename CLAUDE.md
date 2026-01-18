@@ -33,6 +33,15 @@ SELECT * FROM ca_db.wp_posts;
 This build will be taking a lot of data from my wordpress theme at `C:\xampp\htdocs\bbj\wp-content\themes\BBJ` and likely a lot of data from both plugins at:
 `C:\xampp\htdocs\bbj\wp-content\plugins\bbj-tools` and `C:\xampp\htdocs\bbj\wp-content\plugins\bbj-v2`. Anything NEW that is created in PHP data (APIs, etc) I want to be placed in the latest plugin: `C:\xampp\htdocs\bbj\wp-content\plugins\bigbrotherjunkies-data` as I would like to just upload -data to my server and use that for all the NEXT.js calls
 
+### IMPORTANT: Plugin Edit Location
+
+**ALWAYS edit the WordPress plugin directly at:**
+```
+C:\xampp\htdocs\bbj\wp-content\plugins\bigbrotherjunkies-data\
+```
+
+**DO NOT use** `C:\xampp\htdocs\bbj-app\wp-plugin\` - this folder is deprecated and not used by WordPress. The symlink has been removed.
+
 ## Working Style
 
 - **Ask questions and make suggestions** - Proactively ask clarifying questions and suggest improvements or alternatives

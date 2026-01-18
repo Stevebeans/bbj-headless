@@ -306,8 +306,13 @@ class PlayerRoutes
             // Get current status
             $status = $this->getPlayerStatus($season);
 
+            // Get season slug from post
+            $seasonPost = get_post($seasonId);
+            $seasonSlug = $seasonPost ? $seasonPost->post_name : null;
+
             $formatted[] = [
                 'season_id' => $seasonId,
+                'season_slug' => $seasonSlug,
                 'season_name' => $seasonName,
                 'season_abbr' => $seasonAbbr,
                 'season_permalink' => get_permalink($seasonId),

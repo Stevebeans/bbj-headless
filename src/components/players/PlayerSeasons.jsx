@@ -16,7 +16,7 @@ export function PlayerSeasons({ seasons, className = "" }) {
       align: "left",
       render: (value, row) => (
         <Link
-          href={row.season_permalink || `/seasons/${row.season_id}`}
+          href={`/seasons/${row.season_slug || row.season_id}`}
           className="hover:underline text-accent-red visited:text-accent-red font-medium"
         >
           {value || row.season_abbr || `Season ${row.season_id}`}
