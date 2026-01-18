@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ThemeToggle } from "./ThemeToggle";
 import { MobileMenuWrapper } from "./MobileMenu";
 import { SearchBar, MobileSearchButton } from "../search/SearchBar";
 import { MobileSearchModal } from "../search/MobileSearchModal";
@@ -104,8 +103,6 @@ export function Header() {
             <div className="flex items-center gap-2">
               {/* Mobile search button */}
               <MobileSearchButton onClick={() => setIsMobileSearchOpen(true)} />
-
-              <ThemeToggle />
 
               {isAuthenticated ? (
                 <div className="flex items-center gap-2">
