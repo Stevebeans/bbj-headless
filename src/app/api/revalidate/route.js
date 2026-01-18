@@ -79,6 +79,18 @@ export async function POST(request) {
         revalidatePath("/players");
         break;
 
+      case "season":
+        revalidateTag("seasons");
+        if (slug) {
+          revalidatePath(`/seasons/${slug}`);
+          revalidatePath(`/seasons/${slug}/edit`);
+          revalidateTag(`season-${slug}`);
+        }
+        revalidatePath("/seasons");
+        // Also revalidate spoiler bar since it depends on season data
+        revalidateTag("spoiler-bar");
+        break;
+
       case "all":
         revalidatePath("/", "layout");
         break;

@@ -4,6 +4,7 @@ namespace BigBrotherJunkies\Data\Api;
 
 use BigBrotherJunkies\Data\Auth\GoogleOAuth;
 use BigBrotherJunkies\Data\Auth\Integrations\MailPoetSubscriber;
+use BigBrotherJunkies\Data\Comments\AvatarUploader;
 use BigBrotherJunkies\Data\Comments\RankCalculator;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -232,7 +233,7 @@ class AuthRoutes
                 'email' => $user->user_email,
                 'username' => $user->user_login,
                 'display_name' => $user->display_name,
-                'avatar' => get_avatar_url($user->ID),
+                'avatar' => AvatarUploader::getAvatarUrl($user->ID),
             ],
             'is_new_user' => false,
             'account_linked' => $accountLinked,
@@ -384,7 +385,7 @@ class AuthRoutes
                     'email' => $user->user_email,
                     'username' => $user->user_login,
                     'display_name' => $user->display_name,
-                    'avatar' => get_avatar_url($user->ID),
+                    'avatar' => AvatarUploader::getAvatarUrl($user->ID),
                 ],
                 'requires_verification' => true,
             ], 201);
@@ -399,7 +400,7 @@ class AuthRoutes
                 'email' => $user->user_email,
                 'username' => $user->user_login,
                 'display_name' => $user->display_name,
-                'avatar' => get_avatar_url($user->ID),
+                'avatar' => AvatarUploader::getAvatarUrl($user->ID),
             ],
             'requires_verification' => true,
         ], 201);
@@ -701,7 +702,7 @@ class AuthRoutes
                 'email' => $user->user_email,
                 'username' => $user->user_login,
                 'display_name' => $user->display_name,
-                'avatar' => get_avatar_url($user->ID),
+                'avatar' => AvatarUploader::getAvatarUrl($user->ID),
             ],
         ], 200);
     }
@@ -778,7 +779,7 @@ class AuthRoutes
                 'email' => $user->user_email,
                 'username' => $user->user_login,
                 'display_name' => $user->display_name,
-                'avatar' => get_avatar_url($user->ID),
+                'avatar' => AvatarUploader::getAvatarUrl($user->ID),
             ],
             'is_new_user' => true,
         ], 201);
@@ -846,7 +847,7 @@ class AuthRoutes
                 'user_email' => $user->user_email,
                 'user_login' => $user->user_login,
                 'user_display_name' => $user->display_name,
-                'user_avatar' => get_avatar_url($user->ID, ['size' => 96]),
+                'user_avatar' => AvatarUploader::getAvatarUrl($user->ID, 96),
                 'user_roles' => $user->roles,
                 'rank' => $rank ? [
                     'key' => $rank['key'],

@@ -2,6 +2,7 @@
 
 namespace BigBrotherJunkies\Data\Api;
 
+use BigBrotherJunkies\Data\Comments\AvatarUploader;
 use BigBrotherJunkies\Data\Comments\CommentSchema;
 use BigBrotherJunkies\Data\Comments\RankCalculator;
 use BigBrotherJunkies\Data\Comments\MediaUploader;
@@ -321,7 +322,7 @@ class CommentRoutes
 
         if ($userId > 0) {
             $rank = RankCalculator::calculateRank($userId);
-            $avatar = get_avatar_url($userId, ['size' => 64]);
+            $avatar = AvatarUploader::getAvatarUrl($userId, 64);
 
             // Check online status
             $sessionsTable = CommentSchema::table(CommentSchema::TABLE_SESSIONS);
@@ -787,7 +788,7 @@ class CommentRoutes
                 'author' => [
                     'id' => $userId,
                     'name' => $user->display_name,
-                    'avatar' => get_avatar_url($userId, ['size' => 64]),
+                    'avatar' => AvatarUploader::getAvatarUrl($userId, 64),
                     'is_online' => true, // User posting is obviously online
                     'rank' => [
                         'key' => $rank['key'],

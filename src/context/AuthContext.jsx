@@ -18,7 +18,12 @@ export function AuthProvider({ children }) {
       if (token) {
         try {
           const userData = await validateToken(token);
-          setUser({ ...userData, token });
+          setUser({
+            ...userData,
+            token,
+            // Normalize avatar property name
+            avatar: userData.user_avatar || userData.avatar,
+          });
         } catch (err) {
           // Token is invalid, clear it
           localStorage.removeItem("bbj_token");
@@ -227,6 +232,25 @@ export function AuthProvider({ children }) {
     setError(null);
   }, []);
 
+  // Refresh user data (call after profile/avatar updates)
+  const refreshUser = useCallback(async () => {
+    const token = localStorage.getItem("bbj_token");
+    if (!token) return;
+
+    try {
+      const userData = await validateToken(token);
+      setUser((prev) => ({
+        ...prev,
+        ...userData,
+        token,
+        // Normalize avatar property name
+        avatar: userData.user_avatar || userData.avatar,
+      }));
+    } catch (err) {
+      console.error("Failed to refresh user:", err);
+    }
+  }, []);
+
   // Set user from registration/external auth response
   const setUserFromResponse = useCallback((data) => {
     if (data.token) {
@@ -278,6 +302,7 @@ export function AuthProvider({ children }) {
     linkGoogleAccount,
     createFromGoogle,
     logout,
+    refreshUser,
     setUserFromResponse,
     getAuthHeader,
     hasRole,

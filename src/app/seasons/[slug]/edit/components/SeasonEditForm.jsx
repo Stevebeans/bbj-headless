@@ -1,0 +1,171 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { AdminGuard, SaveBar } from "@/components/admin";
+import { useFormState } from "@/hooks";
+import { useAuth } from "@/context/AuthContext";
+import { updateSeason, addPlayerToSeason, removePlayerFromSeason, searchPlayers } from "@/lib/api/seasons";
+import { BasicInfoSection } from "./BasicInfoSection";
+import { DatesSection } from "./DatesSection";
+import { ImagesSection } from "./ImagesSection";
+import { WinnersSection } from "./WinnersSection";
+import { PlayersSection } from "./PlayersSection";
+
+/**
+ * Season edit form with all sections
+ */
+export function SeasonEditForm({ season, players: initialPlayers }) {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [players, setPlayers] = useState(initialPlayers || []);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Form initial values
+  const initialValues = {
+    name: season.name || "",
+    season_number: season.season_number || "",
+    abbreviation: season.abbreviation || "",
+    start_date: season.start_date || "",
+    end_date: season.end_date || "",
+    total_days: season.total_days || "",
+    banner_image: season.banner_image || "",
+    cover_image: season.cover_image || "",
+    winner_id: season.winner_id || "",
+    runner_up_id: season.runner_up_id || "",
+    afp_id: season.afp_id || "",
+    status: season.status || "upcoming",
+  };
+
+  // Validation
+  const validate = useCallback((values) => {
+    const errors = {};
+    if (!values.name?.trim()) errors.name = "Season name is required";
+    if (!values.season_number) errors.season_number = "Season number is required";
+    return errors;
+  }, []);
+
+  // Submit handler
+  const handleFormSubmit = useCallback(async (values) => {
+    const result = await updateSeason(season.id, values, user?.token);
+    if (result.success) {
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+      router.refresh();
+    }
+    return result;
+  }, [season.id, user?.token, router]);
+
+  const {
+    values,
+    errors,
+    isDirty,
+    isSubmitting,
+    submitError,
+    setValue,
+    handleChange,
+    handleBlur,
+    reset,
+    handleSubmit,
+    getFieldProps,
+  } = useFormState(initialValues, {
+    validate,
+    onSubmit: handleFormSubmit,
+  });
+
+  // Player management handlers
+  const handleAddPlayer = useCallback(async (player) => {
+    const result = await addPlayerToSeason(season.id, player.id, user?.token);
+    if (result.success) {
+      setPlayers((prev) => [...prev, player]);
+    }
+    return result;
+  }, [season.id, user?.token]);
+
+  const handleRemovePlayer = useCallback(async (playerId) => {
+    const result = await removePlayerFromSeason(season.id, playerId, user?.token);
+    if (result.success) {
+      setPlayers((prev) => prev.filter((p) => p.id !== playerId));
+    }
+    return result;
+  }, [season.id, user?.token]);
+
+  return (
+    <AdminGuard>
+      <div className="max-w-4xl mx-auto px-4 py-8 pb-24">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+            <Link href={`/seasons/${season.slug}`} className="hover:text-primary-500">
+              {season.name}
+            </Link>
+            <span>/</span>
+            <span>Edit</span>
+          </div>
+          <h1 className="text-3xl font-display text-gray-900 dark:text-white">
+            Edit {season.name}
+          </h1>
+        </div>
+
+        {/* Success message */}
+        {saveSuccess && (
+          <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3">
+            <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-green-800 dark:text-green-200">Season saved successfully!</span>
+          </div>
+        )}
+
+        {/* Form sections */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <BasicInfoSection
+            values={values}
+            errors={errors}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            getFieldProps={getFieldProps}
+          />
+
+          <DatesSection
+            values={values}
+            errors={errors}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            getFieldProps={getFieldProps}
+          />
+
+          <ImagesSection
+            values={values}
+            errors={errors}
+            setValue={setValue}
+          />
+
+          <WinnersSection
+            values={values}
+            errors={errors}
+            setValue={setValue}
+            players={players}
+          />
+
+          <PlayersSection
+            seasonId={season.id}
+            players={players}
+            onAddPlayer={handleAddPlayer}
+            onRemovePlayer={handleRemovePlayer}
+          />
+        </form>
+
+        {/* Save bar */}
+        <SaveBar
+          isDirty={isDirty}
+          isSubmitting={isSubmitting}
+          onSave={handleSubmit}
+          onCancel={() => reset()}
+          error={submitError}
+        />
+      </div>
+    </AdminGuard>
+  );
+}

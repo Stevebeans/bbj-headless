@@ -22,11 +22,14 @@ use BigBrotherJunkies\Data\Api\SessionRoutes;
 use BigBrotherJunkies\Data\Api\UserProfileRoutes;
 use BigBrotherJunkies\Data\Api\AdminRoutes;
 use BigBrotherJunkies\Data\Api\AuthRoutes;
+use BigBrotherJunkies\Data\Api\PlayerRoutes;
+use BigBrotherJunkies\Data\Api\SeasonRoutes;
 use BigBrotherJunkies\Data\Auth\AuthManager;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
 use BigBrotherJunkies\Data\Comments\MediaRoutes;
 use BigBrotherJunkies\Data\Api\AvatarRoutes;
+use BigBrotherJunkies\Data\Api\SettingsRoutes;
 use BigBrotherJunkies\Data\Comments\AvatarUploader;
 
 /**
@@ -198,23 +201,57 @@ class Plugin
                 return $url;
             }
 
-            // Check for custom avatar (single query that returns URL or null)
+            // Check for custom avatar (get URL and timestamp for cache-busting)
             global $wpdb;
             $table = \BigBrotherJunkies\Data\Comments\CommentSchema::table(
                 \BigBrotherJunkies\Data\Comments\CommentSchema::TABLE_AVATARS
             );
 
-            $customAvatarUrl = $wpdb->get_var($wpdb->prepare(
-                "SELECT file_url FROM {$table} WHERE user_id = %d",
+            $avatar = $wpdb->get_row($wpdb->prepare(
+                "SELECT file_url, uploaded_at FROM {$table} WHERE user_id = %d",
                 $userId
             ));
 
-            if ($customAvatarUrl) {
-                return $customAvatarUrl;
+            if ($avatar && $avatar->file_url) {
+                // Add cache-buster timestamp to force browsers to reload new avatars
+                $timestamp = strtotime($avatar->uploaded_at);
+                return $avatar->file_url . '?v=' . $timestamp;
             }
 
             return $url;
-        }, 10, 3);
+        }, 999, 3); // High priority to override other avatar plugins
+
+        // Also filter REST API user responses (for embedded post authors)
+        add_filter('rest_prepare_user', function ($response, $user, $request) {
+            $userId = $user->ID;
+
+            // Get custom avatar URL
+            global $wpdb;
+            $table = \BigBrotherJunkies\Data\Comments\CommentSchema::table(
+                \BigBrotherJunkies\Data\Comments\CommentSchema::TABLE_AVATARS
+            );
+
+            $avatar = $wpdb->get_row($wpdb->prepare(
+                "SELECT file_url, uploaded_at FROM {$table} WHERE user_id = %d",
+                $userId
+            ));
+
+            if ($avatar && $avatar->file_url) {
+                $timestamp = strtotime($avatar->uploaded_at);
+                $avatarUrl = $avatar->file_url . '?v=' . $timestamp;
+
+                // Replace all avatar_urls sizes with our custom avatar
+                $data = $response->get_data();
+                if (isset($data['avatar_urls'])) {
+                    foreach ($data['avatar_urls'] as $size => $url) {
+                        $data['avatar_urls'][$size] = $avatarUrl;
+                    }
+                    $response->set_data($data);
+                }
+            }
+
+            return $response;
+        }, 999, 3);
     }
 
     /**
@@ -273,6 +310,18 @@ class Plugin
         // Avatar routes (upload, get, delete)
         $avatarRoutes = new AvatarRoutes();
         $avatarRoutes->register();
+
+        // Settings routes (user profile, notifications, email, help)
+        $settingsRoutes = new SettingsRoutes();
+        $settingsRoutes->register();
+
+        // Player profile routes (single player, all players)
+        $playerRoutes = new PlayerRoutes();
+        $playerRoutes->init();
+
+        // Season routes (list, single, edit)
+        $seasonRoutes = new SeasonRoutes();
+        $seasonRoutes->init();
     }
 
     /**

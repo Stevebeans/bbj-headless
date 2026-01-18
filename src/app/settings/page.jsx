@@ -1,15 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import {
+  getSettings,
+  updateSettings,
+  updateNotifications,
+  uploadAvatar,
+  deleteAvatar,
+  verifyEmailChange,
+} from "@/lib/api/settings";
+import PlayerSearchDropdown from "@/components/settings/PlayerSearchDropdown";
+import EmailChangeModal from "@/components/settings/EmailChangeModal";
+import HelpTab from "@/components/settings/HelpTab";
+import RankBadge from "@/components/comments/RankBadge";
 
 const TABS = [
   { id: "profile", label: "User Settings", icon: UserIcon },
   { id: "notifications", label: "Notifications", icon: BellIcon },
   { id: "premium", label: "Premium", icon: StarIcon },
+  { id: "help", label: "Help", icon: HelpIcon },
 ];
 
 function UserIcon({ className }) {
@@ -36,61 +49,82 @@ function StarIcon({ className }) {
   );
 }
 
+function HelpIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, isAuthenticated, loading } = useAuth();
+  const searchParams = useSearchParams();
+  const { user, isAuthenticated, loading: authLoading, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
-  const [userData, setUserData] = useState(null);
-  const [loadingData, setLoadingData] = useState(true);
+  const [settings, setSettings] = useState(null);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [toast, setToast] = useState(null);
+
+  // Handle email verification from URL
+  useEffect(() => {
+    const action = searchParams.get("action");
+    const token = searchParams.get("token");
+
+    if (action === "verify_email" && token) {
+      (async () => {
+        try {
+          const result = await verifyEmailChange(token);
+          if (result.success) {
+            setToast({ message: "Email updated successfully!", type: "success" });
+            // Reload settings to get new email
+            const settingsResult = await getSettings();
+            if (settingsResult.success) {
+              setSettings(settingsResult.settings);
+            }
+          }
+        } catch (err) {
+          setToast({ message: err.message, type: "error" });
+        }
+        // Clean up URL
+        router.replace("/settings", { scroll: false });
+      })();
+    }
+  }, [searchParams, router]);
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       router.push("/");
     }
-  }, [loading, isAuthenticated, router]);
+  }, [authLoading, isAuthenticated, router]);
 
-  // For now, use existing user data from auth context
-  // TODO: Create /bbjd/v1/user/settings endpoint to fetch full profile data
+  // Load settings
   useEffect(() => {
-    if (isAuthenticated && user) {
-      // Map auth context data to userData format
-      setUserData({
-        id: user.user_id || user.id,
-        username: user.user_nicename,
-        email: user.user_email || user.email,
-        display_name: user.user_display_name || user.display_name,
-        avatar: user.avatar,
-        first_name: "",
-        last_name: "",
-        nickname: user.user_nicename,
-        description: "",
-        registered_date: null,
-        registered_via: user.avatar?.includes("googleusercontent") ? "google" : "email",
-        email_verified: true,
-        is_supporter: user.user_roles?.includes("supporter") || false,
-        roles: user.user_roles || [],
-        stats: {
-          total_comments: 0,
-          total_likes: 0,
-          total_dislikes: 0,
-          total_votes: 0,
-          user_rank: "Member",
-          special_rank: null,
-        },
-        notifications: {
-          new_reply: true,
-          new_mention: true,
-          new_message: true,
-          feed_updates: false,
-          newsletter: false,
-        },
-      });
-      setLoadingData(false);
+    if (isAuthenticated) {
+      loadSettings();
     }
-  }, [user, isAuthenticated]);
+  }, [isAuthenticated]);
 
-  if (loading) {
+  const loadSettings = async () => {
+    try {
+      const result = await getSettings();
+      if (result.success) {
+        setSettings(result.settings);
+      }
+    } catch (err) {
+      showToast("Failed to load settings", "error");
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
@@ -103,8 +137,19 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-gray-950 py-8">
+    <main className="min-h-screen bg-slate-200 dark:bg-gray-950 py-8">
       <div className="max-w-screen-xl mx-auto px-4">
+        {/* Toast notification */}
+        {toast && (
+          <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
+            toast.type === "error"
+              ? "bg-red-500 text-white"
+              : "bg-green-500 text-white"
+          }`}>
+            {toast.message}
+          </div>
+        )}
+
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white">
@@ -119,7 +164,7 @@ export default function SettingsPage() {
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
           {/* Tab Navigation */}
           <div className="border-b border-slate-200 dark:border-slate-700">
-            <nav className="flex" aria-label="Settings tabs">
+            <nav className="flex overflow-x-auto" aria-label="Settings tabs">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -128,7 +173,7 @@ export default function SettingsPage() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`
-                      flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                      flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
                       ${isActive
                         ? "border-primary-500 text-primary-600 dark:text-primary-400"
                         : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-slate-300"
@@ -146,14 +191,26 @@ export default function SettingsPage() {
           {/* Tab Content */}
           <div className="p-6">
             {activeTab === "profile" && (
-              <ProfileTab user={user} userData={userData} loading={loadingData} />
+              <ProfileTab
+                settings={settings}
+                loading={loadingSettings}
+                onUpdate={loadSettings}
+                showToast={showToast}
+                refreshUser={refreshUser}
+              />
             )}
             {activeTab === "notifications" && (
-              <NotificationsTab userData={userData} loading={loadingData} />
+              <NotificationsTab
+                settings={settings}
+                loading={loadingSettings}
+                onUpdate={loadSettings}
+                showToast={showToast}
+              />
             )}
             {activeTab === "premium" && (
-              <PremiumTab user={user} userData={userData} loading={loadingData} />
+              <PremiumTab settings={settings} loading={loadingSettings} />
             )}
+            {activeTab === "help" && <HelpTab />}
           </div>
         </div>
       </div>
@@ -161,23 +218,118 @@ export default function SettingsPage() {
   );
 }
 
-function ProfileTab({ user, userData, loading }) {
+function ProfileTab({ settings, loading, onUpdate, showToast, refreshUser }) {
+  const [formData, setFormData] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Initialize form data when settings load
+  useEffect(() => {
+    if (settings?.profile) {
+      setFormData({
+        display_name: settings.profile.display_name || "",
+        first_name: settings.profile.first_name || "",
+        last_name: settings.profile.last_name || "",
+        bio: settings.profile.bio || "",
+        favorite_player: settings.profile.favorite_player || null,
+      });
+    }
+  }, [settings]);
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setHasChanges(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateSettings({
+        display_name: formData.display_name,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        bio: formData.bio,
+        favorite_player_id: formData.favorite_player?.id || null,
+      });
+      showToast("Profile updated successfully!");
+      setHasChanges(false);
+      onUpdate();
+      // Refresh auth context so header uses new display name
+      refreshUser?.();
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      showToast("Only JPG, PNG, GIF, and WebP images are allowed", "error");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showToast("File size must be under 2MB", "error");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      await uploadAvatar(file);
+      showToast("Avatar updated!");
+      onUpdate();
+      // Refresh auth context so header/comments use new avatar
+      refreshUser?.();
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    if (!confirm("Remove your custom avatar? Your Gravatar (if any) will be used instead.")) {
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      await deleteAvatar();
+      showToast("Avatar removed");
+      onUpdate();
+      // Refresh auth context so header/comments use new avatar
+      refreshUser?.();
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   if (loading) {
     return <SettingsSkeleton />;
   }
 
-  const avatarUrl = user?.avatar || userData?.avatar;
-  const displayName = user?.user_display_name || user?.display_name || userData?.display_name;
+  const profile = settings?.profile;
 
   return (
     <div className="space-y-8">
       {/* Avatar Section */}
       <div className="flex items-start gap-6">
         <div className="relative">
-          {avatarUrl ? (
+          {profile?.avatar_url ? (
             <Image
-              src={avatarUrl}
-              alt={displayName || "User"}
+              src={profile.avatar_url}
+              alt={profile.display_name || "User"}
               width={96}
               height={96}
               className="w-24 h-24 rounded-full object-cover border-4 border-slate-100 dark:border-slate-800"
@@ -185,24 +337,51 @@ function ProfileTab({ user, userData, loading }) {
           ) : (
             <div className="w-24 h-24 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center border-4 border-slate-100 dark:border-slate-800">
               <span className="text-3xl font-bold text-primary-600 dark:text-primary-400">
-                {displayName?.charAt(0) || "?"}
+                {profile?.display_name?.charAt(0) || "?"}
               </span>
             </div>
           )}
-          <button className="absolute bottom-0 right-0 p-1.5 bg-primary-500 text-white rounded-full shadow-lg hover:bg-primary-600 transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
+          {uploadingAvatar ? (
+            <div className="absolute bottom-0 right-0 p-1.5 bg-slate-500 text-white rounded-full">
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute bottom-0 right-0 p-1.5 bg-primary-500 text-white rounded-full shadow-lg hover:bg-primary-600 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Profile Photo</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {userData?.registered_via === "google"
-              ? "Your profile photo is synced from your Google account."
+            {profile?.registered_via === "google"
+              ? "Upload a custom photo or keep using your Google account photo."
               : "Upload a profile photo or use your Gravatar."}
           </p>
+          {profile?.has_custom_avatar && (
+            <button
+              onClick={handleAvatarDelete}
+              className="mt-2 text-sm text-red-500 hover:text-red-600"
+            >
+              Remove custom avatar
+            </button>
+          )}
         </div>
       </div>
 
@@ -210,42 +389,65 @@ function ProfileTab({ user, userData, loading }) {
       <div className="grid gap-6 sm:grid-cols-2">
         <SettingsField
           label="Display Name"
-          value={displayName}
+          value={formData.display_name}
+          onChange={(v) => handleChange("display_name", v)}
           placeholder="Your display name"
         />
         <SettingsField
           label="Username"
-          value={user?.user_nicename || userData?.username}
+          value={profile?.username}
           placeholder="username"
           disabled
           hint="Username cannot be changed"
         />
         <SettingsField
           label="First Name"
-          value={userData?.first_name}
+          value={formData.first_name}
+          onChange={(v) => handleChange("first_name", v)}
           placeholder="First name"
         />
         <SettingsField
           label="Last Name"
-          value={userData?.last_name}
+          value={formData.last_name}
+          onChange={(v) => handleChange("last_name", v)}
           placeholder="Last name"
         />
-        <SettingsField
-          label="Email"
-          value={user?.user_email || user?.email || userData?.email}
-          placeholder="email@example.com"
-          type="email"
-          className="sm:col-span-2"
-          badge={userData?.email_verified ? "Verified" : "Unverified"}
-          badgeColor={userData?.email_verified ? "green" : "yellow"}
-        />
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            Email
+            <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
+              Verified
+            </span>
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={profile?.email || ""}
+              disabled
+              className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-gray-500 dark:text-gray-400"
+            />
+            <button
+              onClick={() => setEmailModalOpen(true)}
+              className="px-4 py-2.5 border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              Change
+            </button>
+          </div>
+        </div>
         <SettingsField
           label="Bio"
-          value={userData?.description}
+          value={formData.bio}
+          onChange={(v) => handleChange("bio", v)}
           placeholder="Tell us about yourself..."
           multiline
           className="sm:col-span-2"
         />
+        <div className="sm:col-span-2">
+          <PlayerSearchDropdown
+            value={formData.favorite_player}
+            onChange={(player) => handleChange("favorite_player", player)}
+          />
+        </div>
       </div>
 
       {/* Account Info */}
@@ -257,8 +459,8 @@ function ProfileTab({ user, userData, loading }) {
           <div>
             <span className="text-gray-500 dark:text-gray-400">Member Since</span>
             <p className="font-medium text-gray-900 dark:text-white">
-              {userData?.registered_date
-                ? new Date(userData.registered_date).toLocaleDateString("en-US", {
+              {profile?.registered_date
+                ? new Date(profile.registered_date).toLocaleDateString("en-US", {
                     month: "long",
                     year: "numeric",
                   })
@@ -268,67 +470,123 @@ function ProfileTab({ user, userData, loading }) {
           <div>
             <span className="text-gray-500 dark:text-gray-400">Account Type</span>
             <p className="font-medium text-gray-900 dark:text-white">
-              {userData?.registered_via === "google" ? "Google Account" : "Email/Password"}
+              {profile?.registered_via === "google" ? "Google Account" : "Email/Password"}
             </p>
           </div>
           <div>
             <span className="text-gray-500 dark:text-gray-400">User ID</span>
             <p className="font-medium text-gray-900 dark:text-white">
-              {user?.user_id || user?.id || "—"}
+              {profile?.id || "—"}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Save Button (disabled for now) */}
+      {/* Save Button */}
       <div className="flex justify-end pt-4">
         <button
-          disabled
-          className="px-6 py-2.5 bg-primary-500 text-white rounded-lg font-medium opacity-50 cursor-not-allowed"
+          onClick={handleSave}
+          disabled={!hasChanges || saving}
+          className="px-6 py-2.5 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          Save Changes
+          {saving ? (
+            <>
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Saving...
+            </>
+          ) : (
+            "Save Changes"
+          )}
         </button>
       </div>
+
+      {/* Email Change Modal */}
+      <EmailChangeModal
+        currentEmail={profile?.email}
+        isOpen={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+      />
     </div>
   );
 }
 
-function NotificationsTab({ userData, loading }) {
+function NotificationsTab({ settings, loading, onUpdate, showToast }) {
+  const [notifications, setNotifications] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const isSupporter = settings?.premium?.is_supporter;
+
+  // Initialize from settings
+  useEffect(() => {
+    if (settings?.notifications) {
+      setNotifications(settings.notifications);
+    }
+  }, [settings]);
+
+  const handleToggle = (key) => {
+    // Prevent non-supporters from enabling feed_updates
+    if (key === "feed_updates" && !notifications[key] && !isSupporter) {
+      return;
+    }
+
+    setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
+    setHasChanges(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateNotifications(notifications);
+      showToast("Notification preferences saved!");
+      setHasChanges(false);
+      onUpdate();
+    } catch (err) {
+      if (err.code === "premium_required") {
+        showToast("Feed update notifications require a premium subscription", "error");
+        // Reset feed_updates toggle
+        setNotifications((prev) => ({ ...prev, feed_updates: false }));
+      } else {
+        showToast(err.message, "error");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return <SettingsSkeleton />;
   }
 
-  const notifications = [
+  const notificationOptions = [
     {
       id: "new_reply",
       label: "Comment Replies",
       description: "Get notified when someone replies to your comment",
-      enabled: userData?.notifications?.new_reply ?? true,
     },
     {
       id: "new_mention",
       label: "Mentions",
       description: "Get notified when someone mentions you in a comment",
-      enabled: userData?.notifications?.new_mention ?? true,
     },
     {
       id: "new_message",
       label: "Direct Messages",
       description: "Get notified when you receive a private message",
-      enabled: userData?.notifications?.new_message ?? true,
     },
     {
       id: "feed_updates",
       label: "Feed Update Alerts",
       description: "Get push notifications for breaking feed updates",
-      enabled: userData?.notifications?.feed_updates ?? false,
       premium: true,
     },
     {
       id: "newsletter",
       label: "Email Newsletter",
       description: "Receive our weekly Big Brother newsletter",
-      enabled: userData?.notifications?.newsletter ?? false,
     },
   ];
 
@@ -344,58 +602,73 @@ function NotificationsTab({ userData, loading }) {
       </div>
 
       <div className="space-y-4">
-        {notifications.map((notification) => (
-          <div
-            key={notification.id}
-            className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg"
-          >
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {notification.label}
-                </span>
-                {notification.premium && (
-                  <span className="px-2 py-0.5 text-xs font-medium bg-secondary-100 text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-400 rounded-full">
-                    Premium
+        {notificationOptions.map((notification) => {
+          const isLocked = notification.premium && !isSupporter;
+
+          return (
+            <div
+              key={notification.id}
+              className={`flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg ${
+                isLocked ? "opacity-60" : ""
+              }`}
+            >
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {notification.label}
                   </span>
-                )}
+                  {notification.premium && (
+                    <span className="px-2 py-0.5 text-xs font-medium bg-secondary-100 text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-400 rounded-full">
+                      Premium
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  {notification.description}
+                </p>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                {notification.description}
-              </p>
+              <ToggleSwitch
+                enabled={notifications[notification.id] ?? false}
+                onChange={() => handleToggle(notification.id)}
+                disabled={isLocked}
+              />
             </div>
-            <ToggleSwitch enabled={notification.enabled} disabled />
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Save Button (disabled for now) */}
+      {/* Save Button */}
       <div className="flex justify-end pt-4">
         <button
-          disabled
-          className="px-6 py-2.5 bg-primary-500 text-white rounded-lg font-medium opacity-50 cursor-not-allowed"
+          onClick={handleSave}
+          disabled={!hasChanges || saving}
+          className="px-6 py-2.5 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          Save Preferences
+          {saving ? (
+            <>
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Saving...
+            </>
+          ) : (
+            "Save Preferences"
+          )}
         </button>
       </div>
     </div>
   );
 }
 
-function PremiumTab({ user, userData, loading }) {
+function PremiumTab({ settings, loading }) {
   if (loading) {
     return <SettingsSkeleton />;
   }
 
-  const isSupporter = user?.user_roles?.includes("supporter") || userData?.is_supporter;
-  const stats = {
-    totalComments: userData?.stats?.total_comments ?? 0,
-    totalLikes: userData?.stats?.total_likes ?? 0,
-    totalDislikes: userData?.stats?.total_dislikes ?? 0,
-    totalVotes: userData?.stats?.total_votes ?? 0,
-    userRank: userData?.stats?.user_rank ?? "New Member",
-    specialRank: userData?.stats?.special_rank ?? null,
-  };
+  const premium = settings?.premium;
+  const rank = settings?.rank;
+  const isSupporter = premium?.is_supporter;
 
   return (
     <div className="space-y-8">
@@ -409,9 +682,9 @@ function PremiumTab({ user, userData, loading }) {
           <div>
             <div className="flex items-center gap-2">
               {isSupporter ? (
-                <span className="text-2xl">⭐</span>
+                <span className="text-2xl">&#11088;</span>
               ) : (
-                <span className="text-2xl">👤</span>
+                <span className="text-2xl">&#128100;</span>
               )}
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">
                 {isSupporter ? "BBJ Supporter" : "Free Member"}
@@ -434,42 +707,95 @@ function PremiumTab({ user, userData, loading }) {
         </div>
 
         {isSupporter && (
-          <div className="mt-4 pt-4 border-t border-secondary-200 dark:border-secondary-700">
-            <p className="text-sm text-secondary-700 dark:text-secondary-300">
-              Your support helps keep the lights on and the spoilers flowing!
-            </p>
+          <div className="mt-4 pt-4 border-t border-secondary-200 dark:border-secondary-700 grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-secondary-600 dark:text-secondary-400">Supporter Since</span>
+              <p className="font-medium text-secondary-800 dark:text-secondary-200">
+                {premium?.supporter_since
+                  ? new Date(premium.supporter_since).toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    })
+                  : "—"}
+              </p>
+            </div>
+            <div>
+              <span className="text-secondary-600 dark:text-secondary-400">Gifts Given</span>
+              <p className="font-medium text-secondary-800 dark:text-secondary-200">
+                {premium?.gifts_given || 0}
+              </p>
+            </div>
           </div>
         )}
       </div>
 
-      {/* User Stats */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Your Activity Stats
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard label="Comments" value={stats.totalComments} icon="💬" />
-          <StatCard label="Likes Received" value={stats.totalLikes} icon="👍" />
-          <StatCard label="Total Votes" value={stats.totalVotes} icon="🗳️" />
-          <StatCard
-            label="Community Rank"
-            value={stats.userRank}
-            icon="🏆"
-            isText
-          />
-        </div>
-      </div>
-
-      {/* Badges / Special Ranks */}
-      {stats.specialRank && (
+      {/* Current Rank */}
+      {rank && (
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Special Badges
+            Your Community Rank
           </h3>
-          <div className="flex flex-wrap gap-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium">
-              ✨ {stats.specialRank}
-            </span>
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
+              <RankBadge rank={rank} size="md" />
+              {rank.is_special && (
+                <span className="text-xs text-gray-500 dark:text-gray-400">Special Rank</span>
+              )}
+            </div>
+
+            {rank.stats && (
+              <div className="grid grid-cols-3 gap-4 text-center text-sm border-t border-slate-200 dark:border-slate-700 pt-3">
+                <div>
+                  <p className="font-bold text-gray-900 dark:text-white">{rank.stats.comments}</p>
+                  <p className="text-xs text-gray-500">Comments</p>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 dark:text-white">{rank.stats.karma}</p>
+                  <p className="text-xs text-gray-500">Karma</p>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    {rank.stats.upvotes_received - rank.stats.downvotes_received >= 0 ? "+" : ""}
+                    {rank.stats.upvotes_received - rank.stats.downvotes_received}
+                  </p>
+                  <p className="text-xs text-gray-500">Net Votes</p>
+                </div>
+              </div>
+            )}
+
+            {rank.next_rank && (
+              <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Progress to <strong>{rank.next_rank.rank_name}</strong>
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Comments</span>
+                      <span>{rank.next_rank.comment_progress}%</span>
+                    </div>
+                    <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary-500 rounded-full transition-all"
+                        style={{ width: `${rank.next_rank.comment_progress}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Karma</span>
+                      <span>{rank.next_rank.karma_progress}%</span>
+                    </div>
+                    <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-secondary-500 rounded-full transition-all"
+                        style={{ width: `${rank.next_rank.karma_progress}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -506,38 +832,29 @@ function PremiumTab({ user, userData, loading }) {
   );
 }
 
-function SettingsField({ label, value, placeholder, type = "text", disabled, hint, multiline, className, badge, badgeColor }) {
+function SettingsField({ label, value, onChange, placeholder, type = "text", disabled, hint, multiline, className }) {
   return (
     <div className={className}>
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
         {label}
-        {badge && (
-          <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded-full ${
-            badgeColor === "green"
-              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-          }`}>
-            {badge}
-          </span>
-        )}
       </label>
       {multiline ? (
         <textarea
           value={value || ""}
+          onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
           rows={3}
           className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed resize-none"
-          readOnly
         />
       ) : (
         <input
           type={type}
           value={value || ""}
+          onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
           className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
-          readOnly
         />
       )}
       {hint && (
@@ -547,9 +864,11 @@ function SettingsField({ label, value, placeholder, type = "text", disabled, hin
   );
 }
 
-function ToggleSwitch({ enabled, disabled }) {
+function ToggleSwitch({ enabled, onChange, disabled }) {
   return (
     <button
+      type="button"
+      onClick={onChange}
       disabled={disabled}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
         enabled ? "bg-primary-500" : "bg-slate-300 dark:bg-slate-600"
@@ -561,18 +880,6 @@ function ToggleSwitch({ enabled, disabled }) {
         }`}
       />
     </button>
-  );
-}
-
-function StatCard({ label, value, icon, isText }) {
-  return (
-    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-center">
-      <span className="text-2xl">{icon}</span>
-      <p className={`font-bold text-gray-900 dark:text-white mt-1 ${isText ? "text-sm" : "text-2xl"}`}>
-        {typeof value === "number" ? value.toLocaleString() : value}
-      </p>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{label}</p>
-    </div>
   );
 }
 
