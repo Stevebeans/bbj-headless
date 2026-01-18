@@ -2,6 +2,8 @@
 
 namespace BigBrotherJunkies\Data\Api;
 
+use BigBrotherJunkies\Data\Comments\AvatarUploader;
+
 /**
  * Home Page API Routes
  *
@@ -133,7 +135,7 @@ class HomeRoutes
                 'author' => [
                     'id' => $authorId,
                     'name' => get_the_author_meta('display_name'),
-                    'avatar' => get_avatar_url($authorId, ['size' => 64]),
+                    'avatar' => AvatarUploader::getAvatarUrl($authorId, 64),
                 ],
             ];
         }
@@ -351,7 +353,7 @@ class HomeRoutes
             ],
             'author' => [
                 'name' => get_the_author_meta('display_name'),
-                'avatar' => get_avatar_url(get_the_author_meta('ID'), ['size' => 48]),
+                'avatar' => AvatarUploader::getAvatarUrl((int) get_the_author_meta('ID'), 48),
             ],
         ];
 
@@ -480,7 +482,7 @@ class HomeRoutes
                 'author' => [
                     'id' => $authorId,
                     'name' => get_the_author_meta('display_name'),
-                    'avatar' => get_avatar_url($authorId, ['size' => 32]),
+                    'avatar' => AvatarUploader::getAvatarUrl($authorId, 32),
                 ],
             ];
         }

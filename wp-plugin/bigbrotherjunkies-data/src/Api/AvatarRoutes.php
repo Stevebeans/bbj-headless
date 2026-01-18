@@ -91,7 +91,8 @@ class AvatarRoutes
         return new \WP_REST_Response([
             'success' => true,
             'message' => 'Avatar uploaded successfully',
-            'avatar_url' => $result['url'],
+            // Add cache-buster to force browsers to reload
+            'avatar_url' => $result['url'] . '?v=' . time(),
         ], 200);
     }
 

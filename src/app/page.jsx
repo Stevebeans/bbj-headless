@@ -1,8 +1,6 @@
-import { SpoilerBar } from "@/components/spoiler-bar/SpoilerBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
 import { getPosts } from "@/lib/api/posts";
-import { getSpoilerBar } from "@/lib/api/players";
 import { getHeroPost, getFeedUpdates, getHouseboard, getSeasonStats, getRecentComments } from "@/lib/api/home";
 import {
   Hero,
@@ -17,7 +15,6 @@ import {
 
 export default async function HomePage() {
   // Fetch all data in parallel
-  let spoilerData = { season: null, players: [] };
   let heroData = { post: null, season: null };
   let feedUpdatesData = { updates: [], total: 0 };
   let houseboardData = { season: null, houseboard: null };
@@ -27,7 +24,6 @@ export default async function HomePage() {
 
   try {
     const results = await Promise.all([
-      getSpoilerBar(),
       getHeroPost(),
       getFeedUpdates(15),
       getHouseboard(),
@@ -36,13 +32,12 @@ export default async function HomePage() {
       getPosts({ limit: 10 }),
     ]);
 
-    spoilerData = results[0];
-    heroData = results[1];
-    feedUpdatesData = results[2];
-    houseboardData = results[3];
-    statsData = results[4];
-    recentCommentsData = results[5];
-    posts = results[6];
+    heroData = results[0];
+    feedUpdatesData = results[1];
+    houseboardData = results[2];
+    statsData = results[3];
+    recentCommentsData = results[4];
+    posts = results[5];
   } catch (error) {
     console.error("Failed to fetch homepage data:", error);
   }
@@ -51,11 +46,6 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Spoiler Bar */}
-      {spoilerData.players.length > 0 && (
-        <SpoilerBar players={spoilerData.players} season={spoilerData.season} />
-      )}
-
       {/* Main Content Area */}
       <main className="v2-primary-container">
         <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">

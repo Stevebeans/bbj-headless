@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ThemeScript } from "@/components/layout/ThemeScript";
 import { Providers } from "@/components/Providers";
+import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -72,6 +73,7 @@ export default function RootLayout({ children }) {
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
         <Providers>
           <Header />
+          <SpoilerBarWrapper />
           <main id="main-content" className="flex-1">
             {children}
           </main>

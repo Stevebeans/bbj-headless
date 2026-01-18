@@ -238,13 +238,15 @@ class AvatarUploader
         global $wpdb;
         $table = CommentSchema::table(CommentSchema::TABLE_AVATARS);
 
-        $avatar = $wpdb->get_var($wpdb->prepare(
-            "SELECT file_url FROM {$table} WHERE user_id = %d",
+        $avatar = $wpdb->get_row($wpdb->prepare(
+            "SELECT file_url, uploaded_at FROM {$table} WHERE user_id = %d",
             $userId
         ));
 
-        if ($avatar) {
-            return $avatar;
+        if ($avatar && $avatar->file_url) {
+            // Add cache-buster timestamp
+            $timestamp = strtotime($avatar->uploaded_at);
+            return $avatar->file_url . '?v=' . $timestamp;
         }
 
         // Fallback to Gravatar
