@@ -8,7 +8,7 @@ const API_URL = process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/
  * Fetch from WordPress API with caching
  */
 export async function wpFetch(endpoint, options = {}) {
-  const { tags, ...fetchOptions } = options;
+  const { tags, revalidate = 60, ...fetchOptions } = options;
 
   const url = `${API_URL}${endpoint}`;
 
@@ -16,6 +16,7 @@ export async function wpFetch(endpoint, options = {}) {
     ...fetchOptions,
     next: {
       tags: tags || ["wordpress"],
+      revalidate, // Default 60s, can be overridden per-call
     },
   });
 

@@ -45,6 +45,7 @@ export async function getPosts(options = {}) {
   try {
     const posts = await wpRestFetch(endpoint, {
       tags: ["posts"],
+      revalidate: 3600, // 1 hour - posts don't change often
     });
 
     return posts.map(transformPost);
@@ -61,6 +62,7 @@ export async function getPost(slug) {
   try {
     const posts = await wpRestFetch(`/posts?_embed&slug=${slug}`, {
       tags: ["posts", `post-${slug}`],
+      revalidate: 3600, // 1 hour - posts don't change often
     });
 
     if (!posts.length) {
@@ -81,6 +83,7 @@ export async function getAllPostSlugs() {
   try {
     const posts = await wpRestFetch("/posts?per_page=100&_fields=slug", {
       tags: ["posts"],
+      revalidate: 3600, // 1 hour
     });
 
     return posts.map((post) => post.slug);
@@ -101,6 +104,7 @@ export async function getRelatedPosts(postId, categoryId, limit = 4) {
       `/posts?_embed&per_page=${limit}&categories=${categoryId}&exclude=${postId}`,
       {
         tags: ["posts"],
+        revalidate: 3600, // 1 hour
       }
     );
 

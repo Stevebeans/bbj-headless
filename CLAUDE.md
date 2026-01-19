@@ -49,6 +49,29 @@ C:\xampp\htdocs\bbj\wp-content\plugins\bigbrotherjunkies-data\
 - **Use latest tech** - Prefer modern APIs, newest stable packages, and cutting-edge best practices
 - **Challenge assumptions** - If there's a better way, speak up
 
+## API Caching & Revalidation
+
+**IMPORTANT:** All API fetches MUST have a `revalidate` time set to prevent stale cache issues.
+
+| Content Type | Revalidate Time | Reason |
+|--------------|-----------------|--------|
+| Players | 60 seconds | Changes frequently during season (status, stats) |
+| Spoiler Bar | 60 seconds | Updates with player status changes |
+| Seasons | 60 seconds | May update during active season |
+| Blog Posts | 3600 seconds (1 hour) | Rarely change after publishing |
+| Home Page | 60 seconds | Shows latest content |
+| Static pages | 3600+ seconds | Contact, privacy policy, etc. |
+
+When adding new API fetches, always include `revalidate` in the options:
+```javascript
+const data = await bbjdFetch('/endpoint', {
+  tags: ['content-type'],
+  revalidate: 60, // or 3600 for rarely-changing content
+});
+```
+
+Also ensure `dynamicParams = true` is set on all dynamic routes (`[slug]`) to allow on-demand page generation for new content.
+
 ## Git Workflow - Worktrees
 
 **When starting a new feature/project, ask the user if they want to create a git worktree instead of just a branch.**

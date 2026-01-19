@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Increase timeout for static page generation (default is 60s)
+  staticPageGenerationTimeout: 120,
   images: {
     remotePatterns: [
       {
