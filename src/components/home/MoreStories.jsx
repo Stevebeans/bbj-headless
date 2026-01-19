@@ -40,7 +40,7 @@ function StoryCard({ post }) {
       {/* Thumbnail */}
       {post.featuredImage && (
         <div className="flex-shrink-0 w-full md:w-[250px] overflow-hidden rounded-lg">
-          <Link href={`/posts/${post.slug}`}>
+          <Link href={`/${post.slug}`}>
             <Image
               src={post.featuredImage}
               alt={post.title}
@@ -55,7 +55,7 @@ function StoryCard({ post }) {
       {/* Content */}
       <div className="flex-1 min-w-0">
         <h3 className="font-display text-xl md:text-2xl text-primary-500 dark:text-primary-400">
-          <Link href={`/posts/${post.slug}`} className="hover:underline">
+          <Link href={`/${post.slug}`} className="hover:underline">
             {post.title}
           </Link>
         </h3>

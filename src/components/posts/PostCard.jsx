@@ -24,7 +24,7 @@ export function PostCard({ post }) {
     <article className="border-b border-gray-300 dark:border-gray-700 flex flex-col md:flex-row py-4">
       {/* Featured Image */}
       <div className="flex-shrink-0 w-full md:w-[250px]">
-        <Link href={`/posts/${post.slug}`}>
+        <Link href={`/${post.slug}`}>
           {post.featuredImage ? (
             <div className="relative h-[150px] w-full rounded-lg overflow-hidden">
               <Image
@@ -49,7 +49,7 @@ export function PostCard({ post }) {
         <div className="col-span-2">
           <h3 className="font-display text-2xl text-gray-900 dark:text-white">
             <Link
-              href={`/posts/${post.slug}`}
+              href={`/${post.slug}`}
               className="hover:text-primary-500 dark:hover:text-secondary-500 transition-colors"
               dangerouslySetInnerHTML={{ __html: post.title }}
             />

@@ -24,7 +24,7 @@ export function PostJsonLd({ post, siteUrl }) {
     description: post.excerpt?.replace(/<[^>]*>/g, "").slice(0, 160) || "",
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `${siteUrl}/posts/${post.slug}`,
+      "@id": `${siteUrl}/${post.slug}`,
     },
   };
 

@@ -36,7 +36,7 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title: cleanTitle,
       description: cleanExcerpt,
-      url: `${SITE_URL}/posts/${slug}`,
+      url: `${SITE_URL}/${slug}`,
       type: "article",
       publishedTime: post.date,
       modifiedTime: post.modified || post.date,
@@ -59,7 +59,7 @@ export async function generateMetadata({ params }) {
       images: post.featuredImage ? [post.featuredImage] : [],
     },
     alternates: {
-      canonical: `${SITE_URL}/posts/${slug}`,
+      canonical: `${SITE_URL}/${slug}`,
     },
   };
 }

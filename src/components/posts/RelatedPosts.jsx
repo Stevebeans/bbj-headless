@@ -14,7 +14,7 @@ export function RelatedPosts({ posts = [] }) {
         {posts.map((post) => (
           <div key={post.id} className="w-full">
             {post.featuredImage ? (
-              <Link href={`/posts/${post.slug}`} className="block">
+              <Link href={`/${post.slug}`} className="block">
                 <div className="relative h-28 w-full">
                   <Image
                     src={post.featuredImage}
@@ -29,7 +29,7 @@ export function RelatedPosts({ posts = [] }) {
               <div className="h-28 w-full rounded bg-gray-200 dark:bg-gray-700" />
             )}
             <Link
-              href={`/posts/${post.slug}`}
+              href={`/${post.slug}`}
               className="text-sm pb-2 font-bold hover:text-primary-500 dark:hover:text-primary-400 line-clamp-2"
               dangerouslySetInnerHTML={{ __html: post.title }}
             />

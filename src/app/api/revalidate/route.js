@@ -47,7 +47,7 @@ export async function POST(request) {
     switch (type) {
       case "post":
         if (slug) {
-          revalidatePath(`/posts/${slug}`);
+          revalidatePath(`/${slug}`);
         }
         revalidatePath("/");
         revalidateTag("posts");
@@ -66,7 +66,7 @@ export async function POST(request) {
 
       case "comment":
         if (slug) {
-          revalidatePath(`/posts/${slug}`);
+          revalidatePath(`/${slug}`);
           revalidateTag(`post-${slug}`);
         }
         break;
