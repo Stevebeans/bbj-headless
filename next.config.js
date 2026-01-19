@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// Build config for BBJ Next.js app
 const nextConfig = {
   // Increase timeout for static page generation (default is 60s)
   staticPageGenerationTimeout: 120,
