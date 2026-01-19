@@ -6,6 +6,43 @@ const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrother
 
 const AuthContext = createContext(null);
 
+// Storage keys
+const TOKEN_KEY = "bbj_token";
+const REMEMBER_KEY = "bbj_remember";
+
+// Storage helper functions for "Keep me logged in" feature
+function getToken() {
+  if (typeof window === "undefined") return null;
+  // Check localStorage first (remembered), then sessionStorage
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+}
+
+function setToken(token, remember) {
+  if (typeof window === "undefined") return;
+  // Clear from both to avoid duplicates
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  // Set in appropriate storage
+  const storage = remember ? localStorage : sessionStorage;
+  storage.setItem(TOKEN_KEY, token);
+  // Remember the preference for future logins
+  localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+}
+
+function clearToken() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REMEMBER_KEY);
+}
+
+function getRememberPreference() {
+  if (typeof window === "undefined") return true;
+  const pref = localStorage.getItem(REMEMBER_KEY);
+  // Default to true if not set
+  return pref !== "0";
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,7 +51,7 @@ export function AuthProvider({ children }) {
   // Load user from stored token on mount
   useEffect(() => {
     const loadUser = async () => {
-      const token = localStorage.getItem("bbj_token");
+      const token = getToken();
       if (token) {
         try {
           const userData = await validateToken(token);
@@ -26,7 +63,7 @@ export function AuthProvider({ children }) {
           });
         } catch (err) {
           // Token is invalid, clear it
-          localStorage.removeItem("bbj_token");
+          clearToken();
           setUser(null);
         }
       }
@@ -54,7 +91,7 @@ export function AuthProvider({ children }) {
   };
 
   // Login with email/password
-  const login = useCallback(async (username, password) => {
+  const login = useCallback(async (username, password, rememberMe = true) => {
     setError(null);
     setLoading(true);
 
@@ -64,7 +101,7 @@ export function AuthProvider({ children }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, remember_me: rememberMe }),
       });
 
       const data = await response.json();
@@ -76,8 +113,8 @@ export function AuthProvider({ children }) {
       // Validate token BEFORE storing to prevent race condition
       const userData = await validateToken(data.token);
 
-      // Only store if validation succeeds
-      localStorage.setItem("bbj_token", data.token);
+      // Store token in appropriate storage based on rememberMe preference
+      setToken(data.token, rememberMe);
 
       setUser({
         ...userData,
@@ -89,7 +126,7 @@ export function AuthProvider({ children }) {
       return { success: true };
     } catch (err) {
       // Ensure no stale token remains on error
-      localStorage.removeItem("bbj_token");
+      clearToken();
       setError(err.message);
       return { success: false, error: err.message };
     } finally {
@@ -98,7 +135,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Login with Google
-  const loginWithGoogle = useCallback(async (credential) => {
+  const loginWithGoogle = useCallback(async (credential, rememberMe = true) => {
     setError(null);
     setLoading(true);
 
@@ -108,7 +145,7 @@ export function AuthProvider({ children }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({ credential, remember_me: rememberMe }),
       });
 
       const data = await response.json();
@@ -124,11 +161,12 @@ export function AuthProvider({ children }) {
           needs_linking: true,
           credential: credential,
           google_user: data.google_user,
+          rememberMe: rememberMe,
         };
       }
 
-      // Store token
-      localStorage.setItem("bbj_token", data.token);
+      // Store token in appropriate storage based on rememberMe preference
+      setToken(data.token, rememberMe);
 
       setUser({
         ...data.user,
@@ -148,7 +186,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Link Google account to existing BBJ account
-  const linkGoogleAccount = useCallback(async (credential, username, password) => {
+  const linkGoogleAccount = useCallback(async (credential, username, password, rememberMe = true) => {
     setError(null);
     setLoading(true);
 
@@ -158,7 +196,7 @@ export function AuthProvider({ children }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ credential, username, password }),
+        body: JSON.stringify({ credential, username, password, remember_me: rememberMe }),
       });
 
       const data = await response.json();
@@ -167,8 +205,8 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || "Failed to link account");
       }
 
-      // Store token
-      localStorage.setItem("bbj_token", data.token);
+      // Store token in appropriate storage based on rememberMe preference
+      setToken(data.token, rememberMe);
 
       setUser({
         ...data.user,
@@ -187,7 +225,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Create new BBJ account from Google
-  const createFromGoogle = useCallback(async (credential) => {
+  const createFromGoogle = useCallback(async (credential, rememberMe = true) => {
     setError(null);
     setLoading(true);
 
@@ -197,7 +235,7 @@ export function AuthProvider({ children }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({ credential, remember_me: rememberMe }),
       });
 
       const data = await response.json();
@@ -206,8 +244,8 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || "Failed to create account");
       }
 
-      // Store token
-      localStorage.setItem("bbj_token", data.token);
+      // Store token in appropriate storage based on rememberMe preference
+      setToken(data.token, rememberMe);
 
       setUser({
         ...data.user,
@@ -227,14 +265,14 @@ export function AuthProvider({ children }) {
 
   // Logout
   const logout = useCallback(() => {
-    localStorage.removeItem("bbj_token");
+    clearToken();
     setUser(null);
     setError(null);
   }, []);
 
   // Refresh user data (call after profile/avatar updates)
   const refreshUser = useCallback(async () => {
-    const token = localStorage.getItem("bbj_token");
+    const token = getToken();
     if (!token) return;
 
     try {
@@ -252,9 +290,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Set user from registration/external auth response
-  const setUserFromResponse = useCallback((data) => {
+  const setUserFromResponse = useCallback((data, rememberMe = true) => {
     if (data.token) {
-      localStorage.setItem("bbj_token", data.token);
+      setToken(data.token, rememberMe);
     }
     setUser({
       ...data.user,
@@ -309,6 +347,7 @@ export function AuthProvider({ children }) {
     hasAnyRole,
     isAdmin,
     isAuthenticated: !!user,
+    getRememberPreference,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

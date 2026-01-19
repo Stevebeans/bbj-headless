@@ -8,12 +8,13 @@ import Link from "next/link";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated, loading: authLoading, error: authError } = useAuth();
+  const { login, isAuthenticated, loading: authLoading, error: authError, getRememberPreference } = useAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [rememberMe, setRememberMe] = useState(() => getRememberPreference());
 
   const redirect = searchParams.get("redirect") || "/";
 
@@ -30,7 +31,7 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const result = await login(username, password);
+      const result = await login(username, password, rememberMe);
       if (result.success) {
         router.push(redirect);
       } else {
@@ -102,6 +103,18 @@ function LoginForm() {
             placeholder="Enter your password"
           />
         </div>
+
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-primary-500 focus:ring-primary-500 bg-white dark:bg-slate-700"
+          />
+          <span className="text-sm text-slate-600 dark:text-slate-400">
+            Keep me logged in
+          </span>
+        </label>
 
         <button
           type="submit"

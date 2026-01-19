@@ -7,13 +7,15 @@ import { useAuthModal } from "@/context/AuthModalContext";
 
 export default function LinkAccountView() {
   const router = useRouter();
-  const { linkGoogleAccount, createFromGoogle } = useAuth();
+  const { linkGoogleAccount, createFromGoogle, getRememberPreference } = useAuth();
   const { closeModal, googleData, redirectPath } = useAuthModal();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // Use rememberMe preference from Google login flow, or fall back to stored preference
+  const [rememberMe, setRememberMe] = useState(() => googleData?.rememberMe ?? getRememberPreference());
 
   const handleLink = async (e) => {
     e.preventDefault();
@@ -21,7 +23,7 @@ export default function LinkAccountView() {
     setLoading(true);
 
     try {
-      const result = await linkGoogleAccount(googleData.credential, username, password);
+      const result = await linkGoogleAccount(googleData.credential, username, password, rememberMe);
       if (result.success) {
         closeModal();
         if (redirectPath) {
@@ -42,7 +44,7 @@ export default function LinkAccountView() {
     setLoading(true);
 
     try {
-      const result = await createFromGoogle(googleData.credential);
+      const result = await createFromGoogle(googleData.credential, rememberMe);
       if (result.success) {
         closeModal();
         if (redirectPath) {
@@ -134,6 +136,17 @@ export default function LinkAccountView() {
               className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
             />
           </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-primary-500 focus:ring-primary-500 bg-white dark:bg-slate-700"
+            />
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              Keep me logged in
+            </span>
+          </label>
           <button
             type="submit"
             disabled={loading || !username || !password}

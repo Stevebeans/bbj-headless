@@ -8,7 +8,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 
 export default function LoginView() {
   const router = useRouter();
-  const { login, loginWithGoogle, isAuthenticated, loading: authLoading } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, loading: authLoading, getRememberPreference } = useAuth();
   const { closeModal, switchToRegister, switchToForgotPassword, switchToLinkAccount, redirectPath } = useAuthModal();
 
   const [username, setUsername] = useState("");
@@ -16,6 +16,7 @@ export default function LoginView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => getRememberPreference());
 
   // Close modal if user becomes authenticated
   useEffect(() => {
@@ -90,12 +91,13 @@ export default function LoginView() {
     setError(null);
 
     try {
-      const result = await loginWithGoogle(response.credential);
+      const result = await loginWithGoogle(response.credential, rememberMe);
       if (result.needs_linking) {
-        // No account found - switch to link account view
+        // No account found - switch to link account view, pass rememberMe preference
         switchToLinkAccount({
           credential: result.credential,
           google_user: result.google_user,
+          rememberMe: rememberMe,
         });
       } else if (!result.success) {
         setError(result.error || "Google sign-in failed");
@@ -113,7 +115,7 @@ export default function LoginView() {
     setLoading(true);
 
     try {
-      const result = await login(username, password);
+      const result = await login(username, password, rememberMe);
       if (!result.success) {
         setError(result.error || "Login failed");
       }
@@ -196,7 +198,18 @@ export default function LoginView() {
           />
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-primary-500 focus:ring-primary-500 bg-white dark:bg-slate-700"
+            />
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              Keep me logged in
+            </span>
+          </label>
           <button
             type="button"
             onClick={switchToForgotPassword}

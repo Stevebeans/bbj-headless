@@ -29,6 +29,34 @@ class AuthRoutes
     public function register(): void
     {
         add_action('rest_api_init', [$this, 'registerRoutes']);
+
+        // Filter JWT auth plugin's token expiration based on remember_me parameter
+        add_filter('jwt_auth_expire', [$this, 'filterJwtExpiration'], 10, 2);
+    }
+
+    /**
+     * Filter JWT token expiration based on remember_me parameter
+     * Works with the jwt-authentication-for-wp-rest-api plugin
+     *
+     * @param int $expire Token expiration timestamp
+     * @param int $issuedAt Token issued at timestamp
+     * @return int Modified expiration timestamp
+     */
+    public function filterJwtExpiration(int $expire, int $issuedAt): int
+    {
+        // Check if this is a REST API request with remember_me parameter
+        $requestBody = file_get_contents('php://input');
+        $data = json_decode($requestBody, true);
+
+        // Default to remembered (14 days) for backwards compatibility
+        $rememberMe = $data['remember_me'] ?? true;
+
+        // If not remembered, use 1 day expiration; if remembered, use 14 days
+        if ($rememberMe) {
+            return $issuedAt + (DAY_IN_SECONDS * 14);
+        } else {
+            return $issuedAt + DAY_IN_SECONDS;
+        }
     }
 
     /**
@@ -46,6 +74,11 @@ class AuthRoutes
                     'required' => true,
                     'type' => 'string',
                     'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'remember_me' => [
+                    'required' => false,
+                    'type' => 'boolean',
+                    'default' => true,
                 ],
             ],
         ]);
@@ -132,6 +165,11 @@ class AuthRoutes
                     'required' => true,
                     'type' => 'string',
                 ],
+                'remember_me' => [
+                    'required' => false,
+                    'type' => 'boolean',
+                    'default' => true,
+                ],
             ],
         ]);
 
@@ -145,6 +183,11 @@ class AuthRoutes
                     'required' => true,
                     'type' => 'string',
                     'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'remember_me' => [
+                    'required' => false,
+                    'type' => 'boolean',
+                    'default' => true,
                 ],
             ],
         ]);
@@ -172,6 +215,7 @@ class AuthRoutes
     public function handleGoogleAuth(\WP_REST_Request $request)
     {
         $credential = $request->get_param('credential');
+        $rememberMe = $request->get_param('remember_me') ?? true;
 
         $googleOAuth = new GoogleOAuth();
 
@@ -212,8 +256,8 @@ class AuthRoutes
         $user = $result['user'];
         $accountLinked = $result['account_linked'] ?? false;
 
-        // Generate JWT token
-        $token = $this->generateJwtToken($user);
+        // Generate JWT token with remember_me preference
+        $token = $this->generateJwtToken($user, $rememberMe);
 
         if (is_wp_error($token)) {
             return $token;
@@ -646,6 +690,7 @@ class AuthRoutes
         $credential = $request->get_param('credential');
         $username = $request->get_param('username');
         $password = $request->get_param('password');
+        $rememberMe = $request->get_param('remember_me') ?? true;
 
         $googleOAuth = new GoogleOAuth();
 
@@ -686,8 +731,8 @@ class AuthRoutes
             }
         }
 
-        // Generate JWT token
-        $token = $this->generateJwtToken($user);
+        // Generate JWT token with remember_me preference
+        $token = $this->generateJwtToken($user, $rememberMe);
 
         if (is_wp_error($token)) {
             return $token;
@@ -715,6 +760,7 @@ class AuthRoutes
     public function handleCreateFromGoogle(\WP_REST_Request $request)
     {
         $credential = $request->get_param('credential');
+        $rememberMe = $request->get_param('remember_me') ?? true;
 
         $googleOAuth = new GoogleOAuth();
 
@@ -763,8 +809,8 @@ class AuthRoutes
             'status' => 'success',
         ]);
 
-        // Generate JWT token
-        $token = $this->generateJwtToken($user);
+        // Generate JWT token with remember_me preference
+        $token = $this->generateJwtToken($user, $rememberMe);
 
         if (is_wp_error($token)) {
             return $token;
@@ -898,9 +944,11 @@ class AuthRoutes
     /**
      * Generate JWT token for user
      *
+     * @param \WP_User $user The user to generate token for
+     * @param bool $rememberMe Whether to use extended expiration (14 days vs 1 day)
      * @return string|\WP_Error
      */
-    private function generateJwtToken(\WP_User $user)
+    private function generateJwtToken(\WP_User $user, bool $rememberMe = true)
     {
         $secretKey = defined('JWT_AUTH_SECRET_KEY') ? JWT_AUTH_SECRET_KEY : false;
 
@@ -909,7 +957,10 @@ class AuthRoutes
         }
 
         $issuedAt = time();
-        $expire = apply_filters('jwt_auth_expire', $issuedAt + (DAY_IN_SECONDS * 7), $issuedAt);
+
+        // Token expiration: 14 days if remembered, 1 day if not
+        $expireDays = $rememberMe ? 14 : 1;
+        $expire = apply_filters('jwt_auth_expire', $issuedAt + (DAY_IN_SECONDS * $expireDays), $issuedAt, $rememberMe);
 
         $tokenData = [
             'iss' => get_bloginfo('url'),
