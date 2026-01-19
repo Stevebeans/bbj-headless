@@ -18,6 +18,9 @@ import {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
+// Allow dynamic rendering for players not pre-generated at build time
+export const dynamicParams = true;
+
 /**
  * Generate static params for all player pages
  */

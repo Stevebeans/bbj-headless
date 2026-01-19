@@ -2,6 +2,9 @@ import { getSeasonBySlug, getAllSeasonSlugs } from "@/lib/api/seasons";
 import { notFound } from "next/navigation";
 import { SeasonEditForm } from "./components/SeasonEditForm";
 
+// Allow dynamic rendering for seasons not pre-generated at build time
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
   const slugs = await getAllSeasonSlugs();
   return slugs.map((slug) => ({ slug }));

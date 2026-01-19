@@ -10,6 +10,9 @@ import { SeasonInfoSidebar } from "./components/SeasonInfoSidebar";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
+// Allow dynamic rendering for seasons not pre-generated at build time
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
   const slugs = await getAllSeasonSlugs();
   return slugs.map((slug) => ({ slug }));
