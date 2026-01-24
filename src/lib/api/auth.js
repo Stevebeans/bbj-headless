@@ -52,6 +52,27 @@ export async function forgotPassword(email) {
 }
 
 /**
+ * Reset password with key from email link
+ */
+export async function resetPassword(key, login, password) {
+  const response = await fetch(`${API_URL}/bbjd/v1/auth/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ key, login, password }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to reset password");
+  }
+
+  return data;
+}
+
+/**
  * Check if username is available
  */
 export async function checkUsername(username) {
