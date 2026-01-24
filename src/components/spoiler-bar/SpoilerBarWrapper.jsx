@@ -1,23 +1,24 @@
-import { getSpoilerBar } from "@/lib/api/players";
+import { getCurrentSeasonPlayers } from "@/lib/api/players";
 import { SpoilerBar } from "./SpoilerBar";
 
 /**
  * Server component wrapper that fetches spoiler bar data
- * Used in layout to show spoiler bar on all pages
+ * Uses /current-season-players endpoint for fresh data with game_status
+ * Status is computed at render time, not from cached API response
  */
 export async function SpoilerBarWrapper() {
-  let spoilerData = { season: null, players: [] };
+  let data = { season: null, players: [], count: 0 };
 
   try {
-    spoilerData = await getSpoilerBar();
+    data = await getCurrentSeasonPlayers({ size: "bbj_v2_spoiler_bar" });
   } catch (error) {
     console.error("Failed to fetch spoiler bar data:", error);
     return null;
   }
 
-  if (!spoilerData.players || spoilerData.players.length === 0) {
+  if (!data.players || data.players.length === 0) {
     return null;
   }
 
-  return <SpoilerBar players={spoilerData.players} season={spoilerData.season} />;
+  return <SpoilerBar players={data.players} season={data.season} />;
 }

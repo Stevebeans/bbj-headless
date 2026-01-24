@@ -230,6 +230,52 @@ export async function removePlayerFromSeason(seasonId, playerId, token) {
 }
 
 /**
+ * Update roster status for multiple players (admin only, client-side)
+ * Used by spoiler bar editor to update player statuses in bulk
+ * @param {number} seasonId - Season ID
+ * @param {Array} players - Array of player status objects
+ * @param {string} token - JWT token
+ * @returns {Promise<Object>} { success, message, players, updated_count, errors }
+ */
+export async function updateRosterStatus(seasonId, players, token) {
+  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+
+  try {
+    const response = await fetch(`${apiUrl}/bbjd/v1/admin/seasons/${seasonId}/roster-status`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ players }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || "Failed to update roster status",
+        players: [],
+        updated_count: 0,
+        errors: [],
+      };
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Failed to update roster status:", error);
+    return {
+      success: false,
+      message: error.message || "Network error",
+      players: [],
+      updated_count: 0,
+      errors: [error.message],
+    };
+  }
+}
+
+/**
  * Search players for add player dropdown (client-side)
  * @param {string} query - Search query
  * @param {number[]} exclude - Player IDs to exclude
@@ -263,5 +309,43 @@ export async function searchPlayers(query, exclude = [], limit = 10) {
   } catch (error) {
     console.error("Failed to search players:", error);
     return { players: [], count: 0 };
+  }
+}
+
+/**
+ * Purge all caches for a season (Redis + Varnish + Next.js)
+ * Use when cache is stale and needs manual refresh
+ * @param {number} seasonId - Season ID
+ * @param {string} token - JWT token
+ * @returns {Promise<Object>} { success, message }
+ */
+export async function purgeSeasonCache(seasonId, token) {
+  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+
+  try {
+    const response = await fetch(`${apiUrl}/bbjd/v1/admin/seasons/${seasonId}/purge-cache`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || "Failed to purge cache",
+      };
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Failed to purge season cache:", error);
+    return {
+      success: false,
+      message: error.message || "Network error",
+    };
   }
 }

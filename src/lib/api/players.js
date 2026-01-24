@@ -10,6 +10,7 @@ export async function getSpoilerBar() {
   try {
     const response = await bbjdFetch("/spoiler-bar", {
       tags: ["spoiler-bar", "players"],
+      revalidate: 60,
     });
 
     if (!response.success) {
@@ -42,7 +43,8 @@ export async function getCurrentSeasonPlayers(options = {}) {
     const params = new URLSearchParams({ size });
 
     const response = await bbjdFetch(`/current-season-players?${params.toString()}`, {
-      tags: ["players", "current-season"],
+      tags: ["players", "current-season", "spoiler-bar"],
+      revalidate: 60,
     });
 
     if (!response.success) {
@@ -207,5 +209,46 @@ export async function getAllPlayers(options = {}) {
   } catch (error) {
     console.error("Failed to fetch players:", error);
     return { players: [], count: 0, total: 0, page: 1, per_page: perPage, total_pages: 0 };
+  }
+}
+
+/**
+ * Update player (admin only, client-side)
+ * @param {number} playerId - Player ID
+ * @param {Object} data - Update data
+ * @param {string} token - JWT token
+ * @returns {Promise<Object>} { success, player, message }
+ */
+export async function updatePlayer(playerId, data, token) {
+  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+
+  try {
+    const response = await fetch(`${apiUrl}/bbjd/v1/admin/players/${playerId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || "Failed to update player",
+        player: null,
+      };
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Failed to update player:", error);
+    return {
+      success: false,
+      message: error.message || "Network error",
+      player: null,
+    };
   }
 }

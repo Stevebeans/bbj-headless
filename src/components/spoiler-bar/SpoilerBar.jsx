@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { getPrimaryStatus, getStatusLabel, sortPlayersForSpoilerBar } from "@/lib/spoiler-bar-utils";
 
 // CSS class mapping for status colors
 const statusClasses = {
@@ -21,28 +22,17 @@ const statusClasses = {
   misc: "spoilerbar-havenot",
 };
 
-// Image border classes for status
-const statusImageClasses = {
-  winner: "border-2 border-green-500",
-  hoh: "border-2 border-green-500",
-  pov: "border-2 border-amber-400",
-  nom: "border-2 border-rose-400",
-  jury: "spoilerbar-jury-img",
-  evicted: "spoilerbar-evicted-img",
-  active: "border-2 border-slate-300 dark:border-slate-600",
-  safe: "border-2 border-green-400",
-  runner_up: "border-2 border-sky-400",
-  second: "border-2 border-sky-400",
-  afp: "border-2 border-rose-400",
-  havenot: "border-2 border-slate-400",
-  misc: "border-2 border-slate-400",
-};
-
 export function SpoilerBar({ players, season }) {
   const [isVisible, setIsVisible] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [showSwipeHint, setShowSwipeHint] = useState(true);
   const scrollRef = useRef(null);
+
+  // Get AFP ID from season
+  const afpId = season?.afp_id || null;
+
+  // Sort players using shared utility
+  const sortedPlayers = useMemo(() => sortPlayersForSpoilerBar(players), [players]);
 
   useEffect(() => {
     setMounted(true);
@@ -83,8 +73,8 @@ export function SpoilerBar({ players, season }) {
             className="w-full overflow-x-auto py-1 bbj-track scroll-smooth"
           >
             <div className="flex flex-nowrap gap-1 mx-auto w-max">
-              {players.map((player) => (
-                <PlayerCard key={player.player_id} player={player} />
+              {sortedPlayers.map((player) => (
+                <PlayerCard key={player.player_id || player.id} player={player} afpId={afpId} />
               ))}
             </div>
           </div>
@@ -106,20 +96,24 @@ export function SpoilerBar({ players, season }) {
   );
 }
 
-function PlayerCard({ player }) {
-  const status = String(player.status || "active").toLowerCase();
+function PlayerCard({ player, afpId }) {
+  // Compute status at render time using shared utility
+  const status = getPrimaryStatus(player, afpId);
+  const statusLabel = getStatusLabel(player, afpId);
   const statusClass = statusClasses[status] || "spoilerbar-active";
-  const imageClass = statusImageClasses[status] || "border-2 border-slate-300";
 
   // Use display_name from API, fallback to first_name or computed name
-  const displayName = player.display_name || player.first_name || player.name?.split(" ")[0] || "HG";
+  const displayName = player.nickname
+    ? `"${player.nickname}"`
+    : player.display_name || player.first_name || player.name?.split(" ")[0] || "HG";
 
-  // Use status_label from API (e.g., "HoH", "PoV, Nom", etc.)
-  const statusLabel = player.status_label || status;
+  // Check if player is a finalist (winner/runner-up don't get greyed out)
+  const isFinalist = player.finish_place === 1 || player.finish_place === 2;
 
-  // Check if player is evicted or jury for image styling
-  const isEvicted = status === "evicted";
-  const isJury = status === "jury";
+  // Check if player is evicted or jury for image styling (but not finalists)
+  const gs = player.game_status || {};
+  const isEvicted = (gs.evicted || status === "evicted") && !isFinalist;
+  const isJury = (gs.jury || status === "jury") && !isFinalist;
 
   const cardContent = (
     <div className="w-[52px] lg:w-14">
@@ -131,16 +125,20 @@ function PlayerCard({ player }) {
       {/* Profile Image */}
       <div className={`relative block w-full h-12 lg:h-[80px] font-display overflow-hidden border-l-2 border-r-2 ${statusClass}`}>
         {player.photo ? (
-          <Image
-            src={player.photo}
-            alt={player.name || "Houseguest"}
-            fill
-            className={`object-cover ${isEvicted ? "spoilerbar-evicted-img" : ""} ${isJury ? "spoilerbar-jury-img" : ""}`}
-            sizes="(max-width: 1024px) 52px, 56px"
-          />
+          <>
+            <Image
+              src={player.photo}
+              alt={player.name || "Houseguest"}
+              fill
+              className={`object-cover ${isEvicted ? "spoilerbar-evicted-img" : ""} ${isJury ? "spoilerbar-jury-img" : ""}`}
+              sizes="(max-width: 1024px) 52px, 56px"
+            />
+            {/* Blue tint overlay for jury members */}
+            {isJury && <div className="spoilerbar-jury-overlay" />}
+          </>
         ) : (
-          <div className="w-full h-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-gray-500 text-lg font-bold">
-            {displayName.charAt(0)}
+          <div className={`w-full h-full flex items-center justify-center text-lg font-bold ${isEvicted ? "bg-slate-400 text-slate-200" : isJury ? "bg-indigo-400 text-indigo-100" : "bg-gray-300 dark:bg-gray-600 text-gray-500"}`}>
+            {displayName.charAt(0).replace(/["']/g, "")}
           </div>
         )}
       </div>

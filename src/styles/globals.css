@@ -44,6 +44,11 @@
     @apply relative overflow-hidden rounded-lg bg-white shadow hover:shadow-md dark:border dark:border-gray-700 dark:bg-gray-800 transition-shadow duration-200;
   }
 
+  /* Tabbed variant - no top-left rounded corner for folder/tab look */
+  .v2-primary-container-inner-tabbed {
+    @apply relative overflow-hidden rounded-lg rounded-tl-none bg-white shadow hover:shadow-md dark:border dark:border-gray-700 dark:bg-gray-800 transition-shadow duration-200;
+  }
+
   .v2-sidebar-container {
     @apply relative overflow-hidden rounded-lg bg-white shadow hover:shadow-md dark:border dark:border-gray-700 dark:bg-gray-800 transition-shadow duration-200;
   }
@@ -149,19 +154,19 @@
     @apply border-green-400 bg-green-100 text-green-700 dark:border-green-500 dark:bg-green-900 dark:text-green-300;
   }
 
-  /* Winner - Rich green with gold accent feel */
+  /* Winner - Gold/yellow for champions */
   .spoilerbar-winner {
-    @apply border-emerald-600 bg-emerald-600 text-white;
+    @apply border-yellow-500 bg-gradient-to-b from-yellow-400 to-yellow-600 text-slate-900 font-bold;
   }
 
-  /* Runner-up / Second place - Silver/blue */
+  /* Runner-up / Second place - Silver/blue gradient */
   .spoilerbar-second {
-    @apply border-sky-500 bg-sky-500 text-white;
+    @apply border-sky-500 bg-gradient-to-b from-sky-400 to-sky-600 text-white;
   }
 
-  /* AFP - Pink/rose for fan favorite */
+  /* AFP - Pink gradient for fan favorite */
   .spoilerbar-afp {
-    @apply border-pink-500 bg-pink-500 text-white;
+    @apply border-pink-500 bg-gradient-to-b from-pink-400 to-pink-600 text-white;
   }
 
   /* Have-not - Muted, uncomfortable */
@@ -171,11 +176,16 @@
 
   /* Image effects for eliminated players */
   .spoilerbar-evicted-img {
-    @apply grayscale opacity-70;
+    @apply grayscale-[80%] opacity-75;
   }
 
   .spoilerbar-jury-img {
-    @apply grayscale-[50%] opacity-80;
+    @apply grayscale-[40%] opacity-85;
+  }
+
+  /* Blue tint overlay for jury members */
+  .spoilerbar-jury-overlay {
+    @apply absolute inset-0 bg-indigo-500/25 mix-blend-multiply;
   }
 
   .desktop-nav a {
