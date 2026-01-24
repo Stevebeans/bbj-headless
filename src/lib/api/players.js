@@ -146,3 +146,66 @@ export async function getAllPlayerSlugs() {
     return [];
   }
 }
+
+/**
+ * Get all players for directory with optional filters
+ *
+ * @param {Object} options - Filter options
+ * @param {string} options.search - Search term (name, nickname)
+ * @param {string} options.season - Comma-separated season IDs
+ * @param {string} options.gender - 'male' or 'female'
+ * @param {string} options.status - Comma-separated statuses (winner, jury, evicted)
+ * @param {string} options.orderby - 'name' or 'season'
+ * @param {string} options.order - 'ASC' or 'DESC'
+ * @param {number} options.page - Page number
+ * @param {number} options.perPage - Results per page
+ * @returns {Promise<Object>} { players, count, total, page, per_page, total_pages }
+ */
+export async function getAllPlayers(options = {}) {
+  const {
+    search = "",
+    season = "",
+    gender = "",
+    status = "",
+    orderby = "name",
+    order = "ASC",
+    page = 1,
+    perPage = 50,
+  } = options;
+
+  try {
+    const params = new URLSearchParams({
+      per_page: String(perPage),
+      page: String(page),
+      orderby,
+      order,
+    });
+
+    if (search) params.append("search", search);
+    if (season) params.append("season", season);
+    if (gender) params.append("gender", gender);
+    if (status) params.append("status", status);
+
+    const response = await bbjdFetch(`/players?${params.toString()}`, {
+      tags: ["players"],
+      revalidate: 3600, // 1 hour cache for directory
+    });
+
+    if (!response.success) {
+      console.warn("Players fetch unsuccessful:", response.message);
+      return { players: [], count: 0, total: 0, page: 1, per_page: perPage, total_pages: 0 };
+    }
+
+    return {
+      players: response.players || [],
+      count: response.count || 0,
+      total: response.total || 0,
+      page: response.page || 1,
+      per_page: response.per_page || perPage,
+      total_pages: response.total_pages || 0,
+    };
+  } catch (error) {
+    console.error("Failed to fetch players:", error);
+    return { players: [], count: 0, total: 0, page: 1, per_page: perPage, total_pages: 0 };
+  }
+}

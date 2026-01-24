@@ -44,7 +44,7 @@ export function MobileMenu({ isOpen, onClose }) {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/feed-updates", label: "Feed Updates" },
-    { href: "/players", label: "Players" },
+    { href: "/directory", label: "Directory" },
     { href: "/login", label: "Log In" },
     { href: "/register", label: "Register" },
     { href: "/become-supporter", label: "Go Ad Free" },

@@ -44,7 +44,7 @@ class PlayerRoutes
             ],
         ]);
 
-        // Get all players (for static generation)
+        // Get all players (for directory and static generation)
         register_rest_route(self::NAMESPACE, '/players', [
             'methods'  => 'GET',
             'callback' => [$this, 'getAllPlayers'],
@@ -59,6 +59,41 @@ class PlayerRoutes
                     'default' => 100,
                     'type' => 'integer',
                     'sanitize_callback' => 'absint',
+                ],
+                'page' => [
+                    'default' => 1,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+                'search' => [
+                    'default' => '',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'season' => [
+                    'default' => '',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'gender' => [
+                    'default' => '',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'status' => [
+                    'default' => '',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'orderby' => [
+                    'default' => 'name',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'order' => [
+                    'default' => 'ASC',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
                 ],
             ],
         ]);
@@ -171,42 +206,319 @@ class PlayerRoutes
     }
 
     /**
-     * Get all players (slugs for static generation)
+     * Get all players with filters for directory
      */
     public function getAllPlayers(WP_REST_Request $request): WP_REST_Response
     {
+        global $wpdb;
+
         $fields = $request->get_param('fields');
         $perPage = min($request->get_param('per_page'), 500);
+        $page = max(1, $request->get_param('page'));
+        $search = $request->get_param('search');
+        $seasonFilter = $request->get_param('season');
+        $genderFilter = $request->get_param('gender');
+        $statusFilter = $request->get_param('status');
+        $achievementFilter = $request->get_param('achievement');
+        $orderBy = $request->get_param('orderby');
+        $order = strtoupper($request->get_param('order')) === 'DESC' ? 'DESC' : 'ASC';
 
-        $posts = get_posts([
-            'post_type' => 'bigbrother-players',
-            'post_status' => 'publish',
-            'numberposts' => $perPage,
-            'orderby' => 'title',
-            'order' => 'ASC',
-        ]);
-
+        // For slug-only requests (static generation), use simple query
         if ($fields === 'slug') {
-            // Return just slugs for static generation
+            $posts = get_posts([
+                'post_type' => 'bigbrother-players',
+                'post_status' => 'publish',
+                'numberposts' => $perPage,
+                'orderby' => 'title',
+                'order' => 'ASC',
+            ]);
+
             $players = array_map(function ($post) {
                 return ['slug' => $post->post_name];
             }, $posts);
+
+            return new WP_REST_Response([
+                'success' => true,
+                'players' => $players,
+                'count' => count($players),
+            ], 200);
+        }
+
+        // Build query for full player data
+        $playersTable = $wpdb->prefix . 'bbj_players';
+        $geoTable = $wpdb->prefix . 'bbj_geo';
+        $seasonLinkTable = $wpdb->prefix . 'bbj_v2_player_season';
+        $postsTable = $wpdb->prefix . 'posts';
+
+        // Base query - get all players with geo data
+        $where = ["p.post_status = 'publish'"];
+        $params = [];
+
+        // Search filter
+        if (!empty($search)) {
+            $searchLike = '%' . $wpdb->esc_like($search) . '%';
+            $where[] = "(pl.first_name LIKE %s OR pl.last_name LIKE %s OR pl.official_nickname LIKE %s OR CONCAT(pl.first_name, ' ', pl.last_name) LIKE %s)";
+            $params[] = $searchLike;
+            $params[] = $searchLike;
+            $params[] = $searchLike;
+            $params[] = $searchLike;
+        }
+
+        // Gender filter (supports comma-separated values like "Male,Female")
+        if (!empty($genderFilter)) {
+            $genders = array_map('trim', explode(',', $genderFilter));
+            $genderPlaceholders = implode(',', array_fill(0, count($genders), '%s'));
+            $where[] = "pl.player_gender IN ($genderPlaceholders)";
+            $params = array_merge($params, $genders);
+        }
+
+        // Achievement filter (supports comma-separated values like "winner,afp,runner_up")
+        $seasonsTable = $wpdb->prefix . 'bbj_seasons';
+        if (!empty($achievementFilter)) {
+            $achievements = array_map('trim', array_map('strtolower', explode(',', $achievementFilter)));
+            $achievementConditions = [];
+
+            foreach ($achievements as $achievement) {
+                switch ($achievement) {
+                    case 'winner':
+                        $achievementConditions[] = "EXISTS (SELECT 1 FROM {$seasonsTable} s WHERE s.season_winner = pl.id)";
+                        break;
+                    case 'afp':
+                        $achievementConditions[] = "EXISTS (SELECT 1 FROM {$seasonsTable} s WHERE s.afp = pl.id)";
+                        break;
+                    case 'runner_up':
+                        $achievementConditions[] = "EXISTS (SELECT 1 FROM {$seasonsTable} s WHERE s.runner_up = pl.id)";
+                        break;
+                }
+            }
+
+            if (!empty($achievementConditions)) {
+                // Use OR to match any of the selected achievements
+                $where[] = '(' . implode(' OR ', $achievementConditions) . ')';
+            }
+        }
+
+        // Season filter - need to join with season link table
+        $seasonJoin = '';
+        if (!empty($seasonFilter)) {
+            $seasonIds = array_map('intval', explode(',', $seasonFilter));
+            $placeholders = implode(',', array_fill(0, count($seasonIds), '%d'));
+            $seasonJoin = "INNER JOIN {$seasonLinkTable} psl ON pl.post_id = psl.bbj_player";
+            $where[] = "psl.bbj_season IN ($placeholders)";
+            $params = array_merge($params, $seasonIds);
+        }
+
+        // Status filter (winner, jury, evicted, etc.)
+        if (!empty($statusFilter) && !empty($seasonFilter)) {
+            $statuses = explode(',', $statusFilter);
+            $statusConditions = [];
+            foreach ($statuses as $status) {
+                switch (strtolower(trim($status))) {
+                    case 'winner':
+                        $statusConditions[] = "psl.current_misc LIKE '%winner%'";
+                        break;
+                    case 'jury':
+                        $statusConditions[] = "psl.current_jury = 1";
+                        break;
+                    case 'evicted':
+                        $statusConditions[] = "psl.current_evicted = 1";
+                        break;
+                    case 'hoh':
+                        $statusConditions[] = "psl.current_hoh = 1";
+                        break;
+                    case 'pov':
+                        $statusConditions[] = "psl.current_pov = 1";
+                        break;
+                }
+            }
+            if (!empty($statusConditions)) {
+                $where[] = '(' . implode(' OR ', $statusConditions) . ')';
+            }
+        }
+
+        $whereClause = implode(' AND ', $where);
+
+        // Order by
+        $orderByClause = 'pl.first_name ASC, pl.last_name ASC';
+        switch ($orderBy) {
+            case 'name':
+            case 'first_name':
+                $orderByClause = "pl.first_name $order, pl.last_name $order";
+                break;
+            case 'last_name':
+                $orderByClause = "pl.last_name $order, pl.first_name $order";
+                break;
+            case 'age':
+                // Sort by date_of_birth (older = higher age, so ASC date = DESC age)
+                // NULL dates go to the end
+                $ageOrder = $order === 'ASC' ? 'DESC' : 'ASC';
+                $orderByClause = "CASE WHEN pl.date_of_birth IS NULL OR pl.date_of_birth = '0000-00-00' THEN 1 ELSE 0 END, pl.date_of_birth $ageOrder, pl.first_name ASC";
+                break;
+            case 'season':
+                if (!empty($seasonFilter)) {
+                    $orderByClause = "psl.bbj_season $order, pl.first_name ASC";
+                }
+                break;
+        }
+
+        // Count total
+        $countQuery = "
+            SELECT COUNT(DISTINCT pl.id)
+            FROM {$playersTable} pl
+            INNER JOIN {$postsTable} p ON pl.id = p.ID
+            LEFT JOIN {$geoTable} g ON pl.id = g.ID
+            {$seasonJoin}
+            WHERE {$whereClause}
+        ";
+
+        // Only use prepare if we have params, otherwise run query directly
+        if (!empty($params)) {
+            $totalCount = (int) $wpdb->get_var($wpdb->prepare($countQuery, $params));
         } else {
-            // Return basic player info
-            $players = array_map(function ($post) {
-                return [
-                    'id' => $post->ID,
-                    'slug' => $post->post_name,
-                    'name' => $post->post_title,
-                    'permalink' => get_permalink($post->ID),
-                ];
-            }, $posts);
+            $totalCount = (int) $wpdb->get_var($countQuery);
+        }
+
+        // Get paginated results
+        $offset = ($page - 1) * $perPage;
+
+        $seasonsTable = $wpdb->prefix . 'bbj_seasons';
+
+        $query = "
+            SELECT DISTINCT
+                pl.id,
+                pl.post_id,
+                pl.first_name,
+                pl.last_name,
+                pl.official_nickname,
+                pl.player_gender,
+                pl.occupation,
+                pl.profile_picture,
+                pl.date_of_birth,
+                g.locality as city,
+                g.administrative_area_level_1 as state,
+                p.post_name as slug,
+                (SELECT COUNT(*) FROM {$seasonsTable} WHERE season_winner = pl.id) as is_winner,
+                (SELECT COUNT(*) FROM {$seasonsTable} WHERE runner_up = pl.id) as is_runner_up,
+                (SELECT COUNT(*) FROM {$seasonsTable} WHERE afp = pl.id) as is_afp,
+                COALESCE(stats.total_hoh, 0) as total_hoh,
+                COALESCE(stats.total_pov, 0) as total_pov,
+                COALESCE(stats.total_nom, 0) as total_nom,
+                COALESCE(stats.total_votes, 0) as total_votes,
+                COALESCE(stats.made_jury, 0) as made_jury,
+                COALESCE(stats.was_evicted, 0) as was_evicted
+            FROM {$playersTable} pl
+            INNER JOIN {$postsTable} p ON pl.id = p.ID
+            LEFT JOIN {$geoTable} g ON pl.id = g.ID
+            LEFT JOIN (
+                SELECT bbj_player,
+                    SUM(bbj_total_hoh) as total_hoh,
+                    SUM(bbj_total_pov) as total_pov,
+                    SUM(bbj_total_nom) as total_nom,
+                    SUM(bbj_votes_received) as total_votes,
+                    MAX(current_jury) as made_jury,
+                    MAX(current_evicted) as was_evicted
+                FROM {$seasonLinkTable}
+                GROUP BY bbj_player
+            ) stats ON pl.id = stats.bbj_player
+            {$seasonJoin}
+            WHERE {$whereClause}
+            ORDER BY {$orderByClause}
+            LIMIT %d OFFSET %d
+        ";
+
+        // Always have at least perPage and offset params
+        $queryParams = array_merge($params, [$perPage, $offset]);
+
+        $results = $wpdb->get_results($wpdb->prepare($query, $queryParams), ARRAY_A);
+
+        // Format players
+        $players = [];
+        foreach ($results as $row) {
+            $photoUrl = null;
+            if (!empty($row['profile_picture'])) {
+                $imageData = wp_get_attachment_image_src((int) $row['profile_picture'], 'bbj_v2_spoiler_bar');
+                $photoUrl = $imageData ? $imageData[0] : null;
+            }
+
+            $hometown = '';
+            if ($row['city'] && $row['state']) {
+                $hometown = $row['city'] . ', ' . $row['state'];
+            } elseif ($row['city'] || $row['state']) {
+                $hometown = $row['city'] ?: $row['state'];
+            }
+
+            // Calculate age
+            $age = null;
+            if (!empty($row['date_of_birth']) && $row['date_of_birth'] !== '0000-00-00') {
+                try {
+                    $dob = new \DateTime($row['date_of_birth']);
+                    $age = $dob->diff(new \DateTime())->y;
+                } catch (\Exception $e) {
+                    // Ignore
+                }
+            }
+
+            // Check for achievements (for badges)
+            $isWinner = (int) $row['is_winner'] > 0;
+            $isRunnerUp = (int) $row['is_runner_up'] > 0;
+            $isAfp = (int) $row['is_afp'] > 0;
+            $madeJury = (int) $row['made_jury'] > 0;
+            $wasEvicted = (int) $row['was_evicted'] > 0;
+
+            // Determine status based on best placement (winner > runner_up > afp > jury > evicted > active)
+            $status = 'active';
+            $statusLabel = 'Player';
+            if ($isWinner) {
+                $status = 'winner';
+                $statusLabel = 'Winner';
+            } elseif ($isRunnerUp) {
+                $status = 'runner_up';
+                $statusLabel = 'Runner Up';
+            } elseif ($isAfp) {
+                $status = 'afp';
+                $statusLabel = 'AFP';
+            } elseif ($madeJury) {
+                $status = 'jury';
+                $statusLabel = 'Jury';
+            } elseif ($wasEvicted) {
+                $status = 'evicted';
+                $statusLabel = 'Evicted';
+            }
+
+            $players[] = [
+                'id' => (int) $row['id'],
+                'slug' => $row['slug'],
+                'name' => trim($row['first_name'] . ' ' . $row['last_name']),
+                'first_name' => $row['first_name'],
+                'last_name' => $row['last_name'],
+                'nickname' => $row['official_nickname'] ?: null,
+                'gender' => $row['player_gender'],
+                'occupation' => $row['occupation'] ?: null,
+                'age' => $age,
+                'hometown' => $hometown ?: null,
+                'photo' => $photoUrl,
+                'permalink' => get_permalink((int) $row['id']),
+                'status' => $status,
+                'status_label' => $statusLabel,
+                'is_winner' => $isWinner,
+                'is_afp' => $isAfp,
+                'stats' => [
+                    'hoh' => (int) $row['total_hoh'],
+                    'pov' => (int) $row['total_pov'],
+                    'nom' => (int) $row['total_nom'],
+                    'votes_received' => (int) $row['total_votes'],
+                ],
+            ];
         }
 
         return new WP_REST_Response([
             'success' => true,
             'players' => $players,
             'count' => count($players),
+            'total' => $totalCount,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => ceil($totalCount / $perPage),
         ], 200);
     }
 

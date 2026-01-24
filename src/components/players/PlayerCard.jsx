@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { FaTrophy, FaStar } from "react-icons/fa";
 
 // Status color classes for card borders and backgrounds
 const statusBorderClasses = {
@@ -86,14 +87,37 @@ export function PlayerCard({ player, showStats = true, size = "default" }) {
 
         {/* Player Info */}
         <div className="flex-grow min-w-0">
-          <h3 className={`font-semibold truncate ${size === "compact" ? "text-xs" : "text-sm"}`}>
-            {player.name}
-            {player.nickname && (
-              <span className="text-gray-500 font-normal font-hand ml-1">
-                &quot;{player.nickname}&quot;
-              </span>
+          <div className="flex items-center gap-1.5">
+            <h3 className={`font-semibold truncate ${size === "compact" ? "text-xs" : "text-sm"}`}>
+              {player.name}
+              {player.nickname && (
+                <span className="text-gray-500 font-normal font-hand ml-1">
+                  &quot;{player.nickname}&quot;
+                </span>
+              )}
+            </h3>
+            {/* Achievement Badges */}
+            {size !== "compact" && (
+              <div className="flex gap-1 flex-shrink-0">
+                {player.is_winner && (
+                  <span
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40"
+                    title="Season Winner"
+                  >
+                    <FaTrophy className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                  </span>
+                )}
+                {player.is_afp && (
+                  <span
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-pink-100 dark:bg-pink-900/40"
+                    title="America's Favorite Player"
+                  >
+                    <FaStar className="w-3 h-3 text-pink-600 dark:text-pink-400" />
+                  </span>
+                )}
+              </div>
             )}
-          </h3>
+          </div>
 
           {size !== "compact" && (
             <div className="mt-0.5 text-[11px] text-slate-600 dark:text-slate-400">

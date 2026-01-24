@@ -185,7 +185,7 @@ export function Header() {
             <ul className="hidden md:flex items-center gap-1 text-sm desktop-nav" role="menubar">
               <li role="none"><Link href="/" className="px-2 py-1">Home</Link></li>
               <li role="none"><Link href="/feed-updates" className="px-2 py-1">Feed Updates</Link></li>
-              <li role="none"><Link href="/players" className="px-2 py-1">Players</Link></li>
+              <li role="none"><Link href="/directory" className="px-2 py-1">Directory</Link></li>
               {!isAuthenticated && (
                 <>
                   <li role="none"><button onClick={() => openLogin()} className="px-2 py-1 text-secondary-500 hover:text-white">Log In</button></li>

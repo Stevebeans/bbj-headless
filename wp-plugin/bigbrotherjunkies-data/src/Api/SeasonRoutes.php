@@ -642,6 +642,21 @@ class SeasonRoutes
             $coverImageUrl = wp_get_attachment_image_url($season['season_picture'], 'medium') ?: '';
         }
 
+        // Get winner, runner_up, and afp player details
+        $winner = null;
+        $runnerUp = null;
+        $afp = null;
+
+        if (!empty($season['season_winner'])) {
+            $winner = $this->getPlayerBasicInfo((int) $season['season_winner']);
+        }
+        if (!empty($season['runner_up'])) {
+            $runnerUp = $this->getPlayerBasicInfo((int) $season['runner_up']);
+        }
+        if (!empty($season['afp'])) {
+            $afp = $this->getPlayerBasicInfo((int) $season['afp']);
+        }
+
         return [
             'id' => (int) $season['id'],
             'name' => $season['full_name'] ?? '',
@@ -652,6 +667,46 @@ class SeasonRoutes
             'end_date' => $season['end_date'] ?? null,
             'cover_image' => $coverImageUrl,
             'permalink' => $post ? get_permalink($post) : '',
+            'winner' => $winner,
+            'runner_up' => $runnerUp,
+            'afp' => $afp,
+        ];
+    }
+
+    /**
+     * Get basic player info for season display
+     */
+    private function getPlayerBasicInfo(int $playerId): ?array
+    {
+        global $wpdb;
+        $playersTable = defined('BBJ_V2_TABLE_PLAYERS') ? BBJ_V2_TABLE_PLAYERS : $wpdb->prefix . 'bbj_players';
+        $postsTable = $wpdb->posts;
+
+        $player = $wpdb->get_row($wpdb->prepare(
+            "SELECT pl.id, pl.first_name, pl.last_name, pl.official_nickname, pl.profile_picture, p.post_name as slug
+             FROM {$playersTable} pl
+             INNER JOIN {$postsTable} p ON pl.id = p.ID
+             WHERE pl.id = %d",
+            $playerId
+        ), ARRAY_A);
+
+        if (!$player) {
+            return null;
+        }
+
+        $name = trim(($player['first_name'] ?? '') . ' ' . ($player['last_name'] ?? ''));
+        $photo = '';
+        if (!empty($player['profile_picture'])) {
+            $photo = wp_get_attachment_image_url($player['profile_picture'], 'thumbnail') ?: '';
+        }
+
+        return [
+            'id' => (int) $player['id'],
+            'name' => $name,
+            'nickname' => $player['official_nickname'] ?? '',
+            'slug' => $player['slug'] ?? '',
+            'photo' => $photo,
+            'permalink' => get_permalink($player['id']),
         ];
     }
 
