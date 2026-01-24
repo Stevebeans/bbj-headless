@@ -119,6 +119,29 @@ class AuthRoutes
             ],
         ]);
 
+        // Password reset (set new password)
+        register_rest_route(self::NAMESPACE, '/auth/reset-password', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handleResetPassword'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'key' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'login' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'password' => [
+                    'required' => true,
+                    'type' => 'string',
+                ],
+            ],
+        ]);
+
         // Check if email exists (for registration validation)
         register_rest_route(self::NAMESPACE, '/auth/check-email', [
             'methods' => 'POST',
@@ -488,6 +511,57 @@ class AuthRoutes
         $this->sendPasswordResetEmail($user, $resetKey);
 
         return $successResponse;
+    }
+
+    /**
+     * Handle password reset (set new password)
+     *
+     * @return \WP_REST_Response|\WP_Error
+     */
+    public function handleResetPassword(\WP_REST_Request $request)
+    {
+        $key = $request->get_param('key');
+        $login = $request->get_param('login');
+        $password = $request->get_param('password');
+
+        // Validate password length
+        if (strlen($password) < 8) {
+            return new \WP_Error(
+                'password_too_short',
+                __('Password must be at least 8 characters.', 'bigbrotherjunkies-data'),
+                ['status' => 400]
+            );
+        }
+
+        // Validate the reset key
+        $user = check_password_reset_key($key, $login);
+
+        if (is_wp_error($user)) {
+            $errorCode = $user->get_error_code();
+
+            // Provide user-friendly error messages
+            if ($errorCode === 'expired_key') {
+                return new \WP_Error(
+                    'expired_key',
+                    __('This password reset link has expired. Please request a new one.', 'bigbrotherjunkies-data'),
+                    ['status' => 400]
+                );
+            }
+
+            return new \WP_Error(
+                'invalid_key',
+                __('This password reset link is invalid. Please request a new one.', 'bigbrotherjunkies-data'),
+                ['status' => 400]
+            );
+        }
+
+        // Reset the password
+        reset_password($user, $password);
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'message' => __('Your password has been reset successfully. You can now log in with your new password.', 'bigbrotherjunkies-data'),
+        ], 200);
     }
 
     /**
@@ -1012,8 +1086,8 @@ class AuthRoutes
      */
     private function sendPasswordResetEmail(\WP_User $user, string $resetKey): void
     {
-        // Use WordPress's built-in password reset URL format
-        $resetUrl = network_site_url("wp-login.php?action=rp&key=$resetKey&login=" . rawurlencode($user->user_login), 'login');
+        // Point to Next.js reset password page
+        $resetUrl = "https://bigbrotherjunkies.com/reset-password?key=" . urlencode($resetKey) . "&login=" . rawurlencode($user->user_login);
 
         $subject = sprintf(__('Password Reset - %s', 'bigbrotherjunkies-data'), get_bloginfo('name'));
 

@@ -2,6 +2,7 @@
 
 namespace BigBrotherJunkies\Data\Api;
 
+use BigBrotherJunkies\Data\Utils\Revalidation;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -94,6 +95,24 @@ class PlayerRoutes
                     'default' => 'ASC',
                     'type' => 'string',
                     'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
+        ]);
+
+        // ========================================
+        // ADMIN ENDPOINTS
+        // ========================================
+
+        // Update player
+        register_rest_route(self::NAMESPACE, '/admin/players/(?P<id>\d+)', [
+            'methods' => 'POST',
+            'callback' => [$this, 'updatePlayer'],
+            'permission_callback' => [$this, 'checkPlayerManagementAccess'],
+            'args' => [
+                'id' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
                 ],
             ],
         ]);
@@ -867,5 +886,199 @@ class PlayerRoutes
         }
 
         return $exitDate->diff($startDate)->days + 1;
+    }
+
+    // ========================================
+    // ADMIN ENDPOINT CALLBACKS
+    // ========================================
+
+    /**
+     * Update player
+     */
+    public function updatePlayer(WP_REST_Request $request): WP_REST_Response
+    {
+        global $wpdb;
+
+        $playerId = $request->get_param('id');
+        $params = $request->get_json_params();
+
+        // Get existing player post
+        $post = get_post($playerId);
+
+        if (!$post || $post->post_type !== 'bigbrother-players') {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Player not found',
+            ], 404);
+        }
+
+        // Tables
+        $playersTable = $wpdb->prefix . 'bbj_players';
+        $geoTable = $wpdb->prefix . 'bbj_geo';
+
+        // Prepare player data update
+        $playerData = [];
+        $playerFormat = [];
+
+        // Map allowed player fields
+        $playerFields = [
+            'first_name' => '%s',
+            'last_name' => '%s',
+            'official_nickname' => '%s',
+            'player_gender' => '%s',
+            'date_of_birth' => '%s',
+            'occupation' => '%s',
+            'twitter' => '%s',
+            'instagram' => '%s',
+            'facebook' => '%s',
+            'tiktok' => '%s',
+            'profile_picture' => '%d',
+            'player_banner' => '%d',
+        ];
+
+        foreach ($playerFields as $field => $format) {
+            if (isset($params[$field])) {
+                $value = $params[$field];
+                // Handle null/empty values for integer fields
+                if ($format === '%d' && ($value === '' || $value === null)) {
+                    $playerData[$field] = null;
+                    $playerFormat[] = '%s'; // Use string format for NULL
+                } else {
+                    $playerData[$field] = $format === '%d' ? absint($value) : sanitize_text_field($value);
+                    $playerFormat[] = $format;
+                }
+            }
+        }
+
+        // Update player table if there's data
+        if (!empty($playerData)) {
+            $result = $wpdb->update(
+                $playersTable,
+                $playerData,
+                ['id' => $playerId],
+                $playerFormat,
+                ['%d']
+            );
+
+            if ($result === false) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Failed to update player: ' . $wpdb->last_error,
+                ], 500);
+            }
+        }
+
+        // Update geo data if provided
+        $geoData = [];
+        $geoFormat = [];
+
+        $geoFields = [
+            'locality' => '%s',           // city
+            'administrative_area_level_1' => '%s', // state
+            'lat' => '%s',
+            'lng' => '%s',
+        ];
+
+        foreach ($geoFields as $field => $format) {
+            if (isset($params[$field])) {
+                $geoData[$field] = sanitize_text_field($params[$field]);
+                $geoFormat[] = $format;
+            }
+        }
+
+        if (!empty($geoData)) {
+            // Check if geo record exists
+            $existingGeo = $wpdb->get_var($wpdb->prepare(
+                "SELECT ID FROM {$geoTable} WHERE ID = %d",
+                $playerId
+            ));
+
+            if ($existingGeo) {
+                // Update existing
+                $wpdb->update(
+                    $geoTable,
+                    $geoData,
+                    ['ID' => $playerId],
+                    $geoFormat,
+                    ['%d']
+                );
+            } else {
+                // Insert new
+                $geoData['ID'] = $playerId;
+                $wpdb->insert($geoTable, $geoData);
+            }
+        }
+
+        // Update WordPress post if name changed
+        $postUpdate = [];
+
+        if (isset($params['first_name']) || isset($params['last_name'])) {
+            // Get current player data for full name
+            $currentPlayer = $wpdb->get_row($wpdb->prepare(
+                "SELECT first_name, last_name FROM {$playersTable} WHERE id = %d",
+                $playerId
+            ), ARRAY_A);
+
+            if ($currentPlayer) {
+                $firstName = $params['first_name'] ?? $currentPlayer['first_name'];
+                $lastName = $params['last_name'] ?? $currentPlayer['last_name'];
+                $postUpdate['post_title'] = trim("$firstName $lastName");
+            }
+        }
+
+        // Update bio if provided (stored as post_content)
+        if (isset($params['bio'])) {
+            $postUpdate['post_content'] = wp_kses_post($params['bio']);
+        }
+
+        if (!empty($postUpdate)) {
+            $postUpdate['ID'] = $playerId;
+            wp_update_post($postUpdate);
+        }
+
+        // Trigger Next.js revalidation
+        Revalidation::revalidatePlayer($post->post_name);
+
+        // Get updated player data
+        $updatedPlayer = function_exists('bbj_v2_get_player')
+            ? bbj_v2_get_player($playerId)
+            : null;
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Player updated successfully',
+            'player' => [
+                'id' => $playerId,
+                'slug' => $post->post_name,
+                'name' => trim(($updatedPlayer['first_name'] ?? '') . ' ' . ($updatedPlayer['last_name'] ?? '')),
+            ],
+        ], 200);
+    }
+
+    // ========================================
+    // PERMISSION CALLBACKS
+    // ========================================
+
+    /**
+     * Check if user has player management access
+     */
+    public function checkPlayerManagementAccess(): bool
+    {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
+        // Check for player_management permission from AdminRoutes
+        $permissions = get_option('bbj_admin_permissions', AdminRoutes::DEFAULT_PERMISSIONS);
+
+        if (!isset($permissions['player_management'])) {
+            // Fallback: only allow administrators
+            return current_user_can('manage_options');
+        }
+
+        $user = wp_get_current_user();
+        $userRoles = $user->roles;
+
+        return !empty(array_intersect($userRoles, $permissions['player_management']['roles']));
     }
 }

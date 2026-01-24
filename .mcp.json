@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "bbj-production": {
+      "type": "stdio",
+      "command": "npx.cmd",
+      "args": ["-y", "@benborla29/mcp-server-mysql"],
+      "env": {
+        "MYSQL_HOST": "45.55.225.162",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USER": "duesaptjae",
+        "MYSQL_PASS": "YSuT8T89au",
+        "MYSQL_DB": "duesaptjae"
+      }
+    }
+  }
+}

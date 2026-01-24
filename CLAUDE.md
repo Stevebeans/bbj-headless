@@ -323,18 +323,33 @@ src/
 │       └── revalidate/route.js # Webhook endpoint
 │
 ├── components/
+│   ├── Providers.jsx           # Client - wraps app with auth contexts
 │   ├── layout/
-│   │   ├── Header.jsx
+│   │   ├── Header.jsx          # Client - uses auth hooks
+│   │   ├── Sidebar.jsx         # Client - uses auth hooks
 │   │   └── Footer.jsx
+│   ├── ads/
+│   │   ├── AdPlaceholder.jsx       # Server (async) - for pages
+│   │   └── ClientAdPlaceholder.jsx # Client - for client components
+│   ├── auth/
+│   │   ├── AuthModal.jsx       # Login/register modal
+│   │   ├── LoginView.jsx
+│   │   ├── RegisterView.jsx
+│   │   └── ForgotPasswordView.jsx
 │   ├── spoiler-bar/
 │   │   └── SpoilerBar.jsx
 │   └── posts/
 │       └── PostCard.jsx
 │
+├── context/
+│   ├── AuthContext.jsx         # User auth state
+│   └── AuthModalContext.jsx    # Modal open/close state
+│
 ├── lib/
 │   └── api/
 │       ├── wordpress.js        # WP REST client
 │       ├── posts.js            # Post fetching
+│       ├── ads.js              # Ad slot fetching
 │       └── spoiler-bar.js      # Spoiler bar data
 │
 └── styles/
@@ -534,6 +549,36 @@ import Image from 'next/image';
   <DataComponent />
 </ErrorBoundary>
 ```
+
+## Server vs Client Components
+
+**CRITICAL:** In Next.js App Router, async Server Components CANNOT be used inside Client Components.
+
+### Ad Components
+
+| Component | Type | Use In |
+|-----------|------|--------|
+| `AdPlaceholder` | Server (async) | Server Components only (pages, layouts) |
+| `ClientAdPlaceholder` | Client | Client Components (Sidebar, etc.) |
+
+```jsx
+// In a Server Component (page.jsx, layout.jsx):
+import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
+<AdPlaceholder slot="index_top" />
+
+// In a Client Component ("use client"):
+import { ClientAdPlaceholder } from "@/components/ads/ClientAdPlaceholder";
+<ClientAdPlaceholder slot="sidebar_top" />
+```
+
+### Components Using Auth Hooks
+
+These are Client Components (use `useAuth`/`useAuthModal`):
+- `Header` - Login/logout buttons
+- `Sidebar` - User welcome widget, login buttons
+- `CommentForm` - Requires auth to comment
+
+**Remember:** If a component needs `useAuth()` or `useAuthModal()`, it MUST be a Client Component and can only use other Client Components or non-async Server Components.
 
 ## Key Notes
 

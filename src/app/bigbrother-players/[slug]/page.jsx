@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { CommentSection } from "@/components/comments";
 import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
+import { PlayerEditButton } from "@/components/admin";
 import {
   PlayerHero,
   PlayerMeta,
@@ -111,9 +112,14 @@ export default async function PlayerPage({ params }) {
               <PlayerHero player={player} />
 
               {/* Meta: Breadcrumbs, Location, Occupation, Age */}
-              <PlayerMeta player={player} />
+              <PlayerMeta player={player} slug={slug} />
 
               <div className="p-4 space-y-6">
+                {/* Admin Edit Button */}
+                <div className="flex justify-end">
+                  <PlayerEditButton slug={slug} />
+                </div>
+
                 {/* Award Badges */}
                 {hasAwards && <PlayerBadges awards={player.awards} />}
 

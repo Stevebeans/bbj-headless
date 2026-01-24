@@ -152,6 +152,34 @@ class SeasonRoutes
                 ],
             ],
         ]);
+
+        // Update roster status (bulk player status updates)
+        register_rest_route(self::NAMESPACE, '/admin/seasons/(?P<id>\d+)/roster-status', [
+            'methods' => 'POST',
+            'callback' => [$this, 'updateRosterStatus'],
+            'permission_callback' => [$this, 'checkSeasonManagementAccess'],
+            'args' => [
+                'id' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+            ],
+        ]);
+
+        // Purge cache for a season (Redis + Varnish)
+        register_rest_route(self::NAMESPACE, '/admin/seasons/(?P<id>\d+)/purge-cache', [
+            'methods' => 'POST',
+            'callback' => [$this, 'purgeSeasonCache'],
+            'permission_callback' => [$this, 'checkSeasonManagementAccess'],
+            'args' => [
+                'id' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+            ],
+        ]);
     }
 
     // ========================================
@@ -537,6 +565,194 @@ class SeasonRoutes
     }
 
     /**
+     * Update roster status (bulk player status updates for spoiler bar editor)
+     */
+    public function updateRosterStatus(WP_REST_Request $request): WP_REST_Response
+    {
+        global $wpdb;
+
+        $seasonId = $request->get_param('id');
+        $params = $request->get_json_params();
+        $players = $params['players'] ?? [];
+
+        if (empty($players)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'No players provided',
+            ], 400);
+        }
+
+        // Verify season exists
+        $season = function_exists('bbj_v2_get_season_by_id')
+            ? bbj_v2_get_season_by_id($seasonId)
+            : null;
+
+        if (!$season) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Season not found',
+            ], 404);
+        }
+
+        $linksTable = defined('BBJ_V2_TABLE_LINKS') ? BBJ_V2_TABLE_LINKS : $wpdb->prefix . 'bbj_v2_player_season';
+        $updatedCount = 0;
+        $errors = [];
+
+        foreach ($players as $playerData) {
+            $playerId = absint($playerData['player_id'] ?? 0);
+            if (!$playerId) {
+                continue;
+            }
+
+            // Build update data from allowed fields
+            $updateData = [];
+            $updateFormat = [];
+
+            // Status flags (tinyint)
+            $statusFields = [
+                'current_hoh', 'current_pov', 'current_nom', 'current_safe',
+                'current_havenot', 'current_jury', 'current_evicted', 'current_misc'
+            ];
+
+            foreach ($statusFields as $field) {
+                if (isset($playerData[$field])) {
+                    $updateData[$field] = $playerData[$field] ? 1 : 0;
+                    $updateFormat[] = '%d';
+                }
+            }
+
+            // finish_place (tinyint unsigned, nullable)
+            if (array_key_exists('finish_place', $playerData)) {
+                $updateData['finish_place'] = $playerData['finish_place'] === null || $playerData['finish_place'] === ''
+                    ? null
+                    : absint($playerData['finish_place']);
+                $updateFormat[] = $updateData['finish_place'] === null ? '%s' : '%d';
+            }
+
+            // evicted_date (date, nullable)
+            if (array_key_exists('evicted_date', $playerData)) {
+                $evictedDate = $playerData['evicted_date'];
+                if (empty($evictedDate)) {
+                    $updateData['bbj_evicted_date'] = null;
+                    $updateFormat[] = '%s';
+                } else {
+                    // Validate date format
+                    $parsed = \DateTime::createFromFormat('Y-m-d', $evictedDate);
+                    if ($parsed && $parsed->format('Y-m-d') === $evictedDate) {
+                        $updateData['bbj_evicted_date'] = $evictedDate;
+                        $updateFormat[] = '%s';
+                    }
+                }
+            }
+
+            // misc_notes (varchar)
+            if (isset($playerData['misc_notes'])) {
+                $updateData['misc_notes'] = sanitize_text_field($playerData['misc_notes']);
+                $updateFormat[] = '%s';
+            }
+
+            if (empty($updateData)) {
+                continue;
+            }
+
+            $result = $wpdb->update(
+                $linksTable,
+                $updateData,
+                [
+                    'bbj_player' => $playerId,
+                    'bbj_season' => $seasonId,
+                ],
+                $updateFormat,
+                ['%d', '%d']
+            );
+
+            if ($result === false) {
+                $errors[] = "Failed to update player {$playerId}: " . $wpdb->last_error;
+            } else {
+                $updatedCount++;
+            }
+        }
+
+        // Bust cache
+        if (function_exists('bbj_spoiler_bar_bust_cache')) {
+            bbj_spoiler_bar_bust_cache($seasonId);
+        }
+
+        // Trigger Next.js revalidation
+        if ($season['post_id']) {
+            $post = get_post($season['post_id']);
+            if ($post) {
+                Revalidation::revalidateSeason($post->post_name);
+                Revalidation::revalidateSpoilerBar();
+            }
+        }
+
+        // Return updated player data for live preview
+        $updatedPlayers = function_exists('bbj_v2_get_season_players')
+            ? bbj_v2_get_season_players($seasonId, 'bbj_v2_spoiler_bar')
+            : [];
+
+        $formattedPlayers = array_map([$this, 'formatPlayer'], $updatedPlayers);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => "Updated {$updatedCount} player(s)",
+            'updated_count' => $updatedCount,
+            'errors' => $errors,
+            'players' => $formattedPlayers,
+        ], 200);
+    }
+
+    /**
+     * Purge all caches for a season (Redis object cache + Varnish)
+     */
+    public function purgeSeasonCache(WP_REST_Request $request): WP_REST_Response
+    {
+        $seasonId = $request->get_param('id');
+
+        // Verify season exists
+        $season = function_exists('bbj_v2_get_season_by_id')
+            ? bbj_v2_get_season_by_id($seasonId)
+            : null;
+
+        if (!$season) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Season not found',
+            ], 404);
+        }
+
+        // Bust Redis object cache
+        if (function_exists('bbj_spoiler_bar_bust_cache')) {
+            bbj_spoiler_bar_bust_cache($seasonId);
+        }
+
+        // Additional: flush entire Redis cache group if available
+        if (function_exists('wp_cache_flush_group')) {
+            wp_cache_flush_group('bbj_v2');
+        }
+
+        // Clear Breeze/Varnish cache
+        if (function_exists('bbj_purge_varnish_cache')) {
+            bbj_purge_varnish_cache();
+        }
+
+        // Trigger Next.js revalidation
+        if ($season['post_id']) {
+            $post = get_post($season['post_id']);
+            if ($post) {
+                Revalidation::revalidateSeason($post->post_name);
+                Revalidation::revalidateSpoilerBar();
+            }
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Cache purged successfully (Redis + Varnish + Next.js)',
+        ], 200);
+    }
+
+    /**
      * Search players for add player dropdown
      */
     public function searchPlayers(WP_REST_Request $request): WP_REST_Response
@@ -809,6 +1025,7 @@ class SeasonRoutes
 
         return [
             'id' => (int) ($player['bbj_player'] ?? $player['id'] ?? 0),
+            'player_id' => (int) ($player['bbj_player'] ?? $player['id'] ?? 0),
             'link_id' => (int) ($player['link_id'] ?? 0),
             'name' => trim(($player['first_name'] ?? '') . ' ' . ($player['last_name'] ?? '')),
             'first_name' => $player['first_name'] ?? '',
@@ -836,8 +1053,13 @@ class SeasonRoutes
                 'evicted' => !empty($player['current_evicted']),
                 'havenot' => !empty($player['current_havenot']),
                 'safe' => !empty($player['current_safe']),
+                'misc' => !empty($player['current_misc']),
+                'misc_notes' => $player['misc_notes'] ?? '',
             ],
             'evicted_date' => $player['bbj_evicted_date'] ?? null,
+            'finish_place' => isset($player['finish_place']) && $player['finish_place'] !== null
+                                ? (int) $player['finish_place']
+                                : null,
         ];
     }
 }

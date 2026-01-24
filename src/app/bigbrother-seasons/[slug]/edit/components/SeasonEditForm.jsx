@@ -12,6 +12,13 @@ import { DatesSection } from "./DatesSection";
 import { ImagesSection } from "./ImagesSection";
 import { WinnersSection } from "./WinnersSection";
 import { PlayersSection } from "./PlayersSection";
+import { RosterStatusSection } from "./RosterStatusSection";
+import { SeasonSwitcher } from "./SeasonSwitcher";
+
+const TABS = [
+  { id: "spoiler", label: "Spoiler Bar", icon: "bars" },
+  { id: "info", label: "Season Info", icon: "info" },
+];
 
 /**
  * Season edit form with all sections
@@ -21,6 +28,7 @@ export function SeasonEditForm({ season, players: initialPlayers, slug, showHead
   const { user } = useAuth();
   const [players, setPlayers] = useState(initialPlayers || []);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState("spoiler");
 
   // Form initial values
   const initialValues = {
@@ -144,53 +152,112 @@ export function SeasonEditForm({ season, players: initialPlayers, slug, showHead
           </div>
         )}
 
-        {/* Form sections */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <BasicInfoSection
-            values={values}
-            errors={errors}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            getFieldProps={getFieldProps}
-          />
+        {/* Season Switcher */}
+        <div className="mb-4">
+          <SeasonSwitcher currentSeasonId={season.id} currentSlug={slug} />
+        </div>
 
-          <DatesSection
-            values={values}
-            errors={errors}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            getFieldProps={getFieldProps}
-          />
+        {/* Tab Navigation */}
+        <div>
+          <nav className="flex" role="tablist">
+            {TABS.map((tab, index) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors
+                  ${activeTab === tab.id
+                    ? "bg-white dark:bg-gray-800 text-primary-500 border border-b-0 border-slate-200 dark:border-gray-700 shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-gray-700"
+                  }
+                  ${index === 0 && activeTab !== tab.id ? "border-l border-t border-slate-200 dark:border-gray-700" : ""}
+                `}
+              >
+                <span className="flex items-center gap-2">
+                  {tab.icon === "bars" && (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  )}
+                  {tab.icon === "info" && (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  {tab.label}
+                </span>
+              </button>
+            ))}
+          </nav>
+        </div>
 
-          <ImagesSection
-            values={values}
-            errors={errors}
-            setValue={setValue}
-          />
+        {/* Tab Content */}
+        <div className="space-y-6">
+          {/* Spoiler Bar Tab */}
+          {activeTab === "spoiler" && (
+            <RosterStatusSection
+              seasonId={season.id}
+              players={players}
+              onPlayersUpdate={setPlayers}
+              season={season}
+            />
+          )}
 
-          <WinnersSection
-            values={values}
-            errors={errors}
-            setValue={setValue}
-            players={players}
-          />
+          {/* Season Info Tab */}
+          {activeTab === "info" && (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <BasicInfoSection
+                values={values}
+                errors={errors}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                getFieldProps={getFieldProps}
+              />
 
-          <PlayersSection
-            seasonId={season.id}
-            players={players}
-            onAddPlayer={handleAddPlayer}
-            onRemovePlayer={handleRemovePlayer}
-          />
-        </form>
+              <DatesSection
+                values={values}
+                errors={errors}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                getFieldProps={getFieldProps}
+              />
 
-        {/* Save bar */}
-        <SaveBar
-          isDirty={isDirty}
-          isSubmitting={isSubmitting}
-          onSave={handleSubmit}
-          onCancel={() => reset()}
-          error={submitError}
-        />
+              <ImagesSection
+                values={values}
+                errors={errors}
+                setValue={setValue}
+              />
+
+              <WinnersSection
+                values={values}
+                errors={errors}
+                setValue={setValue}
+                players={players}
+              />
+
+              <PlayersSection
+                seasonId={season.id}
+                players={players}
+                onAddPlayer={handleAddPlayer}
+                onRemovePlayer={handleRemovePlayer}
+              />
+            </form>
+          )}
+        </div>
+
+        {/* Save bar - only show on info tab */}
+        {activeTab === "info" && (
+          <SaveBar
+            isDirty={isDirty}
+            isSubmitting={isSubmitting}
+            onSave={handleSubmit}
+            onCancel={() => reset()}
+            error={submitError}
+          />
+        )}
       </div>
     </AdminGuard>
   );

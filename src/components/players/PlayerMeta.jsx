@@ -21,7 +21,7 @@ export function PlayerMeta({ player }) {
           </li>
           <li aria-hidden="true">/</li>
           <li>
-            <Link href="/players" className="hover:text-primary-500 hover:underline">
+            <Link href="/directory?tab=players" className="hover:text-primary-500 hover:underline">
               Players
             </Link>
           </li>

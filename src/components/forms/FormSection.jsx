@@ -1,9 +1,14 @@
 /**
  * Form section wrapper with title and description
+ * @param {string} variant - "default" or "tabbed" (no top-left rounded corner)
  */
-export function FormSection({ title, description, children, className = "" }) {
+export function FormSection({ title, description, children, className = "", variant = "default" }) {
+  const baseClass = variant === "tabbed"
+    ? "v2-primary-container-inner-tabbed"
+    : "v2-primary-container-inner";
+
   return (
-    <section className={`v2-primary-container-inner p-6 ${className}`}>
+    <section className={`${baseClass} p-6 ${className}`}>
       {(title || description) && (
         <div className="mb-6">
           {title && (

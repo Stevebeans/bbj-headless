@@ -24,6 +24,7 @@ use BigBrotherJunkies\Data\Api\AdminRoutes;
 use BigBrotherJunkies\Data\Api\AuthRoutes;
 use BigBrotherJunkies\Data\Api\PlayerRoutes;
 use BigBrotherJunkies\Data\Api\SeasonRoutes;
+use BigBrotherJunkies\Data\Api\ContactRoutes;
 use BigBrotherJunkies\Data\Auth\AuthManager;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
@@ -322,6 +323,10 @@ class Plugin
         // Season routes (list, single, edit)
         $seasonRoutes = new SeasonRoutes();
         $seasonRoutes->init();
+
+        // Contact form routes
+        $contactRoutes = new ContactRoutes();
+        $contactRoutes->register();
     }
 
     /**

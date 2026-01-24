@@ -32,6 +32,14 @@ class Revalidation
     }
 
     /**
+     * Trigger revalidation for the spoiler bar
+     */
+    public static function revalidateSpoilerBar(): bool
+    {
+        return self::triggerByTag('spoiler-bar');
+    }
+
+    /**
      * Trigger revalidation by tag
      */
     public static function revalidateTag(string $tag): bool
