@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import { submitContactForm } from "@/lib/api/contact";
+import { useAuth } from "@/context/AuthContext";
 
 export function ContactForm({ reasons, recaptchaSiteKey }) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -12,6 +14,17 @@ export function ContactForm({ reasons, recaptchaSiteKey }) {
     message: "",
     website: "", // Honeypot
   });
+
+  // Pre-fill name and email if user is logged in
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: prev.name || user.user_display_name || "",
+        email: prev.email || user.user_email || "",
+      }));
+    }
+  }, [user]);
   const [status, setStatus] = useState("idle"); // idle, submitting, success, error
   const [errorMessage, setErrorMessage] = useState("");
   const recaptchaRef = useRef(null);
