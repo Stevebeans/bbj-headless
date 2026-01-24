@@ -633,7 +633,8 @@ class SeasonRoutes
      */
     private function formatSeasonBasic($season): array
     {
-        $post = isset($season['post_id']) ? get_post($season['post_id']) : null;
+        // Season id IS the post ID (they're the same)
+        $post = isset($season['id']) ? get_post($season['id']) : null;
         $slug = $post ? $post->post_name : '';
 
         // Get cover image URL

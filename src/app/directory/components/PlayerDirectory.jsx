@@ -604,15 +604,13 @@ function SeasonsTab({ seasons, isAdmin }) {
               {/* Admin Edit */}
               {isAdmin && (
                 <td className="py-3 px-4">
-                  <a
-                    href={`https://bigbrotherjunkies.com/wp-admin/post.php?post=${season.id}&action=edit`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href={`/bigbrother-seasons/${season.slug}/edit`}
                     className="inline-flex items-center gap-1 text-slate-400 hover:text-primary-500"
-                    title="Edit in WordPress"
+                    title="Edit Season"
                   >
                     <FaEdit className="w-4 h-4" />
-                  </a>
+                  </Link>
                 </td>
               )}
             </tr>
