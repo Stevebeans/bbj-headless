@@ -17,7 +17,7 @@ export async function getSlotAd(slotSlug) {
     });
     return data;
   } catch (error) {
-    console.error(`Failed to fetch ad for slot ${slotSlug}:`, error);
+    // Silently fail - don't spam console with ad errors
     return { show: false, reason: "fetch_error" };
   }
 }

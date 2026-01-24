@@ -52,6 +52,11 @@ export const metadata = {
     card: "summary_large_image",
   },
   manifest: "/manifest.json",
+  alternates: {
+    types: {
+      "application/rss+xml": "/feed",
+    },
+  },
 };
 
 export const viewport = {

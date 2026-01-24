@@ -3,9 +3,22 @@ import { getInContentPlacements } from "@/config/ads";
 
 /**
  * Renders post content with ads inserted at configured positions
+ * @param {string} content - HTML content to render
+ * @param {string} className - CSS class for the wrapper
+ * @param {boolean} showAds - Whether to show in-content ads (default: true)
  */
-export function ContentWithAds({ content, className = "" }) {
+export function ContentWithAds({ content, className = "", showAds = true }) {
   if (!content) return null;
+
+  // If ads are disabled, just render content as-is
+  if (!showAds) {
+    return (
+      <div
+        className={className}
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
 
   // Split content into paragraphs
   const paragraphs = splitIntoParagraphs(content);

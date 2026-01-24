@@ -75,19 +75,30 @@ export function AuthProvider({ children }) {
 
   // Validate JWT token with WordPress
   const validateToken = async (token) => {
-    const response = await fetch(`${API_URL}/bbj/v3/validate-token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ token }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-    if (!response.ok) {
-      throw new Error("Invalid token");
+    try {
+      const response = await fetch(`${API_URL}/bbj/v3/validate-token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error("Invalid token");
+      }
+
+      return response.json();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      throw err;
     }
-
-    return response.json();
   };
 
   // Login with email/password

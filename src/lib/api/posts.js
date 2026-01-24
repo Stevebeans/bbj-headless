@@ -27,6 +27,7 @@ function transformPost(wpPost) {
     categoryIds: categories?.map((cat) => cat.id) || [],
     commentCount: wpPost.comment_count || 0,
     liveFeedThread: wpPost.live_feed_thread || false,
+    hideAds: wpPost.hide_ads || false,
   };
 }
 
@@ -113,4 +114,99 @@ export async function getRelatedPosts(postId, categoryId, limit = 4) {
     console.error("Failed to fetch related posts:", error);
     return [];
   }
+}
+
+/**
+ * Transform WP page to our format
+ */
+function transformPage(wpPage) {
+  const author = wpPage._embedded?.author?.[0];
+  const featuredMedia = wpPage._embedded?.["wp:featuredmedia"]?.[0];
+
+  return {
+    id: wpPage.id,
+    slug: wpPage.slug,
+    title: decodeHtml(wpPage.title?.rendered || ""),
+    excerpt: wpPage.excerpt?.rendered || "",
+    content: wpPage.content?.rendered || "",
+    date: wpPage.date,
+    modified: wpPage.modified,
+    author: {
+      id: author?.id || 0,
+      name: author?.name || "Unknown",
+      avatar: author?.avatar_urls?.["96"] || "",
+    },
+    featuredImage: featuredMedia?.source_url || null,
+    type: "page",
+    hideAds: wpPage.hide_ads || false,
+  };
+}
+
+/**
+ * Get single page by slug
+ */
+export async function getPage(slug) {
+  try {
+    const pages = await wpRestFetch(`/pages?_embed&slug=${slug}`, {
+      tags: ["pages", `page-${slug}`],
+      revalidate: 3600, // 1 hour - pages rarely change
+    });
+
+    if (!pages.length) {
+      return null;
+    }
+
+    return transformPage(pages[0]);
+  } catch (error) {
+    console.error("Failed to fetch page:", error);
+    return null;
+  }
+}
+
+/**
+ * Get all page slugs for static generation
+ */
+export async function getAllPageSlugs() {
+  try {
+    const pages = await wpRestFetch("/pages?per_page=100&_fields=slug", {
+      tags: ["pages"],
+      revalidate: 3600, // 1 hour
+    });
+
+    return pages.map((page) => page.slug);
+  } catch (error) {
+    console.error("Failed to fetch page slugs:", error);
+    return [];
+  }
+}
+
+/**
+ * Get content by slug - tries post first, then page
+ */
+export async function getContent(slug) {
+  // Try post first
+  const post = await getPost(slug);
+  if (post) {
+    return { ...post, type: "post" };
+  }
+
+  // Try page
+  const page = await getPage(slug);
+  if (page) {
+    return page; // Already has type: "page"
+  }
+
+  return null;
+}
+
+/**
+ * Get all content slugs (posts + pages) for static generation
+ */
+export async function getAllContentSlugs() {
+  const [postSlugs, pageSlugs] = await Promise.all([
+    getAllPostSlugs(),
+    getAllPageSlugs(),
+  ]);
+
+  return [...postSlugs, ...pageSlugs];
 }
