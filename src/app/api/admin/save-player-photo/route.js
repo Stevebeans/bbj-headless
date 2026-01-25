@@ -4,7 +4,21 @@
  * This runs server-side to avoid CORS issues
  */
 
+import { NextResponse } from "next/server";
+
 const WP_API_URL = process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+
+// Handle CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
 
 export async function POST(request) {
   try {
