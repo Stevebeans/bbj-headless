@@ -130,7 +130,8 @@ class SeasonRoutes
         ]);
 
         // Search players (for add player dropdown)
-        register_rest_route(self::NAMESPACE, '/players/search', [
+        // Note: Using /search/players to avoid conflict with /players/{slug} route
+        register_rest_route(self::NAMESPACE, '/search/players', [
             'methods' => 'GET',
             'callback' => [$this, 'searchPlayers'],
             'permission_callback' => '__return_true',

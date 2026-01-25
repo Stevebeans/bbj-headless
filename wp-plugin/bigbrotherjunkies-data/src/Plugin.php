@@ -25,6 +25,7 @@ use BigBrotherJunkies\Data\Api\AuthRoutes;
 use BigBrotherJunkies\Data\Api\PlayerRoutes;
 use BigBrotherJunkies\Data\Api\SeasonRoutes;
 use BigBrotherJunkies\Data\Api\ContactRoutes;
+use BigBrotherJunkies\Data\Api\PlayerPhotoRoutes;
 use BigBrotherJunkies\Data\Auth\AuthManager;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
@@ -112,36 +113,9 @@ class Plugin
         // Allow localhost:3000 for local Next.js development
         add_action('rest_api_init', function () {
             remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
-            add_filter('rest_pre_serve_request', function ($value) {
-                $origin = get_http_origin();
-                $allowed_origins = [
-                    'http://localhost:3000',
-                    'http://localhost:3001',
-                    'http://localhost:3010',
-                    'http://localhost:3011',
-                    'http://localhost:3012',
-                    'https://localhost:3000',
-                    'http://127.0.0.1:3000',
-                    'http://127.0.0.1:3001',
-                    'https://bigbrotherjunkies.com',
-                    'https://www.bigbrotherjunkies.com',
-                    'https://bbj-next.vercel.app',
-                ];
 
-                if ($origin && in_array($origin, $allowed_origins, true)) {
-                    header('Access-Control-Allow-Origin: ' . $origin);
-                    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-                    header('Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce');
-                    header('Access-Control-Allow-Credentials: true');
-                }
-
-                return $value;
-            });
-        }, 15);
-
-        // Handle preflight OPTIONS requests
-        add_action('init', function () {
-            if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            // Add CORS headers just before response is served
+            add_filter('rest_pre_serve_request', function ($served, $result, $request, $server) {
                 $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
                 $allowed_origins = [
                     'http://localhost:3000',
@@ -159,6 +133,40 @@ class Plugin
 
                 if (in_array($origin, $allowed_origins, true)) {
                     header('Access-Control-Allow-Origin: ' . $origin);
+                    header('Access-Control-Allow-Credentials: true');
+                }
+
+                return $served;
+            }, 10, 4);
+        }, 15);
+
+        // Handle CORS for all REST API requests (including errors)
+        add_action('init', function () {
+            // Only apply to REST API requests
+            $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+            if (strpos($request_uri, '/wp-json/') === false && strpos($request_uri, '?rest_route=') === false) {
+                return;
+            }
+
+            $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+            $allowed_origins = [
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'http://localhost:3010',
+                'http://localhost:3011',
+                'http://localhost:3012',
+                'https://localhost:3000',
+                'http://127.0.0.1:3000',
+                'http://127.0.0.1:3001',
+                'https://bigbrotherjunkies.com',
+                'https://www.bigbrotherjunkies.com',
+                'https://bbj-next.vercel.app',
+            ];
+
+            if (in_array($origin, $allowed_origins, true)) {
+                // Handle preflight immediately
+                if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+                    header('Access-Control-Allow-Origin: ' . $origin);
                     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
                     header('Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce');
                     header('Access-Control-Allow-Credentials: true');
@@ -166,6 +174,12 @@ class Plugin
                     status_header(200);
                     exit;
                 }
+
+                // Set headers immediately for non-OPTIONS requests too
+                header('Access-Control-Allow-Origin: ' . $origin);
+                header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+                header('Access-Control-Allow-Headers: Authorization, Content-Type, X-WP-Nonce');
+                header('Access-Control-Allow-Credentials: true');
             }
         }, 1);
     }
@@ -327,6 +341,10 @@ class Plugin
         // Contact form routes
         $contactRoutes = new ContactRoutes();
         $contactRoutes->register();
+
+        // Player photo routes (search, download, save)
+        $playerPhotoRoutes = new PlayerPhotoRoutes();
+        $playerPhotoRoutes->init();
     }
 
     /**
