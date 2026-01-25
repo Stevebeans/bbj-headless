@@ -7,6 +7,18 @@ import { useAuth } from "@/context/AuthContext";
 import { searchPlayerPhotos, savePlayerPhoto } from "@/lib/api/playerPhotos";
 
 /**
+ * Proxy external image URLs through our API to bypass hotlink protection
+ */
+function getProxiedUrl(url) {
+  if (!url) return null;
+  // Only proxy wikia/wikipedia URLs that have hotlink protection
+  if (url.includes("wikia.nocookie.net") || url.includes("wikimedia.org")) {
+    return `/api/admin/proxy-image?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
+/**
  * Player Photos Section - Automatic image search with 3 options
  * Searches Google Images for player headshots and lets you pick one to save
  */
@@ -261,16 +273,17 @@ export function PlayerPhotosSection({ seasonId, players: initialPlayers, seasonN
                             ${savingPhoto && !isSaving ? "opacity-50" : ""}
                           `}
                         >
-                          {/* Use regular img tag for external URLs - more reliable */}
+                          {/* Use regular img tag with proxy to bypass hotlink protection */}
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={photo.thumbnail || photo.url}
+                            src={getProxiedUrl(photo.thumbnail || photo.url)}
                             alt={`Option ${index + 1}`}
                             className="absolute inset-0 w-full h-full object-cover"
                             onError={(e) => {
                               // Fallback to full URL if thumbnail fails
-                              if (e.target.src !== photo.url && photo.url) {
-                                e.target.src = photo.url;
+                              const fullUrl = getProxiedUrl(photo.url);
+                              if (e.target.src !== fullUrl && fullUrl) {
+                                e.target.src = fullUrl;
                               }
                             }}
                           />
