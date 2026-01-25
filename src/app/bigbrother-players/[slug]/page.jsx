@@ -23,11 +23,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.
 export const dynamicParams = true;
 
 /**
- * Generate static params for all player pages
+ * Generate static params for player pages
+ * Return empty array to avoid rate limiting during build
+ * Pages will be generated on-demand thanks to dynamicParams = true
  */
 export async function generateStaticParams() {
-  const slugs = await getAllPlayerSlugs();
-  return slugs.map((slug) => ({ slug }));
+  return [];
 }
 
 /**
