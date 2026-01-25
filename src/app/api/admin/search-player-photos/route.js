@@ -229,7 +229,11 @@ export async function POST(request) {
       }, { status: 404 });
     }
 
-    console.log(`Found ${photos.length} photos for ${playerName}`);
+    console.log(`Found ${photos.length} photos for ${playerName}:`);
+    photos.forEach((p, i) => {
+      console.log(`  ${i + 1}. [${p.source}] thumbnail: ${p.thumbnail?.substring(0, 80)}...`);
+      console.log(`     full url: ${p.url?.substring(0, 80)}...`);
+    });
 
     return Response.json({
       success: true,

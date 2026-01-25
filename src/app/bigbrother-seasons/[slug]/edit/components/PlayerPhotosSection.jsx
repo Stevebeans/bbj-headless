@@ -41,6 +41,11 @@ export function PlayerPhotosSection({ seasonId, players: initialPlayers, seasonN
       const result = await searchPlayerPhotos(playerName, seasonName, user.token);
 
       if (result.success && result.photos?.length > 0) {
+        // Debug: Log the photo URLs we received
+        console.log("Photo search results for", playerName, ":", result.photos);
+        result.photos.forEach((p, i) => {
+          console.log(`  Photo ${i + 1}:`, { thumbnail: p.thumbnail, url: p.url, source: p.source });
+        });
         setPhotoOptions((prev) => ({ ...prev, [playerId]: result.photos }));
       } else {
         setError("No photos found. Try the manual search option.");
@@ -248,7 +253,7 @@ export function PlayerPhotosSection({ seasonId, players: initialPlayers, seasonN
                           onClick={() => handleSelectPhoto(playerId, photo, index)}
                           disabled={!!savingPhoto}
                           className={`
-                            relative aspect-square rounded-lg overflow-hidden border-2 transition-all
+                            relative aspect-square rounded-lg overflow-hidden border-2 transition-all bg-slate-100 dark:bg-slate-700
                             ${isSaving
                               ? "border-primary-500 ring-2 ring-primary-500/50"
                               : "border-transparent hover:border-primary-400 hover:scale-105"
@@ -256,12 +261,18 @@ export function PlayerPhotosSection({ seasonId, players: initialPlayers, seasonN
                             ${savingPhoto && !isSaving ? "opacity-50" : ""}
                           `}
                         >
-                          <Image
+                          {/* Use regular img tag for external URLs - more reliable */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
                             src={photo.thumbnail || photo.url}
                             alt={`Option ${index + 1}`}
-                            fill
-                            className="object-cover"
-                            unoptimized
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to full URL if thumbnail fails
+                              if (e.target.src !== photo.url && photo.url) {
+                                e.target.src = photo.url;
+                              }
+                            }}
                           />
                           {isSaving && (
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -273,6 +284,10 @@ export function PlayerPhotosSection({ seasonId, players: initialPlayers, seasonN
                           )}
                           <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
                             {index + 1}
+                          </div>
+                          {/* Source badge */}
+                          <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1 py-0.5 rounded">
+                            {photo.source || "Web"}
                           </div>
                         </button>
                       );
