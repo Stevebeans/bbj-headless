@@ -1,5 +1,6 @@
 /**
  * Save player photo by proxying to WordPress
+ * Downloads image, crops to 375x375, converts to WebP
  * This runs server-side to avoid CORS issues
  */
 
