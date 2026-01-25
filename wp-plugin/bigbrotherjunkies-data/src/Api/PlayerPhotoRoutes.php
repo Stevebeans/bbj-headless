@@ -131,7 +131,7 @@ class PlayerPhotoRoutes
         $player = $wpdb->get_row($wpdb->prepare(
             "SELECT p.*, pp.post_name as slug
              FROM {$wpdb->prefix}bbj_players p
-             JOIN {$wpdb->posts} pp ON p.post_id = pp.ID
+             LEFT JOIN {$wpdb->posts} pp ON p.post_id = pp.ID
              WHERE p.id = %d",
             $playerId
         ));
@@ -153,8 +153,8 @@ class PlayerPhotoRoutes
             ], 400);
         }
 
-        // Trigger revalidation if available
-        if (class_exists('BigBrotherJunkies\Data\Utils\Revalidation')) {
+        // Trigger revalidation if available and player has a slug
+        if (!empty($player->slug) && class_exists('BigBrotherJunkies\Data\Utils\Revalidation')) {
             \BigBrotherJunkies\Data\Utils\Revalidation::revalidatePlayer($player->slug);
         }
 
