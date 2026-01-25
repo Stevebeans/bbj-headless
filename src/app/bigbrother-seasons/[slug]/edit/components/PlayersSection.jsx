@@ -89,6 +89,8 @@ export function PlayersSection({ seasonId, players, onAddPlayer, onRemovePlayer 
           options={searchResults.map((p) => ({
             value: p.id,
             label: p.name,
+            image: p.image,
+            nickname: p.nickname,
             player: p,
           }))}
           onSelect={(option) => handleSelectPlayer(option.player)}

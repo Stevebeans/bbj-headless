@@ -9,3 +9,4 @@ export { SpoilerBarPreview } from "./SpoilerBarPreview";
 export { PlayerStatusCard } from "./PlayerStatusCard";
 export { StatusToggleGroup } from "./StatusToggleGroup";
 export { EliminationFields } from "./EliminationFields";
+export { PlayerPhotosSection } from "./PlayerPhotosSection";

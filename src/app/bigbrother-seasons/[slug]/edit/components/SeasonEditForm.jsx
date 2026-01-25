@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminGuard, SaveBar } from "@/components/admin";
@@ -13,11 +13,13 @@ import { ImagesSection } from "./ImagesSection";
 import { WinnersSection } from "./WinnersSection";
 import { PlayersSection } from "./PlayersSection";
 import { RosterStatusSection } from "./RosterStatusSection";
+import { PlayerPhotosSection } from "./PlayerPhotosSection";
 import { SeasonSwitcher } from "./SeasonSwitcher";
 
 const TABS = [
   { id: "spoiler", label: "Spoiler Bar", icon: "bars" },
   { id: "info", label: "Season Info", icon: "info" },
+  { id: "photos", label: "Player Photos", icon: "photo" },
 ];
 
 /**
@@ -28,7 +30,32 @@ export function SeasonEditForm({ season, players: initialPlayers, slug, showHead
   const { user } = useAuth();
   const [players, setPlayers] = useState(initialPlayers || []);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState("spoiler");
+
+  // Get initial tab from URL hash
+  const getInitialTab = () => {
+    if (typeof window === "undefined") return "spoiler";
+    const hash = window.location.hash.slice(1);
+    return TABS.some(t => t.id === hash) ? hash : "spoiler";
+  };
+  const [activeTab, setActiveTab] = useState(getInitialTab);
+
+  // Update URL hash when tab changes
+  const handleTabChange = useCallback((tabId) => {
+    setActiveTab(tabId);
+    window.history.replaceState(null, "", `#${tabId}`);
+  }, []);
+
+  // Sync tab from hash on mount and browser back/forward
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (TABS.some(t => t.id === hash)) {
+        setActiveTab(hash);
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   // Form initial values
   const initialValues = {
@@ -166,7 +193,7 @@ export function SeasonEditForm({ season, players: initialPlayers, slug, showHead
                 type="button"
                 role="tab"
                 aria-selected={activeTab === tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={`
                   px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors
                   ${activeTab === tab.id
@@ -185,6 +212,11 @@ export function SeasonEditForm({ season, players: initialPlayers, slug, showHead
                   {tab.icon === "info" && (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  {tab.icon === "photo" && (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   )}
                   {tab.label}
@@ -245,6 +277,15 @@ export function SeasonEditForm({ season, players: initialPlayers, slug, showHead
                 onRemovePlayer={handleRemovePlayer}
               />
             </form>
+          )}
+
+          {/* Player Photos Tab */}
+          {activeTab === "photos" && (
+            <PlayerPhotosSection
+              seasonId={season.id}
+              players={players}
+              seasonName={season.name}
+            />
           )}
         </div>
 

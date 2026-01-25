@@ -1,5 +1,9 @@
 import { bbjdFetch } from "./wordpress";
 
+// Always use production WordPress for admin features (auth tokens are from production)
+const API_URL = "https://bigbrotherjunkies.com/wp-json";
+const getAdminApiUrl = () => API_URL;
+
 /**
  * Get all seasons
  * @param {Object} options - Fetch options
@@ -120,7 +124,7 @@ export async function getSeasonById(seasonId, options = {}) {
  * @returns {Promise<Object>} { success, season, message }
  */
 export async function updateSeason(seasonId, data, token) {
-  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+  const apiUrl = getAdminApiUrl();
 
   try {
     const response = await fetch(`${apiUrl}/bbjd/v1/admin/seasons/${seasonId}`, {
@@ -161,7 +165,7 @@ export async function updateSeason(seasonId, data, token) {
  * @returns {Promise<Object>} { success, message }
  */
 export async function addPlayerToSeason(seasonId, playerId, token) {
-  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+  const apiUrl = getAdminApiUrl();
 
   try {
     const response = await fetch(`${apiUrl}/bbjd/v1/admin/seasons/${seasonId}/players`, {
@@ -200,7 +204,7 @@ export async function addPlayerToSeason(seasonId, playerId, token) {
  * @returns {Promise<Object>} { success, message }
  */
 export async function removePlayerFromSeason(seasonId, playerId, token) {
-  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+  const apiUrl = getAdminApiUrl();
 
   try {
     const response = await fetch(`${apiUrl}/bbjd/v1/admin/seasons/${seasonId}/players/${playerId}`, {
@@ -238,7 +242,7 @@ export async function removePlayerFromSeason(seasonId, playerId, token) {
  * @returns {Promise<Object>} { success, message, players, updated_count, errors }
  */
 export async function updateRosterStatus(seasonId, players, token) {
-  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+  const apiUrl = getAdminApiUrl();
 
   try {
     const response = await fetch(`${apiUrl}/bbjd/v1/admin/seasons/${seasonId}/roster-status`, {
@@ -283,7 +287,7 @@ export async function updateRosterStatus(seasonId, players, token) {
  * @returns {Promise<Object>} { players, count }
  */
 export async function searchPlayers(query, exclude = [], limit = 10) {
-  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+  const apiUrl = getAdminApiUrl();
 
   try {
     const params = new URLSearchParams({
@@ -295,7 +299,7 @@ export async function searchPlayers(query, exclude = [], limit = 10) {
       params.append("exclude", exclude.join(","));
     }
 
-    const response = await fetch(`${apiUrl}/bbjd/v1/players/search?${params.toString()}`);
+    const response = await fetch(`${apiUrl}/bbjd/v1/search/players?${params.toString()}`);
     const result = await response.json();
 
     if (!result.success) {
@@ -320,7 +324,7 @@ export async function searchPlayers(query, exclude = [], limit = 10) {
  * @returns {Promise<Object>} { success, message }
  */
 export async function purgeSeasonCache(seasonId, token) {
-  const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+  const apiUrl = getAdminApiUrl();
 
   try {
     const response = await fetch(`${apiUrl}/bbjd/v1/admin/seasons/${seasonId}/purge-cache`, {
