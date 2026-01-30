@@ -196,13 +196,13 @@ class NotificationService
 
         // Use prefix matching for better index usage
         $prefixTerm = $wpdb->esc_like($query) . '%';
-        $commentTable = CommentSchema::table(CommentSchema::TABLE_COMMENTS);
 
         // Search users who have actually commented (prioritize real users)
         // Uses prefix matching which can use indexes on display_name/user_login
+        // Uses wp_comments table to count user activity
         $users = $wpdb->get_results($wpdb->prepare("
             SELECT DISTINCT u.ID, u.display_name, u.user_login,
-                   (SELECT COUNT(*) FROM {$commentTable} c WHERE c.user_id = u.ID) as comment_count
+                   (SELECT COUNT(*) FROM {$wpdb->comments} c WHERE c.user_id = u.ID) as comment_count
             FROM {$wpdb->users} u
             WHERE (u.display_name LIKE %s OR u.user_login LIKE %s)
             ORDER BY
