@@ -67,11 +67,11 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
         setMentionQuery(textAfterAt);
         setMentionStartIndex(lastAtIndex);
 
-        // Calculate position for autocomplete dropdown
+        // Calculate position for autocomplete dropdown (above textarea)
         const textarea = textareaRef.current;
         if (textarea) {
           setMentionPosition({
-            top: "100%",
+            bottom: "calc(100% + 4px)",
             left: 0,
           });
         }

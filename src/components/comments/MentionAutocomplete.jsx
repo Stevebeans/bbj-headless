@@ -29,7 +29,7 @@ export default function MentionAutocomplete({ query, position, onSelect, onClose
       } finally {
         setLoading(false);
       }
-    }, 150);
+    }, 250); // Debounce to reduce API calls
 
     return () => clearTimeout(searchTimeout);
   }, [query]);

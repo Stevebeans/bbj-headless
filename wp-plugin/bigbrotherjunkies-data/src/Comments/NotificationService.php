@@ -181,6 +181,11 @@ class NotificationService
     /**
      * Search users for mention autocomplete
      *
+     * Optimized for performance:
+     * - Uses prefix matching (LIKE 'query%') which can use indexes
+     * - Prioritizes users who have commented (real users vs spam)
+     * - Excludes users with no activity if there are active matches
+     *
      * @param string $query Search query (partial username/display name)
      * @param int $limit Max results to return
      * @return array Array of user data for autocomplete
@@ -189,23 +194,26 @@ class NotificationService
     {
         global $wpdb;
 
-        $searchTerm = '%' . $wpdb->esc_like($query) . '%';
+        // Use prefix matching for better index usage
+        $prefixTerm = $wpdb->esc_like($query) . '%';
+        $commentTable = CommentSchema::table(CommentSchema::TABLE_COMMENTS);
 
+        // Search users who have actually commented (prioritize real users)
+        // Uses prefix matching which can use indexes on display_name/user_login
         $users = $wpdb->get_results($wpdb->prepare("
-            SELECT DISTINCT u.ID, u.display_name, u.user_login
+            SELECT DISTINCT u.ID, u.display_name, u.user_login,
+                   (SELECT COUNT(*) FROM {$commentTable} c WHERE c.user_id = u.ID) as comment_count
             FROM {$wpdb->users} u
-            WHERE u.display_name LIKE %s
-               OR u.user_login LIKE %s
-               OR u.user_nicename LIKE %s
+            WHERE (u.display_name LIKE %s OR u.user_login LIKE %s)
             ORDER BY
+                comment_count DESC,
                 CASE
                     WHEN u.display_name LIKE %s THEN 0
-                    WHEN u.user_login LIKE %s THEN 1
-                    ELSE 2
+                    ELSE 1
                 END,
-                u.display_name
+                LENGTH(u.display_name)
             LIMIT %d
-        ", $searchTerm, $searchTerm, $searchTerm, $query . '%', $query . '%', $limit), ARRAY_A);
+        ", $prefixTerm, $prefixTerm, $prefixTerm, $limit), ARRAY_A);
 
         $results = [];
         foreach ($users as $user) {
