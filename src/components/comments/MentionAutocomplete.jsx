@@ -56,7 +56,7 @@ function getCachedResult(query) {
 
 export default function MentionAutocomplete({ query, anchorRef, onSelect, onClose }) {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start true to show loading on first render
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [mounted, setMounted] = useState(false);
@@ -82,6 +82,7 @@ export default function MentionAutocomplete({ query, anchorRef, onSelect, onClos
   useEffect(() => {
     if (!query || query.length < 1) {
       setUsers([]);
+      setLoading(false);
       return;
     }
 
@@ -94,7 +95,9 @@ export default function MentionAutocomplete({ query, anchorRef, onSelect, onClos
       return;
     }
 
+    // Set loading BEFORE timeout so component shows loading state immediately
     setLoading(true);
+
     const searchTimeout = setTimeout(async () => {
       try {
         const result = await searchUsers(query, 8);
