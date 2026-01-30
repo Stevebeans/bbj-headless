@@ -120,19 +120,31 @@ The file `.claude/crosscom.md` is used for leaving messages between PC and Lapto
 
 The WordPress plugin (`bigbrotherjunkies-data`) can be deployed to production via SSH.
 
-**Credentials location:** `.claude/private/ssh-credentials.md` (gitignored, machine-specific)
+**SSH Config:** `~/.ssh/config` has aliases configured:
+- `bbj-prod` - Production server (bigbrotherjunkies.com)
+- `bbj-staging` - Staging server
+
+**Server credentials:** `.claude/private/server-info.md` (gitignored)
 
 **To deploy plugin changes:**
 ```bash
-# Using rsync (preferred)
-rsync -avz --delete \
-  C:/xampp/htdocs/bbj/wp-content/plugins/bigbrotherjunkies-data/ \
-  user@host:/path/to/wp-content/plugins/bigbrotherjunkies-data/
+# Using the deploy script (recommended)
+bash .claude/scripts/deploy-plugin.sh          # Deploy to production
+bash .claude/scripts/deploy-plugin.sh --staging # Deploy to staging
 
-# Or using scp
-scp -r C:/xampp/htdocs/bbj/wp-content/plugins/bigbrotherjunkies-data/* \
-  user@host:/path/to/wp-content/plugins/bigbrotherjunkies-data/
+# Or manually with tar + scp:
+cd /c/xampp/htdocs/bbj/wp-content/plugins/bigbrotherjunkies-data
+tar -cf /tmp/plugin.tar --exclude='node_modules' --exclude='.git' .
+gzip -f /tmp/plugin.tar
+scp /tmp/plugin.tar.gz bbj-prod:~/plugin.tar.gz
+ssh bbj-prod "cd /home/1358704.cloudwaysapps.com/duesaptjae/public_html/wp-content/plugins/bigbrotherjunkies-data && rm -rf src vendor assets build && tar -xzf ~/plugin.tar.gz && rm ~/plugin.tar.gz"
 ```
+
+**Server paths:**
+| Environment | Path |
+|-------------|------|
+| Production | `/home/1358704.cloudwaysapps.com/duesaptjae/public_html/wp-content/plugins/bigbrotherjunkies-data` |
+| Staging | `/home/1358704.cloudwaysapps.com/ftgtnduhbt/public_html/wp-content/plugins/bigbrotherjunkies-data` |
 
 **Important:** Always test locally before deploying to production.
 
