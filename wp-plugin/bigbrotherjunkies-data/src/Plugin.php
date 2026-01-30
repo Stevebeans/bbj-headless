@@ -10,6 +10,7 @@ use BigBrotherJunkies\Data\Admin\Pages\AdEditPage;
 use BigBrotherJunkies\Data\Admin\Pages\SlotsPage;
 use BigBrotherJunkies\Data\Admin\Pages\SettingsPage;
 use BigBrotherJunkies\Data\Admin\Pages\DevToolsPage;
+use BigBrotherJunkies\Data\Admin\Pages\ImportPage;
 use BigBrotherJunkies\Data\Ads\AdManager;
 use BigBrotherJunkies\Data\Ads\ContentInserter;
 use BigBrotherJunkies\Data\Api\AdRoutes;
@@ -26,6 +27,7 @@ use BigBrotherJunkies\Data\Api\PlayerRoutes;
 use BigBrotherJunkies\Data\Api\SeasonRoutes;
 use BigBrotherJunkies\Data\Api\ContactRoutes;
 use BigBrotherJunkies\Data\Api\PlayerPhotoRoutes;
+use BigBrotherJunkies\Data\Api\ImportRoutes;
 use BigBrotherJunkies\Data\Auth\AuthManager;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
@@ -345,6 +347,10 @@ class Plugin
         // Player photo routes (search, download, save)
         $playerPhotoRoutes = new PlayerPhotoRoutes();
         $playerPhotoRoutes->init();
+
+        // Import routes (seasons, players)
+        $importRoutes = new ImportRoutes();
+        $importRoutes->init();
     }
 
     /**
@@ -372,6 +378,7 @@ class Plugin
             'slots' => new SlotsPage(),
             'settings' => new SettingsPage(),
             'dev_tools' => new DevToolsPage(),
+            'import' => new ImportPage(),
         ];
 
         // Register admin menus
@@ -448,14 +455,24 @@ class Plugin
             [$this->adminPages['settings'], 'render']
         );
 
-        // Dev Tools
+        // Dev Tools (submenu under BBJ Data)
         add_submenu_page(
-            AdsListPage::MENU_SLUG,
+            'bbjd-dashboard',
             __('Dev Tools', 'bigbrotherjunkies-data'),
             __('Dev Tools', 'bigbrotherjunkies-data'),
             'manage_options',
             DevToolsPage::MENU_SLUG,
             [$this->adminPages['dev_tools'], 'render']
+        );
+
+        // Data Import (submenu under BBJ Data)
+        add_submenu_page(
+            'bbjd-dashboard',
+            __('Data Import', 'bigbrotherjunkies-data'),
+            __('Data Import', 'bigbrotherjunkies-data'),
+            'manage_options',
+            ImportPage::MENU_SLUG,
+            [$this->adminPages['import'], 'render']
         );
     }
 

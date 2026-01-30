@@ -11,6 +11,18 @@
         "MYSQL_PASS": "YSuT8T89au",
         "MYSQL_DB": "duesaptjae"
       }
+    },
+    "bbj-local": {
+      "type": "stdio",
+      "command": "npx.cmd",
+      "args": ["-y", "@benborla29/mcp-server-mysql"],
+      "env": {
+        "MYSQL_HOST": "127.0.0.1",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USER": "root",
+        "MYSQL_PASS": "",
+        "MYSQL_DB": "bbj_db"
+      }
     }
   }
 }

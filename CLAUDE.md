@@ -72,6 +72,35 @@ const data = await bbjdFetch('/endpoint', {
 
 Also ensure `dynamicParams = true` is set on all dynamic routes (`[slug]`) to allow on-demand page generation for new content.
 
+## Git Workflow - Multi-Machine Sync
+
+The `.claude/` folder is tracked in git (except for private/sensitive files), allowing project context to sync between PC and laptop.
+
+### Before Starting Work on Any Machine
+```bash
+git fetch && git status
+# If behind, pull changes:
+git pull
+```
+
+### .claude/ Folder Structure
+
+| Path | Git Status | Contents |
+|------|------------|----------|
+| `.claude/projects/` | Tracked | Roadmap, feature plans, todos |
+| `.claude/commands/` | Tracked | Custom Claude slash commands |
+| `.claude/data/` | Tracked | Player CSVs, reference data |
+| `.claude/private/` | **Gitignored** | Files with API keys/secrets |
+| `.claude/plugins/` | **Gitignored** | Large vendor plugin copies |
+| `settings.local.json` | **Gitignored** | Machine-specific Claude settings |
+
+### Adding Sensitive Files
+
+If you create a file with API keys, passwords, or secrets, move it to `.claude/private/`:
+```bash
+mv .claude/projects/my-secret-file.md .claude/private/
+```
+
 ## Git Workflow - Worktrees
 
 **When starting a new feature/project, ask the user if they want to create a git worktree instead of just a branch.**
@@ -433,6 +462,20 @@ WORDPRESS_API_URL=https://bigbrotherjunkies.com/wp-json
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 REVALIDATION_SECRET=your-secret-here
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
+```
+
+## Local Development URLs
+
+| Service | URL |
+|---------|-----|
+| **Local WordPress** | `http://bbj.localhost` |
+| **Local WP API** | `http://bbj.localhost/wp-json` |
+| **Next.js Dev** | `http://localhost:3000` (or 3001 if 3000 in use) |
+
+When switching .env.local to use local WordPress:
+```env
+WORDPRESS_API_URL=http://bbj.localhost/wp-json
+NEXT_PUBLIC_WORDPRESS_API_URL=http://bbj.localhost/wp-json
 ```
 
 ## Reference Files (WordPress)

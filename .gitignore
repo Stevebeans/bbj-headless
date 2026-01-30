@@ -41,4 +41,11 @@ next-env.d.ts
 .vercel
 
 # Claude Code
-.claude/
+.claude/private/
+.claude/plugins/
+**/settings.local.json
+
+# Misc
+laptop-setup/
+laptop-setup.zip
+nul

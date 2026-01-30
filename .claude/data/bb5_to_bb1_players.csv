@@ -1,0 +1,62 @@
+season_number,date_of_birth,occupation,facebook,instagram,twitter,tiktok,first_name,last_name,player_gender,total_hoh,total_pov,total_nom,total_misc,votes_received
+1,1972-08-14,Politician,,,,,William,Collins,Male,0,0,1,0,6
+1,1973-08-02,Exotic dancer,,,,,Jean,Jordan,Female,0,0,2,0,10
+1,1956-02-24,Mother,,,,,Karen,Fowler,Female,0,0,1,0,7
+1,1974-09-09,Actress,,,,,Brittany,Petros,Female,0,0,1,0,6
+1,1962-10-17,UN communications director,,,,,Cassandra,Waldon,Female,0,0,3,0,8
+1,1958-09-29,Roofer,,,,,George,Boswell,Male,0,0,2,0,9
+1,1977-07-16,Model,,,,,Jamie,Kern,Female,0,0,2,0,7
+1,1971-11-02,Lawyer,,,,,Curtis,Kin,Male,0,0,5,0,18
+1,1977-02-21,Civil engineering student,,,,,Josh,Souza,Male,0,0,3,0,10
+1,1979-02-24,Entertainment industry,,,,,Eddie,McGee,Male,0,0,4,0,17
+2,1974-10-18,Bartender,,,,,Justin,Sebik,Male,0,0,0,0,0
+2,1957-07-17,Interior decorator,,,,,Sheryl,Braxton,Female,0,0,1,0,5
+2,1972-12-11,Aspiring singer,,,,,Autumn,Daly,Female,0,0,1,0,7
+2,1971-12-17,Real estate agent,,,,,Shannon,Dragoo,Female,0,0,1,0,6
+2,1970-07-16,Bar owner,,,,,Mike,Malin,Male,1,0,1,0,4
+2,1955-03-01,Mortgage broker,,,,,Kent,Blackwelder,Male,1,0,2,0,4
+2,1972-07-24,Waitress,,,,,Krista,Stegall,Female,1,0,2,0,4
+2,1963-09-18,Technical writer,,,,,Bunky,Miller,Male,0,0,1,0,2
+2,1970-05-12,Account executive,,,,,Hardy,Ames-Hill,Male,3,0,1,0,1
+2,1961-06-22,Candy store manager,,,,,Monica,Bailey,Female,1,0,2,0,1
+2,1970-02-03,Personal chef,,,,,Nicole,Schaffrich,Female,2,0,2,0,3
+2,1973-01-02,Physician,,,,,Will,Kirby,Male,0,0,4,0,1
+3,1964-12-30,Bank representative,,,,,Lori,Olsen,Female,0,0,1,0,5
+3,1967-01-28,Retail sales,,,,,Tonya,Paoni,Female,0,0,1,0,5
+3,1975-05-13,Firefighter,,,,,Eric,Ouellette,Male,0,1,1,0,4
+3,1973-11-13,Waiter,,,,,Josh,Feinberg,Male,0,0,2,0,8
+3,1977-03-27,Marketing representative,,,,,Chiara,Berti,Female,1,1,1,0,4
+3,1950-12-25,Teacher,,,,,Gerry,Lancaster,Male,1,2,1,0,4
+3,1972-05-18,Writer,,,,,Roddy,Mancuso,Male,1,0,3,0,4
+3,1969-11-11,Fashion stylist,,,,,Marcellas,Reynolds,Male,2,1,3,0,2
+3,1979-06-11,Real estate appraiser,,,,,Amy,Crews,Female,1,1,6,0,13
+3,1977-06-22,Videographer,,,,,Jason,Guy,Male,2,1,1,0,1
+3,1972-01-22,Media buyer,,,,,Danielle,Reyes,Female,1,1,1,0,0
+3,1976-02-04,Bartender,,,,,Lisa,Donahue,Female,2,1,2,0,3
+4,1969-10-29,Waiter,,,,,Scott,Weintraub,Male,0,0,0,0,0
+4,1978-05-31,Bar manager,,,,,Amanda,Craig,Female,0,0,1,0,9
+4,1983-10-09,Student,,,,,Michelle,Maradie,Female,0,0,1,0,6
+4,1981-12-31,Former Army Ranger,,,,,David,Lane,Male,0,1,1,0,5
+4,1975-04-27,Karate school manager,,,,,Dana,Varela,Female,1,1,1,0,6
+4,1979-07-02,Personal trainer,,,,,Nathan,Marlow,Male,1,1,1,0,5
+4,1981-01-03,Headhunter,,,,,Justin,Giovinco,Male,1,0,1,0,3
+4,1944-11-19,Former FBI agent,,,,,Jack,Owens Jr.,Male,0,0,3,0,4
+4,1979-08-30,Bookkeeper,,,,,Jee,Choe,Male,2,1,2,0,2
+4,1969-12-05,Pilates instructor,,,,,Erika,Landin,Female,1,0,3,0,4
+4,1969-11-12,Restaurant manager,,,,,Robert,Roman,Male,1,2,3,0,2
+4,1980-08-07,Retail sales manager,,,,,Alison,Irwin,Female,2,2,3,0,0
+4,1975-07-19,Investment manager,,,,,Jun,Song,Female,1,1,3,0,0
+5,1963-03-08,Commercial painter,,,,,Mike,Lubinski,Male,0,0,1,0,10
+5,1977-11-16,Yoga instructor,,,,,Lori,Valenti,Female,0,0,1,0,7
+5,1977-08-20,Model,,,,,Holly,King,Female,0,0,2,0,7
+5,1979-06-15,Sales representative,,,,,Scott,Long,Male,0,1,1,0,4
+5,1976-02-18,Volunteer firefighter,,,,,Jase,Wirey,Male,1,2,2,0,6
+5,1978-12-15,Registered nurse,,,,,Will,Wikle,Male,0,0,1,0,4
+5,1974-06-24,Fitness professional,,,,,Natalie,Carroll,Female,0,0,1,0,4
+5,1974-06-24,Fitness professional,,,,,Adria,Klein,Female,1,2,3,0,5
+5,1967-10-28,Mortician,,,,,Marvin,Latimer,Male,2,0,4,0,10
+5,1974-01-17,Portrait artist,,,,,Karen,Ganci,Female,0,1,2,0,4
+5,1983-04-25,Restaurant hostess,,,,,Nakomis,Dedmon,Female,3,1,4,0,1
+5,1982-03-01,Cocktail waitress,,,,,Diane,Henry,Female,1,2,4,0,1
+5,1980-12-12,Security officer,,,,,Michael,Ellis,Male,0,1,4,0,1
+5,1982-04-28,College graduate,,,,,Drew,Daniel,Male,4,1,1,0,0
