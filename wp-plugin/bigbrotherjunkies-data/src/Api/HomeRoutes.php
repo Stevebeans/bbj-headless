@@ -38,6 +38,21 @@ class HomeRoutes
                     'type' => 'integer',
                     'sanitize_callback' => 'absint',
                 ],
+                'sort' => [
+                    'default' => 'newest',
+                    'type' => 'string',
+                    'enum' => ['newest', 'oldest', 'highest', 'lowest'],
+                ],
+                'date_range' => [
+                    'default' => 'all',
+                    'type' => 'string',
+                    'enum' => ['all', 'today', 'yesterday', 'week', 'month', 'year'],
+                ],
+                'search' => [
+                    'default' => '',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
             ],
         ]);
 
@@ -97,26 +112,118 @@ class HomeRoutes
      */
     public function getFeedUpdates(\WP_REST_Request $request): array
     {
+        global $wpdb;
+
         $perPage = min($request->get_param('per_page'), 30);
         $offset = $request->get_param('offset');
+        $sort = $request->get_param('sort') ?? 'newest';
+        $dateRange = $request->get_param('date_range') ?? 'all';
+        $search = $request->get_param('search') ?? '';
 
-        $query = new \WP_Query([
+        // Build query args
+        $args = [
             'post_type' => 'live-feed-updates',
             'posts_per_page' => $perPage,
             'offset' => $offset,
-            'orderby' => 'modified',
-            'order' => 'DESC',
             'post_status' => 'publish',
-            'no_found_rows' => true,
             'ignore_sticky_posts' => true,
-        ]);
+        ];
+
+        // Sorting
+        switch ($sort) {
+            case 'oldest':
+                $args['orderby'] = 'modified';
+                $args['order'] = 'ASC';
+                break;
+            case 'highest':
+                // Sort by total rating (requires join with ratings table)
+                $args['orderby'] = 'meta_value_num';
+                $args['meta_key'] = '_total_rating_cache';
+                $args['order'] = 'DESC';
+                break;
+            case 'lowest':
+                $args['orderby'] = 'meta_value_num';
+                $args['meta_key'] = '_total_rating_cache';
+                $args['order'] = 'ASC';
+                break;
+            case 'newest':
+            default:
+                $args['orderby'] = 'modified';
+                $args['order'] = 'DESC';
+                break;
+        }
+
+        // Date range filtering
+        if ($dateRange !== 'all') {
+            $args['date_query'] = [];
+            $tz = wp_timezone();
+            $now = new \DateTime('now', $tz);
+
+            switch ($dateRange) {
+                case 'today':
+                    $args['date_query'][] = [
+                        'after' => $now->format('Y-m-d 00:00:00'),
+                    ];
+                    break;
+                case 'yesterday':
+                    $yesterday = (clone $now)->modify('-1 day');
+                    $args['date_query'][] = [
+                        'after' => $yesterday->format('Y-m-d 00:00:00'),
+                        'before' => $now->format('Y-m-d 00:00:00'),
+                    ];
+                    break;
+                case 'week':
+                    $args['date_query'][] = [
+                        'after' => '1 week ago',
+                    ];
+                    break;
+                case 'month':
+                    $args['date_query'][] = [
+                        'after' => '1 month ago',
+                    ];
+                    break;
+                case 'year':
+                    $args['date_query'][] = [
+                        'after' => '1 year ago',
+                    ];
+                    break;
+            }
+        }
+
+        // Search
+        if (!empty($search)) {
+            $args['s'] = $search;
+        }
+
+        // For rating sort, we need found_rows for proper pagination
+        // For other sorts, we can skip it for performance
+        $args['no_found_rows'] = !in_array($sort, ['highest', 'lowest']);
+
+        $query = new \WP_Query($args);
 
         $updates = [];
+        $ratingsTable = $wpdb->prefix . 'bbj_feed_ratings';
+        $currentUserId = get_current_user_id();
 
         while ($query->have_posts()) {
             $query->the_post();
             $postId = get_the_ID();
             $authorId = (int) get_the_author_meta('ID');
+
+            // Get vote data
+            $totalVotes = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COALESCE(SUM(rating), 0) FROM {$ratingsTable} WHERE update_id = %d",
+                $postId
+            ));
+
+            $userVote = 0;
+            if ($currentUserId > 0) {
+                $userVote = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT rating FROM {$ratingsTable} WHERE update_id = %d AND user_id = %d",
+                    $postId,
+                    $currentUserId
+                ));
+            }
 
             $updates[] = [
                 'id' => $postId,
@@ -132,6 +239,11 @@ class HomeRoutes
                 'time_ago' => human_time_diff(get_the_modified_time('U'), current_time('timestamp')) . ' ago',
                 'thumbnail' => get_the_post_thumbnail_url($postId, 'medium') ?: null,
                 'comment_count' => (int) get_comments_number(),
+                'mode' => get_post_meta($postId, '_feed_update_mode', true) ?: 'feed',
+                'votes' => [
+                    'total' => $totalVotes,
+                    'user_vote' => $userVote,
+                ],
                 'author' => [
                     'id' => $authorId,
                     'name' => get_the_author_meta('display_name'),

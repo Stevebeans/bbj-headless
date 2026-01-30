@@ -29,7 +29,9 @@ use BigBrotherJunkies\Data\Api\ContactRoutes;
 use BigBrotherJunkies\Data\Api\PlayerPhotoRoutes;
 use BigBrotherJunkies\Data\Api\ImportRoutes;
 use BigBrotherJunkies\Data\Api\NotificationRoutes;
+use BigBrotherJunkies\Data\Api\FeedUpdateRoutes;
 use BigBrotherJunkies\Data\Auth\AuthManager;
+use BigBrotherJunkies\Data\Admin\Pages\SocialSettingsPage;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
 use BigBrotherJunkies\Data\Comments\MediaRoutes;
@@ -356,6 +358,10 @@ class Plugin
         // Notification routes (mentions, replies)
         $notificationRoutes = new NotificationRoutes();
         $notificationRoutes->register();
+
+        // Feed update routes (create, vote, mode, social posting)
+        $feedUpdateRoutes = new FeedUpdateRoutes();
+        $feedUpdateRoutes->register();
     }
 
     /**
@@ -384,6 +390,7 @@ class Plugin
             'settings' => new SettingsPage(),
             'dev_tools' => new DevToolsPage(),
             'import' => new ImportPage(),
+            'social_settings' => new SocialSettingsPage(),
         ];
 
         // Register admin menus
@@ -478,6 +485,16 @@ class Plugin
             'manage_options',
             ImportPage::MENU_SLUG,
             [$this->adminPages['import'], 'render']
+        );
+
+        // Social Settings (submenu under BBJ Data)
+        add_submenu_page(
+            'bbjd-dashboard',
+            __('Social Settings', 'bigbrotherjunkies-data'),
+            __('Social Settings', 'bigbrotherjunkies-data'),
+            'manage_options',
+            SocialSettingsPage::MENU_SLUG,
+            [$this->adminPages['social_settings'], 'render']
         );
     }
 
