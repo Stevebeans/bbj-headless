@@ -151,9 +151,6 @@ export default function MentionAutocomplete({ query, onSelect, onClose }) {
   // Show loading or results
   const showDropdown = loading || users.length > 0 || (hasSearched && users.length === 0);
 
-  // Debug: Log state to help troubleshoot
-  console.log('[MentionAutocomplete]', { query, loading, hasSearched, usersLength: users.length, showDropdown });
-
   if (!showDropdown) {
     return null;
   }
@@ -162,7 +159,7 @@ export default function MentionAutocomplete({ query, onSelect, onClose }) {
     <div
       ref={containerRef}
       className="absolute left-0 w-72 max-h-64 overflow-y-auto bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-slate-200 dark:border-slate-700"
-      style={{ zIndex: 99999, top: '100%', marginTop: '4px' }}
+      style={{ zIndex: 99999, bottom: '100%', marginBottom: '4px' }}
     >
       {loading && (
         <div className="p-3 text-center text-sm text-slate-500">
