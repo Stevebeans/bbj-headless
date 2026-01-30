@@ -1,35 +1,115 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { searchUsers } from "@/lib/api/comments";
 
-export default function MentionAutocomplete({ query, position, onSelect, onClose }) {
+// Cache for search results (in-memory + localStorage)
+const CACHE_KEY = "bbj_mention_cache";
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCache() {
+  if (typeof window === "undefined") return {};
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (!cached) return {};
+    const data = JSON.parse(cached);
+    // Clean expired entries
+    const now = Date.now();
+    Object.keys(data).forEach((key) => {
+      if (data[key].expires < now) delete data[key];
+    });
+    return data;
+  } catch {
+    return {};
+  }
+}
+
+function setCache(query, users) {
+  if (typeof window === "undefined") return;
+  try {
+    const cache = getCache();
+    cache[query.toLowerCase()] = {
+      users,
+      expires: Date.now() + CACHE_TTL,
+    };
+    // Limit cache size to 100 entries
+    const keys = Object.keys(cache);
+    if (keys.length > 100) {
+      keys.slice(0, keys.length - 100).forEach((k) => delete cache[k]);
+    }
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // localStorage full or unavailable
+  }
+}
+
+function getCachedResult(query) {
+  const cache = getCache();
+  const entry = cache[query.toLowerCase()];
+  if (entry && entry.expires > Date.now()) {
+    return entry.users;
+  }
+  return null;
+}
+
+export default function MentionAutocomplete({ query, anchorRef, onSelect, onClose }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [mounted, setMounted] = useState(false);
   const containerRef = useRef(null);
 
-  // Search users when query changes
+  // Mount check for portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Calculate position based on anchor element
+  useEffect(() => {
+    if (anchorRef?.current) {
+      const rect = anchorRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.top + window.scrollY - 8, // Position above with small gap
+        left: rect.left + window.scrollX,
+      });
+    }
+  }, [anchorRef, query]);
+
+  // Search users when query changes (with caching)
   useEffect(() => {
     if (!query || query.length < 1) {
       setUsers([]);
       return;
     }
 
+    // Check cache first
+    const cached = getCachedResult(query);
+    if (cached) {
+      setUsers(cached);
+      setSelectedIndex(0);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     const searchTimeout = setTimeout(async () => {
-      setLoading(true);
       try {
         const result = await searchUsers(query, 8);
-        setUsers(result.users || []);
+        const fetchedUsers = result.users || [];
+        setUsers(fetchedUsers);
         setSelectedIndex(0);
+        // Cache the result
+        setCache(query, fetchedUsers);
       } catch (error) {
         console.error("User search failed:", error);
         setUsers([]);
       } finally {
         setLoading(false);
       }
-    }, 250); // Debounce to reduce API calls
+    }, 150); // Reduced debounce since we have caching
 
     return () => clearTimeout(searchTimeout);
   }, [query]);
@@ -78,18 +158,18 @@ export default function MentionAutocomplete({ query, position, onSelect, onClose
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  if (!query || (users.length === 0 && !loading)) {
+  if (!mounted || !query || (users.length === 0 && !loading)) {
     return null;
   }
 
-  return (
+  const dropdown = (
     <div
       ref={containerRef}
-      className="absolute z-[9999] w-64 max-h-64 overflow-y-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700"
+      className="fixed z-[99999] w-64 max-h-64 overflow-y-auto bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-slate-200 dark:border-slate-700"
       style={{
-        top: position?.top ?? "auto",
-        left: position?.left ?? 0,
-        bottom: position?.bottom ?? "auto",
+        top: position.top,
+        left: position.left,
+        transform: "translateY(-100%)", // Position above the anchor
       }}
     >
       {loading && users.length === 0 && (
@@ -164,4 +244,7 @@ export default function MentionAutocomplete({ query, position, onSelect, onClose
       )}
     </div>
   );
+
+  // Render as portal to document.body to avoid overflow clipping
+  return createPortal(dropdown, document.body);
 }

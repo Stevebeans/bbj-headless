@@ -23,8 +23,8 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
 
   // Mention autocomplete state
   const [mentionQuery, setMentionQuery] = useState("");
-  const [mentionPosition, setMentionPosition] = useState(null);
   const [mentionStartIndex, setMentionStartIndex] = useState(null);
+  const [showMentionAutocomplete, setShowMentionAutocomplete] = useState(false);
   const textareaRef = useRef(null);
 
   const handleMediaChange = (newMedia) => {
@@ -66,15 +66,7 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
       if (!/\s/.test(textAfterAt)) {
         setMentionQuery(textAfterAt);
         setMentionStartIndex(lastAtIndex);
-
-        // Calculate position for autocomplete dropdown (above textarea)
-        const textarea = textareaRef.current;
-        if (textarea) {
-          setMentionPosition({
-            bottom: "calc(100% + 4px)",
-            left: 0,
-          });
-        }
+        setShowMentionAutocomplete(true);
         return;
       }
     }
@@ -82,7 +74,7 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
     // Close autocomplete if no valid @ pattern
     setMentionQuery("");
     setMentionStartIndex(null);
-    setMentionPosition(null);
+    setShowMentionAutocomplete(false);
   }, []);
 
   // Handle mention selection from autocomplete
@@ -96,7 +88,7 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
       // Reset mention state
       setMentionQuery("");
       setMentionStartIndex(null);
-      setMentionPosition(null);
+      setShowMentionAutocomplete(false);
 
       // Focus back on textarea
       if (textareaRef.current) {
@@ -112,7 +104,7 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
   const handleMentionClose = useCallback(() => {
     setMentionQuery("");
     setMentionStartIndex(null);
-    setMentionPosition(null);
+    setShowMentionAutocomplete(false);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -199,11 +191,11 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
           />
 
-          {/* Mention autocomplete dropdown */}
-          {mentionPosition && (
+          {/* Mention autocomplete dropdown - rendered as portal */}
+          {showMentionAutocomplete && (
             <MentionAutocomplete
               query={mentionQuery}
-              position={mentionPosition}
+              anchorRef={textareaRef}
               onSelect={handleMentionSelect}
               onClose={handleMentionClose}
             />
