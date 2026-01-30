@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import Image from "next/image";
 import { searchUsers } from "@/lib/api/comments";
 
@@ -15,7 +14,6 @@ function getCache() {
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return {};
     const data = JSON.parse(cached);
-    // Clean expired entries
     const now = Date.now();
     Object.keys(data).forEach((key) => {
       if (data[key].expires < now) delete data[key];
@@ -34,7 +32,6 @@ function setCache(query, users) {
       users,
       expires: Date.now() + CACHE_TTL,
     };
-    // Limit cache size to 100 entries
     const keys = Object.keys(cache);
     if (keys.length > 100) {
       keys.slice(0, keys.length - 100).forEach((k) => delete cache[k]);
@@ -54,35 +51,19 @@ function getCachedResult(query) {
   return null;
 }
 
-export default function MentionAutocomplete({ query, anchorRef, onSelect, onClose }) {
+export default function MentionAutocomplete({ query, onSelect, onClose }) {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true); // Start true to show loading on first render
+  const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const [mounted, setMounted] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const containerRef = useRef(null);
-
-  // Mount check for portal
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Calculate position based on anchor element
-  useEffect(() => {
-    if (anchorRef?.current) {
-      const rect = anchorRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.top + window.scrollY - 8, // Position above with small gap
-        left: rect.left + window.scrollX,
-      });
-    }
-  }, [anchorRef, query]);
 
   // Search users when query changes (with caching)
   useEffect(() => {
     if (!query || query.length < 1) {
       setUsers([]);
       setLoading(false);
+      setHasSearched(false);
       return;
     }
 
@@ -92,11 +73,12 @@ export default function MentionAutocomplete({ query, anchorRef, onSelect, onClos
       setUsers(cached);
       setSelectedIndex(0);
       setLoading(false);
+      setHasSearched(true);
       return;
     }
 
-    // Set loading BEFORE timeout so component shows loading state immediately
     setLoading(true);
+    setHasSearched(false);
 
     const searchTimeout = setTimeout(async () => {
       try {
@@ -104,15 +86,15 @@ export default function MentionAutocomplete({ query, anchorRef, onSelect, onClos
         const fetchedUsers = result.users || [];
         setUsers(fetchedUsers);
         setSelectedIndex(0);
-        // Cache the result
         setCache(query, fetchedUsers);
       } catch (error) {
         console.error("User search failed:", error);
         setUsers([]);
       } finally {
         setLoading(false);
+        setHasSearched(true);
       }
-    }, 150); // Reduced debounce since we have caching
+    }, 200);
 
     return () => clearTimeout(searchTimeout);
   }, [query]);
@@ -161,27 +143,35 @@ export default function MentionAutocomplete({ query, anchorRef, onSelect, onClos
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  if (!mounted || !query || (users.length === 0 && !loading)) {
+  // Don't render if no query
+  if (!query) {
     return null;
   }
 
-  const dropdown = (
+  // Show loading or results
+  const showDropdown = loading || users.length > 0 || (hasSearched && users.length === 0);
+
+  // Debug: Log state to help troubleshoot
+  console.log('[MentionAutocomplete]', { query, loading, hasSearched, usersLength: users.length, showDropdown });
+
+  if (!showDropdown) {
+    return null;
+  }
+
+  return (
     <div
       ref={containerRef}
-      className="fixed z-[99999] w-64 max-h-64 overflow-y-auto bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-slate-200 dark:border-slate-700"
-      style={{
-        top: position.top,
-        left: position.left,
-        transform: "translateY(-100%)", // Position above the anchor
-      }}
+      className="absolute left-0 w-72 max-h-64 overflow-y-auto bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-slate-200 dark:border-slate-700"
+      style={{ zIndex: 99999, top: '100%', marginTop: '4px' }}
     >
-      {loading && users.length === 0 && (
+      {loading && (
         <div className="p-3 text-center text-sm text-slate-500">
           <div className="animate-spin inline-block w-4 h-4 border-2 border-slate-300 dark:border-slate-600 border-t-primary-500 rounded-full" />
+          <span className="ml-2">Searching...</span>
         </div>
       )}
 
-      {users.length > 0 && (
+      {!loading && users.length > 0 && (
         <ul className="py-1">
           {users.map((user, index) => (
             <li key={user.id}>
@@ -195,7 +185,6 @@ export default function MentionAutocomplete({ query, anchorRef, onSelect, onClos
                     : "hover:bg-slate-50 dark:hover:bg-slate-700"
                 }`}
               >
-                {/* Avatar */}
                 <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
                   {user.avatar ? (
                     <Image
@@ -211,8 +200,6 @@ export default function MentionAutocomplete({ query, anchorRef, onSelect, onClos
                     </div>
                   )}
                 </div>
-
-                {/* Name & Rank */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm text-slate-800 dark:text-white truncate">
@@ -220,7 +207,7 @@ export default function MentionAutocomplete({ query, anchorRef, onSelect, onClos
                     </span>
                     {user.rank && (
                       <span
-                        className="text-xs px-1.5 py-0.5 rounded"
+                        className="text-xs px-1.5 py-0.5 rounded flex-shrink-0"
                         style={{
                           backgroundColor: user.rank.bg_color,
                           color: user.rank.color,
@@ -240,14 +227,11 @@ export default function MentionAutocomplete({ query, anchorRef, onSelect, onClos
         </ul>
       )}
 
-      {!loading && users.length === 0 && query.length > 0 && (
+      {!loading && hasSearched && users.length === 0 && (
         <div className="p-3 text-center text-sm text-slate-500">
-          No users found
+          No users found for &quot;{query}&quot;
         </div>
       )}
     </div>
   );
-
-  // Render as portal to document.body to avoid overflow clipping
-  return createPortal(dropdown, document.body);
 }
