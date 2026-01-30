@@ -1,19 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getComments } from "@/lib/api/comments";
 import CommentForm from "./CommentForm";
 import CommentCard from "./CommentCard";
 
 export default function CommentSection({ postId, initialCommentCount = 0 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [comments, setComments] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, current_page: 1, total_pages: 1 });
   const [sort, setSort] = useState("newest");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [highlightedCommentId, setHighlightedCommentId] = useState(null);
 
   const fetchComments = useCallback(async (page = 1) => {
     setLoading(true);
@@ -33,6 +35,29 @@ export default function CommentSection({ postId, initialCommentCount = 0 }) {
   useEffect(() => {
     fetchComments();
   }, [fetchComments]);
+
+  // Handle permalink scrolling
+  useEffect(() => {
+    const commentId = searchParams.get("comment");
+    if (commentId && !loading && comments.length > 0) {
+      setHighlightedCommentId(parseInt(commentId, 10));
+
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`comment-${commentId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+          // Clear highlight after animation completes
+          setTimeout(() => {
+            setHighlightedCommentId(null);
+          }, 3000);
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, loading, comments.length]);
 
   const handleSortChange = (newSort) => {
     setSort(newSort);
@@ -155,6 +180,7 @@ export default function CommentSection({ postId, initialCommentCount = 0 }) {
               onCommentAdded={handleNewComment}
               onCommentDeleted={handleCommentDeleted}
               onLoginRequired={handleLoginRequired}
+              isHighlighted={highlightedCommentId === comment.id}
             />
           ))}
         </div>

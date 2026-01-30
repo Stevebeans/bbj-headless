@@ -28,6 +28,7 @@ use BigBrotherJunkies\Data\Api\SeasonRoutes;
 use BigBrotherJunkies\Data\Api\ContactRoutes;
 use BigBrotherJunkies\Data\Api\PlayerPhotoRoutes;
 use BigBrotherJunkies\Data\Api\ImportRoutes;
+use BigBrotherJunkies\Data\Api\NotificationRoutes;
 use BigBrotherJunkies\Data\Auth\AuthManager;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
@@ -351,6 +352,10 @@ class Plugin
         // Import routes (seasons, players)
         $importRoutes = new ImportRoutes();
         $importRoutes->init();
+
+        // Notification routes (mentions, replies)
+        $notificationRoutes = new NotificationRoutes();
+        $notificationRoutes->register();
     }
 
     /**

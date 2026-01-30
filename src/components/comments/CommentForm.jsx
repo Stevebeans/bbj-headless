@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { postComment } from "@/lib/api/comments";
@@ -8,6 +8,7 @@ import Image from "next/image";
 import MediaUploader from "./MediaUploader";
 import GiphyPicker from "./GiphyPicker";
 import EmojiPicker from "./EmojiPicker";
+import MentionAutocomplete from "./MentionAutocomplete";
 
 export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, placeholder = "Write a comment...", buttonText = "Post Comment", compact = false }) {
   const { user, isAuthenticated } = useAuth();
@@ -19,6 +20,12 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Mention autocomplete state
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionPosition, setMentionPosition] = useState(null);
+  const [mentionStartIndex, setMentionStartIndex] = useState(null);
+  const textareaRef = useRef(null);
 
   const handleMediaChange = (newMedia) => {
     setMedia(newMedia);
@@ -42,6 +49,71 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
   const handleEmojiSelect = (emoji) => {
     setContent((prev) => prev + emoji);
   };
+
+  // Handle text change and detect @mentions
+  const handleContentChange = useCallback((e) => {
+    const value = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    setContent(value);
+
+    // Find @ symbol before cursor
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+      // Check if there's no space between @ and cursor (valid mention in progress)
+      if (!/\s/.test(textAfterAt)) {
+        setMentionQuery(textAfterAt);
+        setMentionStartIndex(lastAtIndex);
+
+        // Calculate position for autocomplete dropdown
+        const textarea = textareaRef.current;
+        if (textarea) {
+          setMentionPosition({
+            top: "100%",
+            left: 0,
+          });
+        }
+        return;
+      }
+    }
+
+    // Close autocomplete if no valid @ pattern
+    setMentionQuery("");
+    setMentionStartIndex(null);
+    setMentionPosition(null);
+  }, []);
+
+  // Handle mention selection from autocomplete
+  const handleMentionSelect = useCallback((user) => {
+    if (mentionStartIndex !== null) {
+      const beforeMention = content.substring(0, mentionStartIndex);
+      const afterMention = content.substring(mentionStartIndex + mentionQuery.length + 1); // +1 for @
+      const newContent = `${beforeMention}@${user.display_name} ${afterMention}`;
+      setContent(newContent);
+
+      // Reset mention state
+      setMentionQuery("");
+      setMentionStartIndex(null);
+      setMentionPosition(null);
+
+      // Focus back on textarea
+      if (textareaRef.current) {
+        const newCursorPos = beforeMention.length + user.display_name.length + 2; // +2 for @ and space
+        setTimeout(() => {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }, 0);
+      }
+    }
+  }, [content, mentionStartIndex, mentionQuery]);
+
+  const handleMentionClose = useCallback(() => {
+    setMentionQuery("");
+    setMentionStartIndex(null);
+    setMentionPosition(null);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,14 +189,25 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
           </div>
         )}
 
-        <div className="flex-1">
+        <div className="flex-1 relative">
           <textarea
+            ref={textareaRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={handleContentChange}
             placeholder={placeholder}
             rows={compact ? 2 : 3}
             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
           />
+
+          {/* Mention autocomplete dropdown */}
+          {mentionPosition && (
+            <MentionAutocomplete
+              query={mentionQuery}
+              position={mentionPosition}
+              onSelect={handleMentionSelect}
+              onClose={handleMentionClose}
+            />
+          )}
 
           {/* Media preview (for Giphy or uploaded) */}
           {media && (

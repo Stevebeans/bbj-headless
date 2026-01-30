@@ -8,6 +8,7 @@ import { SearchBar, MobileSearchButton } from "../search/SearchBar";
 import { MobileSearchModal } from "../search/MobileSearchModal";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
+import NotificationBell from "../notifications/NotificationBell";
 
 const LOGO_URL = "https://bigbrotherjunkies.com/wp-content/themes/BBJ/images/bbjlogo2020.png";
 const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
@@ -114,6 +115,7 @@ export function Header() {
                       Admin
                     </Link>
                   )}
+                  <NotificationBell />
                   <Link
                     href="/settings"
                     className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500 transition-colors"

@@ -239,6 +239,20 @@
     scrollbar-width: none;
   }
 
+  /* Comment permalink highlight animation */
+  .highlight-comment {
+    animation: highlight-fade 3s ease-out;
+  }
+
+  @keyframes highlight-fade {
+    0% {
+      @apply bg-secondary-500/30;
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
   .gradient-text {
     @apply bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent;
   }

@@ -6,6 +6,7 @@ use BigBrotherJunkies\Data\Comments\AvatarUploader;
 use BigBrotherJunkies\Data\Comments\CommentSchema;
 use BigBrotherJunkies\Data\Comments\RankCalculator;
 use BigBrotherJunkies\Data\Comments\MediaUploader;
+use BigBrotherJunkies\Data\Comments\NotificationService;
 
 /**
  * Comment System API Routes
@@ -200,6 +201,34 @@ class CommentRoutes
             'callback' => [$this, 'checkBlacklist'],
             'permission_callback' => '__return_true',
         ]);
+
+        // Pin a comment (staff pick)
+        register_rest_route($namespace, '/comments/(?P<comment_id>\d+)/pin', [
+            'methods' => 'POST',
+            'callback' => [$this, 'pinComment'],
+            'permission_callback' => [$this, 'checkCanPin'],
+            'args' => [
+                'comment_id' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+            ],
+        ]);
+
+        // Unpin a comment
+        register_rest_route($namespace, '/comments/(?P<comment_id>\d+)/pin', [
+            'methods' => 'DELETE',
+            'callback' => [$this, 'unpinComment'],
+            'permission_callback' => [$this, 'checkCanPin'],
+            'args' => [
+                'comment_id' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+            ],
+        ]);
     }
 
     /**
@@ -218,23 +247,27 @@ class CommentRoutes
         // Get current user ID if logged in
         $currentUserId = get_current_user_id();
 
-        // Build order clause based on sort
+        // Check if current user can pin comments
+        $canPin = $this->checkCanPin();
+
+        // Build order clause based on sort (pinned comments always first)
         switch ($sort) {
             case 'oldest':
-                $orderBy = 'c.comment_date_gmt ASC';
+                $orderBy = 'is_pinned DESC, c.comment_date_gmt ASC';
                 break;
             case 'popular':
-                $orderBy = 'vote_score DESC, c.comment_date_gmt DESC';
+                $orderBy = 'is_pinned DESC, vote_score DESC, c.comment_date_gmt DESC';
                 break;
             case 'newest':
             default:
-                $orderBy = 'c.comment_date_gmt DESC';
+                $orderBy = 'is_pinned DESC, c.comment_date_gmt DESC';
                 break;
         }
 
         $votesTable = CommentSchema::table(CommentSchema::TABLE_VOTES);
+        $pinnedTable = CommentSchema::table(CommentSchema::TABLE_PINNED);
 
-        // Get top-level comments with vote counts
+        // Get top-level comments with vote counts and pin status
         $comments = $wpdb->get_results($wpdb->prepare("
             SELECT
                 c.comment_ID,
@@ -248,9 +281,12 @@ class CommentRoutes
                 c.user_id,
                 COALESCE(SUM(CASE WHEN v.vote_type = 1 THEN 1 ELSE 0 END), 0) as upvotes,
                 COALESCE(SUM(CASE WHEN v.vote_type = -1 THEN 1 ELSE 0 END), 0) as downvotes,
-                COALESCE(SUM(v.vote_type), 0) as vote_score
+                COALESCE(SUM(v.vote_type), 0) as vote_score,
+                CASE WHEN p.id IS NOT NULL THEN 1 ELSE 0 END as is_pinned,
+                p.pinned_at
             FROM {$wpdb->comments} c
             LEFT JOIN {$votesTable} v ON c.comment_ID = v.comment_id
+            LEFT JOIN {$pinnedTable} p ON c.comment_ID = p.comment_id
             WHERE c.comment_post_ID = %d
                 AND c.comment_approved = '1'
                 AND c.comment_parent = 0
@@ -291,7 +327,7 @@ class CommentRoutes
         // Format comments with user info and replies
         $formattedComments = [];
         foreach ($comments as $comment) {
-            $formattedComments[] = $this->formatComment($comment, $userVotes, $currentUserId);
+            $formattedComments[] = $this->formatComment($comment, $userVotes, $currentUserId, 0, $canPin);
         }
 
         return new \WP_REST_Response([
@@ -308,7 +344,7 @@ class CommentRoutes
     /**
      * Format a comment with user info, rank, and replies
      */
-    private function formatComment(array $comment, array $userVotes, int $currentUserId, int $depth = 0): array
+    private function formatComment(array $comment, array $userVotes, int $currentUserId, int $depth = 0, bool $canPin = false): array
     {
         global $wpdb;
 
@@ -359,7 +395,7 @@ class CommentRoutes
             ", $commentId), ARRAY_A);
 
             foreach ($childComments as $child) {
-                $replies[] = $this->formatComment($child, $userVotes, $currentUserId, $depth + 1);
+                $replies[] = $this->formatComment($child, $userVotes, $currentUserId, $depth + 1, $canPin);
             }
         }
 
@@ -421,6 +457,9 @@ class CommentRoutes
             'user_vote' => $userVotes[$commentId] ?? null,
             'can_edit' => $currentUserId > 0 && ($currentUserId === $userId || current_user_can('moderate_comments')),
             'can_delete' => $currentUserId > 0 && ($currentUserId === $userId || current_user_can('moderate_comments')),
+            'can_pin' => $canPin,
+            'is_pinned' => (bool) ($comment['is_pinned'] ?? false),
+            'pinned_at' => $comment['pinned_at'] ?? null,
             'depth' => $depth,
             'replies' => $replies,
             'media' => $media,
@@ -772,6 +811,31 @@ class CommentRoutes
             }
         }
 
+        // Create reply notification if this is a reply to someone else's comment
+        if ($parentId > 0) {
+            $parentComment = get_comment($parentId);
+            if ($parentComment && (int) $parentComment->user_id !== $userId && (int) $parentComment->user_id > 0) {
+                NotificationService::createReplyNotification(
+                    (int) $parentComment->user_id,
+                    $userId,
+                    $commentId,
+                    $postId,
+                    $parentId
+                );
+            }
+        }
+
+        // Parse @mentions and create notifications
+        $mentionedUserIds = NotificationService::parseMentions($content);
+        foreach ($mentionedUserIds as $mentionedUserId) {
+            NotificationService::createMentionNotification(
+                $mentionedUserId,
+                $userId,
+                $commentId,
+                $postId
+            );
+        }
+
         // Update user's rank
         RankCalculator::updateUserRank($userId);
 
@@ -941,5 +1005,103 @@ class CommentRoutes
     public function checkCanDeleteComment(\WP_REST_Request $request): bool
     {
         return $this->checkCanEditComment($request);
+    }
+
+    /**
+     * Permission callback: Check if user can pin comments
+     */
+    public function checkCanPin(): bool
+    {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
+        $user = wp_get_current_user();
+        $allowedRoles = ['administrator', 'second_in_command', 'editor', 'comment_mod'];
+
+        return array_intersect($allowedRoles, $user->roles) ? true : false;
+    }
+
+    /**
+     * Pin a comment (staff pick)
+     */
+    public function pinComment(\WP_REST_Request $request): \WP_REST_Response
+    {
+        global $wpdb;
+
+        $commentId = $request->get_param('comment_id');
+        $userId = get_current_user_id();
+
+        // Verify comment exists
+        $comment = get_comment($commentId);
+        if (!$comment) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => 'Comment not found',
+            ], 404);
+        }
+
+        $pinnedTable = CommentSchema::table(CommentSchema::TABLE_PINNED);
+
+        // Check if already pinned
+        $existing = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM {$pinnedTable} WHERE comment_id = %d",
+            $commentId
+        ));
+
+        if ($existing) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => 'Comment is already pinned',
+            ], 400);
+        }
+
+        // Insert pin
+        $result = $wpdb->insert($pinnedTable, [
+            'comment_id' => $commentId,
+            'post_id' => $comment->comment_post_ID,
+            'pinned_by' => $userId,
+        ], ['%d', '%d', '%d']);
+
+        if (!$result) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => 'Failed to pin comment',
+            ], 500);
+        }
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'message' => 'Comment pinned',
+            'pinned_at' => current_time('mysql'),
+        ], 200);
+    }
+
+    /**
+     * Unpin a comment
+     */
+    public function unpinComment(\WP_REST_Request $request): \WP_REST_Response
+    {
+        global $wpdb;
+
+        $commentId = $request->get_param('comment_id');
+
+        $pinnedTable = CommentSchema::table(CommentSchema::TABLE_PINNED);
+
+        $result = $wpdb->delete($pinnedTable, [
+            'comment_id' => $commentId,
+        ], ['%d']);
+
+        if (!$result) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => 'Comment was not pinned',
+            ], 400);
+        }
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'message' => 'Comment unpinned',
+        ], 200);
     }
 }

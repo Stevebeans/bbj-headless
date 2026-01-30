@@ -90,7 +90,8 @@ git pull
 | `.claude/projects/` | Tracked | Roadmap, feature plans, todos |
 | `.claude/commands/` | Tracked | Custom Claude slash commands |
 | `.claude/data/` | Tracked | Player CSVs, reference data |
-| `.claude/private/` | **Gitignored** | Files with API keys/secrets |
+| `.claude/crosscom.md` | Tracked | Cross-machine messages (PC ↔ Laptop) |
+| `.claude/private/` | **Gitignored** | Files with API keys/secrets, SSH credentials |
 | `.claude/plugins/` | **Gitignored** | Large vendor plugin copies |
 | `settings.local.json` | **Gitignored** | Machine-specific Claude settings |
 
@@ -100,6 +101,40 @@ If you create a file with API keys, passwords, or secrets, move it to `.claude/p
 ```bash
 mv .claude/projects/my-secret-file.md .claude/private/
 ```
+
+### Cross-Machine Communication (crosscom.md)
+
+The file `.claude/crosscom.md` is used for leaving messages between PC and Laptop Claude sessions.
+
+**On session start:**
+1. Check `.claude/crosscom.md` for unread messages addressed to this machine
+2. If there are unread messages, notify the user and take any requested actions
+3. Mark messages as READ after processing
+
+**When user says "tell laptop..." or "tell PC...":**
+1. Add a new message to the "Unread Messages" section in crosscom.md
+2. Include: Date, Status (UNREAD), Subject, and the message content
+3. The message will sync via git and be seen on the other machine
+
+### SSH Deployment for WordPress Plugin
+
+The WordPress plugin (`bigbrotherjunkies-data`) can be deployed to production via SSH.
+
+**Credentials location:** `.claude/private/ssh-credentials.md` (gitignored, machine-specific)
+
+**To deploy plugin changes:**
+```bash
+# Using rsync (preferred)
+rsync -avz --delete \
+  C:/xampp/htdocs/bbj/wp-content/plugins/bigbrotherjunkies-data/ \
+  user@host:/path/to/wp-content/plugins/bigbrotherjunkies-data/
+
+# Or using scp
+scp -r C:/xampp/htdocs/bbj/wp-content/plugins/bigbrotherjunkies-data/* \
+  user@host:/path/to/wp-content/plugins/bigbrotherjunkies-data/
+```
+
+**Important:** Always test locally before deploying to production.
 
 ## Git Workflow - Worktrees
 

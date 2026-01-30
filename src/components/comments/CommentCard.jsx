@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { FaReply, FaFlag, FaEllipsisV, FaEdit, FaTrash } from "react-icons/fa";
+import { FaReply, FaFlag, FaEllipsisV, FaEdit, FaTrash, FaLink, FaThumbtack } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import VoteButtons from "./VoteButtons";
 import RankBadge from "./RankBadge";
@@ -11,9 +11,10 @@ import OnlineIndicator from "./OnlineIndicator";
 import AuthorModal from "./AuthorModal";
 import CommentForm from "./CommentForm";
 import ReportModal from "./ReportModal";
-import { editComment, deleteComment } from "@/lib/api/comments";
+import StaffPickBadge from "./StaffPickBadge";
+import { editComment, deleteComment, pinComment, unpinComment } from "@/lib/api/comments";
 
-export default function CommentCard({ comment, postId, depth = 0, onCommentAdded, onCommentDeleted, onLoginRequired }) {
+export default function CommentCard({ comment, postId, depth = 0, onCommentAdded, onCommentDeleted, onLoginRequired, isHighlighted = false }) {
   const { user, isAuthenticated } = useAuth();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -24,10 +25,27 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
   const [currentContent, setCurrentContent] = useState(comment.content);
   const [loading, setLoading] = useState(false);
   const [replies, setReplies] = useState(comment.replies || []);
+  const [isPinned, setIsPinned] = useState(comment.is_pinned || false);
 
   const canReply = depth < 3;
   const isAuthor = isAuthenticated && user?.user_id === comment.author.id;
   const canModerate = comment.can_edit || comment.can_delete;
+
+  const handleSharePermalink = async () => {
+    const url = `${window.location.origin}${window.location.pathname}?comment=${comment.id}#comment-${comment.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      // Could add a toast notification here
+    } catch (err) {
+      // Fallback for older browsers
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+  };
 
   const handleReplySubmit = (newComment) => {
     setReplies([...replies, newComment]);
@@ -64,14 +82,37 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
     }
   };
 
-  // Convert plain URLs to links
+  const handleTogglePin = async () => {
+    setLoading(true);
+    try {
+      if (isPinned) {
+        await unpinComment(comment.id);
+        setIsPinned(false);
+      } else {
+        await pinComment(comment.id);
+        setIsPinned(true);
+      }
+    } catch (error) {
+      console.error("Pin toggle failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Convert plain URLs to links and @mentions to styled text
   const formatContent = (text) => {
+    // First split by URLs
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.split(urlRegex).map((part, i) => {
+    const mentionRegex = /@([a-zA-Z0-9_-]+)/g;
+
+    const parts = text.split(urlRegex);
+    const result = [];
+
+    parts.forEach((part, partIndex) => {
       if (part.match(urlRegex)) {
-        return (
+        result.push(
           <a
-            key={i}
+            key={`url-${partIndex}`}
             href={part}
             target="_blank"
             rel="noopener noreferrer"
@@ -80,13 +121,39 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
             {part}
           </a>
         );
+      } else {
+        // Process mentions within non-URL parts
+        const mentionParts = part.split(mentionRegex);
+        mentionParts.forEach((mentionPart, mentionIndex) => {
+          // Every other element is a captured mention (username)
+          if (mentionIndex % 2 === 1) {
+            result.push(
+              <span
+                key={`mention-${partIndex}-${mentionIndex}`}
+                className="text-primary-500 font-medium cursor-pointer hover:underline"
+                onClick={() => {
+                  // Could open AuthorModal here if we had user ID
+                  // For now, just style it
+                }}
+              >
+                @{mentionPart}
+              </span>
+            );
+          } else if (mentionPart) {
+            result.push(mentionPart);
+          }
+        });
       }
-      return part;
     });
+
+    return result;
   };
 
   return (
-    <div className={`${depth > 0 ? "ml-6 md:ml-10 pl-4 border-l-2 border-slate-200 dark:border-slate-600" : ""}`}>
+    <div
+      id={`comment-${comment.id}`}
+      className={`${depth > 0 ? "ml-6 md:ml-10 pl-4 border-l-2 border-slate-200 dark:border-slate-600" : ""} ${isHighlighted ? "highlight-comment" : ""}`}
+    >
       <div className="py-4">
         <div className="flex gap-3">
           {/* Avatar */}
@@ -132,6 +199,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
               {comment.author.rank && (
                 <RankBadge rank={comment.author.rank} size="xs" />
               )}
+              {isPinned && <StaffPickBadge />}
               <span className="text-xs text-slate-500" title={comment.date}>
                 {comment.time_ago}
               </span>
@@ -255,6 +323,16 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
                   </button>
                 )}
 
+                {/* Share/Permalink */}
+                <button
+                  onClick={handleSharePermalink}
+                  className="flex items-center gap-1 text-xs text-slate-500 hover:text-primary-500 transition-colors"
+                  title="Copy link to comment"
+                >
+                  <FaLink className="w-3 h-3" />
+                  <span className="hidden sm:inline">Share</span>
+                </button>
+
                 {/* More actions dropdown */}
                 {canModerate && (
                   <div className="relative">
@@ -282,6 +360,18 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
                             >
                               <FaEdit className="w-3 h-3" />
                               Edit
+                            </button>
+                          )}
+                          {comment.can_pin && (
+                            <button
+                              onClick={() => {
+                                handleTogglePin();
+                                setShowDropdown(false);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-600"
+                            >
+                              <FaThumbtack className="w-3 h-3" />
+                              {isPinned ? "Unpin" : "Pin"}
                             </button>
                           )}
                           {comment.can_delete && (
@@ -337,6 +427,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
                 onCommentDeleted?.(id);
               }}
               onLoginRequired={onLoginRequired}
+              isHighlighted={false}
             />
           ))}
         </div>

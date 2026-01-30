@@ -563,3 +563,89 @@ export async function unfollowUser(userId) {
 
   return response.json();
 }
+
+// ============================================
+// Comment Pinning API Functions (Staff Pick)
+// ============================================
+
+/**
+ * Pin a comment (staff pick)
+ * @param {number} commentId - The comment ID to pin
+ */
+export async function pinComment(commentId) {
+  const token = localStorage.getItem("bbj_token");
+  if (!token) {
+    throw new Error("You must be logged in");
+  }
+
+  const response = await fetch(`${API_URL}/bbjd/v1/comments/${commentId}/pin`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to pin comment");
+  }
+
+  return response.json();
+}
+
+/**
+ * Unpin a comment
+ * @param {number} commentId - The comment ID to unpin
+ */
+export async function unpinComment(commentId) {
+  const token = localStorage.getItem("bbj_token");
+  if (!token) {
+    throw new Error("You must be logged in");
+  }
+
+  const response = await fetch(`${API_URL}/bbjd/v1/comments/${commentId}/pin`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to unpin comment");
+  }
+
+  return response.json();
+}
+
+// ============================================
+// User Search API Function (for @mentions)
+// ============================================
+
+/**
+ * Search users for @mention autocomplete
+ * @param {string} query - Search query
+ * @param {number} limit - Max results
+ */
+export async function searchUsers(query, limit = 10) {
+  const token = localStorage.getItem("bbj_token");
+  if (!token) {
+    throw new Error("You must be logged in");
+  }
+
+  const response = await fetch(
+    `${API_URL}/bbjd/v1/users/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to search users");
+  }
+
+  return response.json();
+}
