@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { ThemeScript } from "@/components/layout/ThemeScript";
 import { Providers } from "@/components/Providers";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
+import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -83,6 +84,7 @@ export default function RootLayout({ children }) {
             {children}
           </main>
           <Footer />
+          <FloatingUpdater />
         </Providers>
       </body>
     </html>

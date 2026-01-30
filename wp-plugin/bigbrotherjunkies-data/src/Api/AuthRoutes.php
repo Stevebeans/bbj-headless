@@ -961,6 +961,11 @@ class AuthRoutes
             // Get user's rank
             $rank = RankCalculator::calculateRank($userId);
 
+            // Check if user is a supporter based on supporter roles setting
+            $adSettings = get_option('bbjd_ad_settings', []);
+            $supporterRoles = $adSettings['global_hidden_roles'] ?? [];
+            $isSupporter = !empty(array_intersect((array) $user->roles, $supporterRoles));
+
             // Return user data for auth context
             return [
                 'user_id' => $user->ID,
@@ -969,6 +974,7 @@ class AuthRoutes
                 'user_display_name' => $user->display_name,
                 'user_avatar' => AvatarUploader::getAvatarUrl($user->ID, 96),
                 'user_roles' => $user->roles,
+                'is_supporter' => $isSupporter,
                 'rank' => $rank ? [
                     'key' => $rank['key'],
                     'name' => $rank['name'],

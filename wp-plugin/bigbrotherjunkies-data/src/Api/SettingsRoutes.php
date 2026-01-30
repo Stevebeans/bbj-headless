@@ -146,8 +146,10 @@ class SettingsRoutes
         // Get rank info
         $rank = RankCalculator::calculateRank($userId);
 
-        // Check if user is supporter (premium)
-        $isSupporter = in_array('supporter', $user->roles, true);
+        // Check if user is supporter based on supporter roles setting
+        $adSettings = get_option('bbjd_ad_settings', []);
+        $supporterRoles = $adSettings['global_hidden_roles'] ?? [];
+        $isSupporter = !empty(array_intersect($user->roles, $supporterRoles));
 
         // Get avatar URL (uses our new system with fallback)
         $avatarUrl = AvatarUploader::getAvatarUrl($userId, 96);
@@ -286,7 +288,10 @@ class SettingsRoutes
         $user = get_user_by('ID', $userId);
         $params = $request->get_json_params();
 
-        $isSupporter = in_array('supporter', $user->roles, true);
+        // Check if user is supporter based on supporter roles setting
+        $adSettings = get_option('bbjd_ad_settings', []);
+        $supporterRoles = $adSettings['global_hidden_roles'] ?? [];
+        $isSupporter = !empty(array_intersect($user->roles, $supporterRoles));
 
         $updated = [];
 

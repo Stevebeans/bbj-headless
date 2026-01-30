@@ -225,6 +225,28 @@ class HomeRoutes
                 ));
             }
 
+            // Get recent comments (last 3)
+            $recentComments = get_comments([
+                'post_id' => $postId,
+                'status' => 'approve',
+                'number' => 3,
+                'orderby' => 'comment_date',
+                'order' => 'DESC',
+            ]);
+
+            $formattedComments = array_map(function ($comment) {
+                $content = wp_strip_all_tags($comment->comment_content);
+                // Truncate to ~60 chars for single line display
+                $truncated = mb_strlen($content) > 60
+                    ? mb_substr($content, 0, 57) . '...'
+                    : $content;
+
+                return [
+                    'author' => $comment->comment_author,
+                    'content' => $truncated,
+                ];
+            }, $recentComments);
+
             $updates[] = [
                 'id' => $postId,
                 'slug' => get_post_field('post_name', $postId),
@@ -239,6 +261,7 @@ class HomeRoutes
                 'time_ago' => human_time_diff(get_the_modified_time('U'), current_time('timestamp')) . ' ago',
                 'thumbnail' => get_the_post_thumbnail_url($postId, 'medium') ?: null,
                 'comment_count' => (int) get_comments_number(),
+                'recent_comments' => $formattedComments,
                 'mode' => get_post_meta($postId, '_feed_update_mode', true) ?: 'feed',
                 'votes' => [
                     'total' => $totalVotes,

@@ -109,7 +109,6 @@ class FeedUpdateRoutes
      */
     public function createFeedUpdate(\WP_REST_Request $request): \WP_REST_Response
     {
-        $title = sanitize_text_field($request->get_param('title'));
         $content = wp_kses_post($request->get_param('content'));
         $mode = in_array($request->get_param('mode'), ['feed', 'show'])
             ? $request->get_param('mode')
@@ -118,16 +117,19 @@ class FeedUpdateRoutes
         $postToFacebook = (bool) $request->get_param('post_to_facebook');
 
         // Validate required fields
-        if (empty($title) && empty($content)) {
+        if (empty($content)) {
             return new \WP_REST_Response([
                 'success' => false,
-                'message' => 'Title or content is required',
+                'message' => 'Content is required',
             ], 400);
         }
 
+        // Generate SEO-friendly title: "BB27 Feed Update - Jan 30, 3:45 PM PT"
+        $title = $this->generateTitle($mode);
+
         // Create the post
         $postId = wp_insert_post([
-            'post_title' => $title ?: wp_trim_words(wp_strip_all_tags($content), 10, '...'),
+            'post_title' => $title,
             'post_content' => $content,
             'post_status' => 'publish',
             'post_type' => 'live-feed-updates',
@@ -405,6 +407,65 @@ class FeedUpdateRoutes
     }
 
     /**
+     * Generate SEO-friendly title for feed update
+     * Format: "BB27 Feed Update - Jan 30, 3:45 PM PT" or "BB27 Show Update - Jan 30, 2025"
+     */
+    private function generateTitle(string $mode): string
+    {
+        // Get season abbreviation (e.g., "BB27")
+        $seasonAbbr = $this->getSeasonAbbreviation();
+
+        // Get current BB Time (Pacific)
+        $timezone = new \DateTimeZone('America/Los_Angeles');
+        $now = new \DateTime('now', $timezone);
+
+        // Format based on mode
+        $typeLabel = $mode === 'show' ? 'Show Update' : 'Feed Update';
+
+        if ($mode === 'show') {
+            // Show updates: "BB27 Show Update - Jan 30, 2025"
+            $dateStr = $now->format('M j, Y');
+        } else {
+            // Feed updates: "BB27 Feed Update - Jan 30, 3:45 PM PT"
+            $dateStr = $now->format('M j, g:i A') . ' PT';
+        }
+
+        return "{$seasonAbbr} {$typeLabel} - {$dateStr}";
+    }
+
+    /**
+     * Get season abbreviation (e.g., "BB27")
+     */
+    private function getSeasonAbbreviation(): string
+    {
+        $seasonId = (int) get_option('bbj_v2_current_season');
+
+        if ($seasonId <= 0) {
+            return 'BB';
+        }
+
+        // Try to get abbreviation from season meta
+        $abbreviation = get_post_meta($seasonId, 'abbreviation', true);
+
+        if (empty($abbreviation) && function_exists('get_field')) {
+            $abbreviation = get_field('abbreviation', $seasonId);
+        }
+
+        if (empty($abbreviation)) {
+            $season = get_post($seasonId);
+            if ($season) {
+                if (preg_match('/Big Brother (\d+)/i', $season->post_title, $matches)) {
+                    $abbreviation = 'BB' . $matches[1];
+                } elseif (preg_match('/Celebrity Big Brother (\d+)/i', $season->post_title, $matches)) {
+                    $abbreviation = 'CBB' . $matches[1];
+                }
+            }
+        }
+
+        return $abbreviation ?: 'BB';
+    }
+
+    /**
      * Get current season hashtag (e.g., #BB27)
      */
     private function getSeasonHashtag(): string
@@ -483,6 +544,28 @@ class FeedUpdateRoutes
             ));
         }
 
+        // Get recent comments (last 3)
+        $recentComments = get_comments([
+            'post_id' => $post->ID,
+            'status' => 'approve',
+            'number' => 3,
+            'orderby' => 'comment_date',
+            'order' => 'DESC',
+        ]);
+
+        $formattedComments = array_map(function ($comment) {
+            $content = wp_strip_all_tags($comment->comment_content);
+            // Truncate to ~60 chars for single line display
+            $truncated = mb_strlen($content) > 60
+                ? mb_substr($content, 0, 57) . '...'
+                : $content;
+
+            return [
+                'author' => $comment->comment_author,
+                'content' => $truncated,
+            ];
+        }, $recentComments);
+
         $data = [
             'id' => $post->ID,
             'slug' => $post->post_name,
@@ -496,6 +579,7 @@ class FeedUpdateRoutes
             'time_ago' => human_time_diff(get_the_modified_time('U', $post), current_time('timestamp')) . ' ago',
             'thumbnail' => get_the_post_thumbnail_url($post, 'medium') ?: null,
             'comment_count' => (int) get_comments_number($post),
+            'recent_comments' => $formattedComments,
             'mode' => get_post_meta($post->ID, '_feed_update_mode', true) ?: 'feed',
             'votes' => [
                 'total' => $totalVotes,

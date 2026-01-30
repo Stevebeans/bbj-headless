@@ -95,14 +95,14 @@ class SettingsPage
                     <?php wp_nonce_field('bbjd_save_settings'); ?>
                     <input type="hidden" name="action" value="bbjd_save_settings">
 
-                    <!-- Global Role Hiding -->
+                    <!-- Supporter Roles -->
                     <div class="bbjd-bg-white bbjd-rounded-lg bbjd-shadow bbjd-p-6 bbjd-mb-6">
                         <h2 class="bbjd-text-xl bbjd-font-semibold bbjd-text-gray-800 bbjd-mb-2">
-                            Global Ad-Free Roles
+                            ⭐ Supporter Roles
                         </h2>
                         <p class="bbjd-text-gray-600 bbjd-text-sm bbjd-mb-4">
-                            Users with these roles will see <strong>NO ads</strong> anywhere on the site.
-                            This setting overrides all per-slot settings.
+                            Users with these roles get <strong>premium/supporter benefits</strong>:
+                            ad-free experience, quick reply on feed updates, priority notifications, and more.
                         </p>
 
                         <div class="bbjd-grid bbjd-grid-cols-2 md:bbjd-grid-cols-3 lg:bbjd-grid-cols-4 bbjd-gap-3">
@@ -119,7 +119,7 @@ class SettingsPage
                         </div>
 
                         <p class="bbjd-text-xs bbjd-text-gray-500 bbjd-mt-3">
-                            Tip: Use this for ad-free membership tiers. Users with checked roles get a completely ad-free experience.
+                            Tip: Check roles that should have supporter status. This controls ad-free browsing, quick reply, and other premium features.
                         </p>
                     </div>
 
