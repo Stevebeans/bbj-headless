@@ -21,6 +21,7 @@ class CommentSchema
     public const TABLE_FOLLOWS = 'bbj_user_follows';
     public const TABLE_PINNED = 'bbj_pinned_comments';
     public const TABLE_AVATARS = 'bbj_user_avatars';
+    public const TABLE_ACTIVE_USERS = 'bbj_active_users';
 
     /**
      * Get full table name with prefix
@@ -302,6 +303,29 @@ class CommentSchema
     }
 
     /**
+     * Get the active users table schema
+     * Fast lookup table for @mention autocomplete
+     * Contains only users who have commented (not spam)
+     */
+    public static function getActiveUsersTableSchema(): string
+    {
+        $table = self::table(self::TABLE_ACTIVE_USERS);
+        $charset = self::getCharset();
+
+        return "CREATE TABLE {$table} (
+            user_id BIGINT(20) UNSIGNED NOT NULL,
+            display_name VARCHAR(250) NOT NULL,
+            user_login VARCHAR(60) NOT NULL,
+            comment_count INT(11) UNSIGNED NOT NULL DEFAULT 0,
+            last_active DATETIME DEFAULT NULL,
+            PRIMARY KEY (user_id),
+            KEY idx_display_name (display_name(50)),
+            KEY idx_user_login (user_login),
+            KEY idx_comment_count (comment_count)
+        ) {$charset};";
+    }
+
+    /**
      * Get all table schemas
      */
     public static function getAllSchemas(): array
@@ -318,6 +342,7 @@ class CommentSchema
             self::TABLE_FOLLOWS => self::getFollowsTableSchema(),
             self::TABLE_PINNED => self::getPinnedTableSchema(),
             self::TABLE_AVATARS => self::getAvatarsTableSchema(),
+            self::TABLE_ACTIVE_USERS => self::getActiveUsersTableSchema(),
         ];
     }
 
@@ -335,6 +360,7 @@ class CommentSchema
             self::TABLE_FOLLOWS => self::getFollowsTableSchema(),
             self::TABLE_PINNED => self::getPinnedTableSchema(),
             self::TABLE_AVATARS => self::getAvatarsTableSchema(),
+            self::TABLE_ACTIVE_USERS => self::getActiveUsersTableSchema(),
         ];
     }
 

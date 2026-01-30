@@ -85,7 +85,7 @@ export default function MentionAutocomplete({ query, position, onSelect, onClose
   return (
     <div
       ref={containerRef}
-      className="absolute z-50 w-64 max-h-64 overflow-y-auto bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700"
+      className="absolute z-[9999] w-64 max-h-64 overflow-y-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700"
       style={{
         top: position?.top ?? "auto",
         left: position?.left ?? 0,

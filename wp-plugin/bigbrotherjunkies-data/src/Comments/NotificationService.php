@@ -181,10 +181,10 @@ class NotificationService
     /**
      * Search users for mention autocomplete
      *
-     * Optimized for performance:
-     * - Uses prefix matching (LIKE 'query%') which can use indexes
-     * - Prioritizes users who have commented (real users vs spam)
-     * - Excludes users with no activity if there are active matches
+     * Uses bbj_active_users table for fast searching:
+     * - Only contains users who have commented (no spam)
+     * - Properly indexed on display_name and user_login
+     * - Uses prefix matching for index optimization
      *
      * @param string $query Search query (partial username/display name)
      * @param int $limit Max results to return
@@ -194,30 +194,24 @@ class NotificationService
     {
         global $wpdb;
 
-        // Use prefix matching for better index usage
+        $activeUsersTable = CommentSchema::table(CommentSchema::TABLE_ACTIVE_USERS);
         $prefixTerm = $wpdb->esc_like($query) . '%';
 
-        // Search users who have actually commented (prioritize real users)
-        // Uses prefix matching which can use indexes on display_name/user_login
-        // Uses wp_comments table to count user activity
+        // Search the fast active_users table (indexed, only real users)
         $users = $wpdb->get_results($wpdb->prepare("
-            SELECT DISTINCT u.ID, u.display_name, u.user_login,
-                   (SELECT COUNT(*) FROM {$wpdb->comments} c WHERE c.user_id = u.ID) as comment_count
-            FROM {$wpdb->users} u
-            WHERE (u.display_name LIKE %s OR u.user_login LIKE %s)
+            SELECT user_id, display_name, user_login, comment_count
+            FROM {$activeUsersTable}
+            WHERE display_name LIKE %s OR user_login LIKE %s
             ORDER BY
                 comment_count DESC,
-                CASE
-                    WHEN u.display_name LIKE %s THEN 0
-                    ELSE 1
-                END,
-                LENGTH(u.display_name)
+                CASE WHEN display_name LIKE %s THEN 0 ELSE 1 END,
+                LENGTH(display_name)
             LIMIT %d
         ", $prefixTerm, $prefixTerm, $prefixTerm, $limit), ARRAY_A);
 
         $results = [];
         foreach ($users as $user) {
-            $userId = (int) $user['ID'];
+            $userId = (int) $user['user_id'];
             $rank = RankCalculator::calculateRank($userId);
 
             $results[] = [
@@ -235,6 +229,88 @@ class NotificationService
         }
 
         return $results;
+    }
+
+    /**
+     * Populate/refresh the active users table
+     *
+     * Should be run once to populate, then updated incrementally.
+     * Can be called via WP-CLI or admin action.
+     *
+     * @return int Number of users added
+     */
+    public static function populateActiveUsersTable(): int
+    {
+        global $wpdb;
+
+        $activeUsersTable = CommentSchema::table(CommentSchema::TABLE_ACTIVE_USERS);
+
+        // Insert users who have at least 1 approved comment
+        $result = $wpdb->query("
+            INSERT INTO {$activeUsersTable} (user_id, display_name, user_login, comment_count, last_active)
+            SELECT
+                u.ID,
+                u.display_name,
+                u.user_login,
+                COUNT(c.comment_ID) as comment_count,
+                MAX(c.comment_date) as last_active
+            FROM {$wpdb->users} u
+            INNER JOIN {$wpdb->comments} c ON c.user_id = u.ID
+            WHERE c.comment_approved = '1'
+            GROUP BY u.ID, u.display_name, u.user_login
+            HAVING comment_count > 0
+            ON DUPLICATE KEY UPDATE
+                display_name = VALUES(display_name),
+                user_login = VALUES(user_login),
+                comment_count = VALUES(comment_count),
+                last_active = VALUES(last_active)
+        ");
+
+        return $result !== false ? $result : 0;
+    }
+
+    /**
+     * Update a single user in the active users table
+     *
+     * Called when a user posts a comment to keep the table current.
+     *
+     * @param int $userId The user ID
+     * @return bool Success
+     */
+    public static function updateActiveUser(int $userId): bool
+    {
+        global $wpdb;
+
+        $activeUsersTable = CommentSchema::table(CommentSchema::TABLE_ACTIVE_USERS);
+
+        // Get user data and comment count
+        $userData = $wpdb->get_row($wpdb->prepare("
+            SELECT
+                u.ID as user_id,
+                u.display_name,
+                u.user_login,
+                COUNT(c.comment_ID) as comment_count,
+                MAX(c.comment_date) as last_active
+            FROM {$wpdb->users} u
+            LEFT JOIN {$wpdb->comments} c ON c.user_id = u.ID AND c.comment_approved = '1'
+            WHERE u.ID = %d
+            GROUP BY u.ID, u.display_name, u.user_login
+        ", $userId), ARRAY_A);
+
+        if (!$userData || $userData['comment_count'] == 0) {
+            // Remove user if they have no approved comments
+            $wpdb->delete($activeUsersTable, ['user_id' => $userId], ['%d']);
+            return true;
+        }
+
+        // Upsert user
+        return (bool) $wpdb->replace($activeUsersTable, [
+            'user_id' => $userData['user_id'],
+            'display_name' => $userData['display_name'],
+            'user_login' => $userData['user_login'],
+            'comment_count' => $userData['comment_count'],
+            'last_active' => $userData['last_active'],
+        ], ['%d', '%s', '%s', '%d', '%s']);
     }
 
     /**
