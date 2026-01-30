@@ -1,6 +1,6 @@
 # BBJ Next.js Roadmap
 
-**Last Updated:** January 25, 2026 (Player data import/update tools complete)
+**Last Updated:** January 30, 2026 (Comment system enhancements complete)
 **Target Launch:** Before BB28 (July 2026)
 **Status:** Off-season development
 
@@ -14,16 +14,31 @@ These directly impact user engagement and revenue.
 
 - [x] Finish comment section UI/UX
 - [x] Add reply threading with proper indentation (3 levels deep)
-- [ ] Implement @mentions with notifications
+- [x] Implement @mentions with autocomplete (Jan 2026)
+  - User search API with indexed `bbj_active_users` table (only real commenters, not spam)
+  - Autocomplete dropdown with avatar, display name, rank badge
+  - Keyboard navigation (Arrow keys, Enter, Escape)
+  - Client-side caching with localStorage
 - [x] Add comment reactions (beyond just voting) - emoji reactions added
-- [ ] "Best comments" or "Staff pick" highlighting
-- [ ] Comment sorting options (newest, oldest, most voted, staff picks)
+- [x] "Staff pick" / Pinned comments (Jan 2026)
+  - Pin/unpin endpoints for moderators
+  - StaffPickBadge component with star icon
+  - Pinned comments float to top
+- [x] Comment sorting options (newest, oldest, most voted)
 - [ ] User comment history on profile
 - [x] Gamification - User rank system (Newbie → Legend based on comments + karma)
 - [x] Online status indicator (green dot) with session heartbeat
 - [x] Author profile modal with stats, recent comments, follow system
 - [x] Media attachments (image upload + Giphy integration)
 - [x] Voting system (upvote/downvote)
+- [x] Comment permalinks with highlight animation (Jan 2026)
+  - Share button copies `?comment=123` URL
+  - Scroll-to-comment on page load
+  - Yellow fade highlight animation
+- [x] Reply/mention notification backend (Jan 2026)
+  - NotificationService creates notifications for mentions and replies
+  - `bbj_notifications` table with type, actor, comment, post references
+- [ ] Notification bell UI (frontend to view/manage notifications)
 
 ### 1.2 Ad System & Monetization
 
