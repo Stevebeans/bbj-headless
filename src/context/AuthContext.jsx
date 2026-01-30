@@ -62,9 +62,34 @@ export function AuthProvider({ children }) {
             avatar: userData.user_avatar || userData.avatar,
           });
         } catch (err) {
-          // Token is invalid, clear it
-          clearToken();
-          setUser(null);
+          // Only clear token if it's definitively invalid (not network/timeout errors)
+          // Network errors shouldn't log users out - they might just be offline
+          const isAuthError = err.status === 401 || err.status === 403;
+          const isNetworkError = err.isNetworkError || err.name === "AbortError" || err.message === "Failed to fetch";
+
+          if (isAuthError && !isNetworkError) {
+            clearToken();
+            setUser(null);
+          } else if (isNetworkError) {
+            // For network errors, try to use cached user data from token
+            // JWT tokens contain user info we can decode without server validation
+            try {
+              const payload = JSON.parse(atob(token.split(".")[1]));
+              setUser({
+                id: payload.data?.user?.id,
+                user_id: payload.data?.user?.id,
+                user_email: payload.data?.user?.email,
+                user_display_name: payload.data?.user?.display_name || "User",
+                token,
+                _offline: true, // Flag that we're using cached data
+              });
+              console.warn("Using cached auth due to network error:", err.message);
+            } catch {
+              // Token is malformed, clear it
+              clearToken();
+              setUser(null);
+            }
+          }
         }
       }
       setLoading(false);
@@ -76,7 +101,7 @@ export function AuthProvider({ children }) {
   // Validate JWT token with WordPress
   const validateToken = async (token) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout (increased)
 
     try {
       const response = await fetch(`${API_URL}/bbj/v3/validate-token`, {
@@ -91,12 +116,24 @@ export function AuthProvider({ children }) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error("Invalid token");
+        // Create error with status so we can differentiate auth failures from other errors
+        const error = new Error("Invalid token");
+        error.status = response.status;
+        throw error;
       }
 
       return response.json();
     } catch (err) {
       clearTimeout(timeoutId);
+      // Add context for network errors
+      if (err.name === "AbortError") {
+        const error = new Error("Request timeout");
+        error.isNetworkError = true;
+        throw error;
+      }
+      if (!err.status) {
+        err.isNetworkError = true;
+      }
       throw err;
     }
   };
