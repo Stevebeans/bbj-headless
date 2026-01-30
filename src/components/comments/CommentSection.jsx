@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getComments } from "@/lib/api/comments";
 import CommentForm from "./CommentForm";
 import CommentCard from "./CommentCard";
 
-export default function CommentSection({ postId, initialCommentCount = 0 }) {
+// Inner component that uses useSearchParams
+function CommentSectionInner({ postId, initialCommentCount = 0 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [comments, setComments] = useState([]);
@@ -253,5 +254,38 @@ export default function CommentSection({ postId, initialCommentCount = 0 }) {
         </div>
       )}
     </section>
+  );
+}
+
+// Loading fallback for Suspense
+function CommentSectionFallback() {
+  return (
+    <section id="comments" className="mt-8">
+      <div className="flex items-center justify-between mb-6">
+        <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-32 animate-pulse" />
+        <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-24 animate-pulse" />
+      </div>
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="animate-pulse flex gap-3">
+            <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4" />
+              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+              <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// Exported component wrapped in Suspense for Next.js 15 compatibility
+export default function CommentSection(props) {
+  return (
+    <Suspense fallback={<CommentSectionFallback />}>
+      <CommentSectionInner {...props} />
+    </Suspense>
   );
 }
