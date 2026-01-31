@@ -1,6 +1,6 @@
 # BBJ Next.js Roadmap
 
-**Last Updated:** January 30, 2026 (Comment system enhancements complete)
+**Last Updated:** January 30, 2026 (Feed Updates system complete)
 **Target Launch:** Before BB28 (July 2026)
 **Status:** Off-season development
 
@@ -154,32 +154,66 @@ Pages that need to exist for site parity with current WordPress site.
 
 The core differentiator during the season.
 
-### 3.1 Feed Updates Hub
+### 3.1 Feed Updates Hub ✅
 
-- [ ] **Feed Updates Page** `/feed-updates`
-  - Chronological feed display
-  - Date/time filtering
+**Status:** Complete (Jan 30, 2026)
+
+- [x] **Feed Updates Page** `/feed-updates`
+  - Chronological feed display with archive
+  - Date range filtering (today, yesterday, week, month, year)
   - Search within updates
-  - Category/tag filtering (game talk, drama, competitions)
+  - Sort options (newest, oldest, highest rated, lowest rated)
+  - Pagination with load more
 
-- [ ] **Premium QOL Features**
+- [x] **Single Feed Update Page** `/feed-updates/[slug]`
+  - Full content display with sidebar
+  - Voting (upvote/downvote)
+  - Comment section integration
+  - SEO-friendly auto-generated titles ("BB27 Feed Update - Jan 30, 3:45 PM PT")
+
+- [x] **Home Page Integration**
+  - Recent comments preview (last 3 replies per update)
+  - Quick Reply for premium/supporter users
+  - Comment count display
+
+- [x] **Supporter/Premium Features**
+  - Quick Reply from home page (supporters only)
+  - `is_supporter` flag based on Supporter Roles setting in WP admin
+  - Upsell tooltip for non-supporters
+
+- [ ] **Future Premium QOL Features**
   - Auto-refresh toggle (WebSocket or polling)
   - Desktop notifications for new updates
   - "Unread" indicator
   - Bookmark/save updates
   - Custom filters (hide spoilers, show game-only)
 
-### 3.2 Feed Updater Widget (All Pages)
+### 3.2 Feed Updater Widget ✅
 
-- [ ] Floating/docked feed updater window
-- [ ] Quick post interface for staff
-- [ ] Social crossposting checkboxes:
-  - [ ] Bluesky (with season hashtag)
-  - [ ] Facebook
-  - [ ] X/Twitter
-- [ ] Auto-include current season hashtag
-- [ ] Character count for each platform
-- [ ] Preview before posting
+**Status:** Complete (Jan 30, 2026)
+
+- [x] Floating updater bar for staff (appears on all pages when logged in with updater role)
+- [x] Quick post interface with rich text
+- [x] Mode toggle (Feed Update vs Show Update)
+- [x] Image upload support
+- [x] Social crossposting checkboxes:
+  - [x] Bluesky (with season hashtag)
+  - [x] Facebook
+- [x] Auto-include current season hashtag
+- [x] Social config check (shows disabled state when not configured)
+- [x] Success/error feedback with social posting results
+
+**Files:**
+- `src/components/feed-updates/FloatingUpdater.jsx` - Floating bar UI
+- `src/components/feed-updates/FeedUpdatesArchive.jsx` - Archive with filters
+- `src/components/feed-updates/FeedUpdateCard.jsx` - Card for archive (with voting)
+- `src/components/home/FeedUpdateCard.jsx` - Card for home (with quick reply)
+- `src/app/feed-updates/page.jsx` - Archive page
+- `src/app/feed-updates/[slug]/page.jsx` - Single update page
+- `wp-plugin/.../Api/FeedUpdateRoutes.php` - CRUD, voting, social posting
+- `wp-plugin/.../Api/HomeRoutes.php` - Feed updates list with recent_comments
+- `wp-plugin/.../FeedUpdates/BlueskyClient.php` - Bluesky API integration
+- `wp-plugin/.../FeedUpdates/FacebookClient.php` - Facebook API integration
 
 ---
 
@@ -441,7 +475,9 @@ The following suggestions have been added to their respective phases:
 
 ## Current Focus
 
-**Planned path:** Phase 3 → Phase 4 → Finish 2.5 (Advertise/Premium pages) → Revisit roadmap
+**Completed:** Phase 3 (Feed Updates) ✅
+
+**Next up:** Phase 4 (User Profiles & Stripe) → Finish 2.5 (Advertise/Premium pages) → Phase 7 (PWA)
 
 ## Timeline Suggestion
 
@@ -464,6 +500,8 @@ The following suggestions have been added to their respective phases:
 - **Performance first** - Static generation, on-demand revalidation
 - **Mobile-first** - High mobile traffic expected
 - **BB Time** - All times in Pacific timezone
+- **On-demand ISR** - All dynamic pages (posts, players, seasons, feed updates) build on first visit, not at deploy time. This reduced Vercel build time from ~10 minutes to ~48 seconds and avoids WordPress API rate limiting (429 errors).
+- **Deployment** - Use `/full-push` command to push to git/Vercel AND deploy WordPress plugin to production via SSH
 
 ---
 
