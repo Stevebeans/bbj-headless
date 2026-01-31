@@ -18,9 +18,13 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.
 // Allow dynamic rendering for content not pre-generated at build time
 export const dynamicParams = true;
 
+/**
+ * Return empty array to build pages on-demand instead of at deploy time
+ * This avoids rate limiting (429) errors during Vercel builds
+ * Pages will be generated on first visit and cached
+ */
 export async function generateStaticParams() {
-  const slugs = await getAllContentSlugs();
-  return slugs.map((slug) => ({ slug }));
+  return [];
 }
 
 export async function generateMetadata({ params }) {

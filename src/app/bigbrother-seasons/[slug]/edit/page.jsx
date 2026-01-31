@@ -8,9 +8,12 @@ import { FaEye } from "react-icons/fa";
 // Allow dynamic rendering for seasons not pre-generated at build time
 export const dynamicParams = true;
 
+/**
+ * Return empty array to build pages on-demand instead of at deploy time
+ * This avoids rate limiting (429) errors during Vercel builds
+ */
 export async function generateStaticParams() {
-  const slugs = await getAllSeasonSlugs();
-  return slugs.map((slug) => ({ slug }));
+  return [];
 }
 
 export async function generateMetadata({ params }) {

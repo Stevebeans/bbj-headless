@@ -9,16 +9,13 @@ import { getFeedUpdateBySlug, getFeedUpdates } from "@/lib/api/feedUpdates";
 export const revalidate = 60;
 export const dynamicParams = true;
 
+/**
+ * Return empty array to build pages on-demand instead of at deploy time
+ * This avoids rate limiting (429) errors during Vercel builds
+ * Pages will be generated on first visit and cached
+ */
 export async function generateStaticParams() {
-  // Pre-generate paths for recent updates
-  try {
-    const data = await getFeedUpdates({ perPage: 50 });
-    return (data.updates || []).map((update) => ({
-      slug: update.slug,
-    }));
-  } catch {
-    return [];
-  }
+  return [];
 }
 
 export async function generateMetadata({ params }) {
