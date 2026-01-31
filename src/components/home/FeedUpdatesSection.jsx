@@ -50,7 +50,7 @@ export function FeedUpdatesSection({ updates: initialUpdates = [] }) {
       </h2>
 
       {/* Feed updates list */}
-      <div className="lg:max-h-[1300px] lg:min-h-0 lg:overflow-y-auto">
+      <div>
         {updates.length > 0 ? (
           updates.map((update) => (
             <FeedUpdateCard key={update.id} update={update} />
