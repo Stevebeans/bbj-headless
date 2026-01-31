@@ -204,6 +204,7 @@ The core differentiator during the season.
 - [x] Success/error feedback with social posting results
 
 **Files:**
+
 - `src/components/feed-updates/FloatingUpdater.jsx` - Floating bar UI
 - `src/components/feed-updates/FeedUpdatesArchive.jsx` - Archive with filters
 - `src/components/feed-updates/FeedUpdateCard.jsx` - Card for archive (with voting)
@@ -276,6 +277,7 @@ The core differentiator during the season.
 **Status:** Complete and working! (Jan 25, 2026)
 
 **What was built:**
+
 - [x] "Player Photos" tab on season edit page (`/bigbrother-seasons/[slug]/edit#photos`)
 - [x] Auto-search UI: click "Search" → shows 3 photo options from BB Wiki/Wikipedia
 - [x] Next.js API routes (`/api/admin/search-player-photos`, `/api/admin/save-player-photo`, `/api/admin/proxy-image`)
@@ -285,11 +287,13 @@ The core differentiator during the season.
 - [x] Tab hash persistence (URL updates with #photos, #info, etc.)
 
 **Technical approach:**
+
 - Uses Fandom (Big Brother Wiki) and Wikipedia MediaWiki APIs instead of Google Custom Search
 - Image proxy fetches images server-side to bypass hotlink protection
 - Google Custom Search API was abandoned (broken for new users as of Jan 2026)
 
 **Files:**
+
 - `src/app/api/admin/search-player-photos/route.js` - Queries Fandom/Wikipedia APIs
 - `src/app/api/admin/save-player-photo/route.js` - Proxies save to WordPress
 - `src/app/api/admin/proxy-image/route.js` - Bypasses hotlink protection
@@ -298,6 +302,7 @@ The core differentiator during the season.
 - `wp-plugin/.../PlayerPhotoRoutes.php`, `PlayerPhotoFetcher.php` - WordPress backend
 
 **Future improvements:**
+
 - [ ] Bulk photo search with progress indicator
 - [ ] Better image preview before saving
 - [ ] Face detection to auto-crop centered on face
@@ -311,6 +316,7 @@ The core differentiator during the season.
 **Status:** Core functionality complete (Jan 25, 2026)
 
 **What was built:**
+
 - [x] CSV data files created: `players.md` (BB1-BB27), `cities_with_coords.csv` (geo coordinates)
 - [x] Import page (`ImportPage.php`) reads CSV files, merges geo data
 - [x] Season import with duplicate detection (skips existing seasons)
@@ -320,17 +326,20 @@ The core differentiator during the season.
 - [x] Database migrations for hometown columns and finish_place column
 
 **Files:**
+
 - `.claude/data/players.md` - All BB1-BB27 players with hometown, finish_place, evicted_date
 - `.claude/data/cities_with_coords.csv` - Lat/lng for all player hometowns
 - `wp-plugin/.../Admin/Pages/ImportPage.php` - Import logic with preview
 - `wp-plugin/.../Admin/Pages/DevToolsPage.php` - Migrations + update existing records
 
 **Production deployment:**
+
 - Upload CSV files to `wp-content/uploads/bbj-import/players.md` and `cities_with_coords.csv`
 - Run Import page to add missing seasons/players
 - Run "Update Player Data from CSV" to populate hometown/finish_place
 
 **Future improvements:**
+
 - [ ] Bulk photo import integration
 - [ ] Validation preview before import
 - [ ] Progress indicator for large imports
@@ -477,15 +486,15 @@ The following suggestions have been added to their respective phases:
 
 **Completed:** Phase 3 (Feed Updates) ✅
 
-**Next up:** Phase 4 (User Profiles & Stripe) → Finish 2.5 (Advertise/Premium pages) → Phase 7 (PWA)
+**Next up:** Phase 4 (User Profiles & Stripe) → Finish 2.5 (Advertise/Premium pages) + Stripe integration and billing system in user setting page → Phase 7 (PWA)
 
 ## Timeline Suggestion
 
 | Phase   | Target    | Notes                            |
-| ------- | --------- | -------------------------------- |
+| ------- | --------- | -------------------------------- | --- |
 | Phase 1 | Feb 2026  | Core UX - comments, auth, ads    |
 | Phase 2 | Mar 2026  | Content pages - players, seasons |
-| Phase 3 | Apr 2026  | Feed updates system              |Th
+| Phase 3 | Apr 2026  | Feed updates system              | Th  |
 | Phase 4 | May 2026  | User profiles, Stripe            |
 | Phase 5 | May 2026  | Admin tools                      |
 | Phase 6 | Ongoing   | Community features               |
