@@ -572,7 +572,27 @@ class SettingsRoutes
                     ],
                     [
                         'question' => 'What are supporter benefits?',
-                        'answer' => 'Supporters enjoy an ad-free experience, exclusive badges, priority push notifications for feed updates, and early access to new features.',
+                        'answer' => 'Supporters enjoy an ad-free experience, exclusive badges, priority push notifications for feed updates, quick reply on feed updates, and early access to new features.',
+                    ],
+                    [
+                        'question' => 'What payment methods do you accept?',
+                        'answer' => 'We accept all major credit cards via Stripe, and PayPal.',
+                    ],
+                    [
+                        'question' => 'How do I cancel my subscription?',
+                        'answer' => 'Go to Settings > Premium and click "Manage Subscription" (for Stripe) or "Cancel Subscription" (for PayPal). You\'ll keep access until the end of your billing period.',
+                    ],
+                    [
+                        'question' => 'Will I get a refund if I cancel?',
+                        'answer' => 'Subscriptions are non-refundable, but you\'ll retain access until your current billing period ends. Contact us for special circumstances.',
+                    ],
+                    [
+                        'question' => 'What\'s the difference between plans?',
+                        'answer' => 'Monthly ($6.95/mo) and Season Pass ($35/yr) both give Supporter status. Lifetime ($99 one-time) gives permanent access and a special Lifetime badge.',
+                    ],
+                    [
+                        'question' => 'Can I upgrade from Monthly to Lifetime?',
+                        'answer' => 'Yes! Just purchase the Lifetime plan and your monthly subscription will be cancelled automatically.',
                     ],
                     [
                         'question' => 'Can I change my username?',

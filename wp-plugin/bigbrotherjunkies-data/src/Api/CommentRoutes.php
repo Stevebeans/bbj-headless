@@ -836,6 +836,16 @@ class CommentRoutes
             );
         }
 
+        // Notify thread subscribers (excluding user who got reply notification)
+        $excludeUserId = null;
+        if ($parentId > 0) {
+            $parentComment = get_comment($parentId);
+            if ($parentComment && (int) $parentComment->user_id > 0) {
+                $excludeUserId = (int) $parentComment->user_id;
+            }
+        }
+        NotificationService::notifyPostSubscribers($postId, $userId, $commentId, $excludeUserId);
+
         // Update user's rank
         RankCalculator::updateUserRank($userId);
 

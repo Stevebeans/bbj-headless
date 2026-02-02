@@ -7,6 +7,8 @@ use BigBrotherJunkies\Data\Database\Schema;
 use BigBrotherJunkies\Data\Api\AuthRoutes;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
 use BigBrotherJunkies\Data\Comments\CommentSchema;
+use BigBrotherJunkies\Data\Billing\BillingMigrator;
+use BigBrotherJunkies\Data\Billing\BillingSchema;
 
 /**
  * Dev Tools admin page for database management
@@ -25,6 +27,7 @@ class DevToolsPage
         add_action('admin_post_bbjd_import_v2', [$this, 'handleImportV2']);
         add_action('admin_post_bbjd_clear_registration_logs', [$this, 'handleClearRegistrationLogs']);
         add_action('admin_post_bbjd_create_comment_tables', [$this, 'handleCreateCommentTables']);
+        add_action('admin_post_bbjd_create_billing_tables', [$this, 'handleCreateBillingTables']);
         add_action('admin_post_bbjd_add_player_hometown_cols', [$this, 'handleAddPlayerHometownCols']);
         add_action('admin_post_bbjd_add_finish_place_col', [$this, 'handleAddFinishPlaceCol']);
         add_action('admin_post_bbjd_update_player_data', [$this, 'handleUpdatePlayerData']);
@@ -474,6 +477,29 @@ class DevToolsPage
     }
 
     /**
+     * Handle create billing tables action
+     */
+    public function handleCreateBillingTables(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+
+        check_admin_referer('bbjd_create_billing_tables');
+
+        $results = BillingMigrator::migrate();
+
+        $success = !in_array(false, $results, true);
+        $message = $success ? 'billing_tables_created' : 'billing_tables_error';
+
+        wp_redirect(add_query_arg([
+            'page' => self::MENU_SLUG,
+            'message' => $message,
+        ], admin_url('admin.php')));
+        exit;
+    }
+
+    /**
      * Render the page
      */
     public function render(): void
@@ -486,6 +512,11 @@ class DevToolsPage
         $commentTablesStatus = CommentMigrator::getTablesStatus();
         $commentDbVersion = CommentMigrator::getCurrentVersion();
         $commentNeedsMigration = CommentMigrator::needsMigration();
+
+        // Billing system tables
+        $billingTablesStatus = BillingMigrator::getTablesStatus();
+        $billingDbVersion = BillingMigrator::getCurrentVersion();
+        $billingNeedsMigration = BillingMigrator::needsMigration();
 
         // Check for messages
         $message = $_GET['message'] ?? '';
@@ -628,6 +659,70 @@ class DevToolsPage
                     </form>
                 </div>
 
+                <!-- Billing System Database Section -->
+                <div class="bbjd-bg-white bbjd-rounded-lg bbjd-shadow bbjd-p-6 bbjd-mb-6">
+                    <h2 class="bbjd-text-xl bbjd-font-semibold bbjd-text-gray-800 bbjd-mb-4">
+                        Billing System Database
+                        <?php if ($billingNeedsMigration): ?>
+                            <span class="bbjd-inline-flex bbjd-items-center bbjd-px-2.5 bbjd-py-0.5 bbjd-rounded-full bbjd-text-xs bbjd-font-medium bbjd-bg-yellow-100 bbjd-text-yellow-800 bbjd-ml-2">
+                                Migration Available
+                            </span>
+                        <?php endif; ?>
+                    </h2>
+
+                    <p class="bbjd-text-sm bbjd-text-gray-600 bbjd-mb-4">
+                        DB Version: <strong><?php echo esc_html($billingDbVersion); ?></strong>
+                    </p>
+
+                    <!-- Billing Table Status -->
+                    <div class="bbjd-mb-6">
+                        <h3 class="bbjd-text-lg bbjd-font-medium bbjd-text-gray-700 bbjd-mb-3">Table Status</h3>
+                        <div class="bbjd-overflow-x-auto">
+                            <table class="bbjd-min-w-full bbjd-divide-y bbjd-divide-gray-200">
+                                <thead class="bbjd-bg-gray-50">
+                                    <tr>
+                                        <th class="bbjd-px-4 bbjd-py-2 bbjd-text-left bbjd-text-xs bbjd-font-medium bbjd-text-gray-500 bbjd-uppercase">Table</th>
+                                        <th class="bbjd-px-4 bbjd-py-2 bbjd-text-left bbjd-text-xs bbjd-font-medium bbjd-text-gray-500 bbjd-uppercase">Status</th>
+                                        <th class="bbjd-px-4 bbjd-py-2 bbjd-text-left bbjd-text-xs bbjd-font-medium bbjd-text-gray-500 bbjd-uppercase">Rows</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bbjd-bg-white bbjd-divide-y bbjd-divide-gray-200">
+                                    <?php foreach ($billingTablesStatus as $table => $status): ?>
+                                    <tr>
+                                        <td class="bbjd-px-4 bbjd-py-2 bbjd-text-sm bbjd-font-mono bbjd-text-gray-900">
+                                            <?php echo esc_html($status['full_name']); ?>
+                                        </td>
+                                        <td class="bbjd-px-4 bbjd-py-2 bbjd-text-sm">
+                                            <?php if ($status['exists']): ?>
+                                                <span class="bbjd-inline-flex bbjd-items-center bbjd-px-2.5 bbjd-py-0.5 bbjd-rounded-full bbjd-text-xs bbjd-font-medium bbjd-bg-green-100 bbjd-text-green-800">
+                                                    Exists
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="bbjd-inline-flex bbjd-items-center bbjd-px-2.5 bbjd-py-0.5 bbjd-rounded-full bbjd-text-xs bbjd-font-medium bbjd-bg-red-100 bbjd-text-red-800">
+                                                    Missing
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="bbjd-px-4 bbjd-py-2 bbjd-text-sm bbjd-text-gray-500">
+                                            <?php echo $status['rows'] >= 0 ? number_format($status['rows']) : '-'; ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Billing Tables Action -->
+                    <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+                        <?php wp_nonce_field('bbjd_create_billing_tables'); ?>
+                        <input type="hidden" name="action" value="bbjd_create_billing_tables">
+                        <button type="submit" class="bbjd-bg-primary500 bbjd-text-white bbjd-px-4 bbjd-py-2 bbjd-rounded bbjd-font-medium hover:bbjd-bg-primaryHard bbjd-transition-colors">
+                            Create/Update Billing Tables
+                        </button>
+                    </form>
+                </div>
+
                 <!-- Migration Section -->
                 <div class="bbjd-bg-white bbjd-rounded-lg bbjd-shadow bbjd-p-6 bbjd-mb-6">
                     <h2 class="bbjd-text-xl bbjd-font-semibold bbjd-text-gray-800 bbjd-mb-4">
@@ -721,19 +816,17 @@ ADD COLUMN finish_place TINYINT UNSIGNED DEFAULT NULL;</code></pre>
                             </form>
                         </div>
 
-                        <div class="bbjd-border bbjd-border-blue-200 bbjd-bg-blue-50 bbjd-rounded bbjd-p-4">
-                            <h3 class="bbjd-text-sm bbjd-font-medium bbjd-text-blue-800 bbjd-mb-2">Update existing players with hometown &amp; finish_place data:</h3>
-                            <p class="bbjd-text-sm bbjd-text-blue-700 bbjd-mb-3">
-                                Reads <code>players.md</code> and <code>cities_with_coords.csv</code> to update:
-                                <br>• Player hometown (city, state, lat/lng)
-                                <br>• Player season finish_place and evicted_date
-                                <br>• Handles name aliases (Bunky/Bill, Nakomis/Jennifer, etc.)
-                            </p>
+                        <div class="bbjd-border bbjd-border-gray-200 bbjd-rounded bbjd-p-4">
+                            <h3 class="bbjd-text-sm bbjd-font-medium bbjd-text-gray-700 bbjd-mb-2">Update existing players with hometown &amp; finish_place data:</h3>
+                            <pre class="bbjd-bg-gray-900 bbjd-text-green-400 bbjd-p-4 bbjd-rounded bbjd-text-sm bbjd-overflow-x-auto bbjd-mb-3"><code>-- Reads players.md and cities_with_coords.csv to update:
+-- • Player hometown (city, state, lat/lng)
+-- • Player season finish_place and evicted_date
+-- • Handles name aliases (Bunky/Bill, Nakomis/Jennifer, etc.)</code></pre>
                             <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                                 <?php wp_nonce_field('bbjd_update_player_data'); ?>
                                 <input type="hidden" name="action" value="bbjd_update_player_data">
-                                <button type="submit" class="bbjd-bg-blue-600 bbjd-text-white bbjd-px-4 bbjd-py-2 bbjd-rounded bbjd-font-medium hover:bbjd-bg-blue-700 bbjd-transition-colors">
-                                    Update Player Data from CSV
+                                <button type="submit" class="bbjd-bg-primary500 bbjd-text-white bbjd-px-4 bbjd-py-2 bbjd-rounded bbjd-font-medium hover:bbjd-bg-primaryHard bbjd-transition-colors">
+                                    Run Migration
                                 </button>
                             </form>
                         </div>
@@ -769,6 +862,8 @@ ADD COLUMN finish_place TINYINT UNSIGNED DEFAULT NULL;</code></pre>
             'logs_cleared' => ['success', 'Registration logs cleared successfully.'],
             'comment_tables_created' => ['success', 'Comment system tables created/updated successfully.'],
             'comment_tables_error' => ['error', 'Error creating comment system tables.'],
+            'billing_tables_created' => ['success', 'Billing system tables created/updated successfully.'],
+            'billing_tables_error' => ['error', 'Error creating billing system tables.'],
             'hometown_cols_added' => ['success', sprintf(
                 'Hometown columns migration complete. Added: %s. Skipped (already exist): %s.',
                 $_GET['added'] ?? 'none',

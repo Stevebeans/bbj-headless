@@ -22,6 +22,7 @@ class CommentSchema
     public const TABLE_PINNED = 'bbj_pinned_comments';
     public const TABLE_AVATARS = 'bbj_user_avatars';
     public const TABLE_ACTIVE_USERS = 'bbj_active_users';
+    public const TABLE_POST_SUBSCRIPTIONS = 'bbj_post_subscriptions';
 
     /**
      * Get full table name with prefix
@@ -326,6 +327,27 @@ class CommentSchema
     }
 
     /**
+     * Get the post subscriptions table schema
+     * Stores user subscriptions to posts for thread notifications
+     */
+    public static function getPostSubscriptionsTableSchema(): string
+    {
+        $table = self::table(self::TABLE_POST_SUBSCRIPTIONS);
+        $charset = self::getCharset();
+
+        return "CREATE TABLE {$table} (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id BIGINT(20) UNSIGNED NOT NULL,
+            post_id BIGINT(20) UNSIGNED NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY unique_subscription (user_id, post_id),
+            KEY idx_post (post_id),
+            KEY idx_user (user_id)
+        ) {$charset};";
+    }
+
+    /**
      * Get all table schemas
      */
     public static function getAllSchemas(): array
@@ -343,6 +365,7 @@ class CommentSchema
             self::TABLE_PINNED => self::getPinnedTableSchema(),
             self::TABLE_AVATARS => self::getAvatarsTableSchema(),
             self::TABLE_ACTIVE_USERS => self::getActiveUsersTableSchema(),
+            self::TABLE_POST_SUBSCRIPTIONS => self::getPostSubscriptionsTableSchema(),
         ];
     }
 

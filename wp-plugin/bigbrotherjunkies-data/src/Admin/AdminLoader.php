@@ -75,7 +75,7 @@ class AdminLoader
         }
 
         // Check for plugin pages by slug
-        $pluginSlugs = ['bbjd-ads', 'bbjd-ad-edit', 'bbjd-slots', 'bbjd-settings', 'bbjd-dev-tools', 'bbjd-registrations'];
+        $pluginSlugs = ['bbjd-ads', 'bbjd-ad-edit', 'bbjd-slots', 'bbjd-settings', 'bbjd-dev-tools', 'bbjd-registrations', 'bbjd-api-settings'];
         foreach ($pluginSlugs as $slug) {
             if (strpos($hook, $slug) !== false) {
                 return true;

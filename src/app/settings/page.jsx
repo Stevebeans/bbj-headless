@@ -122,11 +122,19 @@ export default function SettingsPage() {
 function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAuthenticated, loading: authLoading, refreshUser } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, refreshUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [settings, setSettings] = useState(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [toast, setToast] = useState(null);
+
+  // Handle tab from URL
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && TABS.some((t) => t.id === tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // Handle email verification from URL
   useEffect(() => {
@@ -276,9 +284,29 @@ function SettingsContent() {
               />
             )}
             {activeTab === "premium" && (
-              <PremiumTab settings={settings} loading={loadingSettings} />
+              <PremiumTab settings={settings} loading={loadingSettings} showToast={showToast} />
             )}
             {activeTab === "help" && <HelpTab />}
+          </div>
+        </div>
+
+        {/* Logout Section */}
+        <div className="mt-6 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                Sign Out
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                Log out of your account on this device
+              </p>
+            </div>
+            <button
+              onClick={logout}
+              className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            >
+              Log Out
+            </button>
           </div>
         </div>
       </div>
@@ -520,9 +548,23 @@ function ProfileTab({ settings, loading, onUpdate, showToast, refreshUser }) {
 
       {/* Account Info */}
       <div className="pt-6 border-t border-slate-200 dark:border-slate-700">
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
-          Account Information
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            Account Information
+          </h3>
+          {profile?.username && (
+            <Link
+              href={`/users/${profile.username}`}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              View Public Profile
+            </Link>
+          )}
+        </div>
         <div className="grid gap-4 sm:grid-cols-3 text-sm">
           <div>
             <span className="text-gray-500 dark:text-gray-400">Member Since</span>
@@ -585,6 +627,9 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
   const [notifications, setNotifications] = useState({});
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [loadingSubs, setLoadingSubs] = useState(true);
+  const [unsubscribing, setUnsubscribing] = useState(null);
 
   const isSupporter = settings?.premium?.is_supporter;
 
@@ -594,6 +639,23 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
       setNotifications(settings.notifications);
     }
   }, [settings]);
+
+  // Load subscriptions
+  useEffect(() => {
+    const loadSubscriptions = async () => {
+      try {
+        const { getSubscriptions } = await import("@/lib/api/subscriptions");
+        const result = await getSubscriptions({ perPage: 50 });
+        setSubscriptions(result.subscriptions || []);
+      } catch (error) {
+        console.error("Failed to load subscriptions:", error);
+      } finally {
+        setLoadingSubs(false);
+      }
+    };
+
+    loadSubscriptions();
+  }, []);
 
   const handleToggle = (key) => {
     // Prevent non-supporters from enabling feed_updates
@@ -622,6 +684,20 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleUnsubscribe = async (postId) => {
+    setUnsubscribing(postId);
+    try {
+      const { unsubscribeFromPost } = await import("@/lib/api/subscriptions");
+      await unsubscribeFromPost(postId);
+      setSubscriptions((prev) => prev.filter((s) => s.post_id !== postId));
+      showToast("Unsubscribed from thread");
+    } catch (error) {
+      showToast(error.message, "error");
+    } finally {
+      setUnsubscribing(null);
     }
   };
 
@@ -659,7 +735,8 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Notification Preferences */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
           Notification Preferences
@@ -667,69 +744,201 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Choose how you want to be notified about activity on your account.
         </p>
-      </div>
 
-      <div className="space-y-4">
-        {notificationOptions.map((notification) => {
-          const isLocked = notification.premium && !isSupporter;
+        <div className="space-y-4 mt-4">
+          {notificationOptions.map((notification) => {
+            const isLocked = notification.premium && !isSupporter;
 
-          return (
-            <div
-              key={notification.id}
-              className={`flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg ${
-                isLocked ? "opacity-60" : ""
-              }`}
-            >
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {notification.label}
-                  </span>
-                  {notification.premium && (
-                    <span className="px-2 py-0.5 text-xs font-medium bg-secondary-100 text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-400 rounded-full">
-                      Premium
+            return (
+              <div
+                key={notification.id}
+                className={`flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg ${
+                  isLocked ? "opacity-60" : ""
+                }`}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {notification.label}
                     </span>
-                  )}
+                    {notification.premium && (
+                      <span className="px-2 py-0.5 text-xs font-medium bg-secondary-100 text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-400 rounded-full">
+                        Premium
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    {notification.description}
+                  </p>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  {notification.description}
-                </p>
+                <ToggleSwitch
+                  enabled={notifications[notification.id] ?? false}
+                  onChange={() => handleToggle(notification.id)}
+                  disabled={isLocked}
+                />
               </div>
-              <ToggleSwitch
-                enabled={notifications[notification.id] ?? false}
-                onChange={() => handleToggle(notification.id)}
-                disabled={isLocked}
-              />
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        {/* Save Button */}
+        <div className="flex justify-end pt-4">
+          <button
+            onClick={handleSave}
+            disabled={!hasChanges || saving}
+            className="px-6 py-2.5 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {saving ? (
+              <>
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Saving...
+              </>
+            ) : (
+              "Save Preferences"
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Save Button */}
-      <div className="flex justify-end pt-4">
-        <button
-          onClick={handleSave}
-          disabled={!hasChanges || saving}
-          className="px-6 py-2.5 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-        >
-          {saving ? (
-            <>
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      {/* Thread Subscriptions */}
+      <div className="pt-6 border-t border-slate-200 dark:border-slate-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Subscribed Threads
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Posts you're following. You'll get notified of all new comments.
+        </p>
+
+        <div className="mt-4">
+          {loadingSubs ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/4" />
+                  </div>
+                  <div className="h-8 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : subscriptions.length === 0 ? (
+            <div className="text-center py-8 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+              <svg className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-              Saving...
-            </>
+              <p className="text-gray-500 dark:text-gray-400">
+                You're not subscribed to any threads
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                Click the bell icon in a post's comment section to subscribe
+              </p>
+            </div>
           ) : (
-            "Save Preferences"
+            <div className="space-y-2">
+              {subscriptions.map((sub) => (
+                <div
+                  key={sub.id}
+                  className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <Link
+                      href={sub.post_url}
+                      className="font-medium text-gray-900 dark:text-white hover:text-primary-500 truncate block"
+                    >
+                      {sub.post_title}
+                    </Link>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                      Subscribed {sub.subscribed_ago}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleUnsubscribe(sub.post_id)}
+                    disabled={unsubscribing === sub.post_id}
+                    className="ml-3 px-3 py-1.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {unsubscribing === sub.post_id ? (
+                      <span className="flex items-center gap-1">
+                        <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      </span>
+                    ) : (
+                      "Unsubscribe"
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
-        </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function PremiumTab({ settings, loading }) {
+function PremiumTab({ settings, loading, showToast }) {
+  const [subscription, setSubscription] = useState(null);
+  const [loadingSub, setLoadingSub] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // Load subscription details
+  useEffect(() => {
+    const loadSubscription = async () => {
+      try {
+        const { getSubscription } = await import("@/lib/api/billing");
+        const result = await getSubscription();
+        if (result.has_subscription) {
+          setSubscription(result.subscription);
+        }
+      } catch (error) {
+        console.error("Failed to load subscription:", error);
+      } finally {
+        setLoadingSub(false);
+      }
+    };
+
+    loadSubscription();
+  }, []);
+
+  const handleManageSubscription = async () => {
+    if (!subscription) return;
+
+    // For Stripe subscriptions, open customer portal
+    if (subscription.processor === "stripe") {
+      try {
+        const { getPortalUrl } = await import("@/lib/api/billing");
+        const result = await getPortalUrl(window.location.href);
+        window.location.href = result.url;
+      } catch (error) {
+        showToast?.(error.message, "error");
+      }
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
+    try {
+      const { cancelSubscription } = await import("@/lib/api/billing");
+      const result = await cancelSubscription();
+      showToast?.(result.message || "Subscription cancelled", "success");
+      setShowCancelConfirm(false);
+      // Reload subscription data
+      const { getSubscription } = await import("@/lib/api/billing");
+      const subResult = await getSubscription();
+      setSubscription(subResult.has_subscription ? subResult.subscription : null);
+    } catch (error) {
+      showToast?.(error.message, "error");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   if (loading) {
     return <SettingsSkeleton />;
   }
@@ -796,6 +1005,134 @@ function PremiumTab({ settings, loading }) {
           </div>
         )}
       </div>
+
+      {/* Subscription Details (for active subscribers) */}
+      {isSupporter && !loadingSub && subscription && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Subscription Details
+          </h3>
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Plan</span>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {subscription.plan_name}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Amount</span>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {subscription.amount_display}
+                  {subscription.plan_type !== "lifetime" && `/${subscription.plan_type === "monthly" ? "mo" : "yr"}`}
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Payment Method</span>
+                <p className="font-medium text-gray-900 dark:text-white capitalize">
+                  {subscription.processor}
+                </p>
+              </div>
+              {subscription.plan_type !== "lifetime" && (
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {subscription.cancel_at_period_end ? "Access Until" : "Next Billing"}
+                  </span>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {subscription.current_period_end
+                      ? new Date(subscription.current_period_end).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "—"}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Cancellation Notice */}
+            {subscription.cancel_at_period_end && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  Your subscription is cancelled and will end on{" "}
+                  {new Date(subscription.current_period_end).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}. You'll retain access until then.
+                </p>
+              </div>
+            )}
+
+            {/* Management Buttons */}
+            {subscription.plan_type !== "lifetime" && !subscription.cancel_at_period_end && (
+              <div className="flex gap-3 pt-2">
+                {subscription.processor === "stripe" && (
+                  <button
+                    onClick={handleManageSubscription}
+                    className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors text-sm"
+                  >
+                    Manage Subscription
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowCancelConfirm(true)}
+                  className="px-4 py-2 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium rounded-lg transition-colors text-sm"
+                >
+                  Cancel Subscription
+                </button>
+              </div>
+            )}
+
+            {subscription.plan_type === "lifetime" && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 pt-2">
+                You have lifetime access. Thank you for your support!
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
+              Cancel Subscription?
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to cancel? You'll retain access until the end of your current billing period, but your subscription won't renew.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                disabled={cancelling}
+                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              >
+                Keep Subscription
+              </button>
+              <button
+                onClick={handleCancelSubscription}
+                disabled={cancelling}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                {cancelling ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Cancelling...
+                  </>
+                ) : (
+                  "Yes, Cancel"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Current Rank */}
       {rank && (

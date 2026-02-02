@@ -1,6 +1,6 @@
 # BBJ Next.js Roadmap
 
-**Last Updated:** January 30, 2026 (Feed Updates system complete)
+**Last Updated:** February 2, 2026 (Premium Billing system complete - pending live testing)
 **Target Launch:** Before BB28 (July 2026)
 **Status:** Off-season development
 
@@ -38,7 +38,17 @@ These directly impact user engagement and revenue.
 - [x] Reply/mention notification backend (Jan 2026)
   - NotificationService creates notifications for mentions and replies
   - `bbj_notifications` table with type, actor, comment, post references
-- [ ] Notification bell UI (frontend to view/manage notifications)
+- [x] Notification system complete (Feb 2026)
+  - Bell in header with unread count badge
+  - Dropdown shows recent notifications with mark all read
+  - Full `/notifications` page with filters (all/unread) and pagination
+  - Avatar link in header goes to notifications instead of settings
+  - User setting to toggle reply notifications (Settings → Notifications)
+  - Thread subscriptions: bell icon on posts to get ALL new comments
+  - New notification type: `thread` for subscription notifications
+  - Subscription management in Settings page (view/unsubscribe)
+  - 90-day retention with weekly cron cleanup (`NotificationCleanup.php`)
+  - New table: `bbj_post_subscriptions` for thread subscriptions
 
 ### 1.2 Ad System & Monetization
 
@@ -146,7 +156,7 @@ Pages that need to exist for site parity with current WordPress site.
 - [x] Contact `/contact` (full Next.js page with form + reCAPTCHA)
 - [x] About `/about` (WordPress page via `[slug]`)
 - [ ] Advertise `/advertise` (needs custom design)
-- [ ] Premium/Membership info `/premium` (needs custom design, tie to Stripe)
+- [x] Premium/Membership info `/become-supporter` (complete with Stripe/PayPal checkout)
 
 ---
 
@@ -230,7 +240,7 @@ The core differentiator during the season.
 - [x] Notification settings with premium lock for feed updates
 - [x] Help/FAQ tab with dynamic rank information
 - [ ] **Polish Notifications tab** - Wire up to MailPoet once integrated (see 7.1)
-- [ ] **Polish Premium tab** - Wire up to Stripe once integrated (see 4.2)
+- [x] **Polish Premium tab** - Wired up to Stripe/PayPal billing system (see 4.2)
 - [ ] Comment history
 - [ ] Saved/bookmarked content
 - [ ] Account linking (Google, email)
@@ -243,14 +253,71 @@ The core differentiator during the season.
   - Member since date
   - Premium badge (if supporter)
 
-### 4.2 Stripe Integration
+### 4.2 Premium Billing System ✅
 
-- [ ] Subscription management in profile
-- [ ] Plan selection (monthly/annual) with annual discount
-- [ ] Payment method management
-- [ ] Cancel/pause subscription
-- [ ] Invoice history
-- [ ] Upgrade/downgrade flows
+**Status:** Complete (Feb 2, 2026) - Pending live testing with real Stripe/PayPal credentials
+
+**What was built:**
+
+- [x] **Billing API** (`src/lib/api/billing.js`)
+  - getPlans, getSubscription, createStripeCheckout, createPayPalOrder
+  - capturePayPalOrder, createPayPalSubscription, getPortalUrl, cancelSubscription
+
+- [x] **Checkout Flow** (`/become-supporter`)
+  - Plan cards: Monthly ($6.95), Season Pass ($35/yr - popular badge), Lifetime ($99)
+  - Stripe Checkout redirect flow (no SDK needed)
+  - PayPal SDK dynamic loading with buttons
+  - Auth check - shows login prompt for unauthenticated users
+  - Supporter check - shows "Thank you" message for existing supporters
+
+- [x] **Success/Cancel Pages** (`/checkout/success`, `/checkout/cancel`)
+  - Success page captures PayPal orders and shows subscription details
+  - Cancel page with retry button
+
+- [x] **Settings Integration** (`/settings?tab=premium`)
+  - Subscription details display (plan, price, next billing date)
+  - "Manage Subscription" button → Stripe Customer Portal
+  - Cancel button with confirmation modal (for PayPal customers)
+  - Handles cancel_at_period_end state gracefully
+
+- [x] **WordPress Admin** (`ApiSettingsPage.php`)
+  - New admin page for Stripe/PayPal API credentials
+  - Test/Live mode toggle for both providers
+  - Webhook secret configuration
+  - Credentials stored in WordPress options (not wp-config.php)
+
+- [x] **Backend Services** (already existed, updated)
+  - `StripeService.php` - Updated to read from ApiSettingsPage settings
+  - `PayPalService.php` - Updated to read from ApiSettingsPage settings
+  - Webhook handlers for both providers (role assignment automatic)
+
+- [x] **Header Supporter Recognition**
+  - Shows "Thank you for your support!" with star for supporters
+  - Based on user roles: administrator, editor, supporter, lifetime
+
+- [x] **Billing FAQ** - Added 5 billing questions to Settings Help tab
+
+**Files:**
+- `src/lib/api/billing.js` - API client
+- `src/app/become-supporter/page.jsx` - Checkout page
+- `src/app/checkout/success/page.jsx` - Success page
+- `src/app/checkout/cancel/page.jsx` - Cancel page
+- `src/app/settings/page.jsx` - PremiumTab with subscription management
+- `src/components/layout/Header.jsx` - Supporter recognition
+- `wp-plugin/.../Admin/Pages/ApiSettingsPage.php` - API credentials admin
+- `wp-plugin/.../Billing/StripeService.php` - Stripe integration
+- `wp-plugin/.../Billing/PayPalService.php` - PayPal integration
+- `wp-plugin/.../Api/BillingRoutes.php` - REST endpoints
+
+**To test in production:**
+1. Add live Stripe/PayPal credentials in WP Admin → BBJ Data → API Settings
+2. Configure Stripe webhook to point to `/wp-json/bbjd/v1/billing/webhook/stripe`
+3. Test checkout flow with real payment methods
+
+**Future improvements:**
+- [ ] Invoice history display
+- [ ] Upgrade/downgrade between plans
+- [ ] Payment method management (add/remove cards)
 
 ### 4.3 Premium Tiers & Gifting
 
@@ -353,6 +420,17 @@ The core differentiator during the season.
   - Bulk delete with logging
 - [ ] Orphaned data cleanup (comments without posts, votes without comments)
 - [ ] Scheduled maintenance cron job option
+
+### 5.6 Admin Dashboard Redesign
+
+- [ ] Modern dashboard layout with better visual hierarchy
+- [ ] Collapsible sidebar navigation (not just cards)
+- [ ] Real-time activity feed (recent comments, new users, reports)
+- [ ] Quick action buttons (approve/reject reports, pin comments)
+- [ ] Better stats with sparklines/mini charts
+- [ ] User search with quick actions (ban, promote, view profile)
+- [ ] Mobile-responsive admin UI
+- [ ] Dark mode polish
 
 ---
 
@@ -484,9 +562,9 @@ The following suggestions have been added to their respective phases:
 
 ## Current Focus
 
-**Completed:** Phase 3 (Feed Updates) ✅
+**Completed:** Phase 3 (Feed Updates) ✅, Phase 4.2 (Premium Billing) ✅
 
-**Next up:** Phase 4 (User Profiles & Stripe) → Finish 2.5 (Advertise/Premium pages) + Stripe integration and billing system in user setting page → Phase 7 (PWA)
+**Next up:** Phase 4.1/4.3 (Public user profiles, premium tiers, gifting) → Phase 7 (PWA & MailPoet) → Phase 5 (Admin tools)
 
 ## Timeline Suggestion
 

@@ -10,13 +10,20 @@ import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import NotificationBell from "../notifications/NotificationBell";
 
+// Roles that get supporter benefits (should match WordPress settings)
+const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
+
 const LOGO_URL = "https://bigbrotherjunkies.com/wp-content/themes/BBJ/images/bbjlogo2020.png";
 const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
 
 export function Header() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-  const { user, isAuthenticated, logout, isAdmin } = useAuth();
+  const { user, isAuthenticated, isAdmin } = useAuth();
   const { openLogin, openRegister } = useAuthModal();
+
+  // Check if user has a supporter role
+  const isSupporter = isAuthenticated && user?.user_roles?.some(role => SUPPORTER_ROLES.includes(role));
+
   const bbTime = new Date().toLocaleString("en-US", {
     timeZone: "America/Los_Angeles",
     weekday: "short",
@@ -106,20 +113,24 @@ export function Header() {
               <MobileSearchButton onClick={() => setIsMobileSearchOpen(true)} />
 
               {isAuthenticated ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   {isAdmin() && (
                     <Link
                       href="/admin"
-                      className="text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500"
+                      className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-primary-500 transition-colors"
+                      aria-label="Admin Dashboard"
+                      title="Admin Dashboard"
                     >
-                      Admin
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
                     </Link>
                   )}
                   <NotificationBell />
                   <Link
                     href="/settings"
-                    className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500 transition-colors"
-                    title={`ID: ${user?.id || user?.user_id} | Email: ${user?.user_email || user?.email}`}
+                    className="flex items-center"
+                    aria-label="Account Settings"
                   >
                     {user?.avatar ? (
                       <Image
@@ -136,17 +147,7 @@ export function Header() {
                         </span>
                       </div>
                     )}
-                    <span className="hidden md:inline">{user?.user_display_name || user?.display_name}</span>
                   </Link>
-                  <button
-                    onClick={logout}
-                    className="text-sm text-gray-500 hover:text-red-500"
-                    aria-label="Log Out"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </button>
                 </div>
               ) : (
                 <button
@@ -196,8 +197,18 @@ export function Header() {
               )}
             </ul>
 
-            {/* Go Ad Free */}
-            <Link href="/become-supporter" className="v2-highlight-text text-sm">Go Ad Free</Link>
+            {/* Go Ad Free / Supporter */}
+            {isSupporter ? (
+              <div className="flex items-center gap-1 text-sm">
+                <Link href="/settings?tab=premium" className="v2-highlight-text">
+                  <span className="hidden sm:inline">Thank you for your support!</span>
+                  <span className="sm:hidden">Supporter</span>
+                </Link>
+                <span>&#11088;</span>
+              </div>
+            ) : (
+              <Link href="/become-supporter" className="v2-highlight-text text-sm">Go Ad Free</Link>
+            )}
           </div>
         </div>
       </nav>

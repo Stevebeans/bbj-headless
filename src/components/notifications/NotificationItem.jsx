@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FaReply, FaAt } from "react-icons/fa";
+import { FaReply, FaAt, FaBell } from "react-icons/fa";
 
 export default function NotificationItem({ notification, onClick }) {
   const { type, actor, post, comment, time_ago, is_read } = notification;
@@ -14,6 +14,8 @@ export default function NotificationItem({ notification, onClick }) {
         return "replied to your comment";
       case "mention":
         return "mentioned you in a comment";
+      case "thread":
+        return "commented on a thread you're following";
       default:
         return "interacted with you";
     }
@@ -37,6 +39,8 @@ export default function NotificationItem({ notification, onClick }) {
         return <FaReply className="w-3 h-3 text-primary-500" />;
       case "mention":
         return <FaAt className="w-3 h-3 text-secondary-500" />;
+      case "thread":
+        return <FaBell className="w-3 h-3 text-emerald-500" />;
       default:
         return null;
     }

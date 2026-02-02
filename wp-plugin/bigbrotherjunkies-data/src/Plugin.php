@@ -10,6 +10,7 @@ use BigBrotherJunkies\Data\Admin\Pages\AdEditPage;
 use BigBrotherJunkies\Data\Admin\Pages\SlotsPage;
 use BigBrotherJunkies\Data\Admin\Pages\SettingsPage;
 use BigBrotherJunkies\Data\Admin\Pages\DevToolsPage;
+use BigBrotherJunkies\Data\Admin\Pages\ApiSettingsPage;
 use BigBrotherJunkies\Data\Admin\Pages\ImportPage;
 use BigBrotherJunkies\Data\Ads\AdManager;
 use BigBrotherJunkies\Data\Ads\ContentInserter;
@@ -29,7 +30,9 @@ use BigBrotherJunkies\Data\Api\ContactRoutes;
 use BigBrotherJunkies\Data\Api\PlayerPhotoRoutes;
 use BigBrotherJunkies\Data\Api\ImportRoutes;
 use BigBrotherJunkies\Data\Api\NotificationRoutes;
+use BigBrotherJunkies\Data\Api\SubscriptionRoutes;
 use BigBrotherJunkies\Data\Api\FeedUpdateRoutes;
+use BigBrotherJunkies\Data\Api\BillingRoutes;
 use BigBrotherJunkies\Data\Auth\AuthManager;
 use BigBrotherJunkies\Data\Admin\Pages\SocialSettingsPage;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
@@ -38,6 +41,7 @@ use BigBrotherJunkies\Data\Comments\MediaRoutes;
 use BigBrotherJunkies\Data\Api\AvatarRoutes;
 use BigBrotherJunkies\Data\Api\SettingsRoutes;
 use BigBrotherJunkies\Data\Comments\AvatarUploader;
+use BigBrotherJunkies\Data\Cron\NotificationCleanup;
 
 /**
  * Main plugin class
@@ -97,6 +101,9 @@ class Plugin
 
         // Initialize avatar system hooks
         $this->initAvatarHooks();
+
+        // Initialize cron jobs
+        $this->initCronJobs();
 
         // Load admin functionality
         if (is_admin()) {
@@ -187,6 +194,15 @@ class Plugin
                 header('Access-Control-Allow-Credentials: true');
             }
         }, 1);
+    }
+
+    /**
+     * Initialize cron jobs
+     */
+    private function initCronJobs(): void
+    {
+        $notificationCleanup = new NotificationCleanup();
+        $notificationCleanup->init();
     }
 
     /**
@@ -359,9 +375,17 @@ class Plugin
         $notificationRoutes = new NotificationRoutes();
         $notificationRoutes->register();
 
+        // Subscription routes (post/thread subscriptions)
+        $subscriptionRoutes = new SubscriptionRoutes();
+        $subscriptionRoutes->register();
+
         // Feed update routes (create, vote, mode, social posting)
         $feedUpdateRoutes = new FeedUpdateRoutes();
         $feedUpdateRoutes->register();
+
+        // Billing routes (subscriptions, checkout, webhooks)
+        $billingRoutes = new BillingRoutes();
+        $billingRoutes->register();
     }
 
     /**
@@ -391,6 +415,7 @@ class Plugin
             'dev_tools' => new DevToolsPage(),
             'import' => new ImportPage(),
             'social_settings' => new SocialSettingsPage(),
+            'api_settings' => new ApiSettingsPage(),
         ];
 
         // Register admin menus
@@ -495,6 +520,16 @@ class Plugin
             'manage_options',
             SocialSettingsPage::MENU_SLUG,
             [$this->adminPages['social_settings'], 'render']
+        );
+
+        // API Settings (submenu under BBJ Data)
+        add_submenu_page(
+            'bbjd-dashboard',
+            __('API Settings', 'bigbrotherjunkies-data'),
+            __('API', 'bigbrotherjunkies-data'),
+            'manage_options',
+            ApiSettingsPage::MENU_SLUG,
+            [$this->adminPages['api_settings'], 'render']
         );
     }
 

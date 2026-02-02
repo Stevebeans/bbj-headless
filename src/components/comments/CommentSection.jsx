@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getComments } from "@/lib/api/comments";
 import CommentForm from "./CommentForm";
 import CommentCard from "./CommentCard";
+import SubscribeBell from "../posts/SubscribeBell";
 
 // Inner component that uses useSearchParams
 function CommentSectionInner({ postId, initialCommentCount = 0 }) {
@@ -102,18 +103,22 @@ function CommentSectionInner({ postId, initialCommentCount = 0 }) {
           {pagination.total} {pagination.total === 1 ? "Comment" : "Comments"}
         </h2>
 
-        {/* Sort Dropdown */}
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-slate-500">Sort by:</label>
-          <select
-            value={sort}
-            onChange={(e) => handleSortChange(e.target.value)}
-            className="px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="popular">Most Popular</option>
-          </select>
+        {/* Controls: Subscribe Bell + Sort Dropdown */}
+        <div className="flex items-center gap-3">
+          <SubscribeBell postId={postId} />
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-slate-500">Sort by:</label>
+            <select
+              value={sort}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="popular">Most Popular</option>
+            </select>
+          </div>
         </div>
       </div>
 

@@ -21,7 +21,7 @@ class UserProfileRoutes
     {
         $namespace = 'bbjd/v1';
 
-        // Get user profile
+        // Get user profile by ID
         register_rest_route($namespace, '/users/(?P<user_id>\d+)/profile', [
             'methods' => 'GET',
             'callback' => [$this, 'getProfile'],
@@ -29,6 +29,44 @@ class UserProfileRoutes
             'args' => [
                 'user_id' => [
                     'required' => true,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+            ],
+        ]);
+
+        // Get user profile by username
+        register_rest_route($namespace, '/users/by-username/(?P<username>[a-zA-Z0-9_.-]+)', [
+            'methods' => 'GET',
+            'callback' => [$this, 'getProfileByUsername'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'username' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_user',
+                ],
+            ],
+        ]);
+
+        // Get user's comment history (paginated)
+        register_rest_route($namespace, '/users/(?P<user_id>\d+)/comments', [
+            'methods' => 'GET',
+            'callback' => [$this, 'getUserComments'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'user_id' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+                'page' => [
+                    'default' => 1,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+                'per_page' => [
+                    'default' => 10,
                     'type' => 'integer',
                     'sanitize_callback' => 'absint',
                 ],
@@ -197,10 +235,32 @@ class UserProfileRoutes
         // Get user bio
         $bio = get_user_meta($userId, 'description', true) ?: '';
 
+        // Get favorite player
+        $favoritePlayerId = get_user_meta($userId, 'bbj_favorite_player_id', true);
+        $favoritePlayer = null;
+        if ($favoritePlayerId) {
+            $favoritePlayer = $this->getPlayerById((int) $favoritePlayerId);
+        }
+
+        // Determine supporter status
+        $adSettings = get_option('bbjd_ad_settings', []);
+        $supporterRoles = $adSettings['global_hidden_roles'] ?? ['administrator', 'editor', 'supporter', 'lifetime'];
+        $userRoles = $user->roles;
+        $isSupporter = !empty(array_intersect($userRoles, $supporterRoles));
+
+        // Determine supporter type
+        $supporterType = null;
+        if (in_array('lifetime', $userRoles, true)) {
+            $supporterType = 'lifetime';
+        } elseif ($isSupporter && !in_array('administrator', $userRoles, true) && !in_array('editor', $userRoles, true)) {
+            $supporterType = 'supporter';
+        }
+
         return new \WP_REST_Response([
             'success' => true,
             'profile' => [
                 'id' => $userId,
+                'username' => $user->user_login,
                 'name' => $user->display_name,
                 'avatar' => get_avatar_url($userId, ['size' => 128]),
                 'bio' => $bio,
@@ -208,6 +268,9 @@ class UserProfileRoutes
                 'last_active' => $lastActive,
                 'member_since' => $user->user_registered,
                 'member_since_formatted' => date('F Y', strtotime($user->user_registered)),
+                'favorite_player' => $favoritePlayer,
+                'is_supporter' => $isSupporter,
+                'supporter_type' => $supporterType,
                 'rank' => $rank ? [
                     'key' => $rank['key'],
                     'name' => $rank['name'],
@@ -227,6 +290,121 @@ class UserProfileRoutes
                 'recent_comments' => $formattedComments,
                 'is_following' => $isFollowing,
                 'is_self' => $currentUserId === $userId,
+            ],
+        ], 200);
+    }
+
+    /**
+     * Get user profile by username
+     */
+    public function getProfileByUsername(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $username = $request->get_param('username');
+
+        // Look up user by login
+        $user = get_user_by('login', $username);
+        if (!$user) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        // Delegate to getProfile with user_id
+        $request->set_param('user_id', $user->ID);
+        return $this->getProfile($request);
+    }
+
+    /**
+     * Get paginated comment history for a user
+     */
+    public function getUserComments(\WP_REST_Request $request): \WP_REST_Response
+    {
+        global $wpdb;
+
+        $userId = $request->get_param('user_id');
+        $page = max(1, $request->get_param('page'));
+        $perPage = min(50, max(1, $request->get_param('per_page')));
+        $offset = ($page - 1) * $perPage;
+
+        // Verify user exists
+        $user = get_user_by('ID', $userId);
+        if (!$user) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        // Get total count
+        $totalComments = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->comments} WHERE user_id = %d AND comment_approved = '1'",
+            $userId
+        ));
+
+        $totalPages = ceil($totalComments / $perPage);
+
+        // Get votes table
+        $votesTable = CommentSchema::table(CommentSchema::TABLE_VOTES);
+
+        // Get comments with vote scores and reply counts
+        $comments = $wpdb->get_results($wpdb->prepare("
+            SELECT
+                c.comment_ID,
+                c.comment_content,
+                c.comment_date,
+                c.comment_post_ID,
+                c.comment_parent,
+                p.post_title,
+                p.post_name as post_slug,
+                COALESCE(v.upvotes, 0) as upvotes,
+                COALESCE(v.downvotes, 0) as downvotes,
+                (SELECT COUNT(*) FROM {$wpdb->comments} r WHERE r.comment_parent = c.comment_ID AND r.comment_approved = '1') as reply_count
+            FROM {$wpdb->comments} c
+            LEFT JOIN {$wpdb->posts} p ON c.comment_post_ID = p.ID
+            LEFT JOIN (
+                SELECT comment_id,
+                    SUM(CASE WHEN vote_type = 1 THEN 1 ELSE 0 END) as upvotes,
+                    SUM(CASE WHEN vote_type = -1 THEN 1 ELSE 0 END) as downvotes
+                FROM {$votesTable}
+                GROUP BY comment_id
+            ) v ON c.comment_ID = v.comment_id
+            WHERE c.user_id = %d AND c.comment_approved = '1'
+            ORDER BY c.comment_date DESC
+            LIMIT %d OFFSET %d
+        ", $userId, $perPage, $offset), ARRAY_A);
+
+        $formattedComments = array_map(function ($c) {
+            $upvotes = (int) $c['upvotes'];
+            $downvotes = (int) $c['downvotes'];
+
+            return [
+                'id' => (int) $c['comment_ID'],
+                'content' => wp_trim_words(strip_tags($c['comment_content']), 30),
+                'content_full' => $c['comment_content'],
+                'date' => $c['comment_date'],
+                'time_ago' => human_time_diff(strtotime($c['comment_date']), time()) . ' ago',
+                'post_id' => (int) $c['comment_post_ID'],
+                'post_title' => $c['post_title'] ?? 'Untitled',
+                'post_slug' => $c['post_slug'] ?? '',
+                'post_url' => $c['post_slug'] ? '/' . $c['post_slug'] : null,
+                'is_reply' => (int) $c['comment_parent'] > 0,
+                'vote_score' => $upvotes - $downvotes,
+                'upvotes' => $upvotes,
+                'downvotes' => $downvotes,
+                'reply_count' => (int) $c['reply_count'],
+            ];
+        }, $comments);
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'comments' => $formattedComments,
+            'pagination' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $totalComments,
+                'total_pages' => $totalPages,
+                'has_more' => $page < $totalPages,
             ],
         ], 200);
     }
@@ -399,5 +577,55 @@ class UserProfileRoutes
     public function checkUserLoggedIn(): bool
     {
         return is_user_logged_in();
+    }
+
+    /**
+     * Get player by ID for favorite player display
+     */
+    private function getPlayerById(int $playerId): ?array
+    {
+        global $wpdb;
+
+        $player = $wpdb->get_row($wpdb->prepare("
+            SELECT
+                p.id,
+                p.first_name,
+                p.last_name,
+                p.official_nickname,
+                p.profile_picture,
+                p.slug,
+                GROUP_CONCAT(DISTINCT s.post_title ORDER BY ps.bbj_season SEPARATOR ', ') as seasons
+            FROM {$wpdb->prefix}bbj_players p
+            LEFT JOIN {$wpdb->prefix}bbj_v2_player_season ps ON p.id = ps.bbj_player
+            LEFT JOIN {$wpdb->posts} s ON ps.bbj_season = s.ID AND s.post_status = 'publish'
+            WHERE p.id = %d
+            GROUP BY p.id
+            LIMIT 1
+        ", $playerId), ARRAY_A);
+
+        if (!$player) {
+            return null;
+        }
+
+        $name = trim($player['first_name'] . ' ' . $player['last_name']);
+        $nickname = $player['official_nickname'];
+
+        $photoUrl = null;
+        if ($player['profile_picture']) {
+            $photoUrl = wp_get_attachment_image_url((int) $player['profile_picture'], 'thumbnail');
+        }
+
+        // Build permalink
+        $permalink = $player['slug'] ? '/bigbrother-players/' . $player['slug'] : null;
+
+        return [
+            'id' => (int) $player['id'],
+            'name' => $name,
+            'nickname' => $nickname,
+            'display_name' => $nickname ? "\"{$nickname}\" {$name}" : $name,
+            'seasons' => $player['seasons'] ?: null,
+            'photo_url' => $photoUrl,
+            'permalink' => $permalink,
+        ];
     }
 }

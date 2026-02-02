@@ -77,6 +77,8 @@ class CommentMigrator
             CommentSchema::TABLE_FOLLOWS,
             CommentSchema::TABLE_PINNED,
             CommentSchema::TABLE_AVATARS,
+            CommentSchema::TABLE_ACTIVE_USERS,
+            CommentSchema::TABLE_POST_SUBSCRIPTIONS,
         ];
 
         $status = [];
@@ -326,6 +328,8 @@ class CommentMigrator
             CommentSchema::TABLE_FOLLOWS,
             CommentSchema::TABLE_PINNED,
             CommentSchema::TABLE_AVATARS,
+            CommentSchema::TABLE_ACTIVE_USERS,
+            CommentSchema::TABLE_POST_SUBSCRIPTIONS,
         ];
 
         foreach ($tables as $table) {

@@ -12,13 +12,14 @@ Next.js 15 PWA for Big Brother Junkies. Headless architecture using WordPress as
 
 ### Database Rules
 
-| Database | Usage | Rule |
-|----------|-------|------|
-| `duesaptjae` | BBJ Live (production) | **USE THIS** - All queries for this project |
-| `ca_db` | Different work project | **DO NOT USE** - Completely off-limits |
-| `bbj_db` | Local BBJ dev | Ignore for now |
+| Database     | Usage                  | Rule                                        |
+| ------------ | ---------------------- | ------------------------------------------- |
+| `duesaptjae` | BBJ Live (production)  | **USE THIS** - All queries for this project |
+| `ca_db`      | Different work project | **DO NOT USE** - Completely off-limits      |
+| `bbj_db`     | Local BBJ dev          | Ignore for now                              |
 
 ### Query Format
+
 ```sql
 -- Correct: Query live BBJ database
 SELECT * FROM duesaptjae.wp_posts LIMIT 10;
@@ -36,6 +37,7 @@ This build will be taking a lot of data from my wordpress theme at `C:\xampp\htd
 ### IMPORTANT: Plugin Edit Location
 
 **ALWAYS edit the WordPress plugin directly at:**
+
 ```
 C:\xampp\htdocs\bbj\wp-content\plugins\bigbrotherjunkies-data\
 ```
@@ -49,24 +51,41 @@ C:\xampp\htdocs\bbj\wp-content\plugins\bigbrotherjunkies-data\
 - **Use latest tech** - Prefer modern APIs, newest stable packages, and cutting-edge best practices
 - **Challenge assumptions** - If there's a better way, speak up
 
+## Workflow Orchestration
+
+**For non-trivial tasks, read:** `.claude/workflows/workflow-orchestration.md`
+
+This file contains guidelines for:
+
+- When to use plan mode vs. diving in
+- Subagent strategy for complex tasks
+- Self-improvement loop (updating lessons after corrections)
+- Verification standards before marking tasks complete
+- Task management workflow
+
+### Session Startup
+
+**On every session start, read the last 2 days of history from `.claude/history/` to understand current project context.** This provides quick recall of what was being worked on, even after crashes or session exits.
+
 ## API Caching & Revalidation
 
 **IMPORTANT:** All API fetches MUST have a `revalidate` time set to prevent stale cache issues.
 
-| Content Type | Revalidate Time | Reason |
-|--------------|-----------------|--------|
-| Players | 60 seconds | Changes frequently during season (status, stats) |
-| Spoiler Bar | 60 seconds | Updates with player status changes |
-| Seasons | 60 seconds | May update during active season |
-| Blog Posts | 3600 seconds (1 hour) | Rarely change after publishing |
-| Home Page | 60 seconds | Shows latest content |
-| Static pages | 3600+ seconds | Contact, privacy policy, etc. |
+| Content Type | Revalidate Time       | Reason                                           |
+| ------------ | --------------------- | ------------------------------------------------ |
+| Players      | 60 seconds            | Changes frequently during season (status, stats) |
+| Spoiler Bar  | 60 seconds            | Updates with player status changes               |
+| Seasons      | 60 seconds            | May update during active season                  |
+| Blog Posts   | 3600 seconds (1 hour) | Rarely change after publishing                   |
+| Home Page    | 60 seconds            | Shows latest content                             |
+| Static pages | 3600+ seconds         | Contact, privacy policy, etc.                    |
 
 When adding new API fetches, always include `revalidate` in the options:
+
 ```javascript
-const data = await bbjdFetch('/endpoint', {
-  tags: ['content-type'],
-  revalidate: 60, // or 3600 for rarely-changing content
+const data = await bbjdFetch("/endpoint", {
+  tags: ["content-type"],
+  revalidate: 60 // or 3600 for rarely-changing content
 });
 ```
 
@@ -77,6 +96,7 @@ Also ensure `dynamicParams = true` is set on all dynamic routes (`[slug]`) to al
 The `.claude/` folder is tracked in git (except for private/sensitive files), allowing project context to sync between PC and laptop.
 
 ### Before Starting Work on Any Machine
+
 ```bash
 git fetch && git status
 # If behind, pull changes:
@@ -85,19 +105,21 @@ git pull
 
 ### .claude/ Folder Structure
 
-| Path | Git Status | Contents |
-|------|------------|----------|
-| `.claude/projects/` | Tracked | Roadmap, feature plans, todos |
-| `.claude/commands/` | Tracked | Custom Claude slash commands |
-| `.claude/data/` | Tracked | Player CSVs, reference data |
-| `.claude/crosscom.md` | Tracked | Cross-machine messages (PC ↔ Laptop) |
-| `.claude/private/` | **Gitignored** | Files with API keys/secrets, SSH credentials |
-| `.claude/plugins/` | **Gitignored** | Large vendor plugin copies |
-| `settings.local.json` | **Gitignored** | Machine-specific Claude settings |
+| Path                  | Git Status     | Contents                                     |
+| --------------------- | -------------- | -------------------------------------------- |
+| `.claude/projects/`   | Tracked        | Roadmap, feature plans, todos                |
+| `.claude/commands/`   | Tracked        | Custom Claude slash commands                 |
+| `.claude/data/`       | Tracked        | Player CSVs, reference data                  |
+| `.claude/history/`    | Tracked        | Daily work context logs (read last 2 days)   |
+| `.claude/crosscom.md` | Tracked        | Cross-machine messages (PC ↔ Laptop)         |
+| `.claude/private/`    | **Gitignored** | Files with API keys/secrets, SSH credentials |
+| `.claude/plugins/`    | **Gitignored** | Large vendor plugin copies                   |
+| `settings.local.json` | **Gitignored** | Machine-specific Claude settings             |
 
 ### Adding Sensitive Files
 
 If you create a file with API keys, passwords, or secrets, move it to `.claude/private/`:
+
 ```bash
 mv .claude/projects/my-secret-file.md .claude/private/
 ```
@@ -107,11 +129,13 @@ mv .claude/projects/my-secret-file.md .claude/private/
 The file `.claude/crosscom.md` is used for leaving messages between PC and Laptop Claude sessions.
 
 **On session start:**
+
 1. Check `.claude/crosscom.md` for unread messages addressed to this machine
 2. If there are unread messages, notify the user and take any requested actions
 3. Mark messages as READ after processing
 
 **When user says "tell laptop..." or "tell PC...":**
+
 1. Add a new message to the "Unread Messages" section in crosscom.md
 2. Include: Date, Status (UNREAD), Subject, and the message content
 3. The message will sync via git and be seen on the other machine
@@ -121,12 +145,14 @@ The file `.claude/crosscom.md` is used for leaving messages between PC and Lapto
 The WordPress plugin (`bigbrotherjunkies-data`) can be deployed to production via SSH.
 
 **SSH Config:** `~/.ssh/config` has aliases configured:
+
 - `bbj-prod` - Production server (bigbrotherjunkies.com)
 - `bbj-staging` - Staging server
 
 **Server credentials:** `.claude/private/server-info.md` (gitignored)
 
 **To deploy plugin changes:**
+
 ```bash
 # Using the deploy script (recommended)
 bash .claude/scripts/deploy-plugin.sh          # Deploy to production
@@ -153,6 +179,7 @@ ssh bbj-prod "cd /home/1358704.cloudwaysapps.com/duesaptjae/public_html/wp-conte
 **When starting a new feature/project, ask the user if they want to create a git worktree instead of just a branch.**
 
 Worktrees allow running multiple branches simultaneously on different ports, which is useful for:
+
 - Testing features in parallel
 - Running multiple Claude instances on different features
 - A/B comparisons between branches
@@ -166,6 +193,7 @@ Current worktree setup:
 | `bbj-app-pages` | `adding-pages` | 3012 |
 
 To create a new worktree:
+
 ```bash
 git worktree add ../bbj-app-{name} {branch-name}
 cp .env.local ../bbj-app-{name}/.env.local
@@ -288,18 +316,18 @@ Base URL: `https://bigbrotherjunkies.com/wp-json`
 
 ### Home Page API (bbjd/v1)
 
-| Endpoint                 | Method | Description                                |
-| ------------------------ | ------ | ------------------------------------------ |
-| `/bbjd/v1/hero-post`     | GET    | Get featured/hero post for homepage        |
-| `/bbjd/v1/feed-updates`  | GET    | Get live feed updates (per_page param)     |
-| `/bbjd/v1/houseboard`    | GET    | Get HoH, PoV, Nominees, Have Nots          |
-| `/bbjd/v1/season-stats`  | GET    | Get season progress and player standings   |
+| Endpoint                | Method | Description                              |
+| ----------------------- | ------ | ---------------------------------------- |
+| `/bbjd/v1/hero-post`    | GET    | Get featured/hero post for homepage      |
+| `/bbjd/v1/feed-updates` | GET    | Get live feed updates (per_page param)   |
+| `/bbjd/v1/houseboard`   | GET    | Get HoH, PoV, Nominees, Have Nots        |
+| `/bbjd/v1/season-stats` | GET    | Get season progress and player standings |
 
 ### Search API (bbjd/v1)
 
-| Endpoint                     | Method | Description                                |
-| ---------------------------- | ------ | ------------------------------------------ |
-| `/bbjd/v1/search?query=term` | GET    | Search across all content types            |
+| Endpoint                     | Method | Description                     |
+| ---------------------------- | ------ | ------------------------------- |
+| `/bbjd/v1/search?query=term` | GET    | Search across all content types |
 
 **Search API Response Format:**
 
@@ -354,21 +382,22 @@ colors: {
 
 Used for spoiler bar, player cards, and any status indicators throughout the site.
 
-| Status | Tailwind Class | Hex | Usage |
-|--------|----------------|-----|-------|
-| **HoH** | `emerald-600` | #059669 | Head of Household - power/winning |
-| **Winner** | `emerald-600` | #059669 | Season winner - same as HoH |
-| **PoV** | `yellow-500` | #EAB308 | Power of Veto - golden medallion |
-| **Nominated** | `red-500` | #EF4444 | On the block - danger |
-| **Active** | `slate-200/700` | #E2E8F0 | Still in the game, no special status |
-| **Safe** | `green-100/400` | #DCFCE7 | Safe for the week |
-| **Jury** | `indigo-500` | #6366F1 | Jury member - dignified purple |
-| **Evicted** | `slate-400` | #94A3B8 | Out of the game - muted grey |
-| **Have-Not** | `amber-700` | #B45309 | Have-not status - uncomfortable |
-| **Runner-up** | `sky-500` | #0EA5E9 | Second place - silver/blue |
-| **AFP** | `pink-500` | #EC4899 | America's Favorite Player |
+| Status        | Tailwind Class  | Hex     | Usage                                |
+| ------------- | --------------- | ------- | ------------------------------------ |
+| **HoH**       | `emerald-600`   | #059669 | Head of Household - power/winning    |
+| **Winner**    | `emerald-600`   | #059669 | Season winner - same as HoH          |
+| **PoV**       | `yellow-500`    | #EAB308 | Power of Veto - golden medallion     |
+| **Nominated** | `red-500`       | #EF4444 | On the block - danger                |
+| **Active**    | `slate-200/700` | #E2E8F0 | Still in the game, no special status |
+| **Safe**      | `green-100/400` | #DCFCE7 | Safe for the week                    |
+| **Jury**      | `indigo-500`    | #6366F1 | Jury member - dignified purple       |
+| **Evicted**   | `slate-400`     | #94A3B8 | Out of the game - muted grey         |
+| **Have-Not**  | `amber-700`     | #B45309 | Have-not status - uncomfortable      |
+| **Runner-up** | `sky-500`       | #0EA5E9 | Second place - silver/blue           |
+| **AFP**       | `pink-500`      | #EC4899 | America's Favorite Player            |
 
 **Image effects for eliminated players:**
+
 - Evicted: `grayscale opacity-70`
 - Jury: `grayscale-[50%] opacity-80`
 
@@ -480,7 +509,6 @@ Defined in `globals.css`:
 ## Authentication Flow
 
 1. **Email/Password Login:**
-
    - POST to `/jwt-auth/v1/token`
    - Store JWT in httpOnly cookie
    - Validate on protected routes
@@ -513,13 +541,14 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
 
 ## Local Development URLs
 
-| Service | URL |
-|---------|-----|
-| **Local WordPress** | `http://bbj.localhost` |
-| **Local WP API** | `http://bbj.localhost/wp-json` |
-| **Next.js Dev** | `http://localhost:3000` (or 3001 if 3000 in use) |
+| Service             | URL                                              |
+| ------------------- | ------------------------------------------------ |
+| **Local WordPress** | `http://bbj.localhost`                           |
+| **Local WP API**    | `http://bbj.localhost/wp-json`                   |
+| **Next.js Dev**     | `http://localhost:3000` (or 3001 if 3000 in use) |
 
 When switching .env.local to use local WordPress:
+
 ```env
 WORDPRESS_API_URL=http://bbj.localhost/wp-json
 NEXT_PUBLIC_WORDPRESS_API_URL=http://bbj.localhost/wp-json
@@ -540,12 +569,12 @@ When implementing features, reference the WordPress installation:
 
 ### Timestamps & Dates
 
-| Element | Treatment | Why |
-|---------|-----------|-----|
-| BB Time (header/nav) | `data-nosnippet` attribute | Prevents Google from misreading as article date |
-| Blog post dates | JSON-LD `datePublished` + `dateModified` | Proper structured data for search results |
-| Feed update dates | JSON-LD `datePublished` + `dateModified` | Shows in search as "X hours ago" |
-| Comment dates | `data-nosnippet` or exclude from schema | Don't confuse with article dates |
+| Element              | Treatment                                | Why                                             |
+| -------------------- | ---------------------------------------- | ----------------------------------------------- |
+| BB Time (header/nav) | `data-nosnippet` attribute               | Prevents Google from misreading as article date |
+| Blog post dates      | JSON-LD `datePublished` + `dateModified` | Proper structured data for search results       |
+| Feed update dates    | JSON-LD `datePublished` + `dateModified` | Shows in search as "X hours ago"                |
+| Comment dates        | `data-nosnippet` or exclude from schema  | Don't confuse with article dates                |
 
 ### Structured Data (JSON-LD)
 
@@ -575,6 +604,7 @@ Always include on content pages:
 ### Meta Tags
 
 Every page needs:
+
 - `<title>` - Unique, descriptive, 50-60 chars
 - `<meta name="description">` - Unique, 150-160 chars
 - `<link rel="canonical">` - Prevent duplicate content
@@ -611,12 +641,12 @@ Every page needs:
 
 ### Required for All Components
 
-| Standard | Implementation |
-|----------|----------------|
-| **Skeleton loading** | Use skeleton states for async data |
-| **Image optimization** | Always use `next/image` with width/height |
-| **Error boundaries** | Wrap components that fetch data |
-| **Reusable code** | Extract common patterns into shared components |
+| Standard               | Implementation                                 |
+| ---------------------- | ---------------------------------------------- |
+| **Skeleton loading**   | Use skeleton states for async data             |
+| **Image optimization** | Always use `next/image` with width/height      |
+| **Error boundaries**   | Wrap components that fetch data                |
+| **Reusable code**      | Extract common patterns into shared components |
 
 ### Performance Targets
 
@@ -646,24 +676,25 @@ import Image from 'next/image';
 
 ### Ad Components
 
-| Component | Type | Use In |
-|-----------|------|--------|
-| `AdPlaceholder` | Server (async) | Server Components only (pages, layouts) |
-| `ClientAdPlaceholder` | Client | Client Components (Sidebar, etc.) |
+| Component             | Type           | Use In                                  |
+| --------------------- | -------------- | --------------------------------------- |
+| `AdPlaceholder`       | Server (async) | Server Components only (pages, layouts) |
+| `ClientAdPlaceholder` | Client         | Client Components (Sidebar, etc.)       |
 
 ```jsx
 // In a Server Component (page.jsx, layout.jsx):
 import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
-<AdPlaceholder slot="index_top" />
+<AdPlaceholder slot="index_top" />;
 
 // In a Client Component ("use client"):
 import { ClientAdPlaceholder } from "@/components/ads/ClientAdPlaceholder";
-<ClientAdPlaceholder slot="sidebar_top" />
+<ClientAdPlaceholder slot="sidebar_top" />;
 ```
 
 ### Components Using Auth Hooks
 
 These are Client Components (use `useAuth`/`useAuthModal`):
+
 - `Header` - Login/logout buttons
 - `Sidebar` - User welcome widget, login buttons
 - `CommentForm` - Requires auth to comment
@@ -688,12 +719,12 @@ These are Client Components (use `useAuth`/`useAuthModal`):
 
 ### Current Phase: Core User Experience
 
-| Priority | Feature | Status |
-|----------|---------|--------|
-| High | Comment system enhancements | In Progress |
-| High | Ad system & "Go Ad-Free" CTAs | Not Started |
-| High | Login/Registration with Google OAuth | Not Started |
-| High | Mailpoet subscription integration | Not Started |
+| Priority | Feature                              | Status      |
+| -------- | ------------------------------------ | ----------- |
+| High     | Comment system enhancements          | In Progress |
+| High     | Ad system & "Go Ad-Free" CTAs        | Not Started |
+| High     | Login/Registration with Google OAuth | Not Started |
+| High     | Mailpoet subscription integration    | Not Started |
 
 ### Next Up: Content Pages
 

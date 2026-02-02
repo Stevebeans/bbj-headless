@@ -13,6 +13,7 @@ class NotificationService
 {
     public const TYPE_MENTION = 'mention';
     public const TYPE_REPLY = 'reply';
+    public const TYPE_THREAD = 'thread';
 
     /**
      * Create a mention notification
@@ -50,8 +51,94 @@ class NotificationService
             return false;
         }
 
+        // Check user's notification preference
+        if (!self::userWantsReplyNotifications($userId)) {
+            return false;
+        }
+
         $data = ['parent_id' => $parentId];
         return self::createNotification($userId, self::TYPE_REPLY, $actorId, $commentId, $postId, $data);
+    }
+
+    /**
+     * Create a thread subscription notification
+     *
+     * @param int $userId User being notified (subscriber)
+     * @param int $actorId User who commented
+     * @param int $commentId The new comment
+     * @param int $postId The post the comment is on
+     * @return int|false Notification ID or false on failure
+     */
+    public static function createThreadNotification(int $userId, int $actorId, int $commentId, int $postId)
+    {
+        // Don't notify users about their own comments
+        if ($userId === $actorId) {
+            return false;
+        }
+
+        return self::createNotification($userId, self::TYPE_THREAD, $actorId, $commentId, $postId);
+    }
+
+    /**
+     * Check if user wants reply notifications
+     *
+     * @param int $userId User ID
+     * @return bool True if user wants notifications
+     */
+    public static function userWantsReplyNotifications(int $userId): bool
+    {
+        $value = get_user_meta($userId, 'bbj_notify_replies', true);
+        // Default to true if not set
+        return $value === '' || (bool) $value;
+    }
+
+    /**
+     * Get all users subscribed to a post
+     *
+     * @param int $postId The post ID
+     * @return array Array of user IDs
+     */
+    public static function getPostSubscribers(int $postId): array
+    {
+        global $wpdb;
+
+        $table = CommentSchema::table(CommentSchema::TABLE_POST_SUBSCRIPTIONS);
+
+        return $wpdb->get_col($wpdb->prepare(
+            "SELECT user_id FROM {$table} WHERE post_id = %d",
+            $postId
+        ));
+    }
+
+    /**
+     * Notify all subscribers of a new comment on a post
+     *
+     * @param int $postId The post ID
+     * @param int $actorId User who commented
+     * @param int $commentId The new comment ID
+     * @param int|null $excludeUserId User to exclude (e.g., parent comment author who got reply notification)
+     * @return int Number of notifications created
+     */
+    public static function notifyPostSubscribers(int $postId, int $actorId, int $commentId, ?int $excludeUserId = null): int
+    {
+        $subscribers = self::getPostSubscribers($postId);
+        $count = 0;
+
+        foreach ($subscribers as $userId) {
+            $userId = (int) $userId;
+
+            // Skip excluded user (they may have already received a reply notification)
+            if ($excludeUserId && $userId === $excludeUserId) {
+                continue;
+            }
+
+            $result = self::createThreadNotification($userId, $actorId, $commentId, $postId);
+            if ($result) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 
     /**
