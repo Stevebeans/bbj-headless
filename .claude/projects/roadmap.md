@@ -60,9 +60,12 @@ These directly impact user engagement and revenue.
   - Send custom event when blocker detected
   - Add GA4 query section in WP plugin to pull analytics
   - Consider frontend-only approach (GA4 API direct) vs backend proxy
-- [ ] Premium badge/indicator for ad-free users
-  - Revisit when user profile system (Phase 4) is built out
-  - Will appear: comments, header, profile cards, leaderboards
+- [x] Premium badge/indicator for ad-free users (Feb 2026)
+  - Header shows "Thank you for your support!" with star icon
+  - SupporterBadge component (yellow for supporter, gold with crown for lifetime)
+  - Displays on public user profiles
+  - [ ] Add to comments (next to rank badge)
+  - [ ] Add to leaderboards (when built)
 
 ### 1.3 Login & Registration
 
