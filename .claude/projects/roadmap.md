@@ -568,7 +568,70 @@ The following suggestions have been added to their respective phases:
 
 **Completed:** Phase 3 (Feed Updates) ✅, Phase 4.2 (Premium Billing) ✅, Phase 4.1 (User Profiles) ✅
 
-**Next up:** Phase 4.3 (Premium tiers, gifting) → Phase 7 (PWA & MailPoet) → Phase 5 (Admin tools)
+---
+
+## Upcoming Timeline
+
+### Immediate Next Steps
+
+1. **Polish remaining 4.1 items** - Saved/bookmarked content, account linking
+2. **Polish remaining 4.2 items** - Invoice history, upgrade/downgrade, payment methods
+3. **Finish 1.2** - GA4 ad blocker tracking
+
+### Pre-Launch Checklist
+
+4. **Push to Vercel production** - Ensure all ad blocks imported to DB
+5. **Switch DNS** - Point bigbrotherjunkies.com to Vercel (requires Vercel Pro plan)
+6. **Set up staging** - Map staging.bigbrotherjunkies.com for testing
+
+### Post-DNS Switch
+
+7. Live testing with real domain
+8. Break off new features to staging workflow
+
+---
+
+## Site Audit (BBJ Live vs Next.js)
+
+*Go page by page on live site to identify gaps*
+
+### Home Page
+- [ ] _audit notes here_
+
+### Posts/Articles
+- [ ] _audit notes here_
+
+### Feed Updates
+- [ ] _audit notes here_
+
+### Players
+- [ ] _audit notes here_
+
+### Seasons
+- [ ] _audit notes here_
+
+### Header/Navigation
+- [ ] _audit notes here_
+
+### Footer
+- [ ] _audit notes here_
+
+### Sidebar
+- [ ] _audit notes here_
+
+### Comments
+- [ ] _audit notes here_
+
+### User Account
+- [ ] _audit notes here_
+
+### Mobile Experience
+- [ ] _audit notes here_
+
+### Other Pages
+- [ ] _audit notes here_
+
+---
 
 ## Timeline Suggestion
 
