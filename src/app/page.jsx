@@ -59,35 +59,8 @@ export default async function HomePage() {
             {/* Top Ad */}
             <AdPlaceholder slot="index_top" minHeight="100px" />
 
-            {/* Feed Updates + Right Widgets (2 column layout) */}
-            <div className="flex flex-col lg:flex-row lg:gap-4">
-              {/* Feed Updates */}
-              <FeedUpdatesSection updates={feedUpdatesData.updates} />
-
-              {/* Right Side Widgets - Sticky on desktop */}
-              <div className="w-full lg:w-[300px] lg:shrink-0 space-y-4 mt-4 lg:mt-0 lg:self-start lg:sticky lg:top-28">
-                {/* Social Follow */}
-                <SocialFollow />
-
-                {/* Houseboard */}
-                <Houseboard
-                  houseboard={houseboardData.houseboard}
-                  seasonName={houseboardData.season?.name}
-                />
-
-                {/* Watch Live Feeds */}
-                <WatchLiveFeeds />
-
-                {/* Season Stats */}
-                <SeasonStats
-                  season={statsData.season}
-                  players={statsData.players}
-                />
-
-                {/* Recent Comments */}
-                <RecentComments comments={recentCommentsData.comments} />
-              </div>
-            </div>
+            {/* Feed Updates - Full width */}
+            <FeedUpdatesSection updates={feedUpdatesData.updates} />
 
             {/* Mid Ad */}
             <AdPlaceholder slot="index_mid" minHeight="100px" />
@@ -97,7 +70,19 @@ export default async function HomePage() {
           </section>
 
           {/* Right Sidebar */}
-          <Sidebar />
+          <Sidebar sticky={false}>
+            <Houseboard
+              houseboard={houseboardData.houseboard}
+              seasonName={houseboardData.season?.name}
+            />
+            <SocialFollow />
+            <WatchLiveFeeds />
+            <SeasonStats
+              season={statsData.season}
+              players={statsData.players}
+            />
+            <RecentComments comments={recentCommentsData.comments} />
+          </Sidebar>
         </div>
       </main>
     </>

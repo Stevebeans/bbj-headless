@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { formatDistanceToNow, format } from "date-fns";
 
-export function PostMeta({ date, modified, author, categories = [] }) {
+export function PostMeta({ date, modified, author, categories = [], title = "" }) {
   const formattedDate = date
     ? format(new Date(date), "MMMM d, yyyy")
     : "";
@@ -65,15 +65,13 @@ export function PostMeta({ date, modified, author, categories = [] }) {
               </Link>
             </li>
             <li className="text-gray-400">/</li>
-            {categories.length > 0 && (
-              <>
-                <li>
-                  <span>{categories[0]}</span>
-                </li>
-                <li className="text-gray-400">/</li>
-              </>
-            )}
-            <li className="text-gray-700 dark:text-gray-300">Article</li>
+            <li>
+              <span>{categories.length > 0 ? categories[0] : "Blog"}</span>
+            </li>
+            <li className="text-gray-400">/</li>
+            <li className="text-gray-700 dark:text-gray-300 truncate max-w-[200px]">
+              {title || "Article"}
+            </li>
           </ol>
         </nav>
       </div>

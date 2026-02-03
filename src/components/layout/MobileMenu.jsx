@@ -43,12 +43,12 @@ export function MobileMenu({ isOpen, onClose }) {
 
   const navLinks = [
     { href: "/", label: "Home" },
+    { href: "/contact", label: "Contact" },
     { href: "/feed-updates", label: "Feed Updates" },
     { href: "/directory", label: "Directory" },
     { href: "/login", label: "Log In" },
     { href: "/register", label: "Register" },
     { href: "/become-supporter", label: "Go Ad Free" },
-    { href: "/contact", label: "Contact" },
   ];
 
   return (

@@ -43,8 +43,7 @@ export function Leaderboards({ stats }) {
                     <li key={player.id} className="flex items-center gap-2">
                       <Link
                         href={player.permalink || "#"}
-                        className="truncate text-sm hover:underline flex-shrink-0"
-                        style={{ minWidth: "80px", maxWidth: "100px" }}
+                        className="truncate text-sm hover:underline flex-shrink-0 w-[100px]"
                       >
                         {player.name}
                       </Link>

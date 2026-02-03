@@ -130,6 +130,7 @@ export default async function ContentPage({ params }) {
                   modified={content.modified}
                   author={content.author}
                   categories={content.categories}
+                  title={content.title}
                 />
               )}
 

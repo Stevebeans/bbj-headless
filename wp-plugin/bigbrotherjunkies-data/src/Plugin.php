@@ -90,6 +90,9 @@ class Plugin
         // Handle CORS for local development
         $this->initCors();
 
+        // Expose comment_count on WP REST API posts
+        $this->registerPostRestFields();
+
         // Initialize Ad Manager
         $this->initAdManager();
 
@@ -140,6 +143,7 @@ class Plugin
                     'http://127.0.0.1:3001',
                     'https://bigbrotherjunkies.com',
                     'https://www.bigbrotherjunkies.com',
+                    'https://staging.bigbrotherjunkies.com',
                     'https://bbj-next.vercel.app',
                 ];
 
@@ -194,6 +198,25 @@ class Plugin
                 header('Access-Control-Allow-Credentials: true');
             }
         }, 1);
+    }
+
+    /**
+     * Register extra fields on the WP REST API posts endpoint
+     */
+    private function registerPostRestFields(): void
+    {
+        add_action('rest_api_init', function () {
+            register_rest_field('post', 'comment_count', [
+                'get_callback' => function ($post) {
+                    return (int) get_post_field('comment_count', $post['id']);
+                },
+                'schema' => [
+                    'description' => 'Number of comments on the post',
+                    'type' => 'integer',
+                    'context' => ['view'],
+                ],
+            ]);
+        });
     }
 
     /**

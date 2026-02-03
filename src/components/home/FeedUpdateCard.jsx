@@ -66,10 +66,10 @@ export function FeedUpdateCard({ update }) {
   };
 
   return (
-    <div className="group block w-full rounded-md text-inherit dark:text-gray-200">
+    <div className="group block w-full text-inherit dark:text-gray-200">
       <article
         id={update.slug}
-        className="p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:shadow-sm transition-all duration-200"
+        className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-l-3 border-l-primary-400 dark:border-l-primary-500 rounded-lg shadow-sm hover:border-gray-300 dark:hover:border-gray-600 hover:border-l-primary-500 dark:hover:border-l-primary-400 hover:shadow transition-all duration-200"
       >
         <Link href={`/feed-updates/${update.slug}`} className="block">
           {/* Author Header */}
@@ -124,7 +124,7 @@ export function FeedUpdateCard({ update }) {
 
         {/* Recent Comments Preview */}
         {recentComments?.length > 0 && (
-          <div className="mt-3 ml-4 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-l-2 border-gray-300 dark:border-gray-600">
+          <div className="mt-3 ml-4 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg border-l-2 border-gray-300 dark:border-gray-600">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

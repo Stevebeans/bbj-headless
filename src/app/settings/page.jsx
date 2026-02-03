@@ -721,12 +721,13 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
       label: "Direct Messages",
       description: "Get notified when you receive a private message",
     },
-    {
-      id: "feed_updates",
-      label: "Feed Update Alerts",
-      description: "Get push notifications for breaking feed updates",
-      premium: true,
-    },
+    // Push notifications hidden until mobile app is ready
+    // {
+    //   id: "feed_updates",
+    //   label: "Feed Update Alerts",
+    //   description: "Get push notifications for breaking feed updates",
+    //   premium: true,
+    // },
     {
       id: "newsletter",
       label: "Email Newsletter",
@@ -1213,7 +1214,7 @@ function PremiumTab({ settings, loading, showToast }) {
         <ul className="space-y-3">
           {[
             { text: "Ad-free browsing experience", included: isSupporter },
-            { text: "Priority push notifications", included: isSupporter },
+            { text: "Priority feed update notifications", included: isSupporter },
             { text: "Exclusive supporter badge", included: isSupporter },
             { text: "Early access to new features", included: isSupporter },
             { text: "Support independent BB coverage", included: isSupporter },

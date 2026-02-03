@@ -44,13 +44,13 @@ export function FeedUpdatesSection({ updates: initialUpdates = [] }) {
   }, [updates.length, isLoading, hasMore]);
 
   return (
-    <section className="v2-primary-container-inner p-2 flex-grow" aria-labelledby="main-feeds">
-      <h2 id="main-feeds" className="v2-primary-subheader">
+    <section className="flex-grow" aria-labelledby="main-feeds">
+      <h2 id="main-feeds" className="v2-primary-subheader mb-3">
         Latest Feed Updates
       </h2>
 
       {/* Feed updates list */}
-      <div>
+      <div className="space-y-4">
         {updates.length > 0 ? (
           updates.map((update) => (
             <FeedUpdateCard key={update.id} update={update} />
@@ -102,7 +102,7 @@ export function FeedUpdatesSection({ updates: initialUpdates = [] }) {
       </div>
 
       {/* View All Link */}
-      <div className="w-full text-center text-xl font-display mt-4 py-2 border-t border-gray-200 dark:border-gray-700">
+      <div className="w-full text-center text-xl font-display mt-4 py-3">
         <Link
           href="/feed-updates"
           className="text-primary-500 hover:text-primary-600 dark:text-primary-400"

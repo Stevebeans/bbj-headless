@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { FaBell, FaCheck } from "react-icons/fa";
 import { getNotifications, getUnreadCount, markAsRead } from "@/lib/api/notifications";
 import NotificationItem from "./NotificationItem";
@@ -178,6 +179,15 @@ export default function NotificationBell() {
               </>
             )}
           </div>
+
+          {/* Footer */}
+          <Link
+            href="/notifications"
+            onClick={() => setIsOpen(false)}
+            className="block text-center py-2.5 text-sm font-medium text-primary-500 hover:text-primary-600 hover:bg-slate-50 dark:hover:bg-slate-700 border-t border-slate-200 dark:border-slate-700"
+          >
+            View All Notifications
+          </Link>
         </div>
       )}
     </div>

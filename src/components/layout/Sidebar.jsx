@@ -7,7 +7,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import { ClientAdPlaceholder } from "../ads/ClientAdPlaceholder";
 
 // Client Component - Sidebar with widgets
-export function Sidebar({ showAds = true }) {
+export function Sidebar({ showAds = true, sticky = true, children }) {
   const { user, isAuthenticated, logout, loading } = useAuth();
   const { openLogin, openRegister } = useAuthModal();
 
@@ -17,7 +17,7 @@ export function Sidebar({ showAds = true }) {
   const avatar = user?.avatar || user?.user_avatar;
 
   return (
-    <aside className="w-full lg:w-80 flex-shrink-0 lg:self-start lg:sticky lg:top-28 space-y-4" aria-label="Sidebar">
+    <aside className={`w-full lg:w-80 flex-shrink-0 lg:self-start ${sticky ? "lg:sticky lg:top-28" : ""} space-y-4`} aria-label="Sidebar">
       {/* User Welcome Widget */}
       <div className="v2-sidebar-container p-4">
         {loading ? (
@@ -96,6 +96,9 @@ export function Sidebar({ showAds = true }) {
 
       {/* Ad Placeholder - Top */}
       {showAds && <ClientAdPlaceholder slot="sidebar_top" minHeight="250px" />}
+
+      {/* Injected children (e.g. home page widgets) */}
+      {children}
 
       {/* Newsletter Signup Placeholder */}
       <div className="v2-sidebar-container p-4">

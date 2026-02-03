@@ -1,6 +1,6 @@
 # BBJ Next.js Roadmap
 
-**Last Updated:** February 2, 2026 (Public User Profiles complete)
+**Last Updated:** February 3, 2026 (Quick fixes complete, home page layout restructured)
 **Target Launch:** Before BB28 (July 2026)
 **Status:** Off-season development
 
@@ -575,20 +575,20 @@ The following suggestions have been added to their respective phases:
 
 ## Upcoming Timeline
 
-### Immediate Next Steps (Quick Fixes)
+### Immediate Next Steps (Quick Fixes) ✅
 
-1. **Nav bar order** - Change to: Home, Contact, Feed-Updates, Directory
-2. **Breadcrumb fix** - Remove `/article/` or handle uncategorized posts better
-3. **Season leaderboard progress bar** - Fix name truncation causing bar shift
-4. **Hide push notification setting** - Until mobile app is ready
-5. **Test subscribed threads** - Verify functionality works
+1. ~~**Nav bar order** - Change to: Home, Contact, Feed-Updates, Directory~~
+2. ~~**Breadcrumb fix** - Remove `/article/` or handle uncategorized posts better~~
+3. ~~**Season leaderboard progress bar** - Fix name truncation causing bar shift~~
+4. ~~**Hide push notification setting** - Until mobile app is ready~~
+5. ~~**Test subscribed threads** - Verify functionality works~~
 
 ### Pre-Launch Polish
 
 6. **Polish remaining 4.1 items** - Saved/bookmarked content, account linking
 7. **Polish remaining 4.2 items** - Invoice history, upgrade/downgrade, payment methods
 8. **Finish 1.2** - GA4 ad blocker tracking
-9. **Home page layout** - Decide: match feed updates height with sidebar OR move sidebar items (houseboard, stats, recent comments, hot posts) to right sidebar
+9. ~~**Home page layout** - Moved widgets to sidebar, feed updates full-width with card styling~~
 10. **Feed Updates page enhancements** - Add sidebar, pagination, premium per-page setting in user prefs, pill styling for update types
 11. **Page Speed Insights** - Run audit and implement fixes
 
@@ -611,11 +611,11 @@ _Go page by page on live site to identify gaps_
 
 ### Home Page
 
-- [ ] Maybe just tweak the lastest feed updates so it matches height with the mini side bar. OR have it extend over and put the sidebar stuff to the read sidebar. Need discussion on pros and cons of that (sidebar stuff potential to site sidebar = houseboard, stats, recent comments, hot posts)
+- [x] Moved widgets (houseboard, stats, recent comments, social, watch live) to right sidebar. Feed updates now full-width with card styling (left accent border, shadow, spacing). More Stories section matches.
 
 ### Posts/Articles
 
-- [ ] Breadcrumb looks weird. There are likely going ot be a lot of uncategorized so perhaps figuer out a way to automate that? in addition /article/ should be something different or not there at all
+- [x] Breadcrumb fixed - removed `/article/` prefix, handles uncategorized posts
 
 ### Feed Updates
 
@@ -628,11 +628,11 @@ _Go page by page on live site to identify gaps_
 
 ### Seasons
 
-- [ ] Fix the progress bar in leaderboards. If a name has ... then the bar is shifted way over. I can include screenshot later
+- [x] Fixed progress bar in leaderboards - name truncation no longer shifts bar
 
 ### Header/Navigation
 
-- [ ] Nav bar is typically 'Home, Contact, Feed-Updates, Dierectory
+- [x] Nav bar reordered: Home, Contact, Feed-Updates, Directory
 
 ### Footer
 
@@ -648,7 +648,9 @@ _Go page by page on live site to identify gaps_
 
 ### User Account
 
-- [ ] Hide push notification until we get mobile app. Tie newsletter into mailpoet (this is on roadmap). Test subscribed threads
+- [x] Push notification setting hidden until mobile app ready
+- [x] Subscribed threads tested and working
+- [ ] Tie newsletter into MailPoet (see Phase 7.1)
 
 ### Mobile Experience
 
