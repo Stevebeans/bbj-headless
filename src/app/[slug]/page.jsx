@@ -1,4 +1,4 @@
-import { getContent, getAllContentSlugs, getRelatedPosts } from "@/lib/api/posts";
+import { getContent, getRelatedPosts } from "@/lib/api/posts";
 import { getFeedUpdatesByDate } from "@/lib/api/feedUpdates";
 import { notFound } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -15,17 +15,8 @@ import { JumpToComments } from "@/components/posts/JumpToComments";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-// Allow dynamic rendering for content not pre-generated at build time
-export const dynamicParams = true;
-
-/**
- * Return empty array to build pages on-demand instead of at deploy time
- * This avoids rate limiting (429) errors during Vercel builds
- * Pages will be generated on first visit and cached
- */
-export async function generateStaticParams() {
-  return [];
-}
+// Render on-demand (layout reads cookies for auth)
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

@@ -8,8 +8,8 @@ export const metadata = {
     "All Big Brother live feed updates and show updates. Stay up to date with what's happening in the house.",
 };
 
-export const revalidate = 60;
-export const dynamicParams = true;
+// Render on-demand (layout reads cookies for auth)
+export const dynamic = "force-dynamic";
 
 async function FeedUpdatesContent({ searchParams }) {
   // Await searchParams for Next.js 15

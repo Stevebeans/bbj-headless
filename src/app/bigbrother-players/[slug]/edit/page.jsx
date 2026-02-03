@@ -1,20 +1,12 @@
-import { getPlayerBySlug, getAllPlayerSlugs } from "@/lib/api/players";
+import { getPlayerBySlug } from "@/lib/api/players";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PlayerEditForm } from "./components/PlayerEditForm";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FaEye } from "react-icons/fa";
 
-// Allow dynamic rendering for players not pre-generated at build time
-export const dynamicParams = true;
-
-/**
- * Return empty array to build pages on-demand instead of at deploy time
- * This avoids rate limiting (429) errors during Vercel builds
- */
-export async function generateStaticParams() {
-  return [];
-}
+// Render on-demand (layout reads cookies for auth)
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

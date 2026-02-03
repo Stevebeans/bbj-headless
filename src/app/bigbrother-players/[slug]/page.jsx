@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getPlayerBySlug, getAllPlayerSlugs } from "@/lib/api/players";
+import { getPlayerBySlug } from "@/lib/api/players";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommentSection } from "@/components/comments";
 import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
@@ -19,17 +19,8 @@ import {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-// Allow dynamic rendering for players not pre-generated at build time
-export const dynamicParams = true;
-
-/**
- * Generate static params for player pages
- * Return empty array to avoid rate limiting during build
- * Pages will be generated on-demand thanks to dynamicParams = true
- */
-export async function generateStaticParams() {
-  return [];
-}
+// Render on-demand (layout reads cookies for auth)
+export const dynamic = "force-dynamic";
 
 /**
  * Generate SEO metadata for player page

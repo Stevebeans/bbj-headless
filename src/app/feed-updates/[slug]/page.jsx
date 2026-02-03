@@ -6,17 +6,8 @@ import { CommentSection } from "@/components/comments";
 import { FeedUpdateVoting } from "./FeedUpdateVoting";
 import { getFeedUpdateBySlug, getFeedUpdates } from "@/lib/api/feedUpdates";
 
-export const revalidate = 60;
-export const dynamicParams = true;
-
-/**
- * Return empty array to build pages on-demand instead of at deploy time
- * This avoids rate limiting (429) errors during Vercel builds
- * Pages will be generated on first visit and cached
- */
-export async function generateStaticParams() {
-  return [];
-}
+// Render on-demand (layout reads cookies for auth)
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
