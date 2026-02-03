@@ -6,7 +6,18 @@ Messages between PC and Laptop for Claude Code sessions.
 
 ## Unread Messages
 
-*(None)*
+### From: PC → Laptop
+**Date:** 2026-02-03
+**Status:** UNREAD
+**Subject:** Copy global CLAUDE.md from PC
+
+The global `~/.claude/CLAUDE.md` file (user-level instructions) doesn't sync via git — it lives outside the repo. Remind the user to copy it from the PC to this laptop so both machines have identical Claude behavior.
+
+The file contains:
+1. **Context7 MCP rule** — Use Context7 server for docs lookup instead of training data
+2. **Code-simplifier rule** — Auto-run `/code-simplifier` after builds/implementations
+
+**Action:** Ask the user to copy `C:\Users\sbeli\.claude\CLAUDE.md` from the PC to the same path on this laptop. Or have them paste the contents so you can write it.
 
 ---
 
