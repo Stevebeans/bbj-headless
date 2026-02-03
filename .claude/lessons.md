@@ -38,13 +38,18 @@ Project-specific patterns and corrections to avoid repeating mistakes.
 
 ---
 
+## Workflow
+
+### Context Files on Plan Approval
+**Mistake:** Built entire user profiles feature without writing context files until user pointed it out at end of session
+**Correction:** Write context files IMMEDIATELY when user approves a plan, before writing any code
+**Rule:** On plan approval → (1) create/update `.claude/history/YYYY-MM-DD.md` with plan summary, (2) create `.claude/projects/context-[projectname].md` with architecture details. Code comes AFTER.
+
+---
+
 ## Corrections Log
 
-<!--
-Add new corrections here as they happen:
-
-### YYYY-MM-DD: Brief Title
-**Mistake:** What I did wrong
-**Correction:** What user said to do instead
-**Rule:** The pattern to follow going forward
--->
+### 2026-02-02: Forgot context files for user profiles
+**Mistake:** Completed entire user profiles implementation without writing history or project context until reminded
+**Correction:** User asked "did you write anything for context?" - had to backfill after the fact
+**Rule:** Context files are step 1 after plan approval, not an afterthought at session end

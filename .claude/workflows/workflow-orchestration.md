@@ -6,6 +6,7 @@
 - If something goes sideways, STOP and re-plan immediately – don't keep pushing
 - Use plan mode for verification steps, not just building
 - Write detailed specs upfront to reduce ambiguity
+- **On plan approval:** IMMEDIATELY write context files before coding (see #7)
 
 ## 2. Subagent Strategy
 
@@ -42,12 +43,23 @@
 - Zero context switching required from the user
 - Go fix failing CI tests without being told how
 
-## 7. History
+## 7. History & Context Files
 
-- When you are working on a project, keep a daily context history going at `/.claude/history`
-- The way it will work is after I approve a project or you have a plan, write down the context in history for that day
-- If it's a major project that used plan mode, also write down the context of the project in the `/.claude/projects` folder called context-[projectname]
-- The history should be an easy callback so if you crash, or I exit the session, you can quickly remember what you were looking for.
+**IMMEDIATELY after the user approves a plan (before writing any code):**
+
+1. **Create/update daily history** at `.claude/history/YYYY-MM-DD.md`
+   - Write the plan summary, what you're about to build, key decisions made
+   - This is your crash recovery - if the session dies mid-implementation, the next session can pick up from here
+
+2. **Create project context file** at `.claude/projects/context-[projectname].md` (for any plan mode project)
+   - Architecture overview, files to create/modify, key patterns, dependencies
+   - This is the detailed reference that persists after the project is done
+
+**During implementation:** Update the daily history as major milestones complete
+
+**At end of session:** Final update to daily history with what was completed, what's left, and any decisions made during conversation
+
+The history should be an easy callback so if you crash, or I exit the session, you can quickly remember what you were working on.
 
 ---
 
