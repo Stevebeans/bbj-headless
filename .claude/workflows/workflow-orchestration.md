@@ -56,7 +56,16 @@
    - Architecture overview, files to create/modify, key patterns, dependencies
    - This is the detailed reference that persists after the project is done
 
-**During implementation:** Update the daily history as major milestones complete
+**During implementation:** Update the daily history as major milestones complete (after each commit is a good trigger)
+
+**On context compaction:** When the context window is compacted/summarized, ALWAYS write a checkpoint summary to the daily history file before compaction completes. This is NON-OPTIONAL. Include:
+- What was accomplished since last checkpoint
+- Current state of work in progress
+- Any uncommitted changes and their purpose
+- What the next steps are
+- Any decisions or context that would be lost in compaction
+
+This ensures that even if compaction loses nuance, the history file preserves it. Think of it as saving your game before a level transition.
 
 **At end of session:** Final update to daily history with what was completed, what's left, and any decisions made during conversation
 

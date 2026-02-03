@@ -53,3 +53,12 @@ Project-specific patterns and corrections to avoid repeating mistakes.
 **Mistake:** Completed entire user profiles implementation without writing history or project context until reminded
 **Correction:** User asked "did you write anything for context?" - had to backfill after the fact
 **Rule:** Context files are step 1 after plan approval, not an afterthought at session end
+
+### 2026-02-03: No daily history written despite full day of work
+**Mistake:** 7 commits across 7 hours with plan mode sessions, zero history entries written. Previous session made the exact same mistake with context files.
+**Correction:** User pointed out nothing was logged despite workflow step 7 being explicit about it
+**Rules:**
+1. Context files on plan approval is MANDATORY, not aspirational. This was already a lesson from yesterday and was ignored again.
+2. On every context compaction, write a checkpoint to `.claude/history/YYYY-MM-DD.md` - this makes history logging automatic rather than relying on memory
+3. After every commit, add a brief entry to daily history - commits are natural checkpoints
+4. If you realize you haven't written to history in a while, do it NOW before continuing other work

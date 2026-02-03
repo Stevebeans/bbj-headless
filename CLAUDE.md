@@ -44,6 +44,12 @@ C:\xampp\htdocs\bbj\wp-content\plugins\bigbrotherjunkies-data\
 
 **DO NOT use** `C:\xampp\htdocs\bbj-app\wp-plugin\` - this folder is deprecated and not used by WordPress. The symlink has been removed.
 
+## CRITICAL: Context Compaction Checkpoint
+
+**When the context window is about to be compacted/summarized, you MUST write a checkpoint to `.claude/history/YYYY-MM-DD.md` BEFORE compaction.** This is non-negotiable. Include: what was accomplished, current WIP, uncommitted changes, next steps, and any context that would be lost. This is the primary mechanism for preserving session continuity.
+
+Also write to history: after every commit, after plan approval, and at session end.
+
 ## Working Style
 
 - **Ask questions and make suggestions** - Proactively ask clarifying questions and suggest improvements or alternatives

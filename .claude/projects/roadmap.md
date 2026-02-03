@@ -585,7 +585,8 @@ The following suggestions have been added to their respective phases:
 
 ### Pre-Launch Polish
 
-6. **Polish remaining 4.1 items** - Saved/bookmarked content, account linking
+6. **Move JWT auth to cookies** - Eliminate logged-out flash on page refresh. Store JWT in cookie (instead of localStorage) so server can read auth state during SSR. Affects: AuthContext, login/logout flow, Header, potentially Next.js middleware for protected routes. This is how Facebook and other major sites avoid the flash.
+7. **Polish remaining 4.1 items** - Saved/bookmarked content, account linking
 7. **Polish remaining 4.2 items** - Invoice history, upgrade/downgrade, payment methods
 8. **Finish 1.2** - GA4 ad blocker tracking
 9. ~~**Home page layout** - Moved widgets to sidebar, feed updates full-width with card styling~~
