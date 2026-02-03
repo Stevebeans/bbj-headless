@@ -123,6 +123,7 @@ export function PlayersSection({ seasonId, players, onAddPlayer, onRemovePlayer 
               <PlayerBadge
                 key={player.id}
                 player={player}
+                removable
                 onRemove={() => handleRemovePlayer(player.id)}
                 isRemoving={removeLoading === player.id}
               />
