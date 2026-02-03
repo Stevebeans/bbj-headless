@@ -20,7 +20,11 @@ export function SeasonSwitcher({ currentSeasonId, currentSlug }) {
         const data = await response.json();
 
         if (data.success && data.seasons) {
-          setSeasons(data.seasons);
+          // Sort numerically by season number (descending, newest first)
+          const sorted = [...data.seasons].sort(
+            (a, b) => Number(b.season_number) - Number(a.season_number)
+          );
+          setSeasons(sorted);
         }
       } catch (error) {
         console.error("Failed to fetch seasons:", error);
