@@ -32,6 +32,10 @@ export function RosterStatusSection({ seasonId, players: initialPlayers, onPlaye
       const gs = player.game_status || {};
       const ogs = original.game_status || {};
 
+      // Check stats changes
+      const st = player.stats || {};
+      const ost = original.stats || {};
+
       if (
         gs.hoh !== ogs.hoh ||
         gs.pov !== ogs.pov ||
@@ -43,7 +47,15 @@ export function RosterStatusSection({ seasonId, players: initialPlayers, onPlaye
         gs.evicted !== ogs.evicted ||
         gs.misc_notes !== ogs.misc_notes ||
         player.finish_place !== original.finish_place ||
-        player.evicted_date !== original.evicted_date
+        player.evicted_date !== original.evicted_date ||
+        st.hoh !== ost.hoh ||
+        st.pov !== ost.pov ||
+        st.nom !== ost.nom ||
+        st.misc !== ost.misc ||
+        st.votes_received !== ost.votes_received ||
+        st.veto_played !== ost.veto_played ||
+        st.saved !== ost.saved ||
+        st.havenot !== ost.havenot
       ) {
         modified.add(player.player_id || player.id);
       }
@@ -90,6 +102,14 @@ export function RosterStatusSection({ seasonId, players: initialPlayers, onPlaye
         misc_notes: player.game_status?.misc_notes || "",
         finish_place: player.finish_place,
         evicted_date: player.evicted_date,
+        bbj_total_hoh: player.stats?.hoh ?? 0,
+        bbj_total_pov: player.stats?.pov ?? 0,
+        bbj_total_nom: player.stats?.nom ?? 0,
+        bbj_total_misc: player.stats?.misc ?? 0,
+        bbj_votes_received: player.stats?.votes_received ?? 0,
+        bbj_veto_played: player.stats?.veto_played ?? 0,
+        bbj_total_saved: player.stats?.saved ?? 0,
+        bbj_total_havenot: player.stats?.havenot ?? 0,
       }));
 
     try {
@@ -248,7 +268,7 @@ export function RosterStatusSection({ seasonId, players: initialPlayers, onPlaye
             <span className="w-2 h-2 rounded-full bg-green-500" />
             Active ({activePlayers.length})
           </h4>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2">
             {activePlayers.map((player) => (
               <PlayerStatusCard
                 key={player.player_id || player.id}
@@ -269,7 +289,7 @@ export function RosterStatusSection({ seasonId, players: initialPlayers, onPlaye
             <span className="w-2 h-2 rounded-full bg-slate-400" />
             Eliminated ({eliminatedPlayers.length})
           </h4>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2">
             {eliminatedPlayers.map((player) => (
               <PlayerStatusCard
                 key={player.player_id || player.id}

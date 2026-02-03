@@ -652,6 +652,20 @@ class SeasonRoutes
                 $updateFormat[] = '%s';
             }
 
+            // Season stat totals (int fields)
+            $statFields = [
+                'bbj_total_hoh', 'bbj_total_pov', 'bbj_total_nom',
+                'bbj_total_misc', 'bbj_votes_received', 'bbj_veto_played',
+                'bbj_total_saved', 'bbj_total_havenot',
+            ];
+
+            foreach ($statFields as $field) {
+                if (array_key_exists($field, $playerData)) {
+                    $updateData[$field] = absint($playerData[$field]);
+                    $updateFormat[] = '%d';
+                }
+            }
+
             if (empty($updateData)) {
                 continue;
             }
@@ -1043,7 +1057,11 @@ class SeasonRoutes
                 'hoh' => (int) ($player['bbj_total_hoh'] ?? 0),
                 'pov' => (int) ($player['bbj_total_pov'] ?? 0),
                 'nom' => (int) ($player['bbj_total_nom'] ?? 0),
+                'misc' => (int) ($player['bbj_total_misc'] ?? 0),
                 'votes_received' => (int) ($player['bbj_votes_received'] ?? 0),
+                'veto_played' => (int) ($player['bbj_veto_played'] ?? 0),
+                'saved' => (int) ($player['bbj_total_saved'] ?? 0),
+                'havenot' => (int) ($player['bbj_total_havenot'] ?? 0),
                 'days_in_house' => (int) ($player['bbj_days_in_house'] ?? 0),
             ],
             'game_status' => [

@@ -161,6 +161,12 @@ class ImportPage
             $messageType = $result['success'] ? 'success' : 'error';
         }
 
+        if (isset($_POST['update_stats']) && check_admin_referer('bbj_update_stats')) {
+            $result = $this->updateStatsFromCsv();
+            $message = $result['message'];
+            $messageType = $result['success'] ? 'success' : 'error';
+        }
+
         global $wpdb;
         $playersTable = $wpdb->prefix . 'bbj_players';
         $linkTable = $wpdb->prefix . 'bbj_v2_player_season';
@@ -330,6 +336,29 @@ class ImportPage
                     <p class="description" style="margin-top: 10px;">
                         This will create <?php echo $newPlayers; ?> new players and <?php echo $csvPlayerCount; ?> season links.
                     </p>
+                </form>
+            <?php endif; ?>
+        </div>
+
+        <div class="card" style="max-width: 900px; padding: 20px; margin-top: 20px;">
+            <h2>Update Stats from Master CSV</h2>
+            <p>Updates <strong>season stats</strong> (HoH, PoV, Nom, misc, votes, finish place, evicted date) and <strong>player data</strong> (DOB, gender, occupation, nickname) from <code>all_players_master.csv</code>.</p>
+            <p>Only updates existing player-season links — never creates new rows. Empty CSV values are skipped (won't overwrite existing data with blanks).</p>
+
+            <?php
+            $masterCsv = $this->readMasterCsv();
+            if (empty($masterCsv)): ?>
+                <div class="notice notice-warning" style="margin: 10px 0;">
+                    <p><strong>Warning:</strong> Could not read <code>all_players_master.csv</code>.</p>
+                </div>
+            <?php else: ?>
+                <p>Master CSV rows: <strong><?php echo count($masterCsv); ?></strong> | Existing player-season links: <strong><?php echo $linkCount; ?></strong></p>
+
+                <form method="post">
+                    <?php wp_nonce_field('bbj_update_stats'); ?>
+                    <button type="submit" name="update_stats" class="button button-secondary button-large">
+                        Update Stats from Master CSV
+                    </button>
                 </form>
             <?php endif; ?>
         </div>
@@ -560,6 +589,187 @@ class ImportPage
     }
 
     /**
+     * Read master CSV with full stats (all_players_master.csv)
+     */
+    private function readMasterCsv(): array
+    {
+        $csvPath = $this->getCsvPath('all_players_master.csv');
+
+        if (!$csvPath || !file_exists($csvPath)) {
+            return [];
+        }
+
+        $players = [];
+        $handle = fopen($csvPath, 'r');
+        if ($handle === false) return [];
+
+        $header = fgetcsv($handle);
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count($row) < 18) continue;
+
+            $players[] = [
+                'season_number'  => trim($row[0]),
+                'first_name'     => trim($row[1]),
+                'last_name'      => trim($row[2]),
+                'date_of_birth'  => trim($row[3]),
+                'player_gender'  => trim($row[4]),
+                'occupation'     => trim($row[5]),
+                'facebook'       => trim($row[6]),
+                'instagram'      => trim($row[7]),
+                'twitter'        => trim($row[8]),
+                'tiktok'         => trim($row[9]),
+                'total_hoh'      => trim($row[10]),
+                'total_pov'      => trim($row[11]),
+                'total_nom'      => trim($row[12]),
+                'total_misc'     => trim($row[13]),
+                'votes_received' => trim($row[14]),
+                'nickname'       => trim($row[15]),
+                'finish_place'   => trim($row[16]),
+                'evicted_date'   => trim($row[17]),
+            ];
+        }
+
+        fclose($handle);
+        return $players;
+    }
+
+    /**
+     * Update player stats and player data from master CSV
+     */
+    private function updateStatsFromCsv(): array
+    {
+        global $wpdb;
+        $playersTable = $wpdb->prefix . 'bbj_players';
+        $linkTable = $wpdb->prefix . 'bbj_v2_player_season';
+        $seasonsTable = $wpdb->prefix . 'bbj_seasons';
+
+        $masterRows = $this->readMasterCsv();
+        if (empty($masterRows)) {
+            return ['success' => false, 'message' => 'Could not read master CSV file.'];
+        }
+
+        // Build season map: season_number => season_id
+        $seasons = $wpdb->get_results("SELECT id, season_number FROM {$seasonsTable}", ARRAY_A);
+        $seasonMap = [];
+        foreach ($seasons as $s) {
+            $seasonMap[$s['season_number']] = (int) $s['id'];
+        }
+
+        // Build player map: first_name|last_name => player_id
+        $existingPlayers = $wpdb->get_results("SELECT id, first_name, last_name FROM {$playersTable}", ARRAY_A);
+        $playerMap = [];
+        foreach ($existingPlayers as $p) {
+            $key = strtolower(trim($p['first_name']) . '|' . trim($p['last_name']));
+            $playerMap[$key] = (int) $p['id'];
+        }
+
+        $statsUpdated = 0;
+        $playersUpdated = 0;
+        $skipped = 0;
+        $errors = [];
+        $playersDone = []; // Track which player IDs we've already updated player-level data for
+
+        foreach ($masterRows as $row) {
+            $seasonId = $seasonMap[$row['season_number']] ?? null;
+            $playerKey = strtolower(trim($row['first_name']) . '|' . trim($row['last_name']));
+            $playerId = $playerMap[$playerKey] ?? null;
+
+            if (!$seasonId || !$playerId) {
+                $skipped++;
+                continue;
+            }
+
+            // UPDATE season stats in wp_bbj_v2_player_season
+            $statsData = [
+                'bbj_total_hoh'      => (int) $row['total_hoh'],
+                'bbj_total_pov'      => (int) $row['total_pov'],
+                'bbj_total_nom'      => (int) $row['total_nom'],
+                'bbj_total_misc'     => (int) $row['total_misc'],
+                'bbj_votes_received' => (int) $row['votes_received'],
+            ];
+            $statsFormats = ['%d', '%d', '%d', '%d', '%d'];
+
+            if (!empty($row['finish_place'])) {
+                $statsData['finish_place'] = (int) $row['finish_place'];
+                $statsFormats[] = '%d';
+            }
+
+            if (!empty($row['evicted_date'])) {
+                $statsData['bbj_evicted_date'] = $row['evicted_date'];
+                $statsFormats[] = '%s';
+            }
+
+            $updated = $wpdb->update(
+                $linkTable,
+                $statsData,
+                ['bbj_player' => $playerId, 'bbj_season' => $seasonId],
+                $statsFormats,
+                ['%d', '%d']
+            );
+
+            if ($updated !== false) {
+                $statsUpdated++;
+            } else {
+                $errors[] = "{$row['first_name']} {$row['last_name']} BB{$row['season_number']}: {$wpdb->last_error}";
+            }
+
+            // UPDATE player-level data in wp_bbj_players (once per player)
+            if (!isset($playersDone[$playerId])) {
+                $playerData = [];
+                $playerFormats = [];
+
+                if (!empty($row['date_of_birth'])) {
+                    $playerData['date_of_birth'] = $row['date_of_birth'];
+                    $playerFormats[] = '%s';
+                }
+                if (!empty($row['player_gender'])) {
+                    $playerData['player_gender'] = $row['player_gender'];
+                    $playerFormats[] = '%s';
+                }
+                if (!empty($row['occupation'])) {
+                    $playerData['occupation'] = $row['occupation'];
+                    $playerFormats[] = '%s';
+                }
+                if (!empty($row['nickname'])) {
+                    $playerData['official_nickname'] = $row['nickname'];
+                    $playerFormats[] = '%s';
+                }
+
+                if (!empty($playerData)) {
+                    $pUpdated = $wpdb->update(
+                        $playersTable,
+                        $playerData,
+                        ['id' => $playerId],
+                        $playerFormats,
+                        ['%d']
+                    );
+
+                    if ($pUpdated !== false) {
+                        $playersUpdated++;
+                    } else {
+                        $errors[] = "Player data for {$row['first_name']} {$row['last_name']}: {$wpdb->last_error}";
+                    }
+                }
+
+                $playersDone[$playerId] = true;
+            }
+        }
+
+        $message = "Stats update complete:<br>";
+        $message .= "- <strong>{$statsUpdated}</strong> season-stat rows updated<br>";
+        $message .= "- <strong>{$playersUpdated}</strong> players updated (DOB/gender/occupation/nickname)<br>";
+        $message .= "- <strong>{$skipped}</strong> rows skipped (no matching player or season)";
+
+        if (!empty($errors)) {
+            $first20 = array_slice($errors, 0, 20);
+            $message .= '<br><br>' . count($errors) . ' errors (showing first 20):<br>' . implode('<br>', $first20);
+        }
+
+        return ['success' => empty($errors), 'message' => $message];
+    }
+
+    /**
      * Import players from CSV
      */
     private function importPlayersFromCsv(): array
@@ -707,10 +917,9 @@ class ImportPage
         $message .= "- <strong>{$linksCreated}</strong> season links created<br>";
         $message .= "- <strong>{$linksSkipped}</strong> links skipped (already exist)";
 
-        if (!empty($errors) && count($errors) <= 10) {
-            $message .= '<br><br>Errors:<br>' . implode('<br>', $errors);
-        } elseif (!empty($errors)) {
-            $message .= '<br><br>' . count($errors) . ' errors occurred.';
+        if (!empty($errors)) {
+            $first20 = array_slice($errors, 0, 20);
+            $message .= '<br><br>' . count($errors) . ' errors (showing first 20):<br>' . implode('<br>', $first20);
         }
 
         return ['success' => empty($errors), 'message' => $message];

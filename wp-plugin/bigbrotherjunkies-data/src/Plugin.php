@@ -176,6 +176,7 @@ class Plugin
                 'http://127.0.0.1:3001',
                 'https://bigbrotherjunkies.com',
                 'https://www.bigbrotherjunkies.com',
+                'https://staging.bigbrotherjunkies.com',
                 'https://bbj-next.vercel.app',
             ];
 
