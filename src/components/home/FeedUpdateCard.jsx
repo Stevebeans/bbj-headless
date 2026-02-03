@@ -126,7 +126,7 @@ export function FeedUpdateCard({ update }) {
         {recentComments?.length > 0 && (
           <div className="mt-3 ml-4 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg border-l-2 border-gray-300 dark:border-gray-600">
             <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+              <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
@@ -135,7 +135,7 @@ export function FeedUpdateCard({ update }) {
               {commentCount > 2 && (
                 <Link
                   href={`/feed-updates/${update.slug}#comments`}
-                  className="text-[10px] text-primary-500 hover:text-primary-600 hover:underline"
+                  className="text-xs py-1 text-primary-500 hover:text-primary-600 hover:underline"
                 >
                   Read all replies →
                 </Link>
@@ -143,7 +143,7 @@ export function FeedUpdateCard({ update }) {
             </div>
             <Link
               href={`/feed-updates/${update.slug}#comments`}
-              className="block space-y-1"
+              className="block space-y-2"
             >
               {recentComments.slice(-3).map((comment, idx) => (
                 <p
@@ -153,7 +153,7 @@ export function FeedUpdateCard({ update }) {
                   <span className="font-semibold text-gray-700 dark:text-gray-300">
                     {comment.author}:
                   </span>{" "}
-                  <span className="text-gray-500 dark:text-gray-400">{comment.content}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{comment.content}</span>
                 </p>
               ))}
             </Link>

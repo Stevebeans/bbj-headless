@@ -302,7 +302,7 @@ export function RecentComments({ comments = [] }) {
               <span className="font-sans font-semibold text-sm text-gray-700 dark:text-gray-300 truncate">
                 {comment.author}
               </span>
-              <span className="text-xs text-gray-400 dark:text-gray-500" data-nosnippet>
+              <span className="text-xs text-gray-500 dark:text-gray-400" data-nosnippet>
                 {comment.time_ago}
               </span>
             </div>

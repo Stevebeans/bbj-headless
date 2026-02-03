@@ -141,12 +141,12 @@
 
   /* Evicted - Muted grey, paired with greyscale image */
   .spoilerbar-evicted {
-    @apply border-slate-400 bg-slate-400 text-white;
+    @apply border-slate-500 bg-slate-500 text-white;
   }
 
   /* Jury - Deep purple/indigo, dignified */
   .spoilerbar-jury {
-    @apply border-indigo-500 bg-indigo-500 text-white;
+    @apply border-indigo-600 bg-indigo-600 text-white;
   }
 
   /* Safe - Light green, secure feeling */

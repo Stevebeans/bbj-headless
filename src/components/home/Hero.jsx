@@ -20,7 +20,7 @@ export function Hero({ post, season }) {
 
       {/* Hero Image */}
       <div className="relative h-[250px] md:h-[333px] bg-gray-100 dark:bg-gray-800 overflow-hidden group/hero">
-        <Link href={`/${post.slug}`} className="absolute inset-0">
+        <Link href={`/${post.slug}`} className="absolute inset-0" aria-label={post.title}>
           {post.featured_image?.desktop && (
             <Image
               src={post.featured_image.desktop}

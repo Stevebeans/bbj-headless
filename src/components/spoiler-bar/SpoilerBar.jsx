@@ -116,14 +116,14 @@ function PlayerCard({ player, afpId }) {
   const isJury = (gs.jury || status === "jury") && !isFinalist;
 
   const cardContent = (
-    <div className="w-[52px] lg:w-14">
+    <div className="w-[56px] lg:w-14">
       {/* Status Banner */}
-      <div className={`${statusClass} text-center text-[10px] w-full border-t-2 border-r-2 border-l-2 font-sans rounded-t-md`}>
+      <div className={`${statusClass} text-center text-[10px] leading-[18px] w-full border-t-2 border-r-2 border-l-2 font-sans font-medium rounded-t-md`}>
         {statusLabel}
       </div>
 
       {/* Profile Image */}
-      <div className={`relative block w-full h-12 lg:h-[80px] font-display overflow-hidden border-l-2 border-r-2 ${statusClass}`}>
+      <div className={`relative block w-full h-14 lg:h-[80px] font-display overflow-hidden border-l-2 border-r-2 ${statusClass}`}>
         {player.photo ? (
           <>
             <Image
@@ -131,7 +131,7 @@ function PlayerCard({ player, afpId }) {
               alt={player.name || "Houseguest"}
               fill
               className={`object-cover ${isEvicted ? "spoilerbar-evicted-img" : ""} ${isJury ? "spoilerbar-jury-img" : ""}`}
-              sizes="(max-width: 1024px) 52px, 56px"
+              sizes="(max-width: 1024px) 56px, 56px"
             />
             {/* Blue tint overlay for jury members */}
             {isJury && <div className="spoilerbar-jury-overlay" />}
@@ -144,7 +144,7 @@ function PlayerCard({ player, afpId }) {
       </div>
 
       {/* Name Bar */}
-      <div className={`${statusClass} rounded-b-md border-r-2 border-l-2 border-b-2 text-[10px] flex items-center justify-center font-sans`}>
+      <div className={`${statusClass} rounded-b-md border-r-2 border-l-2 border-b-2 text-[10px] leading-[18px] flex items-center justify-center font-sans font-medium`}>
         {displayName}
       </div>
     </div>
