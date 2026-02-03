@@ -302,6 +302,7 @@ The core differentiator during the season.
 - [x] **Billing FAQ** - Added 5 billing questions to Settings Help tab
 
 **Files:**
+
 - `src/lib/api/billing.js` - API client
 - `src/app/become-supporter/page.jsx` - Checkout page
 - `src/app/checkout/success/page.jsx` - Success page
@@ -314,11 +315,13 @@ The core differentiator during the season.
 - `wp-plugin/.../Api/BillingRoutes.php` - REST endpoints
 
 **To test in production:**
+
 1. Add live Stripe/PayPal credentials in WP Admin → BBJ Data → API Settings
 2. Configure Stripe webhook to point to `/wp-json/bbjd/v1/billing/webhook/stripe`
 3. Test checkout flow with real payment methods
 
 **Future improvements:**
+
 - [ ] Invoice history display
 - [ ] Upgrade/downgrade between plans
 - [ ] Payment method management (add/remove cards)
@@ -572,63 +575,87 @@ The following suggestions have been added to their respective phases:
 
 ## Upcoming Timeline
 
-### Immediate Next Steps
+### Immediate Next Steps (Quick Fixes)
 
-1. **Polish remaining 4.1 items** - Saved/bookmarked content, account linking
-2. **Polish remaining 4.2 items** - Invoice history, upgrade/downgrade, payment methods
-3. **Finish 1.2** - GA4 ad blocker tracking
+1. **Nav bar order** - Change to: Home, Contact, Feed-Updates, Directory
+2. **Breadcrumb fix** - Remove `/article/` or handle uncategorized posts better
+3. **Season leaderboard progress bar** - Fix name truncation causing bar shift
+4. **Hide push notification setting** - Until mobile app is ready
+5. **Test subscribed threads** - Verify functionality works
+
+### Pre-Launch Polish
+
+6. **Polish remaining 4.1 items** - Saved/bookmarked content, account linking
+7. **Polish remaining 4.2 items** - Invoice history, upgrade/downgrade, payment methods
+8. **Finish 1.2** - GA4 ad blocker tracking
+9. **Home page layout** - Decide: match feed updates height with sidebar OR move sidebar items (houseboard, stats, recent comments, hot posts) to right sidebar
+10. **Feed Updates page enhancements** - Add sidebar, pagination, premium per-page setting in user prefs, pill styling for update types
+11. **Page Speed Insights** - Run audit and implement fixes
 
 ### Pre-Launch Checklist
 
-4. **Push to Vercel production** - Ensure all ad blocks imported to DB
-5. **Switch DNS** - Point bigbrotherjunkies.com to Vercel (requires Vercel Pro plan)
-6. **Set up staging** - Map staging.bigbrotherjunkies.com for testing
+12. **Push to Vercel production** - Ensure all ad blocks imported to DB
+13. **Switch DNS** - Point bigbrotherjunkies.com to Vercel (requires Vercel Pro plan)
+14. **Set up staging** - Map staging.bigbrotherjunkies.com for testing
 
 ### Post-DNS Switch
 
-7. Live testing with real domain
-8. Break off new features to staging workflow
+15. Live testing with real domain
+16. Break off new features to staging workflow
 
 ---
 
 ## Site Audit (BBJ Live vs Next.js)
 
-*Go page by page on live site to identify gaps*
+_Go page by page on live site to identify gaps_
 
 ### Home Page
-- [ ] _audit notes here_
+
+- [ ] Maybe just tweak the lastest feed updates so it matches height with the mini side bar. OR have it extend over and put the sidebar stuff to the read sidebar. Need discussion on pros and cons of that (sidebar stuff potential to site sidebar = houseboard, stats, recent comments, hot posts)
 
 ### Posts/Articles
-- [ ] _audit notes here_
+
+- [ ] Breadcrumb looks weird. There are likely going ot be a lot of uncategorized so perhaps figuer out a way to automate that? in addition /article/ should be something different or not there at all
 
 ### Feed Updates
-- [ ] _audit notes here_
+
+- [ ] Add sidebar to /feed-updates page. Make it pagination. Let premium people set a default in settings how many feed updates per page they want while others do say 20-30
+      Maybe make 'feed update' versus 'Live Show Update' a pill look
 
 ### Players
-- [ ] _audit notes here_
+
+- [ ] Looks good
 
 ### Seasons
-- [ ] _audit notes here_
+
+- [ ] Fix the progress bar in leaderboards. If a name has ... then the bar is shifted way over. I can include screenshot later
 
 ### Header/Navigation
-- [ ] _audit notes here_
+
+- [ ] Nav bar is typically 'Home, Contact, Feed-Updates, Dierectory
 
 ### Footer
-- [ ] _audit notes here_
+
+- [ ] Looks good
 
 ### Sidebar
-- [ ] _audit notes here_
+
+- [ ] See Feed Update section
 
 ### Comments
-- [ ] _audit notes here_
+
+- [ ] Looks good
 
 ### User Account
-- [ ] _audit notes here_
+
+- [ ] Hide push notification until we get mobile app. Tie newsletter into mailpoet (this is on roadmap). Test subscribed threads
 
 ### Mobile Experience
-- [ ] _audit notes here_
+
+- [ ] Run Page Speed Insights and do fixes to get better scores
 
 ### Other Pages
+
 - [ ] _audit notes here_
 
 ---
