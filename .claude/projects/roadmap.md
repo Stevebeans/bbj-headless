@@ -1,6 +1,6 @@
 # BBJ Next.js Roadmap
 
-**Last Updated:** February 2, 2026 (Premium Billing system complete - pending live testing)
+**Last Updated:** February 2, 2026 (Public User Profiles complete)
 **Target Launch:** Before BB28 (July 2026)
 **Status:** Off-season development
 
@@ -25,7 +25,7 @@ These directly impact user engagement and revenue.
   - StaffPickBadge component with star icon
   - Pinned comments float to top
 - [x] Comment sorting options (newest, oldest, most voted)
-- [ ] User comment history on profile
+- [x] User comment history on profile (Feb 2026 - via `/users/[username]`)
 - [x] Gamification - User rank system (Newbie → Legend based on comments + karma)
 - [x] Online status indicator (green dot) with session heartbeat
 - [x] Author profile modal with stats, recent comments, follow system
@@ -241,17 +241,18 @@ The core differentiator during the season.
 - [x] Help/FAQ tab with dynamic rank information
 - [ ] **Polish Notifications tab** - Wire up to MailPoet once integrated (see 7.1)
 - [x] **Polish Premium tab** - Wired up to Stripe/PayPal billing system (see 4.2)
-- [ ] Comment history
+- [x] Comment history (Feb 2026 - via public profile page)
 - [ ] Saved/bookmarked content
 - [ ] Account linking (Google, email)
 - [x] **Rank progression display** - Shows current rank, progress bars for comments/karma toward next rank (implemented in Premium tab)
-- [ ] **Public User Profile Page** `/users/[username]` - Public-facing profile page showing:
-  - User avatar, display name, bio
-  - Rank badge and karma score
-  - Favorite player (if set)
-  - Comment history (public comments only)
-  - Member since date
-  - Premium badge (if supporter)
+- [x] **Public User Profile Page** `/users/[username]` (Feb 2026)
+  - User avatar, display name, username, bio
+  - Rank badge and supporter badge (supporter/lifetime)
+  - Favorite player card (links to player profile)
+  - Paginated comment history with vote scores
+  - Member since date, online status
+  - Follow/unfollow functionality
+  - "View Public Profile" link in settings
 
 ### 4.2 Premium Billing System ✅
 
@@ -562,9 +563,9 @@ The following suggestions have been added to their respective phases:
 
 ## Current Focus
 
-**Completed:** Phase 3 (Feed Updates) ✅, Phase 4.2 (Premium Billing) ✅
+**Completed:** Phase 3 (Feed Updates) ✅, Phase 4.2 (Premium Billing) ✅, Phase 4.1 (User Profiles) ✅
 
-**Next up:** Phase 4.1/4.3 (Public user profiles, premium tiers, gifting) → Phase 7 (PWA & MailPoet) → Phase 5 (Admin tools)
+**Next up:** Phase 4.3 (Premium tiers, gifting) → Phase 7 (PWA & MailPoet) → Phase 5 (Admin tools)
 
 ## Timeline Suggestion
 
