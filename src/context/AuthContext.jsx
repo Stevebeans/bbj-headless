@@ -1,78 +1,101 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import {
+  getToken,
+  setToken,
+  clearToken,
+  getRememberPreference,
+  setUserCache,
+} from "@/lib/auth/cookies";
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
 const AuthContext = createContext(null);
 
-// Storage keys
-const TOKEN_KEY = "bbj_token";
-const REMEMBER_KEY = "bbj_remember";
-
-// Storage helper functions for "Keep me logged in" feature
-function getToken() {
-  if (typeof window === "undefined") return null;
-  // Check localStorage first (remembered), then sessionStorage
-  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
-}
-
-function setToken(token, remember) {
+/**
+ * One-time migration from localStorage/sessionStorage to cookies.
+ * Ensures existing logged-in users don't get logged out.
+ */
+function migrateFromStorage() {
   if (typeof window === "undefined") return;
-  // Clear from both to avoid duplicates
-  localStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(TOKEN_KEY);
-  // Set in appropriate storage
-  const storage = remember ? localStorage : sessionStorage;
-  storage.setItem(TOKEN_KEY, token);
-  // Remember the preference for future logins
-  localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+  if (localStorage.getItem("bbj_auth_migrated")) return;
+
+  const token =
+    localStorage.getItem("bbj_token") || sessionStorage.getItem("bbj_token");
+
+  if (token) {
+    const wasRemembered = localStorage.getItem("bbj_token") !== null;
+    setToken(token, wasRemembered);
+
+    // Clean up old storage
+    localStorage.removeItem("bbj_token");
+    sessionStorage.removeItem("bbj_token");
+    localStorage.removeItem("bbj_remember");
+  }
+
+  localStorage.setItem("bbj_auth_migrated", "1");
 }
 
-function clearToken() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REMEMBER_KEY);
-}
-
-function getRememberPreference() {
-  if (typeof window === "undefined") return true;
-  const pref = localStorage.getItem(REMEMBER_KEY);
-  // Default to true if not set
-  return pref !== "0";
-}
-
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+export function AuthProvider({ children, initialUser = null }) {
+  const [user, setUser] = useState(initialUser);
+  const [loading, setLoading] = useState(!initialUser);
   const [error, setError] = useState(null);
+  const didValidate = useRef(false);
 
-  // Load user from stored token on mount
+  // Update user state and cache profile for SSR
+  const setUserAndCache = useCallback((userData) => {
+    setUser(userData);
+    if (userData) {
+      const avatar = userData.user_avatar || userData.avatar;
+      setUserCache({
+        name: userData.user_display_name || userData.display_name || "",
+        avatar: avatar || "",
+      });
+    }
+  }, []);
+
+  // On mount: migrate old storage, then validate token in background
   useEffect(() => {
+    migrateFromStorage();
+
+    // Prevent double-validation in React strict mode
+    if (didValidate.current) return;
+    didValidate.current = true;
+
     const loadUser = async () => {
       const token = getToken();
-      if (token) {
-        try {
-          const userData = await validateToken(token);
-          setUser({
-            ...userData,
-            token,
-            // Normalize avatar property name
-            avatar: userData.user_avatar || userData.avatar,
-          });
-        } catch (err) {
-          // Only clear token if it's definitively invalid (not network/timeout errors)
-          // Network errors shouldn't log users out - they might just be offline
-          const isAuthError = err.status === 401 || err.status === 403;
-          const isNetworkError = err.isNetworkError || err.name === "AbortError" || err.message === "Failed to fetch";
 
-          if (isAuthError && !isNetworkError) {
-            clearToken();
-            setUser(null);
-          } else if (isNetworkError) {
-            // For network errors, try to use cached user data from token
-            // JWT tokens contain user info we can decode without server validation
+      if (!token) {
+        // No cookie — if we had an initialUser from SSR, the token may have
+        // been cleared by middleware (expired). Reset to logged-out.
+        if (initialUser) {
+          setUser(null);
+        }
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const userData = await validateToken(token);
+        setUserAndCache({
+          ...userData,
+          token,
+          avatar: userData.user_avatar || userData.avatar,
+        });
+      } catch (err) {
+        const isAuthError = err.status === 401 || err.status === 403;
+        const isNetworkError =
+          err.isNetworkError ||
+          err.name === "AbortError" ||
+          err.message === "Failed to fetch";
+
+        if (isAuthError && !isNetworkError) {
+          clearToken();
+          setUser(null);
+        } else if (isNetworkError) {
+          // Use cached data from token (or keep initialUser if we have it)
+          if (!initialUser) {
             try {
               const payload = JSON.parse(atob(token.split(".")[1]));
               setUser({
@@ -81,11 +104,9 @@ export function AuthProvider({ children }) {
                 user_email: payload.data?.user?.email,
                 user_display_name: payload.data?.user?.display_name || "User",
                 token,
-                _offline: true, // Flag that we're using cached data
+                _offline: true,
               });
-              console.warn("Using cached auth due to network error:", err.message);
             } catch {
-              // Token is malformed, clear it
               clearToken();
               setUser(null);
             }
@@ -96,12 +117,12 @@ export function AuthProvider({ children }) {
     };
 
     loadUser();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Validate JWT token with WordPress
   const validateToken = async (token) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout (increased)
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     try {
       const response = await fetch(`${API_URL}/bbj/v3/validate-token`, {
@@ -116,7 +137,6 @@ export function AuthProvider({ children }) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // Create error with status so we can differentiate auth failures from other errors
         const error = new Error("Invalid token");
         error.status = response.status;
         throw error;
@@ -125,7 +145,6 @@ export function AuthProvider({ children }) {
       return response.json();
     } catch (err) {
       clearTimeout(timeoutId);
-      // Add context for network errors
       if (err.name === "AbortError") {
         const error = new Error("Request timeout");
         error.isNetworkError = true;
@@ -158,13 +177,11 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || "Login failed");
       }
 
-      // Validate token BEFORE storing to prevent race condition
       const userData = await validateToken(data.token);
 
-      // Store token in appropriate storage based on rememberMe preference
       setToken(data.token, rememberMe);
 
-      setUser({
+      setUserAndCache({
         ...userData,
         token: data.token,
         user_display_name: data.user_display_name,
@@ -173,7 +190,6 @@ export function AuthProvider({ children }) {
 
       return { success: true };
     } catch (err) {
-      // Ensure no stale token remains on error
       clearToken();
       setError(err.message);
       return { success: false, error: err.message };
@@ -202,7 +218,6 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || "Google login failed");
       }
 
-      // Check if account linking is needed
       if (data.needs_linking) {
         return {
           success: false,
@@ -213,13 +228,11 @@ export function AuthProvider({ children }) {
         };
       }
 
-      // Store token in appropriate storage based on rememberMe preference
       setToken(data.token, rememberMe);
 
-      setUser({
+      setUserAndCache({
         ...data.user,
         token: data.token,
-        // Normalize property names to match email/password login
         user_display_name: data.user.display_name,
         user_email: data.user.email,
       });
@@ -253,10 +266,9 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || "Failed to link account");
       }
 
-      // Store token in appropriate storage based on rememberMe preference
       setToken(data.token, rememberMe);
 
-      setUser({
+      setUserAndCache({
         ...data.user,
         token: data.token,
         user_display_name: data.user.display_name,
@@ -292,10 +304,9 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || "Failed to create account");
       }
 
-      // Store token in appropriate storage based on rememberMe preference
       setToken(data.token, rememberMe);
 
-      setUser({
+      setUserAndCache({
         ...data.user,
         token: data.token,
         user_display_name: data.user.display_name,
@@ -325,13 +336,17 @@ export function AuthProvider({ children }) {
 
     try {
       const userData = await validateToken(token);
+      const avatar = userData.user_avatar || userData.avatar;
       setUser((prev) => ({
         ...prev,
         ...userData,
         token,
-        // Normalize avatar property name
-        avatar: userData.user_avatar || userData.avatar,
+        avatar,
       }));
+      setUserCache({
+        name: userData.user_display_name || userData.display_name || "",
+        avatar: avatar || "",
+      });
     } catch (err) {
       console.error("Failed to refresh user:", err);
     }
@@ -342,11 +357,11 @@ export function AuthProvider({ children }) {
     if (data.token) {
       setToken(data.token, rememberMe);
     }
-    setUser({
+    setUserAndCache({
       ...data.user,
       token: data.token,
     });
-  }, []);
+  }, [setUserAndCache]);
 
   // Get auth header for API calls
   const getAuthHeader = useCallback(() => {

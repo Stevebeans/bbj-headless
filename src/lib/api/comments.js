@@ -2,16 +2,9 @@
  * Comments API functions
  */
 
-const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+import { getToken, getAuthHeader } from "@/lib/auth/cookies";
 
-/**
- * Get auth header if token exists
- */
-function getAuthHeader() {
-  if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("bbj_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
 /**
  * Get comments for a post
@@ -41,7 +34,7 @@ export async function getComments(postId, { page = 1, perPage = 20, sort = "newe
  * @param {number|null} mediaId - Optional media ID to attach
  */
 export async function postComment(postId, content, parentId = 0, mediaId = null) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in to comment");
   }
@@ -77,7 +70,7 @@ export async function postComment(postId, content, parentId = 0, mediaId = null)
  * Vote on a comment
  */
 export async function voteOnComment(commentId, voteType) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in to vote");
   }
@@ -103,7 +96,7 @@ export async function voteOnComment(commentId, voteType) {
  * Report a comment
  */
 export async function reportComment(commentId, reason, details = "") {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in to report");
   }
@@ -129,7 +122,7 @@ export async function reportComment(commentId, reason, details = "") {
  * Edit a comment
  */
 export async function editComment(commentId, content) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in to edit");
   }
@@ -155,7 +148,7 @@ export async function editComment(commentId, content) {
  * Delete a comment
  */
 export async function deleteComment(commentId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in to delete");
   }
@@ -207,7 +200,7 @@ export async function getAllRanks() {
  * @returns {Promise<{success: boolean, media: object}>}
  */
 export async function uploadCommentMedia(file) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in to upload media");
   }
@@ -236,7 +229,7 @@ export async function uploadCommentMedia(file) {
  * @param {number} mediaId - The media ID to delete
  */
 export async function deleteCommentMedia(mediaId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in to delete media");
   }
@@ -260,7 +253,7 @@ export async function deleteCommentMedia(mediaId) {
  * Store a Giphy GIF reference
  */
 export async function storeGiphyMedia(giphyId, url, width, height) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -286,7 +279,7 @@ export async function storeGiphyMedia(giphyId, url, width, height) {
  * Search Giphy for GIFs
  */
 export async function searchGiphy(query, limit = 20, offset = 0) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -312,7 +305,7 @@ export async function searchGiphy(query, limit = 20, offset = 0) {
  * Get trending Giphy GIFs
  */
 export async function getTrendingGiphy(limit = 20) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -356,7 +349,7 @@ export const REACTION_TYPES = {
  * @param {string} reactionType - One of: like, love, haha, wow, sad, angry
  */
 export async function addReaction(commentId, reactionType) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in to react");
   }
@@ -383,7 +376,7 @@ export async function addReaction(commentId, reactionType) {
  * @param {number} commentId - The comment ID
  */
 export async function removeReaction(commentId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -429,7 +422,7 @@ export async function getReactions(commentId) {
  * Send a heartbeat to keep the session alive
  */
 export async function sendHeartbeat() {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     return null;
   }
@@ -519,7 +512,7 @@ export async function getUserProfile(userId) {
  * @param {number} userId - The user ID to follow
  */
 export async function followUser(userId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in to follow");
   }
@@ -544,7 +537,7 @@ export async function followUser(userId) {
  * @param {number} userId - The user ID to unfollow
  */
 export async function unfollowUser(userId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -573,7 +566,7 @@ export async function unfollowUser(userId) {
  * @param {number} commentId - The comment ID to pin
  */
 export async function pinComment(commentId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -598,7 +591,7 @@ export async function pinComment(commentId) {
  * @param {number} commentId - The comment ID to unpin
  */
 export async function unpinComment(commentId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -628,7 +621,7 @@ export async function unpinComment(commentId) {
  * @param {number} limit - Max results
  */
 export async function searchUsers(query, limit = 10) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }

@@ -2,13 +2,15 @@
  * User Settings API functions
  */
 
+import { getToken } from "@/lib/auth/cookies";
+
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
 /**
  * Get all settings for current user
  */
 export async function getSettings() {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -37,7 +39,7 @@ export async function getSettings() {
  * @param {number|null} [data.favorite_player_id] - Favorite player ID
  */
 export async function updateSettings(data) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -69,7 +71,7 @@ export async function updateSettings(data) {
  * @param {boolean} [notifications.newsletter] - Newsletter subscription
  */
 export async function updateNotifications(notifications) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -99,7 +101,7 @@ export async function updateNotifications(notifications) {
  * @param {string} email - New email address
  */
 export async function requestEmailChange(email) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -147,7 +149,7 @@ export async function verifyEmailChange(verifyToken) {
  * @param {string} query - Search query (min 2 characters)
  */
 export async function searchPlayers(query) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -187,7 +189,7 @@ export async function getHelpData() {
  * @param {File} file - Image file to upload
  */
 export async function uploadAvatar(file) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -215,7 +217,7 @@ export async function uploadAvatar(file) {
  * Delete avatar (revert to Gravatar)
  */
 export async function deleteAvatar() {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }

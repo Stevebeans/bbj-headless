@@ -1050,6 +1050,8 @@ class AuthRoutes
             'data' => [
                 'user' => [
                     'id' => $user->ID,
+                    'display_name' => $user->display_name,
+                    'roles' => $user->roles,
                 ],
             ],
         ];

@@ -2,16 +2,9 @@
  * Billing API functions for premium subscriptions
  */
 
-const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+import { getAuthHeader } from "@/lib/auth/cookies";
 
-/**
- * Get auth header if token exists
- */
-function getAuthHeader() {
-  if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("bbj_token") || sessionStorage.getItem("bbj_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
 /**
  * Get available plans and payment provider configuration

@@ -3,17 +3,9 @@
  */
 
 import { bbjdFetch } from "./wordpress";
+import { getToken, getAuthHeader } from "@/lib/auth/cookies";
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
-
-/**
- * Get auth header if token exists (client-side only)
- */
-function getAuthHeader() {
-  if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("bbj_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 /**
  * Get user profile by username (server-side)
@@ -82,7 +74,7 @@ export async function getUserComments(userId, page = 1, perPage = 10) {
  * @param {number} userId - The user ID to follow
  */
 export async function followUser(userId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in to follow");
   }
@@ -107,7 +99,7 @@ export async function followUser(userId) {
  * @param {number} userId - The user ID to unfollow
  */
 export async function unfollowUser(userId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }

@@ -2,23 +2,16 @@
  * Post Subscription API functions
  */
 
-const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+import { getToken } from "@/lib/auth/cookies";
 
-/**
- * Get auth header if token exists
- */
-function getAuthHeader() {
-  if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("bbj_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
 /**
  * Subscribe to a post/thread
  * @param {number} postId - The post ID to subscribe to
  */
 export async function subscribeToPost(postId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -43,7 +36,7 @@ export async function subscribeToPost(postId) {
  * @param {number} postId - The post ID to unsubscribe from
  */
 export async function unsubscribeFromPost(postId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -68,7 +61,7 @@ export async function unsubscribeFromPost(postId) {
  * @param {number} postId - The post ID to check
  */
 export async function getSubscriptionStatus(postId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     return { success: true, subscribed: false };
   }
@@ -97,7 +90,7 @@ export async function getSubscriptionStatus(postId) {
  * @param {number} options.perPage - Items per page
  */
 export async function getSubscriptions({ page = 1, perPage = 20 } = {}) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }

@@ -2,16 +2,9 @@
  * Notifications API functions
  */
 
-const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+import { getToken } from "@/lib/auth/cookies";
 
-/**
- * Get auth header if token exists
- */
-function getAuthHeader() {
-  if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("bbj_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
 /**
  * Get notifications for the current user
@@ -20,7 +13,7 @@ function getAuthHeader() {
  * @param {number} options.perPage - Items per page
  */
 export async function getNotifications({ page = 1, perPage = 20 } = {}) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -46,7 +39,7 @@ export async function getNotifications({ page = 1, perPage = 20 } = {}) {
  * Get unread notification count
  */
 export async function getUnreadCount() {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     return { success: true, count: 0 };
   }
@@ -75,7 +68,7 @@ export async function getUnreadCount() {
  * @param {boolean} options.all - Mark all as read
  */
 export async function markAsRead({ ids = null, all = false } = {}) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }
@@ -104,7 +97,7 @@ export async function markAsRead({ ids = null, all = false } = {}) {
  * @param {number} notificationId - The notification ID
  */
 export async function deleteNotification(notificationId) {
-  const token = localStorage.getItem("bbj_token");
+  const token = getToken();
   if (!token) {
     throw new Error("You must be logged in");
   }

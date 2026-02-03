@@ -18,7 +18,7 @@ const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
 
 export function Header() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-  const { user, isAuthenticated, isAdmin } = useAuth();
+  const { user, isAuthenticated, isAdmin, loading } = useAuth();
   const { openLogin, openRegister } = useAuthModal();
 
   // Check if user has a supporter role
@@ -112,7 +112,9 @@ export function Header() {
               {/* Mobile search button */}
               <MobileSearchButton onClick={() => setIsMobileSearchOpen(true)} />
 
-              {isAuthenticated ? (
+              {loading && !isAuthenticated ? (
+                <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+              ) : isAuthenticated ? (
                 <div className="flex items-center gap-1">
                   {isAdmin() && (
                     <Link
@@ -190,7 +192,7 @@ export function Header() {
               <li role="none"><Link href="/contact" className="px-2 py-1">Contact</Link></li>
               <li role="none"><Link href="/feed-updates" className="px-2 py-1">Feed Updates</Link></li>
               <li role="none"><Link href="/directory" className="px-2 py-1">Directory</Link></li>
-              {!isAuthenticated && (
+              {!isAuthenticated && !loading && (
                 <>
                   <li role="none"><button onClick={() => openLogin()} className="px-2 py-1 text-secondary-500 hover:text-white">Log In</button></li>
                   <li role="none"><button onClick={() => openRegister()} className="px-2 py-1 text-secondary-500 hover:text-white">Register</button></li>
@@ -199,7 +201,9 @@ export function Header() {
             </ul>
 
             {/* Go Ad Free / Supporter */}
-            {isSupporter ? (
+            {loading && !isAuthenticated ? (
+              <div className="w-20 h-4 bg-primary-400/30 rounded animate-pulse" />
+            ) : isSupporter ? (
               <div className="flex items-center gap-1 text-sm">
                 <Link href="/settings?tab=premium" className="v2-highlight-text">
                   <span className="hidden sm:inline">Thank you for your support!</span>

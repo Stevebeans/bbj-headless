@@ -11,9 +11,9 @@ function SessionHeartbeat({ children }) {
   return children;
 }
 
-export function Providers({ children }) {
+export function Providers({ children, initialUser }) {
   return (
-    <AuthProvider>
+    <AuthProvider initialUser={initialUser}>
       <SessionHeartbeat>
         <AuthModalProvider>
           {children}

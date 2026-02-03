@@ -3,13 +3,15 @@
  * All endpoints require authentication
  */
 
+import { getToken, clearToken } from "@/lib/auth/cookies";
+
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
 /**
  * Make authenticated API request
  */
 async function adminFetch(endpoint, options = {}) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("bbj_token") : null;
+  const token = getToken();
 
   if (!token) {
     throw new Error("Not authenticated");
@@ -26,8 +28,8 @@ async function adminFetch(endpoint, options = {}) {
 
   if (response.status === 401) {
     // Token expired or invalid
+    clearToken();
     if (typeof window !== "undefined") {
-      localStorage.removeItem("bbj_token");
       window.location.href = "/login?redirect=/admin";
     }
     throw new Error("Session expired");

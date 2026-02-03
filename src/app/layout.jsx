@@ -6,6 +6,7 @@ import { ThemeScript } from "@/components/layout/ThemeScript";
 import { Providers } from "@/components/Providers";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
+import { getInitialAuthState } from "@/lib/auth/serverCookies";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -66,7 +67,9 @@ export const viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const initialUser = await getInitialAuthState();
+
   return (
     <html
       lang="en"
@@ -77,7 +80,7 @@ export default function RootLayout({ children }) {
         <ThemeScript />
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
-        <Providers>
+        <Providers initialUser={initialUser}>
           <Header />
           <SpoilerBarWrapper />
           <main id="main-content" className="flex-1">
