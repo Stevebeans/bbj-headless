@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 async function getInitialData() {
   const [playersData, seasonsData] = await Promise.all([
     getAllPlayers({ perPage: 50 }),
-    getSeasons(),
+    getSeasons({ orderBy: "start_date" }),
   ]);
 
   return {
