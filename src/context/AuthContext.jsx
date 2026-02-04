@@ -11,6 +11,29 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
+/**
+ * Enhance generic fetch errors with debugging context.
+ * "Failed to fetch" tells us nothing — this adds the URL, error type, and hints.
+ */
+function describeError(err, endpoint) {
+  const url = `${API_URL}${endpoint}`;
+
+  if (err.name === "AbortError") {
+    return `Request timed out reaching ${url}`;
+  }
+
+  if (err.message === "Failed to fetch" || err.message === "NetworkError when attempting to fetch resource.") {
+    return `Network error: Could not reach ${url}. This is usually a CORS, SSL, or connectivity issue. Check browser console for details.`;
+  }
+
+  // If it has an HTTP status, include it
+  if (err.status) {
+    return `HTTP ${err.status} from ${url}: ${err.message}`;
+  }
+
+  return `${err.message} (endpoint: ${url})`;
+}
+
 const AuthContext = createContext(null);
 
 /**
@@ -191,8 +214,9 @@ export function AuthProvider({ children, initialUser = null }) {
       return { success: true };
     } catch (err) {
       clearToken();
-      setError(err.message);
-      return { success: false, error: err.message };
+      const msg = describeError(err, "/jwt-auth/v1/token");
+      setError(msg);
+      return { success: false, error: msg };
     } finally {
       setLoading(false);
     }
@@ -239,8 +263,9 @@ export function AuthProvider({ children, initialUser = null }) {
 
       return { success: true };
     } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
+      const msg = describeError(err, "/bbjd/v1/auth/google");
+      setError(msg);
+      return { success: false, error: msg };
     } finally {
       setLoading(false);
     }
@@ -277,8 +302,9 @@ export function AuthProvider({ children, initialUser = null }) {
 
       return { success: true };
     } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
+      const msg = describeError(err, "/bbjd/v1/auth/link-google");
+      setError(msg);
+      return { success: false, error: msg };
     } finally {
       setLoading(false);
     }
@@ -315,8 +341,9 @@ export function AuthProvider({ children, initialUser = null }) {
 
       return { success: true };
     } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
+      const msg = describeError(err, "/bbjd/v1/auth/create-from-google");
+      setError(msg);
+      return { success: false, error: msg };
     } finally {
       setLoading(false);
     }
