@@ -44,13 +44,16 @@ export default function NotificationBell() {
     }
   }, []);
 
-  // Poll for unread count
+  // Poll for unread count (defer initial fetch so it doesn't compete with page load)
   useEffect(() => {
-    fetchUnreadCount();
+    const initialTimeout = setTimeout(fetchUnreadCount, 2000);
 
     // Poll every 60 seconds
     const interval = setInterval(fetchUnreadCount, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
   }, [fetchUnreadCount]);
 
   // Load notifications when dropdown opens

@@ -887,6 +887,8 @@ function PremiumTab({ settings, loading, showToast }) {
   const [loadingSub, setLoadingSub] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [feedPerPage, setFeedPerPage] = useState(20);
+  const [savingPerPage, setSavingPerPage] = useState(false);
 
   // Load subscription details
   useEffect(() => {
@@ -906,6 +908,36 @@ function PremiumTab({ settings, loading, showToast }) {
 
     loadSubscription();
   }, []);
+
+  // Load feed per-page preference for premium users
+  useEffect(() => {
+    if (settings?.premium?.is_supporter) {
+      import("@/lib/api/settings").then(({ getPreferences }) => {
+        getPreferences()
+          .then((result) => {
+            if (result?.preferences?.feed_per_page) {
+              setFeedPerPage(result.preferences.feed_per_page);
+            }
+          })
+          .catch(() => {});
+      });
+    }
+  }, [settings]);
+
+  const handleFeedPerPageChange = async (value) => {
+    const val = parseInt(value, 10);
+    setFeedPerPage(val);
+    setSavingPerPage(true);
+    try {
+      const { updatePreferences } = await import("@/lib/api/settings");
+      await updatePreferences({ feed_per_page: val });
+      showToast?.("Feed updates per-page preference saved!");
+    } catch (err) {
+      showToast?.(err.message, "error");
+    } finally {
+      setSavingPerPage(false);
+    }
+  };
 
   const handleManageSubscription = async () => {
     if (!subscription) return;
@@ -1091,6 +1123,46 @@ function PremiumTab({ settings, loading, showToast }) {
                 You have lifetime access. Thank you for your support!
               </p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Preferences (premium only) */}
+      {isSupporter && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Preferences
+          </h3>
+          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  Feed Updates Per Page
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  How many feed updates to show per page on the archive
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {savingPerPage && (
+                  <svg className="animate-spin h-4 w-4 text-primary-500" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                )}
+                <select
+                  value={feedPerPage}
+                  onChange={(e) => handleFeedPerPageChange(e.target.value)}
+                  className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                >
+                  {[10, 20, 30, 50, 100].map((n) => (
+                    <option key={n} value={n}>
+                      {n} per page
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       )}

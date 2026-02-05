@@ -74,86 +74,74 @@ export function AuthProvider({ children, initialUser = null }) {
       setUserCache({
         name: userData.user_display_name || userData.display_name || "",
         avatar: avatar || "",
+        roles: userData.user_roles || [],
       });
     }
   }, []);
 
-  // On mount: migrate old storage, then validate token in background
+  // On mount: migrate old storage, then reconcile token state.
+  // We trust the SSR-decoded initialUser for rendering — no server
+  // round-trip needed. The token is validated by WordPress automatically
+  // on every authenticated API call via the Bearer header.
   useEffect(() => {
     migrateFromStorage();
 
-    // Prevent double-validation in React strict mode
     if (didValidate.current) return;
     didValidate.current = true;
 
-    const loadUser = async () => {
-      const token = getToken();
+    const token = getToken();
 
-      if (!token) {
-        // No cookie — if we had an initialUser from SSR, the token may have
-        // been cleared by middleware (expired). Reset to logged-out.
-        if (initialUser) {
-          setUser(null);
-        }
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const userData = await validateToken(token);
-        setUserAndCache({
-          ...userData,
-          token,
-          avatar: userData.user_avatar || userData.avatar,
-        });
-      } catch (err) {
-        const isAuthError = err.status === 401 || err.status === 403;
-        const isNetworkError =
-          err.isNetworkError ||
-          err.name === "AbortError" ||
-          err.message === "Failed to fetch";
-
-        if (isAuthError && !isNetworkError) {
-          clearToken();
-          setUser(null);
-        } else if (isNetworkError) {
-          // Use cached data from token (or keep initialUser if we have it)
-          if (!initialUser) {
-            try {
-              const payload = JSON.parse(atob(token.split(".")[1]));
-              setUser({
-                id: payload.data?.user?.id,
-                user_id: payload.data?.user?.id,
-                user_email: payload.data?.user?.email,
-                user_display_name: payload.data?.user?.display_name || "User",
-                token,
-                _offline: true,
-              });
-            } catch {
-              clearToken();
-              setUser(null);
-            }
-          }
-        }
+    if (!token) {
+      // No cookie — if we had an initialUser from SSR, the token may have
+      // been cleared by middleware (expired). Reset to logged-out.
+      if (initialUser) {
+        setUser(null);
       }
       setLoading(false);
-    };
+      return;
+    }
 
-    loadUser();
+    // If SSR already gave us user data, trust it — just ensure the token is attached
+    if (initialUser) {
+      setUserAndCache({
+        ...initialUser,
+        token,
+        avatar: initialUser.avatar || initialUser.user_avatar,
+      });
+      setLoading(false);
+      return;
+    }
+
+    // No initialUser but we have a token (edge case: cookie set after SSR).
+    // Decode the JWT client-side to get basic user data.
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setUserAndCache({
+        id: payload.data?.user?.id,
+        user_id: payload.data?.user?.id,
+        user_email: payload.data?.user?.email,
+        user_display_name: payload.data?.user?.display_name || "User",
+        user_roles: payload.data?.user?.roles || null,
+        token,
+      });
+    } catch {
+      clearToken();
+      setUser(null);
+    }
+    setLoading(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Validate JWT token with WordPress
-  const validateToken = async (token) => {
+  // Fetch current user data from WordPress (used after login and for refresh)
+  const fetchCurrentUser = async (token) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     try {
-      const response = await fetch(`${API_URL}/bbj/v3/validate-token`, {
-        method: "POST",
+      const response = await fetch(`${API_URL}/bbjd/v1/auth/me`, {
+        method: "GET",
         headers: {
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ token }),
         signal: controller.signal,
       });
 
@@ -200,15 +188,13 @@ export function AuthProvider({ children, initialUser = null }) {
         throw new Error(data.message || "Login failed");
       }
 
-      const userData = await validateToken(data.token);
-
       setToken(data.token, rememberMe);
+
+      const userData = await fetchCurrentUser(data.token);
 
       setUserAndCache({
         ...userData,
         token: data.token,
-        user_display_name: data.user_display_name,
-        user_email: data.user_email,
       });
 
       return { success: true };
@@ -362,7 +348,7 @@ export function AuthProvider({ children, initialUser = null }) {
     if (!token) return;
 
     try {
-      const userData = await validateToken(token);
+      const userData = await fetchCurrentUser(token);
       const avatar = userData.user_avatar || userData.avatar;
       setUser((prev) => ({
         ...prev,
@@ -373,6 +359,7 @@ export function AuthProvider({ children, initialUser = null }) {
       setUserCache({
         name: userData.user_display_name || userData.display_name || "",
         avatar: avatar || "",
+        roles: userData.user_roles || [],
       });
     } catch (err) {
       console.error("Failed to refresh user:", err);

@@ -66,12 +66,16 @@ export function clearToken() {
 /**
  * Cache minimal user profile data in a cookie for SSR.
  * Called after successful token validation so the server can
- * render the avatar and display name on first paint.
- * @param {{ name?: string, avatar?: string }} data
+ * render the avatar, display name, and roles on first paint.
+ * @param {{ name?: string, avatar?: string, roles?: string[] }} data
  */
 export function setUserCache(data) {
   if (typeof document === "undefined") return;
-  const json = JSON.stringify({ n: data.name || "", a: data.avatar || "" });
+  const json = JSON.stringify({
+    n: data.name || "",
+    a: data.avatar || "",
+    r: data.roles || [],
+  });
   let cookie = `${USER_CACHE_COOKIE}=${encodeURIComponent(json)}; path=/; SameSite=Lax; max-age=2592000`;
   if (isSecure) {
     cookie += "; Secure";
@@ -81,14 +85,14 @@ export function setUserCache(data) {
 
 /**
  * Read cached user profile data from cookie (client-side).
- * @returns {{ name: string, avatar: string } | null}
+ * @returns {{ name: string, avatar: string, roles: string[] } | null}
  */
 export function getUserCache() {
   const raw = readCookie(USER_CACHE_COOKIE);
   if (!raw) return null;
   try {
     const data = JSON.parse(raw);
-    return { name: data.n || "", avatar: data.a || "" };
+    return { name: data.n || "", avatar: data.a || "", roles: data.r || [] };
   } catch {
     return null;
   }

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { FeedUpdateCard } from "./FeedUpdateCard";
 import { getFeedUpdates } from "@/lib/api/feedUpdates";
+import { useAuth } from "@/context/AuthContext";
+import { getPreferences, updatePreferences } from "@/lib/api/settings";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest First" },
@@ -27,10 +29,16 @@ const MODE_OPTIONS = [
   { value: "show", label: "Show Updates" },
 ];
 
+const PER_PAGE_OPTIONS = [10, 20, 30, 50, 100];
+
 export function FeedUpdatesArchive({ initialData }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { user, isAuthenticated } = useAuth();
+
+  // Check if user is premium
+  const isPremium = user?.role === "supporter" || user?.role === "lifetime" || user?.role === "administrator";
 
   // Parse URL params
   const initialSort = searchParams.get("sort") || "newest";
@@ -44,6 +52,7 @@ export function FeedUpdatesArchive({ initialData }) {
   const [total, setTotal] = useState(initialData?.total || 0);
   const [totalPages, setTotalPages] = useState(initialData?.total_pages || 1);
   const [isLoading, setIsLoading] = useState(false);
+  const [perPage, setPerPage] = useState(initialData?.per_page || 20);
 
   // Filters
   const [sort, setSort] = useState(initialSort);
@@ -52,6 +61,19 @@ export function FeedUpdatesArchive({ initialData }) {
   const [search, setSearch] = useState(initialSearch);
   const [searchInput, setSearchInput] = useState(initialSearch);
   const [page, setPage] = useState(initialPage);
+
+  // Load premium user's per-page preference
+  useEffect(() => {
+    if (isPremium && isAuthenticated) {
+      getPreferences()
+        .then((result) => {
+          if (result?.preferences?.feed_per_page) {
+            setPerPage(result.preferences.feed_per_page);
+          }
+        })
+        .catch(() => {}); // silently fail
+    }
+  }, [isPremium, isAuthenticated]);
 
   // Update URL with current filters
   const updateUrl = useCallback(
@@ -85,7 +107,7 @@ export function FeedUpdatesArchive({ initialData }) {
     try {
       const data = await getFeedUpdates({
         page,
-        perPage: 20,
+        perPage,
         sort,
         dateRange,
         mode: mode || undefined,
@@ -99,7 +121,7 @@ export function FeedUpdatesArchive({ initialData }) {
     } finally {
       setIsLoading(false);
     }
-  }, [page, sort, dateRange, mode, search]);
+  }, [page, perPage, sort, dateRange, mode, search]);
 
   // Fetch on filter changes
   useEffect(() => {
@@ -138,6 +160,22 @@ export function FeedUpdatesArchive({ initialData }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handlePerPageChange = async (newPerPage) => {
+    const val = parseInt(newPerPage, 10);
+    setPerPage(val);
+    setPage(1);
+    updateUrl({ page: "1" });
+
+    // Save preference for premium users
+    if (isPremium) {
+      try {
+        await updatePreferences({ feed_per_page: val });
+      } catch {
+        // silently fail — preference just won't persist
+      }
+    }
+  };
+
   const clearFilters = () => {
     setSort("newest");
     setDateRange("all");
@@ -151,7 +189,32 @@ export function FeedUpdatesArchive({ initialData }) {
   const hasFilters = sort !== "newest" || dateRange !== "all" || mode || search;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Mode Pill Toggle */}
+      <div className="flex flex-wrap gap-2">
+        {MODE_OPTIONS.map((opt) => {
+          const isActive = mode === opt.value;
+          let activeClass = "bg-primary-500 text-white shadow-sm";
+          if (isActive && opt.value === "show") {
+            activeClass = "bg-secondary-500 text-white shadow-sm";
+          }
+          const inactiveClass =
+            "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700";
+
+          return (
+            <button
+              key={opt.value}
+              onClick={() => handleModeChange(opt.value)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                isActive ? activeClass : inactiveClass
+              }`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-wrap gap-4 items-end">
@@ -213,7 +276,7 @@ export function FeedUpdatesArchive({ initialData }) {
             </select>
           </div>
 
-          {/* Mode */}
+          {/* Type (synced with pills) */}
           <div className="w-36">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Type
@@ -243,20 +306,41 @@ export function FeedUpdatesArchive({ initialData }) {
         </div>
       </div>
 
-      {/* Results Count */}
+      {/* Results Count & Per-Page Selector */}
       <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
         <span>
           {total} {total === 1 ? "update" : "updates"} found
         </span>
-        {isLoading && (
-          <span className="flex items-center gap-2">
-            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            Loading...
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {isPremium && (
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="per-page" className="text-xs text-gray-400 dark:text-gray-500">
+                Per page:
+              </label>
+              <select
+                id="per-page"
+                value={perPage}
+                onChange={(e) => handlePerPageChange(e.target.value)}
+                className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500 focus:outline-none"
+              >
+                {PER_PAGE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {isLoading && (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Loading...
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Updates List */}
@@ -268,7 +352,7 @@ export function FeedUpdatesArchive({ initialData }) {
         ) : (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             {search ? (
-              <p>No updates found matching "{search}"</p>
+              <p>No updates found matching &ldquo;{search}&rdquo;</p>
             ) : (
               <p>No feed updates yet.</p>
             )}

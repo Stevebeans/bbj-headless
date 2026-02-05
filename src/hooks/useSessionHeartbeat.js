@@ -25,8 +25,10 @@ export function useSessionHeartbeat(intervalMs = 2 * 60 * 1000) {
       return;
     }
 
-    // Send initial heartbeat
-    sendHeartbeat();
+    // Defer initial heartbeat so it doesn't compete with page load
+    const initialTimeout = setTimeout(() => {
+      sendHeartbeat();
+    }, 5000);
 
     // Set up interval for periodic heartbeats
     intervalRef.current = setInterval(() => {
@@ -42,6 +44,7 @@ export function useSessionHeartbeat(intervalMs = 2 * 60 * 1000) {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      clearTimeout(initialTimeout);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }

@@ -214,6 +214,55 @@ export async function uploadAvatar(file) {
 }
 
 /**
+ * Get user preferences (feed per_page, etc.)
+ */
+export async function getPreferences() {
+  const token = getToken();
+  if (!token) return { preferences: { feed_per_page: 20 } };
+
+  const response = await fetch(`${API_URL}/bbjd/v1/settings/preferences`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    return { preferences: { feed_per_page: 20 } };
+  }
+
+  return response.json();
+}
+
+/**
+ * Update user preferences
+ * @param {Object} prefs - Preferences to update
+ * @param {number} [prefs.feed_per_page] - Feed updates per page (10-100, premium only)
+ */
+export async function updatePreferences(prefs) {
+  const token = getToken();
+  if (!token) {
+    throw new Error("You must be logged in");
+  }
+
+  const response = await fetch(`${API_URL}/bbjd/v1/settings/preferences`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(prefs),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Failed to update preferences");
+  }
+
+  return result;
+}
+
+/**
  * Delete avatar (revert to Gravatar)
  */
 export async function deleteAvatar() {

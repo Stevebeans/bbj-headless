@@ -42,13 +42,13 @@ export async function getInitialAuthState() {
     const userData = payload.data?.user;
     if (!userData?.id) return null;
 
-    // Read cached profile data (avatar, display name) set after last validation
+    // Read cached profile data (avatar, display name, roles) set after last validation
     let cached = null;
     const userCacheCookie = cookieStore.get("bbj_user");
     if (userCacheCookie?.value) {
       try {
         const parsed = JSON.parse(decodeURIComponent(userCacheCookie.value));
-        cached = { name: parsed.n || "", avatar: parsed.a || "" };
+        cached = { name: parsed.n || "", avatar: parsed.a || "", roles: parsed.r || [] };
       } catch {
         // ignore malformed cache cookie
       }
@@ -59,7 +59,7 @@ export async function getInitialAuthState() {
       user_id: userData.id,
       user_display_name: userData.display_name || cached?.name || null,
       user_email: userData.email || null,
-      user_roles: userData.roles || null,
+      user_roles: userData.roles || cached?.roles || null,
       avatar: cached?.avatar || null,
       token: tokenCookie.value,
       _initial: true,
