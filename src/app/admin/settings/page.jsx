@@ -3,6 +3,15 @@
 import { useEffect, useState, useCallback } from "react";
 import { getSettings, updateSettings, getRoles } from "@/lib/api/admin";
 
+const HIDDEN_ROLES = [
+  "subscriber",
+  "seo_manager",
+  "seo_editor",
+  "wiki_updater",
+  "ad_admin",
+  "ad_manager",
+];
+
 export default function AdminSettings() {
   const [settings, setSettings] = useState(null);
   const [roles, setRoles] = useState([]);
@@ -18,7 +27,7 @@ export default function AdminSettings() {
         getRoles(),
       ]);
       setSettings(settingsData);
-      setRoles(rolesData);
+      setRoles(rolesData.filter((r) => !HIDDEN_ROLES.includes(r.key)));
     } catch (err) {
       setError(err.message);
     } finally {
