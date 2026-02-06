@@ -497,7 +497,28 @@ The core differentiator during the season.
 
 Ideas to keep premium users engaged year-round.
 
-### 6.1 Community Features
+### 6.1 Live Chat (Premium Feature) — Priority for BB28
+
+Live chat room for premium/supporter users during live shows and feeds. Replaces the real-time conversation that feed updates took away.
+
+- [ ] **Chat room per season** (e.g., "BB28 Live Chat")
+  - Real-time messaging (WebSocket or SSE)
+  - Premium/supporter only (free users see "Go Premium to join chat")
+  - Online user count + user list sidebar
+  - Staff/mod badges and moderation tools (mute, ban, slow mode)
+- [ ] **Show night mode** — Auto-opens during live show hours (Thu/Sun/Wed 8-10pm ET)
+- [ ] **Chat widget** — Collapsible panel on feed updates page or floating tab site-wide
+- [ ] **Basic features**: Emoji support, @mentions, auto-scroll with "new messages" indicator
+- [ ] **Moderation**: Slow mode (1 msg per X seconds), word filters, temp bans
+- [ ] **History** — Scrollback for recent messages, but not permanent archive (keeps it ephemeral/fun)
+
+**Technical options to evaluate:**
+- Pusher/Ably (managed WebSocket service, easiest)
+- Self-hosted WebSocket via Node.js sidecar
+- WordPress + SSE polling (simplest but least real-time)
+- Supabase Realtime (free tier generous)
+
+### 6.2 Community Features
 
 - [ ] User predictions/brackets for each season
 - [ ] Prediction leaderboards
@@ -507,7 +528,7 @@ Ideas to keep premium users engaged year-round.
 - [ ] Watch party coordination
 - [ ] User flair system (pick favorite player/season badges)
 
-### 6.2 Engagement Ideas
+### 6.3 Engagement Ideas
 
 - [ ] Off-season content (rankings, retrospectives, "where are they now")
 - [ ] "Remember this?" automated throwbacks (historic moments on anniversaries)
@@ -517,7 +538,7 @@ Ideas to keep premium users engaged year-round.
 - [ ] Exclusive podcasts or video content
 - [ ] Monthly premium newsletter with insider info
 
-### 6.3 Gamification
+### 6.4 Gamification
 
 - [ ] User levels/ranks based on activity
 - [ ] Achievement badges
