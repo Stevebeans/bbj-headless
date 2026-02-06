@@ -37,6 +37,17 @@ function describeError(err, endpoint) {
 const AuthContext = createContext(null);
 
 /**
+ * Normalize user_roles from any format into a proper array.
+ * PHP json_encode turns non-sequential arrays into objects,
+ * so roles like {0:"administrator",2:"beta_tester"} need conversion.
+ */
+function normalizeRoles(roles) {
+  if (Array.isArray(roles)) return roles;
+  if (roles && typeof roles === "object") return Object.values(roles);
+  return [];
+}
+
+/**
  * One-time migration from localStorage/sessionStorage to cookies.
  * Ensures existing logged-in users don't get logged out.
  */
@@ -68,15 +79,17 @@ export function AuthProvider({ children, initialUser = null }) {
 
   // Update user state and cache profile for SSR
   const setUserAndCache = useCallback((userData) => {
-    setUser(userData);
     if (userData) {
+      // Normalize roles before storing - PHP can send objects instead of arrays
+      userData = { ...userData, user_roles: normalizeRoles(userData.user_roles) };
       const avatar = userData.user_avatar || userData.avatar;
       setUserCache({
         name: userData.user_display_name || userData.display_name || "",
         avatar: avatar || "",
-        roles: userData.user_roles || [],
+        roles: userData.user_roles,
       });
     }
+    setUser(userData);
   }, []);
 
   // On mount: migrate old storage, then reconcile token state.
@@ -121,7 +134,7 @@ export function AuthProvider({ children, initialUser = null }) {
         user_id: payload.data?.user?.id,
         user_email: payload.data?.user?.email,
         user_display_name: payload.data?.user?.display_name || "User",
-        user_roles: payload.data?.user?.roles || null,
+        user_roles: normalizeRoles(payload.data?.user?.roles),
         token,
       });
     } catch {

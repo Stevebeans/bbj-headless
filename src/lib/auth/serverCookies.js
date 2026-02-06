@@ -4,6 +4,16 @@ import { cookies } from "next/headers";
  * Decode a JWT payload without signature validation.
  * Used server-side to get optimistic user data for SSR.
  */
+/**
+ * Normalize roles from any format into a proper array.
+ * PHP json_encode turns non-sequential arrays into objects.
+ */
+function normalizeRoles(roles) {
+  if (Array.isArray(roles)) return roles;
+  if (roles && typeof roles === "object") return Object.values(roles);
+  return [];
+}
+
 function decodeJwtPayload(token) {
   try {
     const parts = token.split(".");
@@ -59,7 +69,7 @@ export async function getInitialAuthState() {
       user_id: userData.id,
       user_display_name: userData.display_name || cached?.name || null,
       user_email: userData.email || null,
-      user_roles: userData.roles || cached?.roles || null,
+      user_roles: normalizeRoles(userData.roles || cached?.roles),
       avatar: cached?.avatar || null,
       token: tokenCookie.value,
       _initial: true,
