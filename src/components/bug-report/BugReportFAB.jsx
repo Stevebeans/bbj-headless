@@ -60,8 +60,9 @@ function getBrowserInfo() {
 }
 
 export function BugReportFAB() {
-  const { isAuthenticated, hasRole } = useAuth();
-  const canReport = isAuthenticated && hasRole("beta_tester");
+  const { isAuthenticated } = useAuth();
+  const isStaging = typeof window !== "undefined" && window.location.hostname === "staging.bigbrotherjunkies.com";
+  const canReport = isAuthenticated && isStaging;
 
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
