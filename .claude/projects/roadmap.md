@@ -1,6 +1,6 @@
 # BBJ Next.js Roadmap
 
-**Last Updated:** February 3, 2026 (Quick fixes complete, home page layout restructured)
+**Last Updated:** February 6, 2026 (Admin analytics dashboard with GA4 + Search Console)
 **Target Launch:** Before BB28 (July 2026)
 **Status:** Off-season development
 
@@ -56,10 +56,10 @@ These directly impact user engagement and revenue.
 - [x] Ad blocker detection with placeholder messaging
   - Show "Support BBJ - Go Premium" in blocked ad spaces
 - [x] Ensure ad slots don't cause layout shift (CLS)
-- [ ] Track ad blocker usage in GA4
-  - Send custom event when blocker detected
-  - Add GA4 query section in WP plugin to pull analytics
-  - Consider frontend-only approach (GA4 API direct) vs backend proxy
+- [x] Track ad blocker usage in GA4 (Feb 6)
+  - GA4 custom event `ad_blocker_detected` fires on detection
+  - Backend queries GA4 Data API for ad blocker stats
+  - Ad Blocker widget in admin Stats tab shows % and daily trend
 - [x] Premium badge/indicator for ad-free users (Feb 2026)
   - Header shows "Thank you for your support!" with star icon
   - SupporterBadge component (yellow for supporter, gold with crown for lifetime)
@@ -430,14 +430,66 @@ The core differentiator during the season.
 
 ### 5.6 Admin Dashboard Redesign
 
-- [ ] Modern dashboard layout with better visual hierarchy
-- [ ] Collapsible sidebar navigation (not just cards)
+- [x] Modern tab-based layout replacing sidebar (Feb 5)
+- [x] Permission-gated tabs (Overview, Comments, Bug Reports, Stats, Settings)
 - [ ] Real-time activity feed (recent comments, new users, reports)
 - [ ] Quick action buttons (approve/reject reports, pin comments)
-- [ ] Better stats with sparklines/mini charts
+- [x] Stats with charts via Recharts (Feb 6 - see 5.7)
 - [ ] User search with quick actions (ban, promote, view profile)
-- [ ] Mobile-responsive admin UI
-- [ ] Dark mode polish
+- [x] Mobile-responsive admin UI (tab navigation scrolls horizontally)
+- [x] Dark mode polish
+
+### 5.7 Admin Analytics Dashboard (GA4 + Search Console) ✅
+
+**Status:** Complete (Feb 6, 2026)
+
+**What was built:**
+
+- [x] **GA4 Data API integration** via service account (REST transport for Cloudways)
+  - KPI cards: Users, Page Views, Avg Session Duration, Bounce Rate
+  - Traffic Over Time line chart (with day-of-week in tooltip)
+  - Top Pages + Landing Pages tables
+  - Traffic Sources bar chart + Top Referrers table
+  - Device breakdown donut chart
+  - Peak Hours bar chart (converted to EST)
+  - Geography table (top 10 countries)
+  - Ad Blocker detection stats
+  - Content Type Breakdown (Blog Posts, Players, Seasons, Feed Updates, Other)
+
+- [x] **Google Search Console integration** (uses same service account)
+  - Top 25 search keywords with clicks, impressions, CTR, avg position
+  - Top 15 pages by search performance
+  - Uses REST API directly with `google/auth` (no extra packages)
+
+- [x] **Date range controls**
+  - Quick presets: 1D, 7D, 1M, 3M, 6M, 1Y
+  - Season dropdown (auto-sets date range to season ± 2 weeks)
+  - Custom date range picker
+
+- [x] **Caching** - 15-minute WP transient cache per date range
+- [x] **Permission** - `analytics_dashboard` permission in admin permissions table
+- [x] **Stats tab** in admin dashboard layout
+
+**Files:**
+
+- `wp-plugin/.../Api/AnalyticsRoutes.php` - 6 GA4 endpoints + Search Console endpoint
+- `wp-plugin/.../Admin/Pages/ApiSettingsPage.php` - GA4 Property ID + Service Account JSON fields
+- `src/lib/api/analytics.js` - Frontend API client (factory pattern)
+- `src/app/admin/stats/page.jsx` - Stats page with Recharts (generic DataTable + LoadingSection)
+- `src/app/admin/layout.jsx` - Stats tab with chart icon
+
+**Dependencies:**
+
+- `recharts` (npm) - Chart components
+- `google/analytics-data` (composer) - GA4 Data API PHP client
+- `google/auth` (composer, already installed) - Service account auth for Search Console
+
+**Setup required:**
+
+1. GA4 Property ID + Service Account JSON in WP Admin → BBJ Data → API Settings
+2. Service account added as viewer on GA4 property
+3. Search Console API enabled in Google Cloud Console
+4. Service account added as user in Google Search Console
 
 ---
 
@@ -569,7 +621,7 @@ The following suggestions have been added to their respective phases:
 
 ## Current Focus
 
-**Completed:** Phase 3 (Feed Updates) ✅, Phase 4.2 (Premium Billing) ✅, Phase 4.1 (User Profiles) ✅
+**Completed:** Phase 3 (Feed Updates) ✅, Phase 4.2 (Premium Billing) ✅, Phase 4.1 (User Profiles) ✅, Phase 5.7 (Analytics Dashboard) ✅
 
 ---
 
@@ -588,7 +640,7 @@ The following suggestions have been added to their respective phases:
 6. ~~**Move JWT auth to cookies** - Migrated JWT from localStorage to httpOnly cookies for flash-free SSR (Feb 3)~~
 7. **Polish remaining 4.1 items** - Saved/bookmarked content, account linking
 7. **Polish remaining 4.2 items** - Invoice history, upgrade/downgrade, payment methods
-8. **Finish 1.2** - GA4 ad blocker tracking
+8. ~~**Finish 1.2** - GA4 ad blocker tracking (Feb 6 - integrated into admin Stats dashboard)~~
 9. ~~**Home page layout** - Moved widgets to sidebar, feed updates full-width with card styling~~
 10. ~~**Feed Updates page enhancements** - Sidebar, pagination, per-page setting, pill styling for update types (Feb 4)~~
 11. ~~**Page Speed Insights** - Lighthouse fixes for accessibility, contrast, touch targets (Feb 3 & 5, score: 97)~~
