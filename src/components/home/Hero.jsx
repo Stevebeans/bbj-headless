@@ -69,7 +69,7 @@ export function Hero({ post, season }) {
         {/* Meta */}
         <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mt-1">
           <time dateTime={post.date}>{post.date_formatted}</time>
-          <span data-nosnippet className="text-gray-400">
+          <span data-nosnippet className="text-gray-500">
             • {post.time_ago}
           </span>
         </div>

@@ -72,7 +72,7 @@ export function Houseboard({ houseboard, seasonName }) {
         <HouseboardCard
           title="Power of Veto"
           players={pov}
-          bgColor="bg-yellow-500"
+          bgColor="bg-yellow-600"
           emptyText="No PoV Yet"
         />
 
@@ -245,7 +245,7 @@ export function SeasonStats({ season, players = [] }) {
 
 function PlayerStatsRow({ player }) {
   const textClass = player.is_evicted
-    ? "text-gray-400 dark:text-gray-500"
+    ? "text-gray-500 dark:text-gray-400"
     : "text-gray-800 dark:text-gray-200";
 
   return (
@@ -260,7 +260,7 @@ function PlayerStatsRow({ player }) {
             className="rounded-full w-4 h-4 flex-shrink-0"
           />
         )}
-        <Link href={player.permalink} className="truncate hover:underline">
+        <Link href={player.permalink} className="truncate hover:underline py-0.5">
           {player.name}
         </Link>
       </div>

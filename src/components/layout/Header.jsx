@@ -188,14 +188,14 @@ export function Header() {
 
             {/* Desktop Navigation */}
             <ul className="hidden md:flex items-center gap-1 text-sm desktop-nav" role="menubar">
-              <li role="none"><Link href="/" className="px-2 py-1">Home</Link></li>
-              <li role="none"><Link href="/contact" className="px-2 py-1">Contact</Link></li>
-              <li role="none"><Link href="/feed-updates" className="px-2 py-1">Feed Updates</Link></li>
-              <li role="none"><Link href="/directory" className="px-2 py-1">Directory</Link></li>
+              <li role="none"><Link href="/" role="menuitem" className="px-2 py-1">Home</Link></li>
+              <li role="none"><Link href="/contact" role="menuitem" className="px-2 py-1">Contact</Link></li>
+              <li role="none"><Link href="/feed-updates" role="menuitem" className="px-2 py-1">Feed Updates</Link></li>
+              <li role="none"><Link href="/directory" role="menuitem" className="px-2 py-1">Directory</Link></li>
               {!isAuthenticated && !loading && (
                 <>
-                  <li role="none"><button onClick={() => openLogin()} className="px-2 py-1 text-secondary-500 hover:text-white">Log In</button></li>
-                  <li role="none"><button onClick={() => openRegister()} className="px-2 py-1 text-secondary-500 hover:text-white">Register</button></li>
+                  <li role="none"><button onClick={() => openLogin()} role="menuitem" className="px-2 py-1 text-secondary-500 hover:text-white">Log In</button></li>
+                  <li role="none"><button onClick={() => openRegister()} role="menuitem" className="px-2 py-1 text-secondary-500 hover:text-white">Register</button></li>
                 </>
               )}
             </ul>

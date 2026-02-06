@@ -37,7 +37,7 @@ function BlockerMessage() {
 function AdPlaceholderLoading({ slot }) {
   return (
     <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500 p-4">
-      <p className="text-[10px] text-gray-300 dark:text-gray-600">{slot}</p>
+      <p className="text-[10px] text-gray-400 dark:text-gray-500">{slot}</p>
     </div>
   );
 }

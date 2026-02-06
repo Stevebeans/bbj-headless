@@ -184,7 +184,7 @@ export function FeedUpdateCard({ update }) {
                 className={`flex items-center gap-1 text-xs transition-colors ${
                   isPremium
                     ? "text-primary-500 hover:text-primary-600"
-                    : "text-gray-400 cursor-help"
+                    : "text-gray-500 cursor-help"
                 }`}
                 title={
                   !isAuthenticated
@@ -239,7 +239,7 @@ export function FeedUpdateCard({ update }) {
               autoFocus
             />
             <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-500">
                 {replyContent.length}/500
               </span>
               <div className="flex gap-2">
