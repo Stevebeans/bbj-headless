@@ -22,6 +22,7 @@ import {
   getAnalyticsSources,
   getAnalyticsAudience,
   getAnalyticsAdBlocker,
+  getSearchConsole,
 } from "@/lib/api/analytics";
 import { getSeasons } from "@/lib/api/seasons";
 
@@ -145,6 +146,11 @@ function formatShortDate(dateStr) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function formatDateWithDay(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
 // ========================================
 // KPI CARDS
 // ========================================
@@ -179,6 +185,7 @@ function TrafficChart({ data }) {
   const chartData = data.map((d) => ({
     ...d,
     label: formatShortDate(d.date),
+    fullLabel: formatDateWithDay(d.date),
   }));
 
   return (
@@ -189,7 +196,7 @@ function TrafficChart({ data }) {
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="label" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
+            <Tooltip labelFormatter={(_, payload) => payload?.[0]?.payload?.fullLabel || _} />
             <Legend />
             <Line type="monotone" dataKey="page_views" name="Page Views" stroke={CHART_COLORS.primary} strokeWidth={2} dot={false} />
             <Line type="monotone" dataKey="users" name="Users" stroke={CHART_COLORS.secondary} strokeWidth={2} dot={false} />
@@ -358,7 +365,7 @@ function PeakHoursChart({ data }) {
   }));
 
   return (
-    <SectionCard title="Peak Hours (UTC)">
+    <SectionCard title="Peak Hours (EST)">
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={formatted}>
@@ -430,6 +437,80 @@ function AdBlockerStats({ data }) {
           </ResponsiveContainer>
         </div>
       )}
+    </SectionCard>
+  );
+}
+
+// ========================================
+// SEARCH CONSOLE: TOP KEYWORDS
+// ========================================
+
+function TopKeywordsTable({ data }) {
+  return (
+    <SectionCard title="Top Search Keywords" fullWidth>
+      <div className="overflow-x-auto max-h-96 overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/50">
+            <tr className="text-left text-xs text-slate-500 dark:text-slate-400 uppercase">
+              <th className="pb-2 pr-2">Keyword</th>
+              <th className="pb-2 pr-2 text-right">Clicks</th>
+              <th className="pb-2 pr-2 text-right">Impressions</th>
+              <th className="pb-2 pr-2 text-right">CTR</th>
+              <th className="pb-2 text-right">Position</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+            {data.map((row, i) => (
+              <tr key={i} className="text-slate-700 dark:text-slate-300">
+                <td className="py-1.5 pr-2 max-w-[250px] truncate" title={row.query}>
+                  {row.query}
+                </td>
+                <td className="py-1.5 pr-2 text-right font-medium">{formatNumber(row.clicks)}</td>
+                <td className="py-1.5 pr-2 text-right">{formatNumber(row.impressions)}</td>
+                <td className="py-1.5 pr-2 text-right">{row.ctr}%</td>
+                <td className="py-1.5 text-right">{row.position}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </SectionCard>
+  );
+}
+
+// ========================================
+// SEARCH CONSOLE: TOP PAGES BY SEARCH
+// ========================================
+
+function SearchPagesTable({ data }) {
+  return (
+    <SectionCard title="Top Pages (Search)" fullWidth>
+      <div className="overflow-x-auto max-h-80 overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/50">
+            <tr className="text-left text-xs text-slate-500 dark:text-slate-400 uppercase">
+              <th className="pb-2 pr-2">Page</th>
+              <th className="pb-2 pr-2 text-right">Clicks</th>
+              <th className="pb-2 pr-2 text-right">Impressions</th>
+              <th className="pb-2 pr-2 text-right">CTR</th>
+              <th className="pb-2 text-right">Position</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+            {data.map((row, i) => (
+              <tr key={i} className="text-slate-700 dark:text-slate-300">
+                <td className="py-1.5 pr-2 max-w-[300px] truncate" title={row.page}>
+                  {row.page}
+                </td>
+                <td className="py-1.5 pr-2 text-right font-medium">{formatNumber(row.clicks)}</td>
+                <td className="py-1.5 pr-2 text-right">{formatNumber(row.impressions)}</td>
+                <td className="py-1.5 pr-2 text-right">{row.ctr}%</td>
+                <td className="py-1.5 text-right">{row.position}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </SectionCard>
   );
 }
@@ -579,6 +660,7 @@ export default function AdminStatsPage() {
   const [sources, setSources] = useState(null);
   const [audience, setAudience] = useState(null);
   const [adBlocker, setAdBlocker] = useState(null);
+  const [searchConsole, setSearchConsole] = useState(null);
 
   // Load seasons on mount
   useEffect(() => {
@@ -593,12 +675,13 @@ export default function AdminStatsPage() {
     setError(null);
 
     try {
-      const [overviewRes, pagesRes, sourcesRes, audienceRes, adBlockRes] = await Promise.all([
+      const [overviewRes, pagesRes, sourcesRes, audienceRes, adBlockRes, searchConsoleRes] = await Promise.all([
         getAnalyticsOverview(startDate, endDate),
         getAnalyticsPages(startDate, endDate),
         getAnalyticsSources(startDate, endDate),
         getAnalyticsAudience(startDate, endDate),
         getAnalyticsAdBlocker(startDate, endDate),
+        getSearchConsole(startDate, endDate).catch(() => null),
       ]);
 
       setOverview(overviewRes);
@@ -606,6 +689,7 @@ export default function AdminStatsPage() {
       setSources(sourcesRes);
       setAudience(audienceRes);
       setAdBlocker(adBlockRes);
+      setSearchConsole(searchConsoleRes);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -745,7 +829,29 @@ export default function AdminStatsPage() {
           )}
         </div>
 
-        {/* Row 7: Landing Pages */}
+        {/* Row 7: Search Console - Keywords & Pages */}
+        {searchConsole?.keywords?.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 mt-2">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Google Search Console</h3>
+              <span className="text-xs text-slate-400 dark:text-slate-500">Organic search performance</span>
+            </div>
+            {loading ? (
+              <SectionCard title="Top Search Keywords" fullWidth><TableSkeleton rows={10} /></SectionCard>
+            ) : (
+              <TopKeywordsTable data={searchConsole.keywords} />
+            )}
+            {searchConsole?.pages?.length > 0 && (
+              loading ? (
+                <SectionCard title="Top Pages (Search)" fullWidth><TableSkeleton rows={8} /></SectionCard>
+              ) : (
+                <SearchPagesTable data={searchConsole.pages} />
+              )
+            )}
+          </>
+        )}
+
+        {/* Row 8: Landing Pages */}
         {loading ? (
           <SectionCard title="Landing Pages" fullWidth><TableSkeleton rows={6} /></SectionCard>
         ) : (

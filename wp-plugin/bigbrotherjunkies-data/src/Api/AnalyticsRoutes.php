@@ -85,6 +85,13 @@ class AnalyticsRoutes
             'permission_callback' => [$this, 'checkAnalyticsAccess'],
             'args' => $dateArgs,
         ]);
+
+        register_rest_route($namespace, '/admin/analytics/search-console', [
+            'methods' => 'GET',
+            'callback' => [$this, 'getSearchConsole'],
+            'permission_callback' => [$this, 'checkAnalyticsAccess'],
+            'args' => $dateArgs,
+        ]);
     }
 
     // ========================================
@@ -357,11 +364,13 @@ class AnalyticsRoutes
 
             $hours = [];
             foreach ($hourResponse->getRows() as $row) {
+                $utcHour = (int) $row->getDimensionValues()[0]->getValue();
                 $hours[] = [
-                    'hour' => (int) $row->getDimensionValues()[0]->getValue(),
+                    'hour' => ($utcHour - 5 + 24) % 24, // UTC to EST
                     'page_views' => (int) $row->getMetricValues()[0]->getValue(),
                 ];
             }
+            usort($hours, fn($a, $b) => $a['hour'] - $b['hour']);
 
             // Geography
             $geoResponse = $client->runReport($this->buildRequest([
@@ -461,6 +470,122 @@ class AnalyticsRoutes
                 'daily' => $daily,
             ];
         });
+    }
+
+    /**
+     * Search Console: Top keywords and top pages from Google Search
+     */
+    public function getSearchConsole(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $startDate = $request->get_param('start_date');
+        $endDate = $request->get_param('end_date');
+
+        $cacheKey = 'bbjd_gsc_' . md5($startDate . $endDate);
+        $cached = get_transient($cacheKey);
+        if ($cached !== false) {
+            return new \WP_REST_Response($cached, 200);
+        }
+
+        $accessToken = $this->getSearchConsoleToken();
+        if (is_wp_error($accessToken)) {
+            return new \WP_REST_Response(['error' => $accessToken->get_error_message()], 500);
+        }
+
+        $siteUrl = 'sc-domain:bigbrotherjunkies.com';
+        $encodedSite = urlencode($siteUrl);
+        $apiBase = "https://www.googleapis.com/webmasters/v3/sites/{$encodedSite}/searchAnalytics/query";
+
+        try {
+            // Top keywords
+            $keywordsBody = wp_json_encode([
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+                'dimensions' => ['query'],
+                'rowLimit' => 25,
+                'searchType' => 'web',
+            ]);
+
+            $keywordsResponse = wp_remote_post($apiBase, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $accessToken,
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => $keywordsBody,
+                'timeout' => 30,
+            ]);
+
+            if (is_wp_error($keywordsResponse)) {
+                throw new \Exception('Keywords request failed: ' . $keywordsResponse->get_error_message());
+            }
+
+            $keywordsData = json_decode(wp_remote_retrieve_body($keywordsResponse), true);
+            $httpCode = wp_remote_retrieve_response_code($keywordsResponse);
+            if ($httpCode !== 200) {
+                $errMsg = $keywordsData['error']['message'] ?? "HTTP {$httpCode}";
+                throw new \Exception('Search Console API error: ' . $errMsg);
+            }
+
+            $keywords = [];
+            foreach (($keywordsData['rows'] ?? []) as $row) {
+                $keywords[] = [
+                    'query' => $row['keys'][0],
+                    'clicks' => (int) $row['clicks'],
+                    'impressions' => (int) $row['impressions'],
+                    'ctr' => round($row['ctr'] * 100, 1),
+                    'position' => round($row['position'], 1),
+                ];
+            }
+
+            // Top pages by search performance
+            $pagesBody = wp_json_encode([
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+                'dimensions' => ['page'],
+                'rowLimit' => 15,
+                'searchType' => 'web',
+            ]);
+
+            $pagesResponse = wp_remote_post($apiBase, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $accessToken,
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => $pagesBody,
+                'timeout' => 30,
+            ]);
+
+            if (is_wp_error($pagesResponse)) {
+                throw new \Exception('Pages request failed: ' . $pagesResponse->get_error_message());
+            }
+
+            $pagesData = json_decode(wp_remote_retrieve_body($pagesResponse), true);
+
+            $searchPages = [];
+            foreach (($pagesData['rows'] ?? []) as $row) {
+                // Strip domain to show just the path
+                $fullUrl = $row['keys'][0];
+                $path = preg_replace('#^https?://(www\.)?bigbrotherjunkies\.com#', '', $fullUrl);
+                if ($path === '' || $path === '/') $path = '/';
+
+                $searchPages[] = [
+                    'page' => $path,
+                    'clicks' => (int) $row['clicks'],
+                    'impressions' => (int) $row['impressions'],
+                    'ctr' => round($row['ctr'] * 100, 1),
+                    'position' => round($row['position'], 1),
+                ];
+            }
+
+            $data = [
+                'keywords' => $keywords,
+                'pages' => $searchPages,
+            ];
+
+            set_transient($cacheKey, $data, self::CACHE_TTL);
+            return new \WP_REST_Response($data, 200);
+        } catch (\Exception $e) {
+            return new \WP_REST_Response(['error' => $e->getMessage()], 500);
+        }
     }
 
     // ========================================
@@ -567,6 +692,36 @@ class AnalyticsRoutes
             ]);
         } catch (\Exception $e) {
             return new \WP_Error('ga4_client_error', 'Failed to create GA4 client: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get an OAuth2 access token for Search Console API using the service account
+     *
+     * @return string|\WP_Error
+     */
+    private function getSearchConsoleToken()
+    {
+        $settings = ApiSettingsPage::getSettings();
+
+        if (empty($settings['ga4_service_account_json'])) {
+            return new \WP_Error('gsc_not_configured', 'Service Account JSON is not configured.');
+        }
+
+        $credentials = json_decode($settings['ga4_service_account_json'], true);
+        if (!$credentials) {
+            return new \WP_Error('gsc_invalid_credentials', 'Service Account JSON is invalid.');
+        }
+
+        try {
+            $creds = new \Google\Auth\Credentials\ServiceAccountCredentials(
+                ['https://www.googleapis.com/auth/webmasters.readonly'],
+                $credentials
+            );
+            $token = $creds->fetchAuthToken();
+            return $token['access_token'] ?? new \WP_Error('gsc_token_error', 'Failed to obtain access token.');
+        } catch (\Exception $e) {
+            return new \WP_Error('gsc_auth_error', 'Auth failed: ' . $e->getMessage());
         }
     }
 

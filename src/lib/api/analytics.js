@@ -72,3 +72,10 @@ export async function getAnalyticsAdBlocker(startDate, endDate) {
     end_date: endDate,
   });
 }
+
+export async function getSearchConsole(startDate, endDate) {
+  return analyticsFetch("/admin/analytics/search-console", {
+    start_date: startDate,
+    end_date: endDate,
+  });
+}
