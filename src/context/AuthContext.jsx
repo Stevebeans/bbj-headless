@@ -388,7 +388,7 @@ export function AuthProvider({ children, initialUser = null }) {
   // Check if user has a specific role
   const hasRole = useCallback(
     (role) => {
-      if (!user?.user_roles) return false;
+      if (!Array.isArray(user?.user_roles)) return false;
       return user.user_roles.includes(role);
     },
     [user]
@@ -397,7 +397,7 @@ export function AuthProvider({ children, initialUser = null }) {
   // Check if user has any of the specified roles
   const hasAnyRole = useCallback(
     (roles) => {
-      if (!user?.user_roles) return false;
+      if (!Array.isArray(user?.user_roles)) return false;
       return roles.some((role) => user.user_roles.includes(role));
     },
     [user]
