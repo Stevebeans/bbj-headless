@@ -34,6 +34,7 @@ use BigBrotherJunkies\Data\Api\SubscriptionRoutes;
 use BigBrotherJunkies\Data\Api\FeedUpdateRoutes;
 use BigBrotherJunkies\Data\Api\BillingRoutes;
 use BigBrotherJunkies\Data\Api\BugReportRoutes;
+use BigBrotherJunkies\Data\Api\AnalyticsRoutes;
 use BigBrotherJunkies\Data\Auth\AuthManager;
 use BigBrotherJunkies\Data\Admin\Pages\SocialSettingsPage;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
@@ -415,6 +416,10 @@ class Plugin
         // Bug report routes (submit, list, manage)
         $bugReportRoutes = new BugReportRoutes();
         $bugReportRoutes->register();
+
+        // Analytics routes (GA4 dashboard data)
+        $analyticsRoutes = new AnalyticsRoutes();
+        $analyticsRoutes->register();
     }
 
     /**

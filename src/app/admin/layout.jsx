@@ -39,10 +39,19 @@ function GearIcon({ className }) {
   );
 }
 
+function ChartIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "Overview", href: "/admin", icon: HomeIcon, permission: null },
   { id: "comments", label: "Comments", href: "/admin/comments", icon: ChatIcon, permission: "comment_moderation" },
   { id: "bug-reports", label: "Bug Reports", href: "/admin/bug-reports", icon: BugIcon, permission: "bug_reports" },
+  { id: "stats", label: "Stats", href: "/admin/stats", icon: ChartIcon, permission: "analytics_dashboard" },
   { id: "settings", label: "Settings", href: "/admin/settings", icon: GearIcon, permission: "admin_settings" },
 ];
 

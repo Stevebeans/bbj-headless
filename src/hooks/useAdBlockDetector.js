@@ -43,6 +43,14 @@ export function useAdBlockDetector() {
       setIsBlocked(isHidden);
       setIsChecked(true);
 
+      // Fire GA4 event when ad blocker is detected
+      if (isHidden && typeof window.gtag === "function") {
+        window.gtag("event", "ad_blocker_detected", {
+          event_category: "ads",
+          non_interaction: true,
+        });
+      }
+
       // Clean up
       if (bait.parentNode) {
         bait.parentNode.removeChild(bait);

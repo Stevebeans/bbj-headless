@@ -56,6 +56,10 @@ class ApiSettingsPage
             // PayPal Plan IDs (for recurring subscriptions)
             'paypal_plan_monthly' => '',
             'paypal_plan_annual' => '',
+
+            // Google Analytics
+            'ga4_property_id' => '',
+            'ga4_service_account_json' => '',
         ];
 
         $settings = get_option(self::OPTION_NAME, []);
@@ -106,6 +110,10 @@ class ApiSettingsPage
             // PayPal Plan IDs
             'paypal_plan_monthly' => sanitize_text_field($_POST['paypal_plan_monthly'] ?? ''),
             'paypal_plan_annual' => sanitize_text_field($_POST['paypal_plan_annual'] ?? ''),
+
+            // Google Analytics
+            'ga4_property_id' => sanitize_text_field($_POST['ga4_property_id'] ?? ''),
+            'ga4_service_account_json' => wp_unslash($_POST['ga4_service_account_json'] ?? ''),
         ];
 
         update_option(self::OPTION_NAME, $settings);
@@ -414,6 +422,46 @@ class ApiSettingsPage
                         <p class="bbjd-text-xs bbjd-text-gray-500 bbjd-mt-3">
                             Note: Lifetime payments use PayPal Orders (one-time), not subscriptions.
                         </p>
+                    </div>
+
+                    <!-- Google Analytics Settings -->
+                    <div class="bbjd-bg-white bbjd-rounded-lg bbjd-shadow bbjd-p-6 bbjd-mb-6">
+                        <h2 class="bbjd-text-xl bbjd-font-semibold bbjd-text-gray-800 bbjd-mb-2">
+                            Google Analytics (GA4)
+                        </h2>
+                        <p class="bbjd-text-gray-600 bbjd-text-sm bbjd-mb-4">
+                            Configure GA4 Data API access for the admin analytics dashboard.
+                            Requires a Google Cloud service account with GA4 Data API access.
+                        </p>
+
+                        <div class="bbjd-space-y-4">
+                            <div>
+                                <label class="bbjd-block bbjd-text-sm bbjd-font-medium bbjd-text-gray-700 bbjd-mb-1">
+                                    GA4 Property ID
+                                </label>
+                                <input type="text"
+                                       name="ga4_property_id"
+                                       value="<?php echo esc_attr($settings['ga4_property_id']); ?>"
+                                       placeholder="properties/123456789"
+                                       class="bbjd-w-full bbjd-px-3 bbjd-py-2 bbjd-border bbjd-border-gray-300 bbjd-rounded-md bbjd-text-sm bbjd-font-mono">
+                                <p class="bbjd-text-xs bbjd-text-gray-500 bbjd-mt-1">
+                                    Format: <code>properties/XXXXXXXXX</code> — Find this in GA4 Admin → Property Settings (numeric ID, not the G- measurement ID)
+                                </p>
+                            </div>
+
+                            <div>
+                                <label class="bbjd-block bbjd-text-sm bbjd-font-medium bbjd-text-gray-700 bbjd-mb-1">
+                                    Service Account JSON
+                                </label>
+                                <textarea name="ga4_service_account_json"
+                                          rows="6"
+                                          placeholder='{"type": "service_account", "project_id": "...", ...}'
+                                          class="bbjd-w-full bbjd-px-3 bbjd-py-2 bbjd-border bbjd-border-gray-300 bbjd-rounded-md bbjd-text-sm bbjd-font-mono"><?php echo esc_textarea($settings['ga4_service_account_json']); ?></textarea>
+                                <p class="bbjd-text-xs bbjd-text-gray-500 bbjd-mt-1">
+                                    Paste the full JSON key file from Google Cloud Console. The service account email must be added as a viewer on the GA4 property.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="bbjd-flex bbjd-justify-end">

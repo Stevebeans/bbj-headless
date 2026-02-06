@@ -47,6 +47,11 @@ class AdminRoutes
             'description' => 'Configure permissions and notifications',
             'roles' => ['administrator'],
         ],
+        'analytics_dashboard' => [
+            'label' => 'View Analytics',
+            'description' => 'Access site analytics and traffic data',
+            'roles' => ['administrator'],
+        ],
     ];
 
     public function register(): void
