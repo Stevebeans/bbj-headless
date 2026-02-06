@@ -6,7 +6,9 @@ import { ThemeScript } from "@/components/layout/ThemeScript";
 import { Providers } from "@/components/Providers";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
+import { AdScripts } from "@/components/ads/AdScripts";
 import { getInitialAuthState } from "@/lib/auth/serverCookies";
+import { getAdScripts } from "@/lib/api/ads";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -68,7 +70,10 @@ export const viewport = {
 };
 
 export default async function RootLayout({ children }) {
-  const initialUser = await getInitialAuthState();
+  const [initialUser, adScripts] = await Promise.all([
+    getInitialAuthState(),
+    getAdScripts(),
+  ]);
 
   return (
     <html
@@ -78,6 +83,11 @@ export default async function RootLayout({ children }) {
     >
       <head>
         <ThemeScript />
+        {/* Global scripts - always loaded for all users (analytics, etc.) */}
+        {adScripts.global_header && (
+          <script dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.global_header) }} />
+        )}
+        {extractExternalScripts(adScripts.global_header)}
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
         <Providers initialUser={initialUser}>
@@ -88,8 +98,56 @@ export default async function RootLayout({ children }) {
           </main>
           <Footer />
           <FloatingUpdater />
+          {/* Ad network scripts - blocked for supporters */}
+          <AdScripts adHeader={adScripts.ad_header} adFooter={adScripts.ad_footer} />
         </Providers>
+        {/* Global footer scripts */}
+        {adScripts.global_footer && (
+          <script dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.global_footer) }} />
+        )}
+        {extractExternalScripts(adScripts.global_footer)}
       </body>
     </html>
   );
+}
+
+/**
+ * Extract inline script content from an HTML string containing script tags
+ */
+function extractInlineScript(html) {
+  if (!html) return "";
+  const matches = html.match(/<script(?:\s[^>]*)?>([^<]*)<\/script>/gi) || [];
+  return matches
+    .map((tag) => {
+      // Only get inline scripts (no src attribute)
+      if (tag.match(/\ssrc\s*=/i)) return "";
+      const content = tag.replace(/<script[^>]*>/i, "").replace(/<\/script>/i, "");
+      return content.trim();
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * Extract external script tags (with src) and return as Next.js-compatible elements
+ */
+function extractExternalScripts(html) {
+  if (!html) return null;
+  const matches = html.match(/<script\s[^>]*src\s*=\s*["'][^"']+["'][^>]*><\/script>/gi) || [];
+  return matches.map((tag, i) => {
+    const src = tag.match(/src\s*=\s*["']([^"']+)["']/i)?.[1];
+    const isAsync = /\basync\b/i.test(tag);
+    const isDefer = /\bdefer\b/i.test(tag);
+    const crossOrigin = tag.match(/crossorigin\s*=\s*["']([^"']+)["']/i)?.[1];
+    if (!src) return null;
+    return (
+      <script
+        key={`ext-script-${i}`}
+        src={src}
+        async={isAsync || undefined}
+        defer={isDefer || undefined}
+        crossOrigin={crossOrigin || undefined}
+      />
+    );
+  });
 }

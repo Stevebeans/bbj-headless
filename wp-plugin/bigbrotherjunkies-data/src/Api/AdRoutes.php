@@ -205,27 +205,32 @@ class AdRoutes
     }
 
     /**
-     * Get header/footer ad network scripts
+     * Get header/footer scripts (global + ad network)
      */
     public function getAdScripts(WP_REST_Request $request): WP_REST_Response
     {
-        $shouldShow = $this->checkUserShouldSeeAds($request);
+        $adManager = AdManager::getInstance();
+        $settings = $adManager->getSettings();
 
-        if (!$shouldShow) {
-            return new WP_REST_Response([
-                'show' => false,
-                'header' => '',
-                'footer' => '',
-            ], 200);
-        }
+        $shouldShowAds = $this->checkUserShouldSeeAds($request);
 
-        $headerCode = get_option('bbjd_header_code', '');
-        $footerCode = get_option('bbjd_footer_code', '');
+        // Global scripts always load for everyone
+        $globalHeader = $settings['global_header_code'] ?? '';
+        $globalFooter = $settings['global_footer_code'] ?? '';
+
+        // Ad scripts only load for non-premium users
+        $adHeader = $shouldShowAds ? ($settings['ad_header_code'] ?? $settings['header_code'] ?? '') : '';
+        $adFooter = $shouldShowAds ? ($settings['ad_footer_code'] ?? $settings['footer_code'] ?? '') : '';
 
         return new WP_REST_Response([
-            'show' => true,
-            'header' => $headerCode,
-            'footer' => $footerCode,
+            'show_ads' => $shouldShowAds,
+            'global_header' => $globalHeader,
+            'global_footer' => $globalFooter,
+            'ad_header' => $adHeader,
+            'ad_footer' => $adFooter,
+            // Combined for convenience — what the frontend should actually inject
+            'header' => trim($globalHeader . "\n" . $adHeader),
+            'footer' => trim($globalFooter . "\n" . $adFooter),
         ], 200);
     }
 
