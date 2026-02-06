@@ -585,19 +585,20 @@ The following suggestions have been added to their respective phases:
 
 ### Pre-Launch Polish
 
-6. **Move JWT auth to cookies** - Eliminate logged-out flash on page refresh. Store JWT in cookie (instead of localStorage) so server can read auth state during SSR. Affects: AuthContext, login/logout flow, Header, potentially Next.js middleware for protected routes. This is how Facebook and other major sites avoid the flash.
+6. ~~**Move JWT auth to cookies** - Migrated JWT from localStorage to httpOnly cookies for flash-free SSR (Feb 3)~~
 7. **Polish remaining 4.1 items** - Saved/bookmarked content, account linking
 7. **Polish remaining 4.2 items** - Invoice history, upgrade/downgrade, payment methods
 8. **Finish 1.2** - GA4 ad blocker tracking
 9. ~~**Home page layout** - Moved widgets to sidebar, feed updates full-width with card styling~~
-10. **Feed Updates page enhancements** - Add sidebar, pagination, premium per-page setting in user prefs, pill styling for update types
-11. **Page Speed Insights** - Run audit and implement fixes
+10. ~~**Feed Updates page enhancements** - Sidebar, pagination, per-page setting, pill styling for update types (Feb 4)~~
+11. ~~**Page Speed Insights** - Lighthouse fixes for accessibility, contrast, touch targets (Feb 3 & 5, score: 97)~~
 
 ### Pre-Launch Checklist
 
-12. **Push to Vercel production** - Ensure all ad blocks imported to DB
-13. **Switch DNS** - Point bigbrotherjunkies.com to Vercel (requires Vercel Pro plan)
-14. **Set up staging** - Map staging.bigbrotherjunkies.com for testing
+12. **Full user test as non-admin** - Create a fresh account (not admin), purchase a premium membership, and test the entire flow as a real user: registration, login, commenting, voting, notifications, billing, ad-free experience, settings, etc. Must feel right before launch.
+13. **Push to Vercel production** - Ensure all ad blocks imported to DB
+14. **Switch DNS** - Point bigbrotherjunkies.com to Vercel (requires Vercel Pro plan)
+15. **Set up staging** - Map staging.bigbrotherjunkies.com for testing
 
 ### Post-DNS Switch
 

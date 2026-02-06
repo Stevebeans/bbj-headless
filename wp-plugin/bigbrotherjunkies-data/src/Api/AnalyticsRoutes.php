@@ -3,7 +3,8 @@
 namespace BigBrotherJunkies\Data\Api;
 
 use BigBrotherJunkies\Data\Admin\Pages\ApiSettingsPage;
-use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
+use Google\Analytics\Data\V1beta\Client\BetaAnalyticsDataClient;
+use Google\Analytics\Data\V1beta\RunReportRequest;
 use Google\Analytics\Data\V1beta\DateRange;
 use Google\Analytics\Data\V1beta\Dimension;
 use Google\Analytics\Data\V1beta\Metric;
@@ -97,7 +98,7 @@ class AnalyticsRoutes
     {
         return $this->cachedReport('bbjd_ga4_overview_', $request, function ($client, $propertyId, $startDate, $endDate) {
             // KPI totals
-            $kpiResponse = $client->runReport([
+            $kpiResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'metrics' => [
@@ -106,7 +107,7 @@ class AnalyticsRoutes
                     new Metric(['name' => 'averageSessionDuration']),
                     new Metric(['name' => 'bounceRate']),
                 ],
-            ]);
+            ]));
 
             $kpi = [
                 'total_users' => 0,
@@ -124,7 +125,7 @@ class AnalyticsRoutes
             }
 
             // Daily chart data
-            $chartResponse = $client->runReport([
+            $chartResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'dimensions' => [new Dimension(['name' => 'date'])],
@@ -137,7 +138,7 @@ class AnalyticsRoutes
                         'dimension' => new DimensionOrderBy(['dimension_name' => 'date']),
                     ]),
                 ],
-            ]);
+            ]));
 
             $chart = [];
             foreach ($chartResponse->getRows() as $row) {
@@ -161,7 +162,7 @@ class AnalyticsRoutes
     {
         return $this->cachedReport('bbjd_ga4_pages_', $request, function ($client, $propertyId, $startDate, $endDate) {
             // Top pages by pageviews
-            $topPagesResponse = $client->runReport([
+            $topPagesResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'dimensions' => [new Dimension(['name' => 'pagePath'])],
@@ -176,7 +177,7 @@ class AnalyticsRoutes
                     ]),
                 ],
                 'limit' => 15,
-            ]);
+            ]));
 
             $topPages = [];
             foreach ($topPagesResponse->getRows() as $row) {
@@ -188,7 +189,7 @@ class AnalyticsRoutes
             }
 
             // Landing pages
-            $landingResponse = $client->runReport([
+            $landingResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'dimensions' => [new Dimension(['name' => 'landingPagePlusQueryString'])],
@@ -203,7 +204,7 @@ class AnalyticsRoutes
                     ]),
                 ],
                 'limit' => 10,
-            ]);
+            ]));
 
             $landingPages = [];
             foreach ($landingResponse->getRows() as $row) {
@@ -215,13 +216,13 @@ class AnalyticsRoutes
             }
 
             // Content type breakdown (broader query for accurate grouping)
-            $allPagesResponse = $client->runReport([
+            $allPagesResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'dimensions' => [new Dimension(['name' => 'pagePath'])],
                 'metrics' => [new Metric(['name' => 'screenPageViews'])],
                 'limit' => 500,
-            ]);
+            ]));
 
             $contentTypes = [
                 'Blog Posts' => 0,
@@ -266,7 +267,7 @@ class AnalyticsRoutes
     {
         return $this->cachedReport('bbjd_ga4_sources_', $request, function ($client, $propertyId, $startDate, $endDate) {
             // Traffic channels
-            $channelResponse = $client->runReport([
+            $channelResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'dimensions' => [new Dimension(['name' => 'sessionDefaultChannelGroup'])],
@@ -278,7 +279,7 @@ class AnalyticsRoutes
                     ]),
                 ],
                 'limit' => 10,
-            ]);
+            ]));
 
             $channels = [];
             foreach ($channelResponse->getRows() as $row) {
@@ -289,7 +290,7 @@ class AnalyticsRoutes
             }
 
             // Top referrers
-            $referrerResponse = $client->runReport([
+            $referrerResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'dimensions' => [new Dimension(['name' => 'sessionSource'])],
@@ -304,7 +305,7 @@ class AnalyticsRoutes
                     ]),
                 ],
                 'limit' => 15,
-            ]);
+            ]));
 
             $referrers = [];
             foreach ($referrerResponse->getRows() as $row) {
@@ -326,12 +327,12 @@ class AnalyticsRoutes
     {
         return $this->cachedReport('bbjd_ga4_audience_', $request, function ($client, $propertyId, $startDate, $endDate) {
             // Device breakdown
-            $deviceResponse = $client->runReport([
+            $deviceResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'dimensions' => [new Dimension(['name' => 'deviceCategory'])],
                 'metrics' => [new Metric(['name' => 'sessions'])],
-            ]);
+            ]));
 
             $devices = [];
             foreach ($deviceResponse->getRows() as $row) {
@@ -342,7 +343,7 @@ class AnalyticsRoutes
             }
 
             // Peak hours
-            $hourResponse = $client->runReport([
+            $hourResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'dimensions' => [new Dimension(['name' => 'hour'])],
@@ -352,7 +353,7 @@ class AnalyticsRoutes
                         'dimension' => new DimensionOrderBy(['dimension_name' => 'hour']),
                     ]),
                 ],
-            ]);
+            ]));
 
             $hours = [];
             foreach ($hourResponse->getRows() as $row) {
@@ -363,7 +364,7 @@ class AnalyticsRoutes
             }
 
             // Geography
-            $geoResponse = $client->runReport([
+            $geoResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'dimensions' => [new Dimension(['name' => 'country'])],
@@ -378,7 +379,7 @@ class AnalyticsRoutes
                     ]),
                 ],
                 'limit' => 10,
-            ]);
+            ]));
 
             $countries = [];
             foreach ($geoResponse->getRows() as $row) {
@@ -404,11 +405,11 @@ class AnalyticsRoutes
     {
         return $this->cachedReport('bbjd_ga4_adblocker_', $request, function ($client, $propertyId, $startDate, $endDate) {
             // Total sessions for the period (to calculate %)
-            $totalResponse = $client->runReport([
+            $totalResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'metrics' => [new Metric(['name' => 'sessions'])],
-            ]);
+            ]));
 
             $totalSessions = 0;
             foreach ($totalResponse->getRows() as $row) {
@@ -416,7 +417,7 @@ class AnalyticsRoutes
             }
 
             // Ad blocker events with daily breakdown
-            $adBlockResponse = $client->runReport([
+            $adBlockResponse = $client->runReport($this->buildRequest([
                 'property' => $propertyId,
                 'dateRanges' => [new DateRange(['start_date' => $startDate, 'end_date' => $endDate])],
                 'dimensions' => [new Dimension(['name' => 'date'])],
@@ -435,7 +436,7 @@ class AnalyticsRoutes
                         'dimension' => new DimensionOrderBy(['dimension_name' => 'date']),
                     ]),
                 ],
-            ]);
+            ]));
 
             $totalAdBlockEvents = 0;
             $daily = [];
@@ -492,6 +493,32 @@ class AnalyticsRoutes
         } catch (\Exception $e) {
             return new \WP_REST_Response(['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Build a RunReportRequest from an array of options
+     */
+    private function buildRequest(array $options): RunReportRequest
+    {
+        $request = (new RunReportRequest())
+            ->setProperty($options['property'])
+            ->setDateRanges($options['dateRanges'])
+            ->setMetrics($options['metrics']);
+
+        if (!empty($options['dimensions'])) {
+            $request->setDimensions($options['dimensions']);
+        }
+        if (!empty($options['orderBys'])) {
+            $request->setOrderBys($options['orderBys']);
+        }
+        if (!empty($options['limit'])) {
+            $request->setLimit($options['limit']);
+        }
+        if (!empty($options['dimensionFilter'])) {
+            $request->setDimensionFilter($options['dimensionFilter']);
+        }
+
+        return $request;
     }
 
     /**
