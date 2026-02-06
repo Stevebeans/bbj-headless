@@ -200,6 +200,11 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
             />
           )}
 
+          {/* Hint when media attached but no text */}
+          {media && !content.trim() && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Replies cannot be empty — add some text to post</p>
+          )}
+
           {/* Media preview (for Giphy or uploaded) */}
           {media && (
             <div className="mt-2">

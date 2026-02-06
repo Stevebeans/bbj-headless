@@ -75,7 +75,7 @@ export default function ReactionButtons({
 
   return (
     <div className="relative flex items-center" ref={pickerRef}>
-      {/* React button */}
+      {/* React button — always smiley icon, turns blue when reacted */}
       <button
         onClick={() => {
           if (!isAuthenticated) {
@@ -91,22 +91,15 @@ export default function ReactionButtons({
             : "text-slate-500 hover:text-primary-500"
         } disabled:opacity-50`}
       >
-        {currentUserReaction ? (
-          <span className="text-sm">{REACTION_TYPES[currentUserReaction]}</span>
-        ) : (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        )}
-        <span className="hidden sm:inline">
-          {currentUserReaction ? "Reacted" : "React"}
-        </span>
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span className="hidden sm:inline">React</span>
       </button>
 
-      {/* Display reaction summary */}
+      {/* Reaction summary — top emojis + count */}
       {currentTotal > 0 && (
-        <div className="flex items-center ml-2">
-          {/* Top reaction emojis */}
+        <div className="flex items-center ml-1.5">
           <div className="flex -space-x-1">
             {topReactions.map((type) => (
               <span
@@ -118,7 +111,6 @@ export default function ReactionButtons({
               </span>
             ))}
           </div>
-          {/* Count */}
           <span className="text-xs text-slate-500 ml-1">{currentTotal}</span>
         </div>
       )}
