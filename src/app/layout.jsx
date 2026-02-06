@@ -6,9 +6,10 @@ import { ThemeScript } from "@/components/layout/ThemeScript";
 import { Providers } from "@/components/Providers";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
-import { AdScripts } from "@/components/ads/AdScripts";
 import { getInitialAuthState } from "@/lib/auth/serverCookies";
 import { getAdScripts } from "@/lib/api/ads";
+
+const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -75,6 +76,11 @@ export default async function RootLayout({ children }) {
     getAdScripts(),
   ]);
 
+  // Check if user is a supporter (ad-free) server-side
+  const isSupporter = initialUser?.user_roles?.some((role) =>
+    SUPPORTER_ROLES.includes(role)
+  );
+
   return (
     <html
       lang="en"
@@ -88,6 +94,11 @@ export default async function RootLayout({ children }) {
           <script dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.global_header) }} />
         )}
         {extractExternalScripts(adScripts.global_header)}
+        {/* Ad network scripts - only for non-supporters */}
+        {!isSupporter && adScripts.ad_header && (
+          <script dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.ad_header) }} />
+        )}
+        {!isSupporter && extractExternalScripts(adScripts.ad_header)}
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
         <Providers initialUser={initialUser}>
@@ -98,14 +109,17 @@ export default async function RootLayout({ children }) {
           </main>
           <Footer />
           <FloatingUpdater />
-          {/* Ad network scripts - blocked for supporters */}
-          <AdScripts adHeader={adScripts.ad_header} adFooter={adScripts.ad_footer} />
         </Providers>
         {/* Global footer scripts */}
         {adScripts.global_footer && (
           <script dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.global_footer) }} />
         )}
         {extractExternalScripts(adScripts.global_footer)}
+        {/* Ad network footer scripts - only for non-supporters */}
+        {!isSupporter && adScripts.ad_footer && (
+          <script dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.ad_footer) }} />
+        )}
+        {!isSupporter && extractExternalScripts(adScripts.ad_footer)}
       </body>
     </html>
   );
