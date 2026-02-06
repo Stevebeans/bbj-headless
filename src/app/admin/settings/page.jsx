@@ -1,41 +1,24 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import {
-  getSettings,
-  updateSettings,
-  getRoles,
-  getDatabaseStatus,
-  runMigration,
-  getVoteMigrationPreview,
-  runVoteMigration,
-  resetVoteMigration,
-  recalculateRanks,
-} from "@/lib/api/admin";
+import { getSettings, updateSettings, getRoles } from "@/lib/api/admin";
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState(null);
   const [roles, setRoles] = useState([]);
-  const [dbStatus, setDbStatus] = useState(null);
-  const [voteMigrationPreview, setVoteMigrationPreview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [migrating, setMigrating] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const [settingsData, rolesData, dbStatusData, votePreview] = await Promise.all([
+      const [settingsData, rolesData] = await Promise.all([
         getSettings(),
         getRoles(),
-        getDatabaseStatus(),
-        getVoteMigrationPreview(),
       ]);
       setSettings(settingsData);
       setRoles(rolesData);
-      setDbStatus(dbStatusData);
-      setVoteMigrationPreview(votePreview);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -97,98 +80,18 @@ export default function AdminSettings() {
     }
   };
 
-  const handleRunMigration = async () => {
-    setMigrating(true);
-    setError(null);
-
-    try {
-      await runMigration();
-      const newStatus = await getDatabaseStatus();
-      setDbStatus(newStatus);
-      setSuccess("Database tables created successfully!");
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setMigrating(false);
-    }
-  };
-
-  const handleVoteMigration = async () => {
-    setMigrating(true);
-    setError(null);
-
-    try {
-      let result = { completed: false };
-      while (!result.completed) {
-        result = await runVoteMigration(5000);
-        const newStatus = await getDatabaseStatus();
-        setDbStatus(newStatus);
-
-        if (!result.completed) {
-          // Small delay between batches
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-      }
-      setSuccess("Vote migration completed!");
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setMigrating(false);
-    }
-  };
-
-  const handleResetVoteMigration = async () => {
-    if (!confirm("Are you sure you want to reset the vote migration? This will allow you to re-run it.")) {
-      return;
-    }
-
-    try {
-      await resetVoteMigration();
-      const newStatus = await getDatabaseStatus();
-      setDbStatus(newStatus);
-      setSuccess("Vote migration reset!");
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const handleRecalculateRanks = async () => {
-    setMigrating(true);
-    try {
-      const result = await recalculateRanks();
-      setSuccess(`Recalculated ranks for ${result.results.processed} users!`);
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setMigrating(false);
-    }
-  };
-
   if (loading) {
     return (
-      <div className="animate-pulse">
-        <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-48 mb-8"></div>
-        <div className="space-y-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-48 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
-          ))}
-        </div>
+      <div className="animate-pulse space-y-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-48 bg-slate-100 dark:bg-slate-800/50 rounded-lg"></div>
+        ))}
       </div>
     );
   }
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-osw font-bold text-slate-800 dark:text-white">Admin Settings</h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">Configure permissions, notifications, and database</p>
-      </div>
-
       {/* Alerts */}
       {error && (
         <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -203,8 +106,8 @@ export default function AdminSettings() {
       )}
 
       {/* Notifications Section */}
-      <section className="bg-white dark:bg-slate-700 rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-osw font-bold text-slate-800 dark:text-white mb-4">Notifications</h2>
+      <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
+        <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white mb-4">Notifications</h2>
 
         <div className="space-y-4">
           <div>
@@ -252,8 +155,8 @@ export default function AdminSettings() {
       </section>
 
       {/* Permissions Section */}
-      <section className="bg-white dark:bg-slate-700 rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-osw font-bold text-slate-800 dark:text-white mb-4">Feature Permissions</h2>
+      <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
+        <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white mb-4">Feature Permissions</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
           Select which roles can access each admin feature
         </p>
@@ -273,7 +176,7 @@ export default function AdminSettings() {
             <tbody>
               {settings?.permissions &&
                 Object.entries(settings.permissions).map(([feature, config]) => (
-                  <tr key={feature} className="border-b border-slate-100 dark:border-slate-600">
+                  <tr key={feature} className="border-b border-slate-200 dark:border-slate-700">
                     <td className="py-3 px-4">
                       <p className="font-medium text-slate-800 dark:text-white">{config.label}</p>
                       <p className="text-xs text-slate-500">{config.description}</p>
@@ -297,7 +200,7 @@ export default function AdminSettings() {
       </section>
 
       {/* Save Button */}
-      <div className="mb-8">
+      <div>
         <button
           onClick={handleSave}
           disabled={saving}
@@ -306,128 +209,6 @@ export default function AdminSettings() {
           {saving ? "Saving..." : "Save Settings"}
         </button>
       </div>
-
-      {/* Database Section */}
-      <section className="bg-white dark:bg-slate-700 rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-osw font-bold text-slate-800 dark:text-white mb-4">Database Management</h2>
-
-        {/* Tables Status */}
-        <div className="mb-6">
-          <h3 className="font-medium text-slate-700 dark:text-slate-300 mb-2">Comment System Tables</h3>
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-slate-600 dark:text-slate-400">Version:</span>
-              <span className="font-mono text-slate-800 dark:text-white">{dbStatus?.version}</span>
-            </div>
-            {dbStatus?.tables &&
-              Object.entries(dbStatus.tables).map(([name, info]) => (
-                <div key={name} className="flex items-center justify-between py-1 text-sm">
-                  <span className="font-mono text-slate-600 dark:text-slate-400">{info.full_name}</span>
-                  <span className={info.exists ? "text-green-500" : "text-red-500"}>
-                    {info.exists ? `${info.rows.toLocaleString()} rows` : "Not created"}
-                  </span>
-                </div>
-              ))}
-          </div>
-
-          {dbStatus?.needs_migration && (
-            <button
-              onClick={handleRunMigration}
-              disabled={migrating}
-              className="mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-            >
-              {migrating ? "Creating tables..." : "Create/Update Tables"}
-            </button>
-          )}
-        </div>
-
-        {/* Vote Migration */}
-        <div className="mb-6 pt-6 border-t border-slate-200 dark:border-slate-600">
-          <h3 className="font-medium text-slate-700 dark:text-slate-300 mb-2">Vote Migration (from WPDiscuz)</h3>
-
-          {voteMigrationPreview?.source_stats?.exists && (
-            <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 mb-4">
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Source Data (logged-in users only):</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="text-slate-500">Total Votes:</span>
-                  <span className="ml-2 font-medium text-slate-800 dark:text-white">
-                    {voteMigrationPreview.source_stats.total_votes?.toLocaleString()}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500">Upvotes:</span>
-                  <span className="ml-2 font-medium text-green-600">
-                    {voteMigrationPreview.source_stats.upvotes?.toLocaleString()}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500">Downvotes:</span>
-                  <span className="ml-2 font-medium text-red-600">
-                    {voteMigrationPreview.source_stats.downvotes?.toLocaleString()}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-500">Unique Voters:</span>
-                  <span className="ml-2 font-medium text-slate-800 dark:text-white">
-                    {voteMigrationPreview.source_stats.unique_voters?.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {dbStatus?.vote_migration?.started && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
-              <p className="text-sm text-blue-600 dark:text-blue-400">
-                Migration Progress: {dbStatus.vote_migration.migrated_count?.toLocaleString()} votes migrated
-                {dbStatus.vote_migration.completed && " (Complete!)"}
-              </p>
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-2">
-            {!dbStatus?.vote_migration?.completed && (
-              <button
-                onClick={handleVoteMigration}
-                disabled={migrating || !dbStatus?.tables?.bbj_comment_votes?.exists}
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-              >
-                {migrating
-                  ? "Migrating..."
-                  : dbStatus?.vote_migration?.started
-                  ? "Continue Migration"
-                  : "Start Vote Migration"}
-              </button>
-            )}
-
-            {dbStatus?.vote_migration?.started && (
-              <button
-                onClick={handleResetVoteMigration}
-                disabled={migrating}
-                className="px-4 py-2 bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-700 dark:text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-              >
-                Reset Migration
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Rank Recalculation */}
-        <div className="pt-6 border-t border-slate-200 dark:border-slate-600">
-          <h3 className="font-medium text-slate-700 dark:text-slate-300 mb-2">User Ranks</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            Recalculate ranks for all users based on current comment counts and karma
-          </p>
-          <button
-            onClick={handleRecalculateRanks}
-            disabled={migrating}
-            className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-          >
-            {migrating ? "Calculating..." : "Recalculate All Ranks"}
-          </button>
-        </div>
-      </section>
     </div>
   );
 }

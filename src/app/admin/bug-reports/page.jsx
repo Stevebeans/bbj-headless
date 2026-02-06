@@ -151,14 +151,6 @@ export default function BugReportsAdmin() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-osw font-bold text-slate-800 dark:text-white">Bug Reports</h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">
-          Manage user-submitted bug reports
-        </p>
-      </div>
-
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
@@ -169,7 +161,7 @@ export default function BugReportsAdmin() {
             { label: "Closed", count: stats.closed, color: "text-gray-600" },
             { label: "Total", count: stats.total, color: "text-slate-800 dark:text-white" },
           ].map((s) => (
-            <div key={s.label} className="bg-white dark:bg-slate-700 rounded-lg shadow p-3 text-center">
+            <div key={s.label} className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 text-center">
               <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
               <p className={`text-2xl font-bold ${s.color}`}>{s.count}</p>
             </div>
@@ -212,7 +204,7 @@ export default function BugReportsAdmin() {
           ))}
         </div>
       ) : reports.length === 0 ? (
-        <div className="bg-white dark:bg-slate-700 rounded-lg shadow p-8 text-center">
+        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 p-8 text-center">
           <p className="text-slate-500 dark:text-slate-400">No bug reports found matching filters.</p>
         </div>
       ) : (
@@ -223,7 +215,7 @@ export default function BugReportsAdmin() {
             return (
               <div
                 key={report.id}
-                className="bg-white dark:bg-slate-700 rounded-lg shadow overflow-hidden"
+                className="bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden"
               >
                 {/* Report Summary Row */}
                 <div
@@ -411,7 +403,7 @@ export default function BugReportsAdmin() {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-3 py-1 text-sm rounded bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 disabled:opacity-50"
+            className="px-3 py-1 text-sm rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 disabled:opacity-50"
           >
             Previous
           </button>
@@ -421,7 +413,7 @@ export default function BugReportsAdmin() {
           <button
             onClick={() => setPage((p) => Math.min(pagination.total_pages, p + 1))}
             disabled={page === pagination.total_pages}
-            className="px-3 py-1 text-sm rounded bg-white dark:bg-slate-700 border border-gray-300 dark:border-gray-600 disabled:opacity-50"
+            className="px-3 py-1 text-sm rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 disabled:opacity-50"
           >
             Next
           </button>

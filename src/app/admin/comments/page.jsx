@@ -8,9 +8,13 @@ import {
   getCommentsForModeration,
   moderateComment,
   getBlacklist,
-  addToBlacklist,
   removeFromBlacklist,
 } from "@/lib/api/admin";
+
+const REPORT_STATUS_COLORS = {
+  pending: "bg-yellow-100 text-yellow-800",
+  actioned: "bg-green-100 text-green-800",
+};
 
 export default function CommentModeration() {
   const [activeTab, setActiveTab] = useState("reports");
@@ -155,12 +159,6 @@ export default function CommentModeration() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-osw font-bold text-slate-800 dark:text-white">Comment Moderation</h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">Manage reports, comments, and blacklist</p>
-      </div>
-
       {/* Alerts */}
       {error && (
         <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -175,7 +173,7 @@ export default function CommentModeration() {
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-slate-600 mb-6">
+      <div className="flex gap-2 mb-6">
         {[
           { id: "reports", label: "Reports" },
           { id: "comments", label: "Comments" },
@@ -184,10 +182,10 @@ export default function CommentModeration() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-6 py-3 font-medium border-b-2 -mb-px transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               activeTab === tab.id
-                ? "border-primary-500 text-primary-500"
-                : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "bg-primary-500 text-white"
+                : "bg-slate-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-slate-700"
             }`}
           >
             {tab.label}
@@ -244,7 +242,7 @@ export default function CommentModeration() {
               ))}
             </div>
           ) : reports.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-slate-700 rounded-lg">
+            <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
               <p className="text-slate-500 dark:text-slate-400">No reports found</p>
             </div>
           ) : (
@@ -263,7 +261,7 @@ export default function CommentModeration() {
               {reports.map((report) => (
                 <div
                   key={report.id}
-                  className="bg-white dark:bg-slate-700 rounded-lg shadow p-4"
+                  className="bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 p-4"
                 >
                   <div className="flex items-start space-x-4">
                     <input
@@ -285,11 +283,7 @@ export default function CommentModeration() {
                         <div className="flex items-center space-x-2">
                           <span
                             className={`px-2 py-1 rounded text-xs font-medium ${
-                              report.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : report.status === "actioned"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-slate-100 text-slate-800"
+                              REPORT_STATUS_COLORS[report.status] || "bg-slate-100 text-slate-800"
                             }`}
                           >
                             {report.status}
@@ -386,7 +380,7 @@ export default function CommentModeration() {
               ))}
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-slate-700 rounded-lg">
+            <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
               <p className="text-slate-500 dark:text-slate-400">No comments found</p>
             </div>
           ) : (
@@ -394,7 +388,7 @@ export default function CommentModeration() {
               {comments.map((comment) => (
                 <div
                   key={comment.comment_ID}
-                  className="bg-white dark:bg-slate-700 rounded-lg shadow p-4"
+                  className="bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 p-4"
                 >
                   <div className="flex items-start space-x-4">
                     <img
@@ -481,11 +475,11 @@ export default function CommentModeration() {
               ))}
             </div>
           ) : blacklist.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-slate-700 rounded-lg">
+            <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
               <p className="text-slate-500 dark:text-slate-400">No blacklist entries</p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-700 rounded-lg shadow overflow-hidden">
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
               <table className="w-full">
                 <thead className="bg-slate-50 dark:bg-slate-600">
                   <tr>
