@@ -17,6 +17,7 @@ export default function ReactionButtons({
   const [currentUserReaction, setCurrentUserReaction] = useState(userReaction);
   const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
   const pickerRef = useRef(null);
 
   // Close picker on click outside
@@ -58,6 +59,8 @@ export default function ReactionButtons({
         }
       }
     } catch (error) {
+      setErrorMsg(error.message || "Reaction failed");
+      setTimeout(() => setErrorMsg(null), 4000);
       console.error("Reaction error:", error);
     } finally {
       setLoading(false);
@@ -118,6 +121,11 @@ export default function ReactionButtons({
           {/* Count */}
           <span className="text-xs text-slate-500 ml-1">{currentTotal}</span>
         </div>
+      )}
+
+      {/* Error message */}
+      {errorMsg && (
+        <span className="text-xs text-red-500 dark:text-red-400 ml-1">{errorMsg}</span>
       )}
 
       {/* Reaction picker popup */}

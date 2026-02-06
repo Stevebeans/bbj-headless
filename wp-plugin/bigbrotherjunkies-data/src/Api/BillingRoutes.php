@@ -70,6 +70,20 @@ class BillingRoutes
             'permission_callback' => [$this, 'requireAuth'],
         ]);
 
+        // Change subscription plan
+        register_rest_route($namespace, '/billing/change-plan', [
+            'methods' => 'POST',
+            'callback' => [$this, 'changePlan'],
+            'permission_callback' => [$this, 'requireAuth'],
+        ]);
+
+        // Get payment history / invoices
+        register_rest_route($namespace, '/billing/invoices', [
+            'methods' => 'GET',
+            'callback' => [$this, 'getInvoices'],
+            'permission_callback' => [$this, 'requireAuth'],
+        ]);
+
         // Cancel subscription
         register_rest_route($namespace, '/billing/cancel', [
             'methods' => 'POST',
@@ -98,6 +112,7 @@ class BillingRoutes
     public function getPlans(\WP_REST_Request $request): \WP_REST_Response
     {
         $stripe = new StripeService();
+        $paypal = new PayPalService();
 
         return new \WP_REST_Response([
             'success' => true,
@@ -135,8 +150,8 @@ class BillingRoutes
             ],
             'stripe_configured' => $stripe->isConfigured(),
             'stripe_publishable_key' => $stripe->getPublishableKey(),
-            'paypal_configured' => (new PayPalService())->isConfigured(),
-            'paypal_client_id' => (new PayPalService())->getClientId(),
+            'paypal_configured' => $paypal->isConfigured(),
+            'paypal_client_id' => $paypal->getClientId(),
         ], 200);
     }
 
@@ -158,6 +173,15 @@ class BillingRoutes
             ], 200);
         }
 
+        // Get payment method info
+        $paymentMethod = null;
+        if ($subscription['processor'] === 'stripe') {
+            $stripe = new StripeService();
+            $paymentMethod = $stripe->getPaymentMethod($userId);
+        } elseif ($subscription['processor'] === 'paypal') {
+            $paymentMethod = ['type' => 'paypal'];
+        }
+
         return new \WP_REST_Response([
             'success' => true,
             'has_subscription' => true,
@@ -172,6 +196,7 @@ class BillingRoutes
                 'cancel_at_period_end' => (bool) $subscription['cancel_at_period_end'],
                 'canceled_at' => $subscription['canceled_at'],
                 'created_at' => $subscription['created_at'],
+                'payment_method' => $paymentMethod,
             ],
         ], 200);
     }
@@ -406,6 +431,65 @@ class BillingRoutes
         return new \WP_REST_Response([
             'success' => true,
             'url' => $result['url'],
+        ], 200);
+    }
+
+    /**
+     * Change subscription plan
+     */
+    public function changePlan(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $userId = get_current_user_id();
+        $params = $request->get_json_params();
+        $planType = $params['plan_type'] ?? null;
+
+        if (!$planType || !in_array($planType, ['monthly', 'annual', 'lifetime'])) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => 'Invalid plan type',
+            ], 400);
+        }
+
+        $manager = SubscriptionManager::getInstance();
+        $result = $manager->changePlan($userId, $planType);
+
+        if (isset($result['error'])) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => $result['error'],
+            ], 400);
+        }
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'message' => $result['message'],
+        ], 200);
+    }
+
+    /**
+     * Get payment history
+     */
+    public function getInvoices(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $userId = get_current_user_id();
+        $manager = SubscriptionManager::getInstance();
+        $history = $manager->getSubscriptionHistory($userId, 20);
+
+        $invoices = array_map(function ($record) {
+            return [
+                'id' => (int) $record['id'],
+                'date' => $record['created_at'],
+                'plan_name' => $this->getPlanDisplayName($record['plan_type']),
+                'plan_type' => $record['plan_type'],
+                'amount_display' => '$' . number_format(($record['amount_cents'] ?? 0) / 100, 2),
+                'status' => $record['status'],
+                'processor' => $record['processor'],
+            ];
+        }, $history);
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'invoices' => $invoices,
         ], 200);
     }
 

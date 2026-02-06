@@ -12,6 +12,7 @@ class StripeService
     private string $publishableKey;
     private string $webhookSecret;
     private bool $testMode;
+    private array $priceIds;
 
     /**
      * Plan configuration
@@ -53,6 +54,11 @@ class StripeService
         $this->webhookSecret = $this->testMode
             ? $settings['stripe_test_webhook_secret']
             : $settings['stripe_live_webhook_secret'];
+        $this->priceIds = [
+            'monthly' => $settings['stripe_price_monthly'] ?? '',
+            'annual' => $settings['stripe_price_annual'] ?? '',
+            'lifetime' => $settings['stripe_price_lifetime'] ?? '',
+        ];
     }
 
     /**
@@ -295,6 +301,109 @@ class StripeService
         $computedSignature = hash_hmac('sha256', $signedPayload, $this->webhookSecret);
 
         return hash_equals($computedSignature, $expectedSignature);
+    }
+
+    /**
+     * Get the default payment method for a user
+     */
+    public function getPaymentMethod(int $userId): ?array
+    {
+        $customerId = get_user_meta($userId, 'bbj_stripe_customer_id', true);
+        if (!$customerId) {
+            return null;
+        }
+
+        // Fetch customer to get default payment method
+        $customer = $this->apiRequest("customers/{$customerId}", [
+            'expand' => ['default_source', 'invoice_settings.default_payment_method'],
+        ], 'GET');
+
+        if (!$customer || isset($customer['error'])) {
+            return null;
+        }
+
+        // Check invoice_settings.default_payment_method first (newer Stripe approach)
+        $pm = $customer['invoice_settings']['default_payment_method'] ?? null;
+        if ($pm && is_array($pm) && isset($pm['card'])) {
+            return [
+                'type' => 'card',
+                'brand' => $pm['card']['brand'] ?? 'unknown',
+                'last4' => $pm['card']['last4'] ?? '****',
+                'exp_month' => $pm['card']['exp_month'] ?? null,
+                'exp_year' => $pm['card']['exp_year'] ?? null,
+            ];
+        }
+
+        // Fallback: list payment methods attached to customer
+        $methods = $this->apiRequest("payment_methods", [
+            'customer' => $customerId,
+            'type' => 'card',
+            'limit' => 1,
+        ], 'GET');
+
+        if ($methods && !empty($methods['data'][0]['card'])) {
+            $card = $methods['data'][0]['card'];
+            return [
+                'type' => 'card',
+                'brand' => $card['brand'] ?? 'unknown',
+                'last4' => $card['last4'] ?? '****',
+                'exp_month' => $card['exp_month'] ?? null,
+                'exp_year' => $card['exp_year'] ?? null,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get a stored Stripe Price ID for a plan type
+     */
+    public function getStripePriceId(string $planType): ?string
+    {
+        return !empty($this->priceIds[$planType]) ? $this->priceIds[$planType] : null;
+    }
+
+    /**
+     * Update a subscription to a new plan (swap the price)
+     */
+    public function updateSubscription(string $subscriptionId, string $newPlanType): array
+    {
+        $newPriceId = $this->getStripePriceId($newPlanType);
+        if (!$newPriceId) {
+            return ['error' => 'Price ID not configured for this plan. Contact support.'];
+        }
+
+        // Get current subscription to find the subscription item
+        $sub = $this->getSubscription($subscriptionId);
+        if (!$sub || isset($sub['error'])) {
+            return ['error' => $sub['error'] ?? 'Failed to retrieve subscription'];
+        }
+
+        $itemId = $sub['items']['data'][0]['id'] ?? null;
+        if (!$itemId) {
+            return ['error' => 'Could not find subscription item'];
+        }
+
+        // Update the subscription item with the new price, with proration
+        $response = $this->apiRequest("subscriptions/{$subscriptionId}", [
+            'items' => [
+                [
+                    'id' => $itemId,
+                    'price' => $newPriceId,
+                ],
+            ],
+            'proration_behavior' => 'create_prorations',
+        ], 'POST');
+
+        if ($response && isset($response['id']) && !isset($response['error'])) {
+            return [
+                'success' => true,
+                'subscription_id' => $response['id'],
+                'new_plan' => $newPlanType,
+            ];
+        }
+
+        return ['error' => $response['error'] ?? 'Failed to update subscription'];
     }
 
     /**

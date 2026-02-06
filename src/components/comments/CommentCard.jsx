@@ -26,6 +26,12 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
   const [loading, setLoading] = useState(false);
   const [replies, setReplies] = useState(comment.replies || []);
   const [isPinned, setIsPinned] = useState(comment.is_pinned || false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const showError = (msg) => {
+    setErrorMsg(msg);
+    setTimeout(() => setErrorMsg(null), 4000);
+  };
 
   const canReply = depth < 3;
   const isAuthor = isAuthenticated && user?.user_id === comment.author.id;
@@ -62,6 +68,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
       setCurrentContent(editContent);
       setIsEditing(false);
     } catch (error) {
+      showError(error.message || "Edit failed");
       console.error("Edit failed:", error);
     } finally {
       setLoading(false);
@@ -76,6 +83,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
       await deleteComment(comment.id);
       onCommentDeleted?.(comment.id);
     } catch (error) {
+      showError(error.message || "Delete failed");
       console.error("Delete failed:", error);
     } finally {
       setLoading(false);
@@ -93,6 +101,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
         setIsPinned(true);
       }
     } catch (error) {
+      showError(error.message || "Pin toggle failed");
       console.error("Pin toggle failed:", error);
     } finally {
       setLoading(false);
@@ -272,6 +281,13 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
                     />
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Error message */}
+            {errorMsg && (
+              <div className="text-xs text-red-500 dark:text-red-400 mt-1 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                {errorMsg}
               </div>
             )}
 

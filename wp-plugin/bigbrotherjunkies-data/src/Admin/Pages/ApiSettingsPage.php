@@ -48,6 +48,11 @@ class ApiSettingsPage
             'paypal_live_client_secret' => '',
             'paypal_live_webhook_id' => '',
 
+            // Stripe Price IDs (for plan changes)
+            'stripe_price_monthly' => '',
+            'stripe_price_annual' => '',
+            'stripe_price_lifetime' => '',
+
             // PayPal Plan IDs (for recurring subscriptions)
             'paypal_plan_monthly' => '',
             'paypal_plan_annual' => '',
@@ -92,6 +97,11 @@ class ApiSettingsPage
             'paypal_live_client_id' => sanitize_text_field($_POST['paypal_live_client_id'] ?? ''),
             'paypal_live_client_secret' => sanitize_text_field($_POST['paypal_live_client_secret'] ?? ''),
             'paypal_live_webhook_id' => sanitize_text_field($_POST['paypal_live_webhook_id'] ?? ''),
+
+            // Stripe Price IDs
+            'stripe_price_monthly' => sanitize_text_field($_POST['stripe_price_monthly'] ?? ''),
+            'stripe_price_annual' => sanitize_text_field($_POST['stripe_price_annual'] ?? ''),
+            'stripe_price_lifetime' => sanitize_text_field($_POST['stripe_price_lifetime'] ?? ''),
 
             // PayPal Plan IDs
             'paypal_plan_monthly' => sanitize_text_field($_POST['paypal_plan_monthly'] ?? ''),
@@ -222,6 +232,56 @@ class ApiSettingsPage
 
                         <p class="bbjd-text-xs bbjd-text-gray-500 bbjd-mt-4">
                             Webhook URL: <code class="bbjd-bg-gray-100 bbjd-px-2 bbjd-py-1 bbjd-rounded"><?php echo esc_html(rest_url('bbjd/v1/billing/webhook/stripe')); ?></code>
+                        </p>
+                    </div>
+
+                    <!-- Stripe Price IDs -->
+                    <div class="bbjd-bg-white bbjd-rounded-lg bbjd-shadow bbjd-p-6 bbjd-mb-6">
+                        <h2 class="bbjd-text-xl bbjd-font-semibold bbjd-text-gray-800 bbjd-mb-2">
+                            Stripe Price IDs
+                        </h2>
+                        <p class="bbjd-text-gray-600 bbjd-text-sm bbjd-mb-4">
+                            Create products/prices in your Stripe dashboard and enter the Price IDs here.
+                            These are required for plan upgrades/downgrades.
+                        </p>
+
+                        <div class="bbjd-grid bbjd-grid-cols-1 md:bbjd-grid-cols-3 bbjd-gap-4">
+                            <div>
+                                <label class="bbjd-block bbjd-text-sm bbjd-font-medium bbjd-text-gray-700 bbjd-mb-1">
+                                    Monthly ($6.95/mo)
+                                </label>
+                                <input type="text"
+                                       name="stripe_price_monthly"
+                                       value="<?php echo esc_attr($settings['stripe_price_monthly']); ?>"
+                                       placeholder="price_..."
+                                       class="bbjd-w-full bbjd-px-3 bbjd-py-2 bbjd-border bbjd-border-gray-300 bbjd-rounded-md bbjd-text-sm bbjd-font-mono">
+                            </div>
+
+                            <div>
+                                <label class="bbjd-block bbjd-text-sm bbjd-font-medium bbjd-text-gray-700 bbjd-mb-1">
+                                    Annual ($35/yr)
+                                </label>
+                                <input type="text"
+                                       name="stripe_price_annual"
+                                       value="<?php echo esc_attr($settings['stripe_price_annual']); ?>"
+                                       placeholder="price_..."
+                                       class="bbjd-w-full bbjd-px-3 bbjd-py-2 bbjd-border bbjd-border-gray-300 bbjd-rounded-md bbjd-text-sm bbjd-font-mono">
+                            </div>
+
+                            <div>
+                                <label class="bbjd-block bbjd-text-sm bbjd-font-medium bbjd-text-gray-700 bbjd-mb-1">
+                                    Lifetime ($99)
+                                </label>
+                                <input type="text"
+                                       name="stripe_price_lifetime"
+                                       value="<?php echo esc_attr($settings['stripe_price_lifetime']); ?>"
+                                       placeholder="price_..."
+                                       class="bbjd-w-full bbjd-px-3 bbjd-py-2 bbjd-border bbjd-border-gray-300 bbjd-rounded-md bbjd-text-sm bbjd-font-mono">
+                            </div>
+                        </div>
+
+                        <p class="bbjd-text-xs bbjd-text-gray-500 bbjd-mt-3">
+                            Note: Without these, plan switching won't work. New signups still use inline price_data.
                         </p>
                     </div>
 

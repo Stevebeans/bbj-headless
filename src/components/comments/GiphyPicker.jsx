@@ -37,7 +37,7 @@ export default function GiphyPicker({ onSelect, onClose }) {
         setGifs(result.gifs);
       }
     } catch (err) {
-      setError("Failed to load GIFs");
+      setError(err.message || "Failed to load GIFs");
       console.error(err);
     } finally {
       setLoading(false);
@@ -58,7 +58,7 @@ export default function GiphyPicker({ onSelect, onClose }) {
         setGifs(result.gifs);
       }
     } catch (err) {
-      setError("Search failed");
+      setError(err.message || "GIF search failed");
       console.error(err);
     } finally {
       setLoading(false);
@@ -92,7 +92,7 @@ export default function GiphyPicker({ onSelect, onClose }) {
         throw new Error("Failed to save GIF");
       }
     } catch (err) {
-      setError("Failed to select GIF");
+      setError(err.message || "Failed to select GIF");
       console.error(err);
     } finally {
       setSelecting(null);

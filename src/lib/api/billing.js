@@ -196,6 +196,55 @@ export async function getPortalUrl(returnUrl) {
 }
 
 /**
+ * Get payment history / invoices
+ */
+export async function getInvoices() {
+  const headers = getAuthHeader();
+  if (!headers.Authorization) {
+    throw new Error("You must be logged in");
+  }
+
+  const response = await fetch(`${API_URL}/bbjd/v1/billing/invoices`, {
+    headers,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to fetch invoices");
+  }
+
+  return response.json();
+}
+
+/**
+ * Change subscription plan (upgrade/downgrade)
+ * @param {string} planType - 'monthly', 'annual', or 'lifetime'
+ */
+export async function changePlan(planType) {
+  const headers = getAuthHeader();
+  if (!headers.Authorization) {
+    throw new Error("You must be logged in");
+  }
+
+  const response = await fetch(`${API_URL}/bbjd/v1/billing/change-plan`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+    body: JSON.stringify({ plan_type: planType }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to change plan");
+  }
+
+  return data;
+}
+
+/**
  * Cancel active subscription
  */
 export async function cancelSubscription() {

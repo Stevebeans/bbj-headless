@@ -20,7 +20,8 @@ export async function getComments(postId, { page = 1, perPage = 20, sort = "newe
   );
 
   if (!response.ok) {
-    throw new Error("Failed to fetch comments");
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to fetch comments");
   }
 
   return response.json();
@@ -175,7 +176,8 @@ export async function getUserRank(userId) {
   const response = await fetch(`${API_URL}/bbjd/v1/users/${userId}/rank`);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch user rank");
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to fetch user rank");
   }
 
   return response.json();
@@ -188,7 +190,8 @@ export async function getAllRanks() {
   const response = await fetch(`${API_URL}/bbjd/v1/ranks`);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch ranks");
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to fetch ranks");
   }
 
   return response.json();
@@ -408,7 +411,8 @@ export async function getReactions(commentId) {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch reactions");
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to fetch reactions");
   }
 
   return response.json();
@@ -465,7 +469,8 @@ export async function checkOnlineStatus(userIds) {
   );
 
   if (!response.ok) {
-    throw new Error("Failed to check online status");
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to check online status");
   }
 
   const result = await response.json();
@@ -501,7 +506,8 @@ export async function getUserProfile(userId) {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch user profile");
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to fetch user profile");
   }
 
   return response.json();

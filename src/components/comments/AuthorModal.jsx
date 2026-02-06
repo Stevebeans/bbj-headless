@@ -12,6 +12,7 @@ export default function AuthorModal({ userId, isOpen, onClose }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);
+  const [followError, setFollowError] = useState(null);
   const [error, setError] = useState(null);
   const modalRef = useRef(null);
 
@@ -96,6 +97,8 @@ export default function AuthorModal({ userId, isOpen, onClose }) {
         }
       }
     } catch (err) {
+      setFollowError(err.message || "Follow action failed");
+      setTimeout(() => setFollowError(null), 4000);
       console.error("Follow error:", err);
     } finally {
       setFollowLoading(false);
@@ -224,6 +227,10 @@ export default function AuthorModal({ userId, isOpen, onClose }) {
                 >
                   {followLoading ? "..." : profile.is_following ? "Following" : "Follow"}
                 </button>
+              )}
+
+              {followError && (
+                <p className="text-xs text-red-500 dark:text-red-400 mt-1 text-center">{followError}</p>
               )}
 
               {/* Recent comments */}

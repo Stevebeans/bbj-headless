@@ -10,6 +10,7 @@ export default function VoteButtons({ commentId, votes, userVote, onVoteChange, 
   const [loading, setLoading] = useState(false);
   const [currentVotes, setCurrentVotes] = useState(votes);
   const [currentUserVote, setCurrentUserVote] = useState(userVote);
+  const [errorMsg, setErrorMsg] = useState(null);
 
   const handleVote = async (voteType) => {
     if (!isAuthenticated) {
@@ -71,6 +72,8 @@ export default function VoteButtons({ commentId, votes, userVote, onVoteChange, 
       // Revert on error
       setCurrentVotes(previousVotes);
       setCurrentUserVote(previousUserVote);
+      setErrorMsg(error.message || "Vote failed");
+      setTimeout(() => setErrorMsg(null), 4000);
       console.error("Vote failed:", error);
     } finally {
       setLoading(false);
@@ -115,6 +118,10 @@ export default function VoteButtons({ commentId, votes, userVote, onVoteChange, 
       >
         <FaChevronDown className="w-4 h-4" />
       </button>
+
+      {errorMsg && (
+        <span className="text-xs text-red-500 dark:text-red-400 ml-1">{errorMsg}</span>
+      )}
     </div>
   );
 }

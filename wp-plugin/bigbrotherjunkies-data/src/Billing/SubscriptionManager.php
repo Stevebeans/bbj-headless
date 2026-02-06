@@ -262,6 +262,75 @@ class SubscriptionManager
     }
 
     /**
+     * Change a user's subscription plan (upgrade/downgrade)
+     */
+    public function changePlan(int $userId, string $newPlanType): array
+    {
+        $subscription = $this->getActiveSubscription($userId);
+
+        if (!$subscription) {
+            return ['error' => 'No active subscription found'];
+        }
+
+        if ($subscription['status'] === 'lifetime') {
+            return ['error' => 'Lifetime subscriptions cannot be changed'];
+        }
+
+        if ($subscription['plan_type'] === $newPlanType) {
+            return ['error' => 'You are already on this plan'];
+        }
+
+        if ((bool) $subscription['cancel_at_period_end']) {
+            return ['error' => 'Cannot change plan while cancellation is pending. Please resubscribe after your current period ends.'];
+        }
+
+        if ($newPlanType === 'lifetime') {
+            return ['error' => 'To upgrade to Lifetime, please cancel your current subscription and purchase Lifetime separately.'];
+        }
+
+        // Only Stripe supports mid-cycle changes
+        if ($subscription['processor'] === 'paypal') {
+            return ['error' => 'PayPal subscriptions cannot be changed mid-cycle. Please cancel your current subscription and resubscribe with the new plan.'];
+        }
+
+        if ($subscription['processor'] !== 'stripe' || empty($subscription['stripe_subscription_id'])) {
+            return ['error' => 'Cannot change plan for this subscription type'];
+        }
+
+        $stripe = new StripeService();
+        $result = $stripe->updateSubscription($subscription['stripe_subscription_id'], $newPlanType);
+
+        if (isset($result['error'])) {
+            return $result;
+        }
+
+        // Update local DB
+        global $wpdb;
+        $table = BillingSchema::table(BillingSchema::TABLE_SUBSCRIPTIONS);
+        $newPlan = $stripe->getPlanConfig($newPlanType);
+
+        $wpdb->update(
+            $table,
+            [
+                'plan_type' => $newPlanType,
+                'amount_cents' => $newPlan['amount'] ?? null,
+                'updated_at' => current_time('mysql'),
+            ],
+            ['id' => $subscription['id']]
+        );
+
+        $planNames = [
+            'monthly' => 'Monthly Supporter',
+            'annual' => 'Season Pass',
+        ];
+
+        return [
+            'success' => true,
+            'message' => 'Plan changed to ' . ($planNames[$newPlanType] ?? $newPlanType) . ' successfully!',
+        ];
+    }
+
+    /**
      * Assign supporter role to user
      */
     private function assignSupporterRole(int $userId, string $planType): void

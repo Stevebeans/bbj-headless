@@ -882,6 +882,19 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
   );
 }
 
+function getInvoiceStatusClasses(status) {
+  switch (status) {
+    case "active":
+    case "lifetime":
+      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+    case "canceled":
+    case "expired":
+      return "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
+    default:
+      return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
+  }
+}
+
 function PremiumTab({ settings, loading, showToast }) {
   const [subscription, setSubscription] = useState(null);
   const [loadingSub, setLoadingSub] = useState(true);
@@ -889,6 +902,10 @@ function PremiumTab({ settings, loading, showToast }) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [feedPerPage, setFeedPerPage] = useState(20);
   const [savingPerPage, setSavingPerPage] = useState(false);
+  const [invoices, setInvoices] = useState([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(true);
+  const [changingPlan, setChangingPlan] = useState(false);
+  const [showChangePlanConfirm, setShowChangePlanConfirm] = useState(null);
 
   // Load subscription details
   useEffect(() => {
@@ -908,6 +925,25 @@ function PremiumTab({ settings, loading, showToast }) {
 
     loadSubscription();
   }, []);
+
+  // Load invoices for premium users
+  useEffect(() => {
+    if (settings?.premium?.is_supporter) {
+      (async () => {
+        try {
+          const { getInvoices } = await import("@/lib/api/billing");
+          const result = await getInvoices();
+          setInvoices(result.invoices || []);
+        } catch (error) {
+          console.error("Failed to load invoices:", error);
+        } finally {
+          setLoadingInvoices(false);
+        }
+      })();
+    } else {
+      setLoadingInvoices(false);
+    }
+  }, [settings]);
 
   // Load feed per-page preference for premium users
   useEffect(() => {
@@ -961,14 +997,32 @@ function PremiumTab({ settings, loading, showToast }) {
       const result = await cancelSubscription();
       showToast?.(result.message || "Subscription cancelled", "success");
       setShowCancelConfirm(false);
-      // Reload subscription data
-      const { getSubscription } = await import("@/lib/api/billing");
-      const subResult = await getSubscription();
-      setSubscription(subResult.has_subscription ? subResult.subscription : null);
+      await refreshSubscription();
     } catch (error) {
       showToast?.(error.message, "error");
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const refreshSubscription = async () => {
+    const { getSubscription } = await import("@/lib/api/billing");
+    const subResult = await getSubscription();
+    setSubscription(subResult.has_subscription ? subResult.subscription : null);
+  };
+
+  const handleChangePlan = async (planType) => {
+    setChangingPlan(true);
+    try {
+      const { changePlan } = await import("@/lib/api/billing");
+      const result = await changePlan(planType);
+      showToast?.(result.message || "Plan changed successfully!", "success");
+      setShowChangePlanConfirm(null);
+      await refreshSubscription();
+    } catch (error) {
+      showToast?.(error.message, "error");
+    } finally {
+      setChangingPlan(false);
     }
   };
 
@@ -1062,9 +1116,32 @@ function PremiumTab({ settings, loading, showToast }) {
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Payment Method</span>
-                <p className="font-medium text-gray-900 dark:text-white capitalize">
-                  {subscription.processor}
-                </p>
+                {subscription.payment_method?.type === "card" ? (
+                  <p className="font-medium text-gray-900 dark:text-white capitalize">
+                    {subscription.payment_method.brand} ending in {subscription.payment_method.last4}
+                  </p>
+                ) : (
+                  <p className="font-medium text-gray-900 dark:text-white capitalize">
+                    {subscription.processor}
+                  </p>
+                )}
+                {subscription.processor === "stripe" ? (
+                  <button
+                    onClick={handleManageSubscription}
+                    className="text-xs text-primary-500 hover:text-primary-600 dark:text-primary-400 mt-0.5"
+                  >
+                    Update payment method
+                  </button>
+                ) : subscription.processor === "paypal" ? (
+                  <a
+                    href="https://www.paypal.com/myaccount/autopay"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary-500 hover:text-primary-600 dark:text-primary-400 mt-0.5 inline-block"
+                  >
+                    Manage on PayPal
+                  </a>
+                ) : null}
               </div>
               {subscription.plan_type !== "lifetime" && (
                 <div>
@@ -1124,6 +1201,113 @@ function PremiumTab({ settings, loading, showToast }) {
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Change Plan (active non-lifetime, non-cancelled subs) */}
+      {isSupporter && !loadingSub && subscription && subscription.plan_type !== "lifetime" && !subscription.cancel_at_period_end && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Change Plan
+          </h3>
+          <div className="space-y-3">
+            {subscription.plan_type === "monthly" && (
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">Switch to Season Pass</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">$35/yr — Save over 58% vs monthly</p>
+                </div>
+                <button
+                  onClick={() => setShowChangePlanConfirm("annual")}
+                  className="px-4 py-2 bg-secondary-500 hover:bg-secondary-600 text-white font-medium rounded-lg transition-colors text-sm"
+                >
+                  Switch
+                </button>
+              </div>
+            )}
+            {subscription.plan_type === "annual" && (
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">Switch to Monthly</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">$6.95/mo — Flexible monthly billing</p>
+                </div>
+                <button
+                  onClick={() => setShowChangePlanConfirm("monthly")}
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium rounded-lg transition-colors text-sm"
+                >
+                  Switch
+                </button>
+              </div>
+            )}
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-secondary-50 to-secondary-100 dark:from-secondary-900/20 dark:to-secondary-800/20 rounded-lg border border-secondary-200 dark:border-secondary-800">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Upgrade to Lifetime</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">$99 one-time — Never pay again</p>
+              </div>
+              <span className="text-xs text-gray-500 dark:text-gray-400 italic max-w-[160px] text-right">
+                Cancel current sub first, then purchase Lifetime
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment History */}
+      {isSupporter && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Payment History
+          </h3>
+          {loadingInvoices ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3" />
+                    <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/4" />
+                  </div>
+                  <div className="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : invoices.length === 0 ? (
+            <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+              <p className="text-gray-500 dark:text-gray-400">No payment history found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-slate-200 dark:border-slate-700">
+                    <th className="pb-2 font-medium">Date</th>
+                    <th className="pb-2 font-medium">Plan</th>
+                    <th className="pb-2 font-medium">Amount</th>
+                    <th className="pb-2 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {invoices.map((invoice) => (
+                    <tr key={invoice.id}>
+                      <td className="py-3 text-gray-900 dark:text-white">
+                        {new Date(invoice.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="py-3 text-gray-900 dark:text-white">{invoice.plan_name}</td>
+                      <td className="py-3 text-gray-900 dark:text-white">{invoice.amount_display}</td>
+                      <td className="py-3">
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${getInvoiceStatusClasses(invoice.status)}`}>
+                          {invoice.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -1202,6 +1386,57 @@ function PremiumTab({ settings, loading, showToast }) {
                   "Yes, Cancel"
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Plan Confirmation Modal */}
+      {showChangePlanConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
+              {showChangePlanConfirm === "annual" ? "Switch to Season Pass?" : "Switch to Monthly?"}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-2">
+              {showChangePlanConfirm === "annual"
+                ? "You'll be switched to the Season Pass ($35/yr). The change will be prorated, and you'll only pay the difference for the remaining time."
+                : "You'll be switched to Monthly billing ($6.95/mo). The change will take effect at the start of your next billing cycle."}
+            </p>
+            {subscription?.processor === "paypal" && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg mb-4">
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  PayPal subscriptions cannot be changed mid-cycle. Please cancel your current subscription and resubscribe with the new plan.
+                </p>
+              </div>
+            )}
+            <div className="flex gap-3 justify-end mt-4">
+              <button
+                onClick={() => setShowChangePlanConfirm(null)}
+                disabled={changingPlan}
+                className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              {subscription?.processor !== "paypal" && (
+                <button
+                  onClick={() => handleChangePlan(showChangePlanConfirm)}
+                  disabled={changingPlan}
+                  className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  {changingPlan ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Switching...
+                    </>
+                  ) : (
+                    "Confirm Switch"
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
