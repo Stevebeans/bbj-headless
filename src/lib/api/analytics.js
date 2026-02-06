@@ -38,44 +38,15 @@ async function analyticsFetch(endpoint, params = {}) {
   return response.json();
 }
 
-export async function getAnalyticsOverview(startDate, endDate) {
-  return analyticsFetch("/admin/analytics/overview", {
-    start_date: startDate,
-    end_date: endDate,
-  });
+function createDateEndpoint(path) {
+  return function (startDate, endDate) {
+    return analyticsFetch(path, { start_date: startDate, end_date: endDate });
+  };
 }
 
-export async function getAnalyticsPages(startDate, endDate) {
-  return analyticsFetch("/admin/analytics/pages", {
-    start_date: startDate,
-    end_date: endDate,
-  });
-}
-
-export async function getAnalyticsSources(startDate, endDate) {
-  return analyticsFetch("/admin/analytics/sources", {
-    start_date: startDate,
-    end_date: endDate,
-  });
-}
-
-export async function getAnalyticsAudience(startDate, endDate) {
-  return analyticsFetch("/admin/analytics/audience", {
-    start_date: startDate,
-    end_date: endDate,
-  });
-}
-
-export async function getAnalyticsAdBlocker(startDate, endDate) {
-  return analyticsFetch("/admin/analytics/adblocker", {
-    start_date: startDate,
-    end_date: endDate,
-  });
-}
-
-export async function getSearchConsole(startDate, endDate) {
-  return analyticsFetch("/admin/analytics/search-console", {
-    start_date: startDate,
-    end_date: endDate,
-  });
-}
+export const getAnalyticsOverview = createDateEndpoint("/admin/analytics/overview");
+export const getAnalyticsPages = createDateEndpoint("/admin/analytics/pages");
+export const getAnalyticsSources = createDateEndpoint("/admin/analytics/sources");
+export const getAnalyticsAudience = createDateEndpoint("/admin/analytics/audience");
+export const getAnalyticsAdBlocker = createDateEndpoint("/admin/analytics/adblocker");
+export const getSearchConsole = createDateEndpoint("/admin/analytics/search-console");

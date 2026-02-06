@@ -34,64 +34,31 @@ class AnalyticsRoutes
     public function registerRoutes(): void
     {
         $namespace = 'bbjd/v1';
+        $dateValidator = function ($param) {
+            return (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $param);
+        };
         $dateArgs = [
-            'start_date' => [
-                'required' => true,
-                'type' => 'string',
-                'validate_callback' => function ($param) {
-                    return (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $param);
-                },
-            ],
-            'end_date' => [
-                'required' => true,
-                'type' => 'string',
-                'validate_callback' => function ($param) {
-                    return (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $param);
-                },
-            ],
+            'start_date' => ['required' => true, 'type' => 'string', 'validate_callback' => $dateValidator],
+            'end_date'   => ['required' => true, 'type' => 'string', 'validate_callback' => $dateValidator],
         ];
 
-        register_rest_route($namespace, '/admin/analytics/overview', [
-            'methods' => 'GET',
-            'callback' => [$this, 'getOverview'],
-            'permission_callback' => [$this, 'checkAnalyticsAccess'],
-            'args' => $dateArgs,
-        ]);
+        $routes = [
+            'overview'       => 'getOverview',
+            'pages'          => 'getPages',
+            'sources'        => 'getSources',
+            'audience'       => 'getAudience',
+            'adblocker'      => 'getAdBlocker',
+            'search-console' => 'getSearchConsole',
+        ];
 
-        register_rest_route($namespace, '/admin/analytics/pages', [
-            'methods' => 'GET',
-            'callback' => [$this, 'getPages'],
-            'permission_callback' => [$this, 'checkAnalyticsAccess'],
-            'args' => $dateArgs,
-        ]);
-
-        register_rest_route($namespace, '/admin/analytics/sources', [
-            'methods' => 'GET',
-            'callback' => [$this, 'getSources'],
-            'permission_callback' => [$this, 'checkAnalyticsAccess'],
-            'args' => $dateArgs,
-        ]);
-
-        register_rest_route($namespace, '/admin/analytics/audience', [
-            'methods' => 'GET',
-            'callback' => [$this, 'getAudience'],
-            'permission_callback' => [$this, 'checkAnalyticsAccess'],
-            'args' => $dateArgs,
-        ]);
-
-        register_rest_route($namespace, '/admin/analytics/adblocker', [
-            'methods' => 'GET',
-            'callback' => [$this, 'getAdBlocker'],
-            'permission_callback' => [$this, 'checkAnalyticsAccess'],
-            'args' => $dateArgs,
-        ]);
-
-        register_rest_route($namespace, '/admin/analytics/search-console', [
-            'methods' => 'GET',
-            'callback' => [$this, 'getSearchConsole'],
-            'permission_callback' => [$this, 'checkAnalyticsAccess'],
-            'args' => $dateArgs,
-        ]);
+        foreach ($routes as $path => $method) {
+            register_rest_route($namespace, "/admin/analytics/{$path}", [
+                'methods' => 'GET',
+                'callback' => [$this, $method],
+                'permission_callback' => [$this, 'checkAnalyticsAccess'],
+                'args' => $dateArgs,
+            ]);
+        }
     }
 
     // ========================================
@@ -491,42 +458,15 @@ class AnalyticsRoutes
             return new \WP_REST_Response(['error' => $accessToken->get_error_message()], 500);
         }
 
-        $siteUrl = 'sc-domain:bigbrotherjunkies.com';
-        $encodedSite = urlencode($siteUrl);
+        $encodedSite = urlencode('sc-domain:bigbrotherjunkies.com');
         $apiBase = "https://www.googleapis.com/webmasters/v3/sites/{$encodedSite}/searchAnalytics/query";
 
         try {
-            // Top keywords
-            $keywordsBody = wp_json_encode([
-                'startDate' => $startDate,
-                'endDate' => $endDate,
-                'dimensions' => ['query'],
-                'rowLimit' => 25,
-                'searchType' => 'web',
-            ]);
-
-            $keywordsResponse = wp_remote_post($apiBase, [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $accessToken,
-                    'Content-Type' => 'application/json',
-                ],
-                'body' => $keywordsBody,
-                'timeout' => 30,
-            ]);
-
-            if (is_wp_error($keywordsResponse)) {
-                throw new \Exception('Keywords request failed: ' . $keywordsResponse->get_error_message());
-            }
-
-            $keywordsData = json_decode(wp_remote_retrieve_body($keywordsResponse), true);
-            $httpCode = wp_remote_retrieve_response_code($keywordsResponse);
-            if ($httpCode !== 200) {
-                $errMsg = $keywordsData['error']['message'] ?? "HTTP {$httpCode}";
-                throw new \Exception('Search Console API error: ' . $errMsg);
-            }
+            $keywordsRows = $this->fetchSearchConsoleData($apiBase, $accessToken, $startDate, $endDate, 'query', 25);
+            $pagesRows = $this->fetchSearchConsoleData($apiBase, $accessToken, $startDate, $endDate, 'page', 15);
 
             $keywords = [];
-            foreach (($keywordsData['rows'] ?? []) as $row) {
+            foreach ($keywordsRows as $row) {
                 $keywords[] = [
                     'query' => $row['keys'][0],
                     'clicks' => (int) $row['clicks'],
@@ -536,33 +476,8 @@ class AnalyticsRoutes
                 ];
             }
 
-            // Top pages by search performance
-            $pagesBody = wp_json_encode([
-                'startDate' => $startDate,
-                'endDate' => $endDate,
-                'dimensions' => ['page'],
-                'rowLimit' => 15,
-                'searchType' => 'web',
-            ]);
-
-            $pagesResponse = wp_remote_post($apiBase, [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $accessToken,
-                    'Content-Type' => 'application/json',
-                ],
-                'body' => $pagesBody,
-                'timeout' => 30,
-            ]);
-
-            if (is_wp_error($pagesResponse)) {
-                throw new \Exception('Pages request failed: ' . $pagesResponse->get_error_message());
-            }
-
-            $pagesData = json_decode(wp_remote_retrieve_body($pagesResponse), true);
-
             $searchPages = [];
-            foreach (($pagesData['rows'] ?? []) as $row) {
-                // Strip domain to show just the path
+            foreach ($pagesRows as $row) {
                 $fullUrl = $row['keys'][0];
                 $path = preg_replace('#^https?://(www\.)?bigbrotherjunkies\.com#', '', $fullUrl);
                 if ($path === '' || $path === '/') $path = '/';
@@ -586,6 +501,43 @@ class AnalyticsRoutes
         } catch (\Exception $e) {
             return new \WP_REST_Response(['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Fetch rows from the Search Console API for a given dimension
+     *
+     * @return array Raw row data from the API response
+     * @throws \Exception on API or HTTP errors
+     */
+    private function fetchSearchConsoleData(string $apiBase, string $accessToken, string $startDate, string $endDate, string $dimension, int $rowLimit): array
+    {
+        $response = wp_remote_post($apiBase, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type' => 'application/json',
+            ],
+            'body' => wp_json_encode([
+                'startDate' => $startDate,
+                'endDate' => $endDate,
+                'dimensions' => [$dimension],
+                'rowLimit' => $rowLimit,
+                'searchType' => 'web',
+            ]),
+            'timeout' => 30,
+        ]);
+
+        if (is_wp_error($response)) {
+            throw new \Exception("{$dimension} request failed: " . $response->get_error_message());
+        }
+
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+        $httpCode = wp_remote_retrieve_response_code($response);
+        if ($httpCode !== 200) {
+            $errMsg = $data['error']['message'] ?? "HTTP {$httpCode}";
+            throw new \Exception('Search Console API error: ' . $errMsg);
+        }
+
+        return $data['rows'] ?? [];
     }
 
     // ========================================
@@ -734,15 +686,13 @@ class AnalyticsRoutes
             return false;
         }
 
+        $user = wp_get_current_user();
         $permissions = get_option('bbj_admin_permissions', AdminRoutes::DEFAULT_PERMISSIONS);
 
         if (!isset($permissions['analytics_dashboard'])) {
-            // Fall back: allow administrators
-            $user = wp_get_current_user();
             return in_array('administrator', $user->roles, true);
         }
 
-        $user = wp_get_current_user();
         return !empty(array_intersect($user->roles, $permissions['analytics_dashboard']['roles']));
     }
 }
