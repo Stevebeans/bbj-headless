@@ -78,9 +78,8 @@ export default async function RootLayout({ children }) {
   ]);
 
   // Check if user is a supporter (ad-free) server-side
-  const isSupporter = initialUser?.user_roles?.some((role) =>
-    SUPPORTER_ROLES.includes(role)
-  );
+  const roles = Array.isArray(initialUser?.user_roles) ? initialUser.user_roles : [];
+  const isSupporter = roles.some((role) => SUPPORTER_ROLES.includes(role));
 
   return (
     <html
