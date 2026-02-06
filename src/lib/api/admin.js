@@ -173,3 +173,22 @@ export async function recalculateRanks(limit = 0) {
     body: JSON.stringify({ limit }),
   });
 }
+
+// ========================================
+// BUG REPORTS
+// ========================================
+
+export async function getBugReports(status = "open", severity = "all", type = "all", page = 1) {
+  return adminFetch(`/bug-reports?status=${status}&severity=${severity}&type=${type}&page=${page}`);
+}
+
+export async function updateBugReport(id, data) {
+  return adminFetch(`/bug-reports/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getBugReportStats() {
+  return adminFetch("/bug-reports/stats");
+}

@@ -6,6 +6,7 @@ import { ThemeScript } from "@/components/layout/ThemeScript";
 import { Providers } from "@/components/Providers";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
+import { BugReportFAB } from "@/components/bug-report/BugReportFAB";
 import { getInitialAuthState } from "@/lib/auth/serverCookies";
 import { getAdScripts } from "@/lib/api/ads";
 
@@ -109,6 +110,7 @@ export default async function RootLayout({ children }) {
           </main>
           <Footer />
           <FloatingUpdater />
+          <BugReportFAB />
         </Providers>
         {/* Global footer scripts */}
         {adScripts.global_footer && (

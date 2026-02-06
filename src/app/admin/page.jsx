@@ -57,6 +57,11 @@ const featureIcons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
   ),
+  bug_reports: (
+    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
 };
 
 // Feature routes
@@ -66,6 +71,7 @@ const featureRoutes = {
   player_management: "/admin/players",
   season_management: "/admin/seasons",
   admin_settings: "/admin/settings",
+  bug_reports: "/admin/bug-reports",
 };
 
 export default function AdminDashboard() {
@@ -120,7 +126,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white dark:bg-slate-700 rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -184,6 +190,28 @@ export default function AdminDashboard() {
               </svg>
             </div>
           </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-700 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Open Bugs</p>
+              <p className="text-3xl font-bold text-slate-800 dark:text-white">{data?.open_bug_reports || 0}</p>
+            </div>
+            <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          {(data?.open_bug_reports || 0) > 0 && (
+            <Link
+              href="/admin/bug-reports"
+              className="text-sm text-primary-500 hover:text-primary-600 mt-2 inline-block"
+            >
+              View bugs &rarr;
+            </Link>
+          )}
         </div>
       </div>
 

@@ -5,6 +5,8 @@ namespace BigBrotherJunkies\Data\Api;
 use BigBrotherJunkies\Data\Comments\CommentSchema;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
 use BigBrotherJunkies\Data\Comments\RankCalculator;
+use BigBrotherJunkies\Data\BugReports\BugReportSchema;
+use BigBrotherJunkies\Data\BugReports\BugReportMigrator;
 
 /**
  * Admin API Routes
@@ -346,10 +348,20 @@ class AdminRoutes
             WHERE DATE(created_at) = %s
         ", $today));
 
+        // Get open bug reports count
+        $openBugReports = 0;
+        $bugTable = BugReportSchema::table(BugReportSchema::TABLE_BUG_REPORTS);
+        if (BugReportMigrator::tableExists(BugReportSchema::TABLE_BUG_REPORTS)) {
+            $openBugReports = (int) $wpdb->get_var("
+                SELECT COUNT(*) FROM {$bugTable} WHERE status IN ('open', 'in_progress')
+            ");
+        }
+
         return new \WP_REST_Response([
             'pending_reports' => $pendingReports,
             'today_comments' => $todayComments,
             'today_votes' => $todayVotes,
+            'open_bug_reports' => $openBugReports,
             'features' => $this->getUserFeatures(),
         ], 200);
     }

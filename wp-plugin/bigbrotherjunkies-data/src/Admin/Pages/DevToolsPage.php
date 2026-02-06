@@ -9,6 +9,8 @@ use BigBrotherJunkies\Data\Comments\CommentMigrator;
 use BigBrotherJunkies\Data\Comments\CommentSchema;
 use BigBrotherJunkies\Data\Billing\BillingMigrator;
 use BigBrotherJunkies\Data\Billing\BillingSchema;
+use BigBrotherJunkies\Data\BugReports\BugReportMigrator;
+use BigBrotherJunkies\Data\BugReports\BugReportSchema;
 
 /**
  * Dev Tools admin page for database management
@@ -28,6 +30,7 @@ class DevToolsPage
         add_action('admin_post_bbjd_clear_registration_logs', [$this, 'handleClearRegistrationLogs']);
         add_action('admin_post_bbjd_create_comment_tables', [$this, 'handleCreateCommentTables']);
         add_action('admin_post_bbjd_create_billing_tables', [$this, 'handleCreateBillingTables']);
+        add_action('admin_post_bbjd_create_bug_report_tables', [$this, 'handleCreateBugReportTables']);
         add_action('admin_post_bbjd_add_player_hometown_cols', [$this, 'handleAddPlayerHometownCols']);
         add_action('admin_post_bbjd_add_finish_place_col', [$this, 'handleAddFinishPlaceCol']);
         add_action('admin_post_bbjd_update_player_data', [$this, 'handleUpdatePlayerData']);
@@ -500,6 +503,29 @@ class DevToolsPage
     }
 
     /**
+     * Handle create bug report tables action
+     */
+    public function handleCreateBugReportTables(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+
+        check_admin_referer('bbjd_create_bug_report_tables');
+
+        $results = BugReportMigrator::migrate();
+
+        $success = !in_array(false, $results, true);
+        $message = $success ? 'bug_report_tables_created' : 'bug_report_tables_error';
+
+        wp_redirect(add_query_arg([
+            'page' => self::MENU_SLUG,
+            'message' => $message,
+        ], admin_url('admin.php')));
+        exit;
+    }
+
+    /**
      * Render the page
      */
     public function render(): void
@@ -517,6 +543,11 @@ class DevToolsPage
         $billingTablesStatus = BillingMigrator::getTablesStatus();
         $billingDbVersion = BillingMigrator::getCurrentVersion();
         $billingNeedsMigration = BillingMigrator::needsMigration();
+
+        // Bug report system tables
+        $bugReportTablesStatus = BugReportMigrator::getTablesStatus();
+        $bugReportDbVersion = BugReportMigrator::getCurrentVersion();
+        $bugReportNeedsMigration = BugReportMigrator::needsMigration();
 
         // Check for messages
         $message = $_GET['message'] ?? '';
@@ -723,6 +754,70 @@ class DevToolsPage
                     </form>
                 </div>
 
+                <!-- Bug Report System Database Section -->
+                <div class="bbjd-bg-white bbjd-rounded-lg bbjd-shadow bbjd-p-6 bbjd-mb-6">
+                    <h2 class="bbjd-text-xl bbjd-font-semibold bbjd-text-gray-800 bbjd-mb-4">
+                        Bug Report System Database
+                        <?php if ($bugReportNeedsMigration): ?>
+                            <span class="bbjd-inline-flex bbjd-items-center bbjd-px-2.5 bbjd-py-0.5 bbjd-rounded-full bbjd-text-xs bbjd-font-medium bbjd-bg-yellow-100 bbjd-text-yellow-800 bbjd-ml-2">
+                                Migration Available
+                            </span>
+                        <?php endif; ?>
+                    </h2>
+
+                    <p class="bbjd-text-sm bbjd-text-gray-600 bbjd-mb-4">
+                        DB Version: <strong><?php echo esc_html($bugReportDbVersion); ?></strong>
+                    </p>
+
+                    <!-- Bug Report Table Status -->
+                    <div class="bbjd-mb-6">
+                        <h3 class="bbjd-text-lg bbjd-font-medium bbjd-text-gray-700 bbjd-mb-3">Table Status</h3>
+                        <div class="bbjd-overflow-x-auto">
+                            <table class="bbjd-min-w-full bbjd-divide-y bbjd-divide-gray-200">
+                                <thead class="bbjd-bg-gray-50">
+                                    <tr>
+                                        <th class="bbjd-px-4 bbjd-py-2 bbjd-text-left bbjd-text-xs bbjd-font-medium bbjd-text-gray-500 bbjd-uppercase">Table</th>
+                                        <th class="bbjd-px-4 bbjd-py-2 bbjd-text-left bbjd-text-xs bbjd-font-medium bbjd-text-gray-500 bbjd-uppercase">Status</th>
+                                        <th class="bbjd-px-4 bbjd-py-2 bbjd-text-left bbjd-text-xs bbjd-font-medium bbjd-text-gray-500 bbjd-uppercase">Rows</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bbjd-bg-white bbjd-divide-y bbjd-divide-gray-200">
+                                    <?php foreach ($bugReportTablesStatus as $table => $status): ?>
+                                    <tr>
+                                        <td class="bbjd-px-4 bbjd-py-2 bbjd-text-sm bbjd-font-mono bbjd-text-gray-900">
+                                            <?php echo esc_html($status['full_name']); ?>
+                                        </td>
+                                        <td class="bbjd-px-4 bbjd-py-2 bbjd-text-sm">
+                                            <?php if ($status['exists']): ?>
+                                                <span class="bbjd-inline-flex bbjd-items-center bbjd-px-2.5 bbjd-py-0.5 bbjd-rounded-full bbjd-text-xs bbjd-font-medium bbjd-bg-green-100 bbjd-text-green-800">
+                                                    Exists
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="bbjd-inline-flex bbjd-items-center bbjd-px-2.5 bbjd-py-0.5 bbjd-rounded-full bbjd-text-xs bbjd-font-medium bbjd-bg-red-100 bbjd-text-red-800">
+                                                    Missing
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="bbjd-px-4 bbjd-py-2 bbjd-text-sm bbjd-text-gray-500">
+                                            <?php echo $status['rows'] >= 0 ? number_format($status['rows']) : '-'; ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Bug Report Tables Action -->
+                    <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+                        <?php wp_nonce_field('bbjd_create_bug_report_tables'); ?>
+                        <input type="hidden" name="action" value="bbjd_create_bug_report_tables">
+                        <button type="submit" class="bbjd-bg-primary500 bbjd-text-white bbjd-px-4 bbjd-py-2 bbjd-rounded bbjd-font-medium hover:bbjd-bg-primaryHard bbjd-transition-colors">
+                            Create/Update Bug Report Tables
+                        </button>
+                    </form>
+                </div>
+
                 <!-- Migration Section -->
                 <div class="bbjd-bg-white bbjd-rounded-lg bbjd-shadow bbjd-p-6 bbjd-mb-6">
                     <h2 class="bbjd-text-xl bbjd-font-semibold bbjd-text-gray-800 bbjd-mb-4">
@@ -864,6 +959,8 @@ ADD COLUMN finish_place TINYINT UNSIGNED DEFAULT NULL;</code></pre>
             'comment_tables_error' => ['error', 'Error creating comment system tables.'],
             'billing_tables_created' => ['success', 'Billing system tables created/updated successfully.'],
             'billing_tables_error' => ['error', 'Error creating billing system tables.'],
+            'bug_report_tables_created' => ['success', 'Bug report system tables created/updated successfully.'],
+            'bug_report_tables_error' => ['error', 'Error creating bug report system tables.'],
             'hometown_cols_added' => ['success', sprintf(
                 'Hometown columns migration complete. Added: %s. Skipped (already exist): %s.',
                 $_GET['added'] ?? 'none',
