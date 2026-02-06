@@ -32,7 +32,7 @@ export default function BecomeSupporterPage() {
   const [paypalClientId, setPaypalClientId] = useState(null);
 
   // Check if user has a supporter role
-  const isSupporter = isAuthenticated && user?.user_roles?.some(role => SUPPORTER_ROLES.includes(role));
+  const isSupporter = isAuthenticated && Array.isArray(user?.user_roles) && user.user_roles.some(role => SUPPORTER_ROLES.includes(role));
 
   // Load plans and check subscription status
   useEffect(() => {

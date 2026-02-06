@@ -21,7 +21,7 @@ export function FeedUpdateCard({ update }) {
   );
 
   const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
-  const isPremium = isAuthenticated && user?.user_roles?.some(role => SUPPORTER_ROLES.includes(role));
+  const isPremium = isAuthenticated && Array.isArray(user?.user_roles) && user.user_roles.some(role => SUPPORTER_ROLES.includes(role));
 
   const handleQuickReply = async (e) => {
     e.preventDefault();
