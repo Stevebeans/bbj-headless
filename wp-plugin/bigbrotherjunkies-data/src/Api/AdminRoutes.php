@@ -7,6 +7,7 @@ use BigBrotherJunkies\Data\Comments\CommentMigrator;
 use BigBrotherJunkies\Data\Comments\RankCalculator;
 use BigBrotherJunkies\Data\BugReports\BugReportSchema;
 use BigBrotherJunkies\Data\BugReports\BugReportMigrator;
+use BigBrotherJunkies\Data\Announcements\AnnouncementService;
 
 /**
  * Admin API Routes
@@ -50,6 +51,11 @@ class AdminRoutes
         'analytics_dashboard' => [
             'label' => 'View Analytics',
             'description' => 'Access site analytics and traffic data',
+            'roles' => ['administrator'],
+        ],
+        'announcements' => [
+            'label' => 'Announcements',
+            'description' => 'Send site-wide announcements to all users',
             'roles' => ['administrator'],
         ],
     ];
@@ -319,6 +325,54 @@ class AdminRoutes
                     'type' => 'integer',
                 ],
             ],
+        ]);
+
+        // ========================================
+        // ANNOUNCEMENTS
+        // ========================================
+
+        // Create an announcement
+        register_rest_route($namespace, '/admin/announcements', [
+            'methods' => 'POST',
+            'callback' => [$this, 'createAnnouncement'],
+            'permission_callback' => [$this, 'checkAnnouncementsAccess'],
+            'args' => [
+                'message' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_textarea_field',
+                    'validate_callback' => function ($value) {
+                        $len = strlen(trim($value));
+                        return $len >= 1 && $len <= 500;
+                    },
+                ],
+            ],
+        ]);
+
+        // Get announcements (admin history)
+        register_rest_route($namespace, '/admin/announcements', [
+            'methods' => 'GET',
+            'callback' => [$this, 'getAnnouncements'],
+            'permission_callback' => [$this, 'checkAnnouncementsAccess'],
+            'args' => [
+                'page' => [
+                    'default' => 1,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+                'per_page' => [
+                    'default' => 20,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+            ],
+        ]);
+
+        // Delete an announcement
+        register_rest_route($namespace, '/admin/announcements/(?P<id>\d+)', [
+            'methods' => 'DELETE',
+            'callback' => [$this, 'deleteAnnouncement'],
+            'permission_callback' => [$this, 'checkAnnouncementsAccess'],
         ]);
     }
 
@@ -1103,6 +1157,62 @@ class AdminRoutes
     }
 
     // ========================================
+    // ANNOUNCEMENT ENDPOINTS
+    // ========================================
+
+    /**
+     * Create an announcement
+     */
+    public function createAnnouncement(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $message = trim($request->get_param('message'));
+        $userId = get_current_user_id();
+
+        $id = AnnouncementService::create($message, $userId);
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'id' => $id,
+            'message' => 'Announcement sent',
+        ], 201);
+    }
+
+    /**
+     * Get announcements (admin history)
+     */
+    public function getAnnouncements(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $page = $request->get_param('page');
+        $perPage = min($request->get_param('per_page'), 50);
+
+        $result = AnnouncementService::getAll($page, $perPage);
+
+        return new \WP_REST_Response($result, 200);
+    }
+
+    /**
+     * Delete an announcement
+     */
+    public function deleteAnnouncement(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $id = (int) $request->get_param('id');
+
+        $success = AnnouncementService::delete($id);
+
+        if (!$success) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => 'Announcement not found',
+            ], 404);
+        }
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'message' => 'Announcement deleted',
+        ], 200);
+    }
+
+    // ========================================
     // PERMISSION CALLBACKS
     // ========================================
 
@@ -1143,6 +1253,14 @@ class AdminRoutes
     public function checkAdminSettingsAccess(): bool
     {
         return $this->checkFeatureAccess('admin_settings');
+    }
+
+    /**
+     * Check if user has announcements access
+     */
+    public function checkAnnouncementsAccess(): bool
+    {
+        return $this->checkFeatureAccess('announcements');
     }
 
     /**

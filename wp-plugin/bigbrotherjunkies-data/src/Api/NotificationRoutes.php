@@ -59,9 +59,15 @@ class NotificationRoutes
             'args' => [
                 'ids' => [
                     'type' => 'array',
-                    'items' => ['type' => 'integer'],
+                    'items' => ['type' => 'string'],
                     'sanitize_callback' => function ($ids) {
-                        return array_map('absint', (array) $ids);
+                        return array_map(function ($id) {
+                            // Allow ann_ prefixed IDs for announcements
+                            if (is_string($id) && str_starts_with($id, 'ann_')) {
+                                return 'ann_' . absint(substr($id, 4));
+                            }
+                            return absint($id);
+                        }, (array) $ids);
                     },
                 ],
                 'all' => [

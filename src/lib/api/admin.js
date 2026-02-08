@@ -175,6 +175,27 @@ export async function recalculateRanks(limit = 0) {
 }
 
 // ========================================
+// ANNOUNCEMENTS
+// ========================================
+
+export async function getAnnouncements(page = 1, perPage = 20) {
+  return adminFetch(`/admin/announcements?page=${page}&per_page=${perPage}`);
+}
+
+export async function createAnnouncement(message) {
+  return adminFetch("/admin/announcements", {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  });
+}
+
+export async function deleteAnnouncement(id) {
+  return adminFetch(`/admin/announcements/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// ========================================
 // BUG REPORTS
 // ========================================
 

@@ -430,66 +430,14 @@ The core differentiator during the season.
 
 ### 5.6 Admin Dashboard Redesign
 
-- [x] Modern tab-based layout replacing sidebar (Feb 5)
-- [x] Permission-gated tabs (Overview, Comments, Bug Reports, Stats, Settings)
+- [ ] Modern dashboard layout with better visual hierarchy
+- [ ] Collapsible sidebar navigation (not just cards)
 - [ ] Real-time activity feed (recent comments, new users, reports)
 - [ ] Quick action buttons (approve/reject reports, pin comments)
-- [x] Stats with charts via Recharts (Feb 6 - see 5.7)
+- [ ] Better stats with sparklines/mini charts
 - [ ] User search with quick actions (ban, promote, view profile)
-- [x] Mobile-responsive admin UI (tab navigation scrolls horizontally)
-- [x] Dark mode polish
-
-### 5.7 Admin Analytics Dashboard (GA4 + Search Console) ✅
-
-**Status:** Complete (Feb 6, 2026)
-
-**What was built:**
-
-- [x] **GA4 Data API integration** via service account (REST transport for Cloudways)
-  - KPI cards: Users, Page Views, Avg Session Duration, Bounce Rate
-  - Traffic Over Time line chart (with day-of-week in tooltip)
-  - Top Pages + Landing Pages tables
-  - Traffic Sources bar chart + Top Referrers table
-  - Device breakdown donut chart
-  - Peak Hours bar chart (converted to EST)
-  - Geography table (top 10 countries)
-  - Ad Blocker detection stats
-  - Content Type Breakdown (Blog Posts, Players, Seasons, Feed Updates, Other)
-
-- [x] **Google Search Console integration** (uses same service account)
-  - Top 25 search keywords with clicks, impressions, CTR, avg position
-  - Top 15 pages by search performance
-  - Uses REST API directly with `google/auth` (no extra packages)
-
-- [x] **Date range controls**
-  - Quick presets: 1D, 7D, 1M, 3M, 6M, 1Y
-  - Season dropdown (auto-sets date range to season ± 2 weeks)
-  - Custom date range picker
-
-- [x] **Caching** - 15-minute WP transient cache per date range
-- [x] **Permission** - `analytics_dashboard` permission in admin permissions table
-- [x] **Stats tab** in admin dashboard layout
-
-**Files:**
-
-- `wp-plugin/.../Api/AnalyticsRoutes.php` - 6 GA4 endpoints + Search Console endpoint
-- `wp-plugin/.../Admin/Pages/ApiSettingsPage.php` - GA4 Property ID + Service Account JSON fields
-- `src/lib/api/analytics.js` - Frontend API client (factory pattern)
-- `src/app/admin/stats/page.jsx` - Stats page with Recharts (generic DataTable + LoadingSection)
-- `src/app/admin/layout.jsx` - Stats tab with chart icon
-
-**Dependencies:**
-
-- `recharts` (npm) - Chart components
-- `google/analytics-data` (composer) - GA4 Data API PHP client
-- `google/auth` (composer, already installed) - Service account auth for Search Console
-
-**Setup required:**
-
-1. GA4 Property ID + Service Account JSON in WP Admin → BBJ Data → API Settings
-2. Service account added as viewer on GA4 property
-3. Search Console API enabled in Google Cloud Console
-4. Service account added as user in Google Search Console
+- [ ] Mobile-responsive admin UI
+- [ ] Dark mode polish
 
 ---
 
@@ -497,28 +445,7 @@ The core differentiator during the season.
 
 Ideas to keep premium users engaged year-round.
 
-### 6.1 Live Chat (Premium Feature) — Priority for BB28
-
-Live chat room for premium/supporter users during live shows and feeds. Replaces the real-time conversation that feed updates took away.
-
-- [ ] **Chat room per season** (e.g., "BB28 Live Chat")
-  - Real-time messaging (WebSocket or SSE)
-  - Premium/supporter only (free users see "Go Premium to join chat")
-  - Online user count + user list sidebar
-  - Staff/mod badges and moderation tools (mute, ban, slow mode)
-- [ ] **Show night mode** — Auto-opens during live show hours (Thu/Sun/Wed 8-10pm ET)
-- [ ] **Chat widget** — Collapsible panel on feed updates page or floating tab site-wide
-- [ ] **Basic features**: Emoji support, @mentions, auto-scroll with "new messages" indicator
-- [ ] **Moderation**: Slow mode (1 msg per X seconds), word filters, temp bans
-- [ ] **History** — Scrollback for recent messages, but not permanent archive (keeps it ephemeral/fun)
-
-**Technical options to evaluate:**
-- Pusher/Ably (managed WebSocket service, easiest)
-- Self-hosted WebSocket via Node.js sidecar
-- WordPress + SSE polling (simplest but least real-time)
-- Supabase Realtime (free tier generous)
-
-### 6.2 Community Features
+### 6.1 Community Features
 
 - [ ] User predictions/brackets for each season
 - [ ] Prediction leaderboards
@@ -528,7 +455,7 @@ Live chat room for premium/supporter users during live shows and feeds. Replaces
 - [ ] Watch party coordination
 - [ ] User flair system (pick favorite player/season badges)
 
-### 6.3 Engagement Ideas
+### 6.2 Engagement Ideas
 
 - [ ] Off-season content (rankings, retrospectives, "where are they now")
 - [ ] "Remember this?" automated throwbacks (historic moments on anniversaries)
@@ -538,7 +465,7 @@ Live chat room for premium/supporter users during live shows and feeds. Replaces
 - [ ] Exclusive podcasts or video content
 - [ ] Monthly premium newsletter with insider info
 
-### 6.4 Gamification
+### 6.3 Gamification
 
 - [ ] User levels/ranks based on activity
 - [ ] Achievement badges
@@ -642,7 +569,7 @@ The following suggestions have been added to their respective phases:
 
 ## Current Focus
 
-**Completed:** Phase 3 (Feed Updates) ✅, Phase 4.2 (Premium Billing) ✅, Phase 4.1 (User Profiles) ✅, Phase 5.7 (Analytics Dashboard) ✅
+**Completed:** Phase 3 (Feed Updates) ✅, Phase 4.2 (Premium Billing) ✅, Phase 4.1 (User Profiles) ✅
 
 ---
 
@@ -661,7 +588,7 @@ The following suggestions have been added to their respective phases:
 6. ~~**Move JWT auth to cookies** - Migrated JWT from localStorage to httpOnly cookies for flash-free SSR (Feb 3)~~
 7. **Polish remaining 4.1 items** - Saved/bookmarked content, account linking
 7. **Polish remaining 4.2 items** - Invoice history, upgrade/downgrade, payment methods
-8. ~~**Finish 1.2** - GA4 ad blocker tracking (Feb 6 - integrated into admin Stats dashboard)~~
+8. **Finish 1.2** - GA4 ad blocker tracking
 9. ~~**Home page layout** - Moved widgets to sidebar, feed updates full-width with card styling~~
 10. ~~**Feed Updates page enhancements** - Sidebar, pagination, per-page setting, pill styling for update types (Feb 4)~~
 11. ~~**Page Speed Insights** - Lighthouse fixes for accessibility, contrast, touch targets (Feb 3 & 5, score: 97)~~

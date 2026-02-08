@@ -23,6 +23,8 @@ class CommentSchema
     public const TABLE_AVATARS = 'bbj_user_avatars';
     public const TABLE_ACTIVE_USERS = 'bbj_active_users';
     public const TABLE_POST_SUBSCRIPTIONS = 'bbj_post_subscriptions';
+    public const TABLE_ANNOUNCEMENTS = 'bbj_announcements';
+    public const TABLE_ANNOUNCEMENT_READS = 'bbj_announcement_reads';
 
     /**
      * Get full table name with prefix
@@ -348,6 +350,41 @@ class CommentSchema
     }
 
     /**
+     * Get the announcements table schema
+     */
+    public static function getAnnouncementsTableSchema(): string
+    {
+        $table = self::table(self::TABLE_ANNOUNCEMENTS);
+        $charset = self::getCharset();
+
+        return "CREATE TABLE {$table} (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            message TEXT NOT NULL,
+            created_by BIGINT(20) UNSIGNED NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_created (created_at)
+        ) {$charset};";
+    }
+
+    /**
+     * Get the announcement reads table schema
+     */
+    public static function getAnnouncementReadsTableSchema(): string
+    {
+        $table = self::table(self::TABLE_ANNOUNCEMENT_READS);
+        $charset = self::getCharset();
+
+        return "CREATE TABLE {$table} (
+            user_id BIGINT(20) UNSIGNED NOT NULL,
+            announcement_id BIGINT(20) UNSIGNED NOT NULL,
+            read_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, announcement_id),
+            KEY idx_announcement (announcement_id)
+        ) {$charset};";
+    }
+
+    /**
      * Get all table schemas
      */
     public static function getAllSchemas(): array
@@ -366,6 +403,8 @@ class CommentSchema
             self::TABLE_AVATARS => self::getAvatarsTableSchema(),
             self::TABLE_ACTIVE_USERS => self::getActiveUsersTableSchema(),
             self::TABLE_POST_SUBSCRIPTIONS => self::getPostSubscriptionsTableSchema(),
+            self::TABLE_ANNOUNCEMENTS => self::getAnnouncementsTableSchema(),
+            self::TABLE_ANNOUNCEMENT_READS => self::getAnnouncementReadsTableSchema(),
         ];
     }
 

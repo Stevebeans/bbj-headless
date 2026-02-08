@@ -79,6 +79,9 @@ class CommentMigrator
             CommentSchema::TABLE_AVATARS,
             CommentSchema::TABLE_ACTIVE_USERS,
             CommentSchema::TABLE_POST_SUBSCRIPTIONS,
+            // Announcements
+            CommentSchema::TABLE_ANNOUNCEMENTS,
+            CommentSchema::TABLE_ANNOUNCEMENT_READS,
         ];
 
         $status = [];

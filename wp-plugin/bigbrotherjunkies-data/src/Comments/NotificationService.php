@@ -2,6 +2,8 @@
 
 namespace BigBrotherJunkies\Data\Comments;
 
+use BigBrotherJunkies\Data\Announcements\AnnouncementService;
+
 /**
  * Notification Service
  *
@@ -401,7 +403,7 @@ class NotificationService
     }
 
     /**
-     * Get unread notification count for a user
+     * Get unread notification count for a user (includes announcements)
      *
      * @param int $userId The user ID
      * @return int Count of unread notifications
@@ -412,14 +414,18 @@ class NotificationService
 
         $table = CommentSchema::table(CommentSchema::TABLE_NOTIFICATIONS);
 
-        return (int) $wpdb->get_var($wpdb->prepare(
+        $notifCount = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$table} WHERE user_id = %d AND is_read = 0",
             $userId
         ));
+
+        $annCount = AnnouncementService::getUnreadCount($userId);
+
+        return $notifCount + $annCount;
     }
 
     /**
-     * Get notifications for a user
+     * Get notifications for a user (with announcements merged on page 1)
      *
      * @param int $userId The user ID
      * @param int $page Page number
@@ -457,13 +463,22 @@ class NotificationService
             $formatted[] = self::formatNotification($notification);
         }
 
+        // Prepend recent announcements on page 1
+        if ($page === 1) {
+            $announcements = AnnouncementService::getForUser($userId);
+            if (!empty($announcements)) {
+                $formatted = array_merge($announcements, $formatted);
+                $total += count($announcements);
+            }
+        }
+
         return [
             'notifications' => $formatted,
             'pagination' => [
                 'total' => $total,
                 'per_page' => $perPage,
                 'current_page' => $page,
-                'total_pages' => ceil($total / $perPage),
+                'total_pages' => (int) ceil($total / $perPage),
             ],
         ];
     }
@@ -503,7 +518,7 @@ class NotificationService
     }
 
     /**
-     * Mark notifications as read
+     * Mark notifications as read (handles both regular and ann_ IDs)
      *
      * @param int $userId The user ID
      * @param array|null $ids Specific notification IDs to mark read, or null for all
@@ -516,28 +531,52 @@ class NotificationService
         $table = CommentSchema::table(CommentSchema::TABLE_NOTIFICATIONS);
 
         if ($ids === null) {
-            // Mark all as read
-            return $wpdb->update(
+            // Mark all as read (including all announcements)
+            $notifCount = $wpdb->update(
                 $table,
                 ['is_read' => 1],
                 ['user_id' => $userId, 'is_read' => 0],
                 ['%d'],
                 ['%d', '%d']
             );
+            $annCount = AnnouncementService::markAllAsRead($userId);
+            return ($notifCount ?: 0) + $annCount;
         }
 
-        // Mark specific IDs as read
         if (empty($ids)) {
             return 0;
         }
 
-        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
-        $params = array_merge([$userId], $ids);
+        // Separate announcement IDs from regular notification IDs
+        $announcementIds = [];
+        $notificationIds = [];
 
-        return $wpdb->query($wpdb->prepare(
-            "UPDATE {$table} SET is_read = 1 WHERE user_id = %d AND id IN ({$placeholders})",
-            ...$params
-        ));
+        foreach ($ids as $id) {
+            if (is_string($id) && str_starts_with($id, 'ann_')) {
+                $announcementIds[] = (int) substr($id, 4);
+            } else {
+                $notificationIds[] = (int) $id;
+            }
+        }
+
+        $count = 0;
+
+        // Mark regular notifications as read
+        if (!empty($notificationIds)) {
+            $placeholders = implode(',', array_fill(0, count($notificationIds), '%d'));
+            $params = array_merge([$userId], $notificationIds);
+            $count += $wpdb->query($wpdb->prepare(
+                "UPDATE {$table} SET is_read = 1 WHERE user_id = %d AND id IN ({$placeholders})",
+                ...$params
+            ));
+        }
+
+        // Mark announcements as read
+        if (!empty($announcementIds)) {
+            $count += AnnouncementService::markAsRead($userId, $announcementIds);
+        }
+
+        return $count;
     }
 
     /**

@@ -167,6 +167,7 @@ export default function NotificationBell() {
                   <NotificationItem
                     key={notification.id}
                     notification={notification}
+                    compact
                     onClick={() => handleNotificationClick(notification)}
                   />
                 ))}
