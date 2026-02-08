@@ -115,6 +115,13 @@ class HomeRoutes
             ],
         ]);
 
+        // Combined homepage endpoint (single request for all homepage data)
+        register_rest_route('bbjd/v1', '/homepage', [
+            'methods' => 'GET',
+            'callback' => [$this, 'getHomepage'],
+            'permission_callback' => '__return_true',
+        ]);
+
         // Feed updates by date (for blog post live feed threads)
         register_rest_route('bbjd/v1', '/feed-updates-by-date', [
             'methods' => 'GET',
@@ -668,6 +675,49 @@ class HomeRoutes
         wp_reset_postdata();
 
         $result = ['posts' => $posts];
+
+        // Cache for 60 seconds
+        set_transient($cacheKey, $result, 60);
+
+        return $result;
+    }
+
+    /**
+     * Combined homepage endpoint — all data in one request
+     * Eliminates 6 parallel API calls that compete for PHP workers
+     */
+    public function getHomepage(): array
+    {
+        $cacheKey = 'bbjd_homepage_combined';
+        $cached = get_transient($cacheKey);
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        // Build mock requests with homepage defaults
+        $feedRequest = new \WP_REST_Request('GET', '/bbjd/v1/feed-updates');
+        $feedRequest->set_param('per_page', 15);
+        $feedRequest->set_param('offset', 0);
+        $feedRequest->set_param('sort', 'newest');
+        $feedRequest->set_param('date_range', 'all');
+        $feedRequest->set_param('search', '');
+
+        $commentsRequest = new \WP_REST_Request('GET', '/bbjd/v1/recent-comments');
+        $commentsRequest->set_param('per_page', 5);
+
+        $postsRequest = new \WP_REST_Request('GET', '/bbjd/v1/posts');
+        $postsRequest->set_param('per_page', 10);
+        $postsRequest->set_param('page', 1);
+        $postsRequest->set_param('category', 0);
+
+        $result = [
+            'hero' => $this->getHeroPost(),
+            'feedUpdates' => $this->getFeedUpdates($feedRequest),
+            'houseboard' => $this->getHouseboard(),
+            'seasonStats' => $this->getSeasonStats(),
+            'recentComments' => $this->getRecentComments($commentsRequest),
+            'posts' => $this->getPosts($postsRequest),
+        ];
 
         // Cache for 60 seconds
         set_transient($cacheKey, $result, 60);
