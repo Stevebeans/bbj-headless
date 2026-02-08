@@ -10,7 +10,7 @@ const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
 export default function RegisterView() {
   const router = useRouter();
-  const { loginWithGoogle, setUserFromResponse, isAuthenticated, loading: authLoading } = useAuth();
+  const { loginWithGoogle, createFromGoogle, setUserFromResponse, isAuthenticated, loading: authLoading } = useAuth();
   const { closeModal, switchToLogin, redirectPath } = useAuthModal();
 
   const [formData, setFormData] = useState({
@@ -126,7 +126,13 @@ export default function RegisterView() {
 
     try {
       const result = await loginWithGoogle(response.credential);
-      if (!result.success) {
+      if (result.needs_linking) {
+        // User is on register view, so create a new account from Google
+        const createResult = await createFromGoogle(result.credential);
+        if (!createResult.success) {
+          setError(createResult.error || "Google sign-up failed");
+        }
+      } else if (!result.success) {
         setError(result.error || "Google sign-up failed");
       }
     } catch (err) {
