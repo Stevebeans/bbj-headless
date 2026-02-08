@@ -91,6 +91,30 @@ class HomeRoutes
             ],
         ]);
 
+        // Lightweight posts endpoint (replaces slow wp/v2/posts?_embed)
+        register_rest_route('bbjd/v1', '/posts', [
+            'methods' => 'GET',
+            'callback' => [$this, 'getPosts'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'per_page' => [
+                    'default' => 10,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+                'page' => [
+                    'default' => 1,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+                'category' => [
+                    'default' => 0,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
+            ],
+        ]);
+
         // Feed updates by date (for blog post live feed threads)
         register_rest_route('bbjd/v1', '/feed-updates-by-date', [
             'methods' => 'GET',
@@ -562,6 +586,93 @@ class HomeRoutes
             'comments' => $recentComments,
             'total' => count($recentComments),
         ];
+    }
+
+    /**
+     * Get posts — lightweight replacement for wp/v2/posts?_embed
+     * Single query with joined author/image/category data instead of N+1
+     */
+    public function getPosts(\WP_REST_Request $request): array
+    {
+        $perPage = min($request->get_param('per_page'), 30);
+        $page = max(1, $request->get_param('page'));
+        $category = $request->get_param('category');
+
+        // Build a cache key based on params
+        $cacheKey = "bbjd_posts_{$perPage}_{$page}_{$category}";
+        $cached = get_transient($cacheKey);
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        $args = [
+            'post_type' => 'post',
+            'post_status' => 'publish',
+            'posts_per_page' => $perPage,
+            'paged' => $page,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'ignore_sticky_posts' => true,
+            'no_found_rows' => true,
+        ];
+
+        if ($category > 0) {
+            $args['cat'] = $category;
+        }
+
+        $query = new \WP_Query($args);
+        $posts = [];
+
+        while ($query->have_posts()) {
+            $query->the_post();
+            $postId = get_the_ID();
+            $authorId = (int) get_the_author_meta('ID');
+
+            // Get categories directly — cheaper than _embed
+            $cats = get_the_category($postId);
+            $categoryNames = [];
+            $categoryIds = [];
+            foreach ($cats as $cat) {
+                $categoryNames[] = $cat->name;
+                $categoryIds[] = $cat->term_id;
+            }
+
+            // Get featured image URL — single meta lookup
+            $thumbUrl = get_the_post_thumbnail_url($postId, 'medium_large') ?: null;
+
+            // Get excerpt
+            $excerpt = get_the_excerpt($postId);
+
+            $posts[] = [
+                'id' => $postId,
+                'slug' => get_post_field('post_name', $postId),
+                'title' => html_entity_decode(get_the_title(), ENT_QUOTES, 'UTF-8'),
+                'excerpt' => $excerpt,
+                'content' => apply_filters('the_content', get_the_content()),
+                'date' => get_the_date('c'),
+                'modified' => get_the_modified_date('c'),
+                'author' => [
+                    'id' => $authorId,
+                    'name' => get_the_author_meta('display_name'),
+                    'avatar' => AvatarUploader::getAvatarUrl($authorId, 96),
+                ],
+                'featuredImage' => $thumbUrl,
+                'categories' => $categoryNames,
+                'categoryIds' => $categoryIds,
+                'commentCount' => (int) get_comments_number(),
+                'liveFeedThread' => (bool) get_post_meta($postId, '_live_feed_thread', true),
+                'hideAds' => (bool) get_post_meta($postId, '_hide_ads', true),
+            ];
+        }
+
+        wp_reset_postdata();
+
+        $result = ['posts' => $posts];
+
+        // Cache for 60 seconds
+        set_transient($cacheKey, $result, 60);
+
+        return $result;
     }
 
     /**

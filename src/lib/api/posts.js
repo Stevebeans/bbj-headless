@@ -1,8 +1,33 @@
-import { wpRestFetch } from "./wordpress";
+import { wpRestFetch, bbjdFetch } from "./wordpress";
 import { decodeHtml, stripHtml } from "../utils/decodeHtml";
 
 /**
- * Transform WP post to our format
+ * Get posts with pagination — uses custom lightweight endpoint
+ */
+export async function getPosts(options = {}) {
+  const { limit = 10, page = 1, category } = options;
+
+  let endpoint = `/posts?per_page=${limit}&page=${page}`;
+
+  if (category) {
+    endpoint += `&category=${category}`;
+  }
+
+  try {
+    const data = await bbjdFetch(endpoint, {
+      tags: ["posts"],
+      revalidate: 60,
+    });
+
+    return data.posts || [];
+  } catch (error) {
+    console.error("Failed to fetch posts:", error);
+    return [];
+  }
+}
+
+/**
+ * Transform WP REST API post to our format (used for single post/related posts)
  */
 function transformPost(wpPost) {
   const author = wpPost._embedded?.author?.[0];
@@ -29,31 +54,6 @@ function transformPost(wpPost) {
     liveFeedThread: wpPost.live_feed_thread || false,
     hideAds: wpPost.hide_ads || false,
   };
-}
-
-/**
- * Get posts with pagination
- */
-export async function getPosts(options = {}) {
-  const { limit = 10, page = 1, category } = options;
-
-  let endpoint = `/posts?_embed&per_page=${limit}&page=${page}`;
-
-  if (category) {
-    endpoint += `&categories=${category}`;
-  }
-
-  try {
-    const posts = await wpRestFetch(endpoint, {
-      tags: ["posts"],
-      revalidate: 3600, // 1 hour - posts don't change often
-    });
-
-    return posts.map(transformPost);
-  } catch (error) {
-    console.error("Failed to fetch posts:", error);
-    return [];
-  }
 }
 
 /**
