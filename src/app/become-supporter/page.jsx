@@ -71,7 +71,7 @@ export default function BecomeSupporterPage() {
     }
 
     const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=USD&intent=capture&vault=true`;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=USD&intent=capture&vault=true&disable-funding=credit`;
     script.async = true;
     script.onload = () => setPaypalReady(true);
     script.onerror = () => setError("Failed to load PayPal");
@@ -88,11 +88,13 @@ export default function BecomeSupporterPage() {
   useEffect(() => {
     if (!paypalReady || !window.paypal || hasSubscription || !isAuthenticated) return;
 
-    const container = document.getElementById("paypal-button-container");
-    if (!container) return;
+    // Small delay to ensure DOM container is rendered after auth state change
+    const timer = setTimeout(() => {
+      const container = document.getElementById("paypal-button-container");
+      if (!container) return;
 
-    // Clear previous buttons
-    container.innerHTML = "";
+      // Clear previous buttons
+      container.innerHTML = "";
 
     const successUrl = `${SITE_URL}/checkout/success?processor=paypal`;
     const cancelUrl = `${SITE_URL}/checkout/cancel`;
@@ -147,6 +149,9 @@ export default function BecomeSupporterPage() {
         },
       })
       .render("#paypal-button-container");
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, [paypalReady, selectedPlan, hasSubscription, isAuthenticated, refreshUser]);
 
   // Handle Stripe checkout
