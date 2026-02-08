@@ -221,6 +221,24 @@ class SubscriptionManager
 
         if ($subscription['processor'] === 'stripe' && $subscription['stripe_subscription_id']) {
             $stripe = new StripeService();
+
+            if ($immediate) {
+                $result = $stripe->cancelSubscriptionImmediately($subscription['stripe_subscription_id']);
+
+                if (isset($result['error'])) {
+                    return $result;
+                }
+
+                $this->updateSubscriptionStatus($subscription['id'], 'canceled', [
+                    'canceled_at' => current_time('mysql'),
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Subscription has been canceled immediately',
+                ];
+            }
+
             $result = $stripe->cancelSubscription($subscription['stripe_subscription_id']);
 
             if (isset($result['error'])) {
@@ -247,7 +265,7 @@ class SubscriptionManager
                 return $result;
             }
 
-            // PayPal cancels immediately
+            // PayPal always cancels immediately
             $this->updateSubscriptionStatus($subscription['id'], 'canceled', [
                 'canceled_at' => current_time('mysql'),
             ]);
@@ -413,6 +431,64 @@ class SubscriptionManager
         }
 
         return $count;
+    }
+
+    /**
+     * Find a subscription by its ID
+     */
+    public function findById(int $subscriptionId): ?array
+    {
+        global $wpdb;
+        $table = BillingSchema::table(BillingSchema::TABLE_SUBSCRIPTIONS);
+
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$table} WHERE id = %d",
+            $subscriptionId
+        ), ARRAY_A) ?: null;
+    }
+
+    /**
+     * Get all subscriptions with user data, optional filter, pagination
+     */
+    public function getAllSubscriptions(?string $statusFilter = null, int $page = 1, int $perPage = 25): array
+    {
+        global $wpdb;
+        $table = BillingSchema::table(BillingSchema::TABLE_SUBSCRIPTIONS);
+        $usersTable = $wpdb->users;
+
+        $where = '';
+        $params = [];
+
+        if ($statusFilter) {
+            $where = 'WHERE s.status = %s';
+            $params[] = $statusFilter;
+        }
+
+        // Count total
+        $countSql = "SELECT COUNT(*) FROM {$table} s {$where}";
+        $total = $params
+            ? (int) $wpdb->get_var($wpdb->prepare($countSql, ...$params))
+            : (int) $wpdb->get_var($countSql);
+
+        $pages = (int) ceil($total / $perPage);
+        $offset = ($page - 1) * $perPage;
+
+        // Fetch items
+        $sql = "SELECT s.*, u.display_name, u.user_email, u.user_login
+                FROM {$table} s
+                LEFT JOIN {$usersTable} u ON s.user_id = u.ID
+                {$where}
+                ORDER BY s.created_at DESC
+                LIMIT %d OFFSET %d";
+
+        $queryParams = array_merge($params, [$perPage, $offset]);
+        $items = $wpdb->get_results($wpdb->prepare($sql, ...$queryParams), ARRAY_A) ?: [];
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'pages' => $pages,
+        ];
     }
 
     /**

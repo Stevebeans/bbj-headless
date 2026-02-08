@@ -12,6 +12,7 @@ use BigBrotherJunkies\Data\Admin\Pages\SettingsPage;
 use BigBrotherJunkies\Data\Admin\Pages\DevToolsPage;
 use BigBrotherJunkies\Data\Admin\Pages\ApiSettingsPage;
 use BigBrotherJunkies\Data\Admin\Pages\ImportPage;
+use BigBrotherJunkies\Data\Admin\Pages\SubscriptionsPage;
 use BigBrotherJunkies\Data\Ads\AdManager;
 use BigBrotherJunkies\Data\Ads\ContentInserter;
 use BigBrotherJunkies\Data\Api\AdRoutes;
@@ -419,6 +420,7 @@ class Plugin
             'import' => new ImportPage(),
             'social_settings' => new SocialSettingsPage(),
             'api_settings' => new ApiSettingsPage(),
+            'subscriptions' => new SubscriptionsPage(),
         ];
 
         // Register admin menus
@@ -533,6 +535,16 @@ class Plugin
             'manage_options',
             ApiSettingsPage::MENU_SLUG,
             [$this->adminPages['api_settings'], 'render']
+        );
+
+        // Subscriptions (submenu under BBJ Data)
+        add_submenu_page(
+            'bbjd-dashboard',
+            __('Subscriptions', 'bigbrotherjunkies-data'),
+            __('Subscriptions', 'bigbrotherjunkies-data'),
+            'manage_options',
+            SubscriptionsPage::MENU_SLUG,
+            [$this->adminPages['subscriptions'], 'render']
         );
     }
 

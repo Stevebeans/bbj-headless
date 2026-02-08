@@ -493,7 +493,17 @@ Ideas to keep premium users engaged year-round.
 - [ ] Watch party coordination
 - [ ] User flair system (pick favorite player/season badges)
 
-### 6.2 Engagement Ideas
+### 6.2 BBJ Hall of Fame
+
+- [ ] **Hall of Fame Page** `/hall-of-fame`
+  - Admin-curated list of outstanding community members
+  - Each entry: name, photo, description of contribution, date inducted
+  - Special "In Memoriam" section for honoring members who have passed away
+  - Beautiful card/plaque-style layout befitting the honor
+  - Admin UI to add/edit/remove inductees and set display order
+  - Categories: Comment Moderators, Top Contributors, Community Legends, In Memoriam
+
+### 6.3 Engagement Ideas
 
 - [ ] Off-season content (rankings, retrospectives, "where are they now")
 - [ ] "Remember this?" automated throwbacks (historic moments on anniversaries)
@@ -503,7 +513,7 @@ Ideas to keep premium users engaged year-round.
 - [ ] Exclusive podcasts or video content
 - [ ] Monthly premium newsletter with insider info
 
-### 6.3 Gamification
+### 6.4 Gamification
 
 - [ ] User levels/ranks based on activity
 - [ ] Achievement badges

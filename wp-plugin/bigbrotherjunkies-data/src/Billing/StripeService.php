@@ -266,6 +266,20 @@ class StripeService
     }
 
     /**
+     * Cancel a subscription immediately (delete it)
+     */
+    public function cancelSubscriptionImmediately(string $subscriptionId): ?array
+    {
+        $response = $this->apiRequest("subscriptions/{$subscriptionId}", [], 'DELETE');
+
+        if ($response && isset($response['id'])) {
+            return ['success' => true];
+        }
+
+        return ['error' => $response['error'] ?? 'Failed to cancel subscription immediately'];
+    }
+
+    /**
      * Get subscription details
      */
     public function getSubscription(string $subscriptionId): ?array
