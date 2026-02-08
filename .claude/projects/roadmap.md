@@ -1,6 +1,6 @@
 # BBJ Next.js Roadmap
 
-**Last Updated:** February 6, 2026 (Admin analytics dashboard with GA4 + Search Console)
+**Last Updated:** February 7, 2026 (Added MetaBox removal plan, custom email system spec)
 **Target Launch:** Before BB28 (July 2026)
 **Status:** Off-season development
 
@@ -242,7 +242,7 @@ The core differentiator during the season.
 - [x] Email change with verification flow
 - [x] Notification settings with premium lock for feed updates
 - [x] Help/FAQ tab with dynamic rank information
-- [ ] **Polish Notifications tab** - Wire up to MailPoet once integrated (see 7.1)
+- [ ] **Polish Notifications tab** - Wire up to custom email system (see 7.1)
 - [x] **Polish Premium tab** - Wired up to Stripe/PayPal billing system (see 4.2)
 - [x] Comment history (Feb 2026 - via public profile page)
 - [ ] Saved/bookmarked content
@@ -428,7 +428,45 @@ The core differentiator during the season.
 - [ ] Orphaned data cleanup (comments without posts, votes without comments)
 - [ ] Scheduled maintenance cron job option
 
-### 5.6 Admin Dashboard Redesign
+### 5.6 Remove MetaBox Dependency
+
+**Goal:** Eliminate MetaBox plugin entirely. Currently using boss's premium license — want full independence.
+
+**What MetaBox does today:** Provides wp-admin forms for editing players, seasons, and spoiler bar. Data already lives in custom tables (`wp_bbj_players`, `wp_bbj_seasons`, `wp_bbj_player_season_new`, `wp_bbj_play_season_rel`). Templates and API routes query tables directly via `$wpdb` — MetaBox is only the admin UI layer.
+
+**What needs replacing:**
+
+| Admin Form | Fields | Current Table |
+|------------|--------|---------------|
+| **Player Editor** | first_name, last_name, nickname, gender, DOB, occupation, profile_picture, banner, social links (FB/IG/Twitter/TikTok) | `wp_bbj_players` |
+| **Season Editor** | full_name, abbreviation, season_number, start_date, end_date, season_picture, banner | `wp_bbj_seasons` |
+| **Spoiler Bar Manager** | Per-season player status: HoH, PoV, Jury, Nominees (1-3), Evicted, Winner, Have-Nots | `wp_bbj_player_season_new` |
+| **Player-Season Links** | player, season, winner, runner_up, afp, evicted, jury | `wp_bbj_play_season_rel` |
+| **Site Settings** | current_season, current_category | `bbj_settings` option |
+
+**Implementation plan:**
+
+- [ ] **Player management page** in Next.js admin dashboard — CRUD form with image upload for all player fields
+- [ ] **Season management page** in Next.js admin dashboard — CRUD form with image upload
+- [ ] **Spoiler bar admin** — visual drag-and-drop or checkbox UI for assigning player statuses per season
+- [ ] **Player-season relationship editor** — assign winner/runner-up/AFP/jury/evicted per season
+- [ ] **Site settings** — current season selector (move to existing admin Settings tab or WP admin)
+- [ ] **API endpoints** — admin CRUD routes for all of the above (some already exist in PlayerRoutes/SeasonRoutes)
+- [ ] **Remove MetaBox filters** from bbj-v2 plugin (`rwmb_meta_boxes` hooks in Players.php, Seasons.php, PlayerSeasonLink.php)
+- [ ] **Remove MetaBox field definitions** from theme (`includes/MB/` directory — 11 files)
+- [ ] **Deactivate MetaBox** plugin on staging, test everything still works
+- [ ] **Deactivate MetaBox** on production
+
+**References still using MetaBox (to clean up):**
+- `bbj-v2/includes/PostTypes/Players.php` — `rwmb_meta_boxes` filter
+- `bbj-v2/includes/PostTypes/Seasons.php` — `rwmb_meta_boxes` filter
+- `bbj-v2/includes/PostTypes/PlayerSeasonLink.php` — `rwmb_meta_boxes` filter
+- `bbj-tools/lib/meta-boxes.php` — player-season relationships
+- Theme `includes/MB/` — 11 field group definition files (mostly commented out)
+
+**Note:** The new `bigbrotherjunkies-data` plugin already has `PlayerRoutes.php` and `SeasonRoutes.php` with some CRUD endpoints. These just need admin form UIs built on top.
+
+### 5.7 Admin Dashboard Redesign
 
 - [ ] Modern dashboard layout with better visual hierarchy
 - [ ] Collapsible sidebar navigation (not just cards)
@@ -477,18 +515,55 @@ Ideas to keep premium users engaged year-round.
 
 ## Phase 7: PWA & Notifications (Priority: Medium-High for July)
 
-### 7.1 MailPoet & Newsletter Integration
+### 7.1 Custom Email System (replacing MailPoet)
 
-- [ ] **MailPoet API integration in Settings page**
-  - Newsletter toggle in Notifications tab should subscribe/unsubscribe from MailPoet list
-  - Check actual subscription status when loading settings (not just user meta)
-  - Use MailPoet PHP API for subscribe/unsubscribe operations
-- [ ] MailPoet integration for subscription boxes site-wide
-- [ ] Remove dependency on form plugins
-- [ ] Subscription preferences in user profile (instant, daily digest, weekly summary)
-- [ ] Welcome email sequence for new subscribers
-- [ ] Design new email templates (current ones are outdated)
-- [ ] Set up Post Notification automations for each frequency
+**Goal:** Self-contained email system using a third-party transactional API for delivery. We own the list, templates, and logic. They handle sending and report back stats.
+
+**Why:** MailPoet costs $21.25/month for only 576 active subscribers, caused a recursive crawler loop that pegged the production server at 100% CPU, and adds PHP overhead on every page load. A custom system is cheaper, lighter, and gives us full control.
+
+**Subscriber stats (as of Feb 2026):** 576 subscribed, 7,299 unconfirmed, 48,153 unsubscribed, 235 bounced
+
+**Cost comparison at ~600 subscribers, 2-3 posts/day in summer (~90 emails/day = ~54K/month):**
+- MailPoet: $21.25/month (current)
+- Mailgun: ~$8/month (Flex plan, $0.80/1K after 1K free)
+- Resend: Free tier covers it (3K/month free, then $20/100K)
+- Amazon SES: ~$5.40/month ($0.10/1K)
+
+**Database tables:**
+- [ ] `bbj_email_subscribers` — id, user_id (nullable for non-registered), email, status (subscribed/unconfirmed/unsubscribed/bounced), confirmed_at, subscribed_at, unsubscribed_at, source (registration/widget/import)
+- [ ] `bbj_email_preferences` — subscriber_id, frequency (instant/daily_digest/weekly), notify_posts (bool), notify_feed_updates (bool), notify_announcements (bool)
+- [ ] `bbj_email_sends` — id, subscriber_id, email_type (post_notification/digest/welcome/reconfirmation), external_id (Mailgun/Resend message ID), sent_at, opened_at, clicked_at, bounced_at
+- [ ] `bbj_email_templates` — id, name, subject_template, body_template (HTML with merge tags)
+
+**Backend (WP Plugin):**
+- [ ] `EmailService.php` — subscribe, unsubscribe, confirm, bulk send, handle webhooks
+- [ ] `EmailSender.php` — adapter interface for Mailgun/Resend/SES (swap providers without changing logic)
+- [ ] `EmailRoutes.php` — REST endpoints: subscribe, unsubscribe, confirm, preferences, webhook receiver
+- [ ] `EmailCron.php` — daily digest compiler, weekly summary compiler, re-confirmation campaigns for inactive subscribers
+- [ ] Admin settings page for API keys + provider selection
+- [ ] Migration script to import active MailPoet subscribers into new tables
+
+**Frontend (Next.js):**
+- [ ] Subscribe widget (email input in sidebar/footer)
+- [ ] Settings → Notifications tab wired to real subscription preferences
+- [ ] Unsubscribe page with one-click + optional feedback
+- [ ] Email preference center page (choose frequency, content types)
+
+**Webhook flow (stats reporting back):**
+- [ ] Provider POSTs open/click/bounce/unsubscribe events to `/bbjd/v1/email/webhook`
+- [ ] Update `bbj_email_sends` with timestamps for each event
+- [ ] Admin dashboard widget: open rate, click rate, bounce rate, unsubscribe trend
+- [ ] Auto-flag subscribers who haven't opened in 90 days
+
+**Subscriber lifecycle automation:**
+- [ ] Welcome email on subscribe (with confirmation link)
+- [ ] Re-confirmation email after 90 days inactive ("Still want to hear from us?")
+- [ ] Auto-unsubscribe after re-confirmation ignored for 14 days
+- [ ] Bounce handling: soft bounce → retry 3x, hard bounce → auto-unsubscribe
+
+**Post-launch:**
+- [ ] Deactivate MailPoet plugin on production (save CPU + $21.25/month)
+- [ ] Clean up MailPoet database tables
 
 ### 7.2 Service Worker
 
@@ -652,7 +727,7 @@ _Go page by page on live site to identify gaps_
 
 - [x] Push notification setting hidden until mobile app ready
 - [x] Subscribed threads tested and working
-- [ ] Tie newsletter into MailPoet (see Phase 7.1)
+- [ ] Wire newsletter toggle to custom email system (see Phase 7.1)
 
 ### Mobile Experience
 

@@ -177,9 +177,9 @@ export default function BecomeSupporterPage() {
 
   if (loading || authLoading) {
     return (
-      <main className="min-h-screen bg-slate-100 dark:bg-gray-950 py-12">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="animate-pulse space-y-8">
+      <main className="v2-primary-container">
+        <div className="rounded-xl bg-white p-6 shadow dark:bg-gray-900 dark:border dark:border-slate-800">
+          <div className="animate-pulse space-y-8 max-w-4xl mx-auto">
             <div className="h-12 bg-slate-200 dark:bg-slate-800 rounded w-2/3 mx-auto" />
             <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded w-1/2 mx-auto" />
             <div className="grid md:grid-cols-3 gap-6">
@@ -196,9 +196,8 @@ export default function BecomeSupporterPage() {
   // Already a supporter (via role or subscription)
   if (isSupporter || hasSubscription) {
     return (
-      <main className="min-h-screen bg-slate-100 dark:bg-gray-950 py-12">
-        <div className="max-w-2xl mx-auto px-4 text-center">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-8 border border-slate-200 dark:border-slate-800">
+      <main className="v2-primary-container">
+        <div className="rounded-xl bg-white p-8 shadow dark:bg-gray-900 dark:border dark:border-slate-800 max-w-2xl mx-auto text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-secondary-400 to-secondary-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
               <span className="text-4xl">&#11088;</span>
             </div>
@@ -227,7 +226,6 @@ export default function BecomeSupporterPage() {
                 Browse Ad-Free
               </Link>
             </div>
-          </div>
         </div>
       </main>
     );
@@ -236,27 +234,28 @@ export default function BecomeSupporterPage() {
   const selectedPlanData = plans.find((p) => p.id === selectedPlan);
 
   return (
-    <main className="min-h-screen bg-slate-100 dark:bg-gray-950 py-12">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-gray-900 dark:text-white mb-4">
-            Become a BBJ Supporter
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Enjoy an ad-free experience and help keep independent Big Brother coverage alive
-          </p>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-center">
-            {error}
+    <main className="v2-primary-container">
+      <div className="rounded-xl bg-white p-6 md:p-8 shadow dark:bg-gray-900 dark:border dark:border-slate-800">
+        <div className="max-w-4xl mx-auto">
+          {/* Hero Section */}
+          <div className="text-center mb-10">
+            <h1 className="text-4xl md:text-5xl font-display font-bold text-gray-900 dark:text-white mb-4">
+              Become a BBJ Supporter
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Enjoy an ad-free experience and help keep independent Big Brother coverage alive
+            </p>
           </div>
-        )}
 
-        {/* Plan Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-10">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-center">
+              {error}
+            </div>
+          )}
+
+          {/* Plan Cards */}
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
           {plans.map((plan) => (
             <button
               key={plan.id}
@@ -264,8 +263,8 @@ export default function BecomeSupporterPage() {
               disabled={processing}
               className={`relative p-6 rounded-xl border-2 text-left transition-all ${
                 selectedPlan === plan.id
-                  ? "border-primary-500 bg-white dark:bg-gray-900 shadow-lg ring-2 ring-primary-500/20"
-                  : "border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 hover:border-slate-300 dark:hover:border-slate-600"
+                  ? "border-primary-500 bg-slate-50 dark:bg-slate-800 shadow-lg ring-2 ring-primary-500/20"
+                  : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600"
               } ${processing ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {/* Popular Badge */}
@@ -324,8 +323,8 @@ export default function BecomeSupporterPage() {
           ))}
         </div>
 
-        {/* Payment Section */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-8 mb-10">
+          {/* Payment Section */}
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 mb-10">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
             Complete Your Purchase
           </h2>
@@ -385,7 +384,7 @@ export default function BecomeSupporterPage() {
                   <div className="w-full border-t border-slate-200 dark:border-slate-700" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">or</span>
+                  <span className="px-4 bg-slate-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400">or</span>
                 </div>
               </div>
 
@@ -395,8 +394,8 @@ export default function BecomeSupporterPage() {
           )}
         </div>
 
-        {/* Benefits Section */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-8">
+          {/* Benefits Section */}
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
             What You Get as a Supporter
           </h2>
@@ -440,7 +439,7 @@ export default function BecomeSupporterPage() {
               },
             ].map((benefit, i) => (
               <div key={i} className="flex gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg flex items-center justify-center">
+                <div className="flex-shrink-0 w-12 h-12 bg-primary-500/10 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg flex items-center justify-center">
                   {benefit.icon}
                 </div>
                 <div>
@@ -456,17 +455,18 @@ export default function BecomeSupporterPage() {
           </div>
         </div>
 
-        {/* FAQ Link */}
-        <p className="text-center text-gray-500 dark:text-gray-400 mt-8">
-          Questions?{" "}
-          <Link href="/settings?tab=help" className="text-primary-500 hover:underline">
-            Check our FAQ
-          </Link>{" "}
-          or{" "}
-          <Link href="/contact" className="text-primary-500 hover:underline">
-            contact us
-          </Link>
-        </p>
+          {/* FAQ Link */}
+          <p className="text-center text-gray-500 dark:text-gray-400 mt-8">
+            Questions?{" "}
+            <Link href="/settings?tab=help" className="text-primary-500 hover:underline">
+              Check our FAQ
+            </Link>{" "}
+            or{" "}
+            <Link href="/contact" className="text-primary-500 hover:underline">
+              contact us
+            </Link>
+          </p>
+        </div>
       </div>
     </main>
   );
