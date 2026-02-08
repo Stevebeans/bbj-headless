@@ -215,6 +215,13 @@ class AuthRoutes
             ],
         ]);
 
+        // Get current user data from Bearer token (for refreshUser in Next.js)
+        register_rest_route(self::NAMESPACE, '/auth/me', [
+            'methods' => 'GET',
+            'callback' => [$this, 'handleGetMe'],
+            'permission_callback' => '__return_true',
+        ]);
+
         // Validate JWT token and return user data (for Next.js auth context)
         // Uses bbj/v3 namespace for frontend compatibility
         register_rest_route(self::NAMESPACE_V3, '/validate-token', [
@@ -903,6 +910,69 @@ class AuthRoutes
             ],
             'is_new_user' => true,
         ], 201);
+    }
+
+    /**
+     * Get current user data from Bearer token
+     * Used by refreshUser() in the Next.js AuthContext
+     */
+    public function handleGetMe(\WP_REST_Request $request): array|\WP_Error
+    {
+        $authHeader = $request->get_header('Authorization');
+        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+            return new \WP_Error('no_token', 'Authorization header required.', ['status' => 401]);
+        }
+
+        $token = substr($authHeader, 7);
+        $secretKey = defined('JWT_AUTH_SECRET_KEY') ? JWT_AUTH_SECRET_KEY : false;
+
+        if (!$secretKey) {
+            return new \WP_Error('jwt_not_configured', 'JWT not configured.', ['status' => 500]);
+        }
+
+        try {
+            $algorithm = apply_filters('jwt_auth_algorithm', 'HS256');
+            $decoded = JWT::decode($token, new Key($secretKey, $algorithm));
+
+            if (!isset($decoded->data->user->id)) {
+                return new \WP_Error('jwt_invalid', 'Invalid token.', ['status' => 403]);
+            }
+
+            $userId = $decoded->data->user->id;
+            $user = get_user_by('ID', $userId);
+
+            if (!$user) {
+                return new \WP_Error('user_not_found', 'User not found.', ['status' => 404]);
+            }
+
+            $rank = RankCalculator::calculateRank($userId);
+
+            $adSettings = get_option('bbjd_ad_settings', []);
+            $supporterRoles = $adSettings['global_hidden_roles'] ?? [];
+            $isSupporter = !empty(array_intersect((array) $user->roles, $supporterRoles));
+
+            return [
+                'user_id' => $user->ID,
+                'user_email' => $user->user_email,
+                'user_login' => $user->user_login,
+                'user_display_name' => $user->display_name,
+                'user_avatar' => AvatarUploader::getAvatarUrl($user->ID, 96),
+                'user_roles' => $user->roles,
+                'is_supporter' => $isSupporter,
+                'rank' => $rank ? [
+                    'key' => $rank['key'],
+                    'name' => $rank['name'],
+                    'color' => $rank['color'],
+                    'bg_color' => $rank['bg_color'],
+                    'icon' => $rank['icon'] ?? null,
+                    'is_special' => $rank['is_special'],
+                ] : null,
+            ];
+        } catch (\Firebase\JWT\ExpiredException $e) {
+            return new \WP_Error('jwt_expired', 'Token expired.', ['status' => 401]);
+        } catch (\Exception $e) {
+            return new \WP_Error('jwt_invalid', 'Invalid token.', ['status' => 403]);
+        }
     }
 
     /**
