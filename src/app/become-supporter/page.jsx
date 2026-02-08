@@ -193,8 +193,8 @@ export default function BecomeSupporterPage() {
     );
   }
 
-  // Already a supporter (via role or subscription)
-  if (isSupporter || hasSubscription) {
+  // Already a supporter (check actual role, not just DB subscription record)
+  if (isSupporter) {
     return (
       <main className="v2-primary-container">
         <div className="rounded-xl bg-white p-8 shadow dark:bg-gray-900 dark:border dark:border-slate-800 max-w-2xl mx-auto text-center">
