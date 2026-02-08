@@ -12,6 +12,8 @@ import {
   RecentComments,
 } from "@/components/home";
 
+const isStaging = process.env.VERCEL_ENV === "preview" || process.env.NEXT_PUBLIC_SITE_URL?.includes("stg-");
+
 export default async function HomePage() {
   const data = await getHomepageData();
 
@@ -22,6 +24,12 @@ export default async function HomePage() {
     <>
       {/* Main Content Area */}
       <main className="v2-primary-container">
+        {isStaging && (
+          <div className="mb-4 rounded-lg border border-secondary-500/30 bg-secondary-500/10 px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
+            <strong className="text-secondary-600 dark:text-secondary-400">Heads up!</strong>{" "}
+            This is the staging server, so things may load slower than the real site. If something seems off, try refreshing a couple times to clear stale data. Performance won't be an issue on the live site.
+          </div>
+        )}
         <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">
           {/* Main Left Column */}
           <section id="main-left" className="flex-grow space-y-4">
