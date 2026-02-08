@@ -107,7 +107,13 @@ class StripeService
         // Check if user already has a Stripe customer ID
         $customerId = get_user_meta($userId, 'bbj_stripe_customer_id', true);
         if ($customerId) {
-            return $customerId;
+            // Verify the customer still exists (handles test/live mode mismatch)
+            $existing = $this->apiRequest("customers/{$customerId}", [], 'GET');
+            if ($existing && !isset($existing['error'])) {
+                return $customerId;
+            }
+            // Customer doesn't exist in current mode — clear and recreate
+            delete_user_meta($userId, 'bbj_stripe_customer_id');
         }
 
         // Create new customer
@@ -474,6 +480,8 @@ class StripeService
 
             if (is_array($value)) {
                 $this->flattenArray($value, $result, $newKey);
+            } elseif (is_bool($value)) {
+                $result[$newKey] = $value ? 'true' : 'false';
             } else {
                 $result[$newKey] = $value;
             }

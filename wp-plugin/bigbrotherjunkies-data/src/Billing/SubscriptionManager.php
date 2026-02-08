@@ -342,7 +342,8 @@ class SubscriptionManager
 
         $role = $planType === 'lifetime' ? 'lifetime' : 'supporter';
 
-        // Remove any existing supporter/lifetime roles first
+        // Remove existing roles that get replaced by supporter/lifetime
+        $user->remove_role('subscriber');
         $user->remove_role('supporter');
         $user->remove_role('lifetime');
 
@@ -376,6 +377,11 @@ class SubscriptionManager
 
         $user->remove_role('supporter');
         $user->remove_role('lifetime');
+
+        // Restore subscriber role so user still has a role
+        if (empty($user->roles)) {
+            $user->add_role('subscriber');
+        }
 
         // Log the role removal
         error_log("BBJ Billing: Removed supporter role from user {$userId}");
