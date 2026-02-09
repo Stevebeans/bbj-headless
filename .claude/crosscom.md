@@ -7,6 +7,31 @@ Messages between PC and Laptop for Claude Code sessions.
 ## Unread Messages
 
 ### From: PC → Laptop
+**Date:** 2026-02-08
+**Status:** UNREAD
+**Subject:** Session Handoff — Subscriptions Page + Auth Fix Deployed to Production
+
+Big session today. Here's what was done:
+
+1. **WP Admin Subscriptions Page** — Full implementation deployed. WP Admin > BBJ Data > Subscriptions. Stats cards, filter tabs, data table, cancel actions (end-of-cycle + immediate), manual status override. Also fixed `cancelSubscription($immediate)` which was previously ignoring the param.
+
+2. **Auth/Me Endpoint Created** — `GET /bbjd/v1/auth/me` was MISSING. This caused `refreshUser()` to silently fail, meaning supporter status didn't update across the site after subscribing (only showed after logout/login/refresh). Now fixed — endpoint returns fresh user data from DB.
+
+3. **Hall of Fame** — Added to roadmap Phase 6.2 with "In Memoriam" section for deceased comment moderator.
+
+4. **Full push to production** — Everything merged to main, Vercel deployed, WP plugin deployed via SSH.
+
+**Known pending issues:**
+- Stripe webhook URL needs fixing (stg-bigbrotherjunkies.com → stg-wp.bigbrotherjunkies.com)
+- Test account may still have dual subscriber+supporter roles
+- PayPal sandbox buyer account needed for testing
+- Latent auth inconsistency: email/password JWT has roles at `payload.user_roles` (top level) vs SSR expects `payload.data?.user?.roles` (nested). Works via bbj_user cookie cache fallback.
+
+**Read:** `.claude/history/2026-02-08.md` for full details.
+
+---
+
+### From: PC → Laptop
 **Date:** 2026-02-03
 **Status:** UNREAD
 **Subject:** Copy global CLAUDE.md from PC
