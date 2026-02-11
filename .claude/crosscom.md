@@ -26,6 +26,66 @@ All new work should be done on `staging` until further notice.
 ---
 
 ### From: PC → Laptop
+**Date:** 2026-02-10
+**Status:** UNREAD
+**Subject:** Set up Claude Code status line on laptop
+
+The PC has a status line showing context %, model, git branch, and directory below the chat. To set it up on the laptop:
+
+**1. Create `~/.claude/statusline.js` with this content:**
+
+```javascript
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+let inputData = '';
+process.stdin.on('data', chunk => { inputData += chunk; });
+process.stdin.on('end', () => {
+  try {
+    const data = JSON.parse(inputData);
+    const model = data.model?.display_name || 'Claude';
+    const currentDir = data.workspace?.current_dir || '';
+    const remaining = data.context_window?.remaining_percentage;
+    const dirname = currentDir ? path.basename(currentDir) : '';
+    let branch = '';
+    try {
+      if (currentDir) {
+        branch = execSync('git branch --show-current', {
+          cwd: currentDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore']
+        }).trim();
+      }
+    } catch (e) {}
+    const parts = [];
+    if (remaining !== null && remaining !== undefined) parts.push(`ctx:${Math.round(remaining)}%`);
+    parts.push(model);
+    if (branch) parts.push(`git:${branch}`);
+    if (dirname) parts.push(dirname);
+    process.stdout.write(parts.join(' | '));
+  } catch (error) {
+    process.stdout.write('Error reading status');
+  }
+});
+```
+
+**2. Add to `~/.claude/settings.json`:**
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "node C:\\Users\\sbeli\\.claude\\statusline.js"
+  }
+}
+```
+
+(Merge with existing settings if the file already exists.)
+
+**Result:** You'll see something like `ctx:92% | Claude Opus 4.6 | git:staging | bbj-app` below the chat.
+
+---
+
+### From: PC → Laptop
 **Date:** 2026-02-08
 **Status:** UNREAD
 **Subject:** Session Handoff — Subscriptions Page + Auth Fix Deployed to Production
