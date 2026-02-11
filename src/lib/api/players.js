@@ -214,22 +214,45 @@ export async function getAllPlayers(options = {}) {
 
 /**
  * Get all players with coordinates for map display (client-side fetch)
- * Returns minimal data: id, name, slug, photo, hometown, lat/lng, is_winner
+ *
+ * @param {Object} options
+ * @param {string} [options.season] - Season ID to filter by
+ * @param {string} [options.gender] - Comma-separated genders
+ * @param {string} [options.achievement] - Comma-separated achievements (winner,afp,runner_up)
+ * @param {string} [options.detail] - 'basic' (default) or 'premium' for enriched data
+ * @returns {Promise<Object>} { players, count, state_stats?, seasons? }
  */
-export async function getPlayersForMap() {
+export async function getPlayersForMap(options = {}) {
   const apiUrl =
     process.env.NEXT_PUBLIC_WORDPRESS_API_URL ||
     "https://bigbrotherjunkies.com/wp-json";
 
+  const { season, gender, achievement, detail } = options;
+
   try {
-    const res = await fetch(`${apiUrl}/bbjd/v1/players/map`, {
-      next: { revalidate: 3600 },
-    });
+    const params = new URLSearchParams();
+    if (season) params.append("season", season);
+    if (gender) params.append("gender", gender);
+    if (achievement) params.append("achievement", achievement);
+    if (detail) params.append("detail", detail);
+
+    const qs = params.toString();
+    const url = `${apiUrl}/bbjd/v1/players/map${qs ? `?${qs}` : ""}`;
+
+    const res = await fetch(url, { next: { revalidate: 3600 } });
     const data = await res.json();
-    return data.success ? data.players : [];
+
+    if (!data.success) return { players: [], count: 0 };
+
+    return {
+      players: data.players || [],
+      count: data.count || 0,
+      state_stats: data.state_stats || null,
+      seasons: data.seasons || null,
+    };
   } catch (error) {
     console.error("Failed to fetch map players:", error);
-    return [];
+    return { players: [], count: 0 };
   }
 }
 

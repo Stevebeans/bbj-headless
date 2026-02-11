@@ -7,7 +7,7 @@ import { ComparisonAwards } from "./components/ComparisonAwards";
 import { ComparisonHeadToHead } from "./components/ComparisonHeadToHead";
 import { ComparisonTimeline } from "./components/ComparisonTimeline";
 import { ComparisonJsonLd } from "./components/ComparisonJsonLd";
-import { PremiumGate } from "./components/PremiumGate";
+import { PremiumGate } from "@/components/shared/PremiumGate";
 import { SuggestedComparisons } from "./components/SuggestedComparisons";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
@@ -128,7 +128,7 @@ export default async function ComparisonPage({ params }) {
 
               {/* Gated content */}
               <div className="p-4 space-y-6">
-                <PremiumGate>
+                <PremiumGate title="Unlock Player Comparisons" description="Get full head-to-head stats with a premium membership">
                   <div className="space-y-6">
                     <ComparisonStats player1={player1} player2={player2} />
 

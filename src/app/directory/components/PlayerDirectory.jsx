@@ -7,6 +7,7 @@ import { FaSearch, FaUsers, FaCalendarAlt, FaMapMarkerAlt, FaChartBar, FaExchang
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
+import { usePremium } from "@/hooks/usePremium";
 import dynamic from "next/dynamic";
 
 const PlayerMap = dynamic(() => import("./PlayerMap"), {
@@ -189,7 +190,7 @@ export function PlayerDirectory({ initialPlayers, seasons }) {
 
       {activeTab === "stats" && <StatsTab totalPlayers={totalPlayers} seasons={seasons} />}
 
-      {activeTab === "map" && <MapTab />}
+      {activeTab === "map" && <MapTab seasons={seasons} />}
     </div>
   );
 }
@@ -700,10 +701,20 @@ function CompareTabPicker({ isOpen, onClose }) {
   return <PlayerPicker isOpen={isOpen} onClose={onClose} />;
 }
 
-function MapTab() {
+function MapTab({ seasons }) {
+  const { isPremium } = usePremium();
   const [players, setPlayers] = useState(null);
+  const [allPlayers, setAllPlayers] = useState(null); // Full dataset for timeline filtering
+  const [stateStats, setStateStats] = useState(null);
+  const [premiumSeasons, setPremiumSeasons] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Filters
+  const [mapSeason, setMapSeason] = useState("");
+  const [mapGender, setMapGender] = useState([]);
+  const [mapAchievement, setMapAchievement] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Detect dark mode
   const [isDark, setIsDark] = useState(false);
@@ -719,16 +730,36 @@ function MapTab() {
     return () => observer.disconnect();
   }, []);
 
-  // Fetch map data on mount
+  // Fetch map data when filters change
   useEffect(() => {
     let cancelled = false;
 
     async function fetchMapData() {
+      setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/bbjd/v1/players/map`);
+        const params = new URLSearchParams();
+        if (mapSeason) params.append("season", mapSeason);
+        if (isPremium) {
+          params.append("detail", "premium");
+          if (mapGender.length) params.append("gender", mapGender.join(","));
+          if (mapAchievement.length) params.append("achievement", mapAchievement.join(","));
+        }
+
+        const qs = params.toString();
+        const res = await fetch(`${API_URL}/bbjd/v1/players/map${qs ? `?${qs}` : ""}`);
         const data = await res.json();
+
         if (!cancelled) {
-          setPlayers(data.success ? data.players : []);
+          const playerList = data.success ? data.players : [];
+          setPlayers(playerList);
+          setAllPlayers(playerList);
+
+          if (isPremium && data.state_stats) {
+            setStateStats(data.state_stats);
+          }
+          if (isPremium && data.seasons) {
+            setPremiumSeasons(data.seasons);
+          }
         }
       } catch (err) {
         if (!cancelled) setError("Failed to load map data");
@@ -739,7 +770,18 @@ function MapTab() {
 
     fetchMapData();
     return () => { cancelled = true; };
-  }, []);
+  }, [mapSeason, mapGender, mapAchievement, isPremium]);
+
+  // Timeline season change: filter locally from allPlayers
+  const handleTimelineSeasonChange = useCallback((seasonId) => {
+    if (!seasonId || !allPlayers) {
+      setPlayers(allPlayers);
+      return;
+    }
+    setPlayers(allPlayers.filter((p) => p.season_ids?.includes(seasonId)));
+  }, [allPlayers]);
+
+  const advancedFilterCount = mapGender.length + mapAchievement.length;
 
   if (error) {
     return (
@@ -752,16 +794,132 @@ function MapTab() {
 
   return (
     <div className="space-y-3">
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Season dropdown (free) */}
+        <select
+          value={mapSeason}
+          onChange={(e) => setMapSeason(e.target.value)}
+          className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg
+            bg-white dark:bg-slate-800 text-slate-800 dark:text-white
+            focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        >
+          <option value="">All Seasons</option>
+          {seasons?.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.abbreviation || s.full_name}
+            </option>
+          ))}
+        </select>
+
+        {/* Player count */}
+        {players && (
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            {players.length} players
+          </span>
+        )}
+
+        {/* Advanced filters (premium) */}
+        <div className="ml-auto">
+          {isPremium ? (
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`inline-flex items-center gap-2 px-3 py-2 text-sm border rounded-lg transition-colors ${
+                advancedFilterCount > 0
+                  ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
+                  : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+              } hover:bg-slate-50 dark:hover:bg-slate-700`}
+            >
+              <FaFilter className="w-3 h-3" />
+              Filters
+              {advancedFilterCount > 0 && (
+                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium bg-primary-500 text-white rounded-full">
+                  {advancedFilterCount}
+                </span>
+              )}
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+              <FaLock className="w-3 h-3" />
+              <Link href="/become-supporter" className="hover:text-secondary-500">Premium filters</Link>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Advanced filters panel (premium) */}
+      {showFilters && isPremium && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <div className="flex flex-wrap gap-6">
+            <div>
+              <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">Gender</h4>
+              <div className="flex gap-3">
+                {["Male", "Female"].map((g) => (
+                  <label key={g} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={mapGender.includes(g)}
+                      onChange={() => setMapGender((prev) =>
+                        prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
+                      )}
+                      className="w-4 h-4 rounded border-slate-300 text-primary-500 focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{g}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">Achievement</h4>
+              <div className="flex gap-3">
+                {[
+                  { value: "winner", label: "Winner" },
+                  { value: "runner_up", label: "Runner Up" },
+                  { value: "afp", label: "AFP" },
+                ].map((a) => (
+                  <label key={a.value} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={mapAchievement.includes(a.value)}
+                      onChange={() => setMapAchievement((prev) =>
+                        prev.includes(a.value) ? prev.filter((x) => x !== a.value) : [...prev, a.value]
+                      )}
+                      className="w-4 h-4 rounded border-slate-300 text-primary-500 focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-slate-600 dark:text-slate-400">{a.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            {advancedFilterCount > 0 && (
+              <button
+                onClick={() => { setMapGender([]); setMapAchievement([]); }}
+                className="self-end text-sm text-slate-500 hover:text-red-500"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Map */}
       {loading || !players ? (
         <div className="flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl" style={{ height: "min(70vh, 600px)" }}>
           <div className="text-center">
             <FaMapMarkerAlt className="w-8 h-8 text-slate-400 mx-auto mb-2 animate-pulse" />
-            <p className="text-sm text-slate-500">Loading {loading ? "player data" : "map"}...</p>
+            <p className="text-sm text-slate-500">Loading player data...</p>
           </div>
         </div>
       ) : (
-        <PlayerMap players={players} isDark={isDark} />
+        <PlayerMap
+          players={players}
+          isDark={isDark}
+          isPremium={isPremium}
+          stateStats={stateStats}
+          premiumSeasons={premiumSeasons}
+          onTimelineSeasonChange={handleTimelineSeasonChange}
+        />
       )}
 
       {/* Stats bar */}
@@ -775,12 +933,8 @@ function MapTab() {
   );
 }
 
-const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
-
 function StatsTab({ totalPlayers, seasons }) {
-  const { user, isAuthenticated } = useAuth();
-  const roles = Array.isArray(user?.user_roles) ? user.user_roles : [];
-  const isPremium = isAuthenticated && roles.some((role) => SUPPORTER_ROLES.includes(role));
+  const { isPremium } = usePremium();
 
   // Sample stats - in production these would come from an API
   const stats = {

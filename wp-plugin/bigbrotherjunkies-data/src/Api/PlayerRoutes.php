@@ -31,6 +31,35 @@ class PlayerRoutes
      */
     public function registerRoutes(): void
     {
+        // Get players for map (must be registered before slug route)
+        register_rest_route(self::NAMESPACE, '/players/map', [
+            'methods'  => 'GET',
+            'callback' => [$this, 'getPlayersForMap'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'season' => [
+                    'default' => '',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'gender' => [
+                    'default' => '',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'achievement' => [
+                    'default' => '',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'detail' => [
+                    'default' => 'basic',
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
+        ]);
+
         // Get single player by slug
         register_rest_route(self::NAMESPACE, '/players/(?P<slug>[a-zA-Z0-9-]+)', [
             'methods'  => 'GET',
@@ -539,6 +568,243 @@ class PlayerRoutes
             'per_page' => $perPage,
             'total_pages' => ceil($totalCount / $perPage),
         ], 200);
+    }
+
+    /**
+     * Get players with lat/lng for the interactive map
+     */
+    public function getPlayersForMap(WP_REST_Request $request): WP_REST_Response
+    {
+        global $wpdb;
+
+        $seasonFilter = $request->get_param('season');
+        $genderFilter = $request->get_param('gender');
+        $achievementFilter = $request->get_param('achievement');
+        $detail = $request->get_param('detail');
+
+        $playersTable = $wpdb->prefix . 'bbj_players';
+        $postsTable = $wpdb->prefix . 'posts';
+        $seasonsTable = $wpdb->prefix . 'bbj_seasons';
+        $seasonLinkTable = $wpdb->prefix . 'bbj_v2_player_season';
+
+        $where = [
+            "p.post_status = 'publish'",
+            "pl.hometown_lat IS NOT NULL",
+            "pl.hometown_lat != 0",
+        ];
+        $params = [];
+        $joins = '';
+
+        // Season filter
+        if (!empty($seasonFilter)) {
+            $seasonIds = array_map('intval', explode(',', $seasonFilter));
+            $placeholders = implode(',', array_fill(0, count($seasonIds), '%d'));
+            $joins .= " INNER JOIN {$seasonLinkTable} psl ON pl.id = psl.bbj_player";
+            $where[] = "psl.bbj_season IN ($placeholders)";
+            $params = array_merge($params, $seasonIds);
+        }
+
+        // Gender filter
+        if (!empty($genderFilter)) {
+            $genders = array_map('trim', explode(',', $genderFilter));
+            $genderPlaceholders = implode(',', array_fill(0, count($genders), '%s'));
+            $where[] = "pl.player_gender IN ($genderPlaceholders)";
+            $params = array_merge($params, $genders);
+        }
+
+        // Achievement filter
+        if (!empty($achievementFilter)) {
+            $achievements = array_map('trim', array_map('strtolower', explode(',', $achievementFilter)));
+            $achievementConditions = [];
+            foreach ($achievements as $achievement) {
+                switch ($achievement) {
+                    case 'winner':
+                        $achievementConditions[] = "EXISTS (SELECT 1 FROM {$seasonsTable} s WHERE s.season_winner = pl.id)";
+                        break;
+                    case 'afp':
+                        $achievementConditions[] = "EXISTS (SELECT 1 FROM {$seasonsTable} s WHERE s.afp = pl.id)";
+                        break;
+                    case 'runner_up':
+                        $achievementConditions[] = "EXISTS (SELECT 1 FROM {$seasonsTable} s WHERE s.runner_up = pl.id)";
+                        break;
+                }
+            }
+            if (!empty($achievementConditions)) {
+                $where[] = '(' . implode(' OR ', $achievementConditions) . ')';
+            }
+        }
+
+        $whereClause = implode(' AND ', $where);
+
+        // Premium detail level adds extra columns
+        $extraSelect = '';
+        $extraJoin = '';
+        if ($detail === 'premium') {
+            $extraSelect = ",
+                pl.player_gender,
+                COALESCE(stats.total_hoh, 0) as total_hoh,
+                COALESCE(stats.total_pov, 0) as total_pov,
+                (SELECT COUNT(*) FROM {$seasonsTable} WHERE runner_up = pl.id) as is_runner_up";
+            $extraJoin = "
+                LEFT JOIN (
+                    SELECT bbj_player,
+                        SUM(bbj_total_hoh) as total_hoh,
+                        SUM(bbj_total_pov) as total_pov
+                    FROM {$seasonLinkTable}
+                    GROUP BY bbj_player
+                ) stats ON pl.id = stats.bbj_player";
+        }
+
+        $query = "
+            SELECT DISTINCT
+                pl.id,
+                pl.first_name,
+                pl.last_name,
+                pl.profile_picture,
+                pl.hometown_city,
+                pl.hometown_state,
+                pl.hometown_lat as lat,
+                pl.hometown_lng as lng,
+                p.post_name as slug,
+                (SELECT COUNT(*) FROM {$seasonsTable} WHERE season_winner = pl.id) as is_winner,
+                (SELECT COUNT(*) FROM {$seasonsTable} WHERE afp = pl.id) as is_afp
+                {$extraSelect}
+            FROM {$playersTable} pl
+            INNER JOIN {$postsTable} p ON pl.id = p.ID
+            {$joins}
+            {$extraJoin}
+            WHERE {$whereClause}
+            ORDER BY pl.first_name ASC
+        ";
+
+        if (!empty($params)) {
+            $results = $wpdb->get_results($wpdb->prepare($query, $params), ARRAY_A);
+        } else {
+            $results = $wpdb->get_results($query, ARRAY_A);
+        }
+
+        $players = [];
+        // For premium detail, also collect state stats
+        $stateStats = [];
+
+        foreach ($results as $row) {
+            $photoUrl = null;
+            if (!empty($row['profile_picture'])) {
+                $imageData = wp_get_attachment_image_src((int) $row['profile_picture'], 'bbj_v2_spoiler_bar');
+                $photoUrl = $imageData ? $imageData[0] : null;
+            }
+
+            $isWinner = (int) $row['is_winner'] > 0;
+            $isAfp = (int) $row['is_afp'] > 0;
+
+            $player = [
+                'id' => (int) $row['id'],
+                'slug' => $row['slug'],
+                'name' => trim($row['first_name'] . ' ' . $row['last_name']),
+                'photo' => $photoUrl,
+                'hometown_city' => $row['hometown_city'] ?: null,
+                'hometown_state' => $row['hometown_state'] ?: null,
+                'lat' => (float) $row['lat'],
+                'lng' => (float) $row['lng'],
+                'is_winner' => $isWinner,
+                'is_afp' => $isAfp,
+            ];
+
+            if ($detail === 'premium') {
+                $isRunnerUp = (int) ($row['is_runner_up'] ?? 0) > 0;
+
+                // Determine status
+                $status = 'active';
+                if ($isWinner) $status = 'winner';
+                elseif ($isRunnerUp) $status = 'runner_up';
+                elseif ($isAfp) $status = 'afp';
+
+                $player['gender'] = $row['player_gender'] ?? null;
+                $player['status'] = $status;
+                $player['total_hoh'] = (int) ($row['total_hoh'] ?? 0);
+                $player['total_pov'] = (int) ($row['total_pov'] ?? 0);
+
+                // Aggregate state stats
+                $state = $row['hometown_state'] ?: 'Unknown';
+                if (!isset($stateStats[$state])) {
+                    $stateStats[$state] = ['count' => 0, 'cities' => []];
+                }
+                $stateStats[$state]['count']++;
+                $city = $row['hometown_city'] ?: 'Unknown';
+                if (!isset($stateStats[$state]['cities'][$city])) {
+                    $stateStats[$state]['cities'][$city] = 0;
+                }
+                $stateStats[$state]['cities'][$city]++;
+            }
+
+            $players[] = $player;
+        }
+
+        $response = [
+            'success' => true,
+            'players' => $players,
+            'count' => count($players),
+        ];
+
+        // Add state stats for premium
+        if ($detail === 'premium' && !empty($stateStats)) {
+            $formattedStats = [];
+            foreach ($stateStats as $stateName => $data) {
+                arsort($data['cities']);
+                $topCity = array_key_first($data['cities']);
+                $formattedStats[$stateName] = [
+                    'count' => $data['count'],
+                    'top_city' => $topCity,
+                    'top_city_count' => $data['cities'][$topCity],
+                ];
+            }
+            $response['state_stats'] = $formattedStats;
+        }
+
+        // Get seasons list for premium (for timeline)
+        if ($detail === 'premium') {
+            $seasonsList = $wpdb->get_results("
+                SELECT p.ID as id, p.post_name as slug, s.abbreviation, s.start_date
+                FROM {$seasonsTable} s
+                INNER JOIN {$postsTable} p ON s.id = p.ID
+                WHERE p.post_status = 'publish'
+                ORDER BY s.start_date ASC
+            ", ARRAY_A);
+
+            // Get season assignments for each player
+            $playerSeasons = $wpdb->get_results("
+                SELECT psl.bbj_player, psl.bbj_season
+                FROM {$seasonLinkTable} psl
+                INNER JOIN {$postsTable} p ON psl.bbj_player = p.ID
+                WHERE p.post_status = 'publish'
+            ", ARRAY_A);
+
+            $playerSeasonMap = [];
+            foreach ($playerSeasons as $ps) {
+                $pid = (int) $ps['bbj_player'];
+                if (!isset($playerSeasonMap[$pid])) {
+                    $playerSeasonMap[$pid] = [];
+                }
+                $playerSeasonMap[$pid][] = (int) $ps['bbj_season'];
+            }
+
+            // Attach season IDs to each player
+            foreach ($players as &$p) {
+                $p['season_ids'] = $playerSeasonMap[$p['id']] ?? [];
+            }
+            unset($p);
+
+            $response['players'] = $players;
+            $response['seasons'] = array_map(function($s) {
+                return [
+                    'id' => (int) $s['id'],
+                    'abbreviation' => $s['abbreviation'],
+                    'start_date' => $s['start_date'],
+                ];
+            }, $seasonsList);
+        }
+
+        return new WP_REST_Response($response, 200);
     }
 
     /**

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
+import { usePremium } from "@/hooks/usePremium";
 import {
   getPlans,
   getSubscription,
@@ -13,14 +14,12 @@ import {
   createPayPalSubscription,
 } from "@/lib/api/billing";
 
-// Roles that get supporter benefits (should match WordPress settings)
-const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
-
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
 export default function BecomeSupporterPage() {
-  const { user, isAuthenticated, loading: authLoading, refreshUser } = useAuth();
+  const { isAuthenticated, loading: authLoading, refreshUser } = useAuth();
   const { openModal } = useAuthModal();
+  const { isPremium: isSupporter } = usePremium();
 
   const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState("annual");
@@ -30,9 +29,6 @@ export default function BecomeSupporterPage() {
   const [hasSubscription, setHasSubscription] = useState(false);
   const [paypalReady, setPaypalReady] = useState(false);
   const [paypalClientId, setPaypalClientId] = useState(null);
-
-  // Check if user has a supporter role
-  const isSupporter = isAuthenticated && Array.isArray(user?.user_roles) && user.user_roles.some(role => SUPPORTER_ROLES.includes(role));
 
   // Load plans and check subscription status
   useEffect(() => {
@@ -323,6 +319,95 @@ export default function BecomeSupporterPage() {
           ))}
         </div>
 
+          {/* Premium Features Showcase */}
+          <div className="mb-10">
+            <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-2 text-center">
+              Premium Features
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 text-center mb-6">
+              Exclusive tools for the ultimate Big Brother fan
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Interactive Player Map */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="h-40 bg-gradient-to-br from-primary-400 via-primary-500 to-secondary-500 flex items-center justify-center">
+                  <svg className="w-16 h-16 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                    Interactive Player Map
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Explore where every Big Brother player calls home with our fully interactive map
+                  </p>
+                  <ul className="space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
+                    {[
+                      "Color-coded markers by status (Winner, AFP, Runner-up)",
+                      "Heatmap view showing player density",
+                      "Click any state for player stats",
+                      "Find the nearest player to you",
+                      "Timeline to watch player locations evolve by season",
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <svg className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/directory?tab=map"
+                    className="inline-flex items-center gap-1 mt-4 text-sm font-medium text-primary-500 hover:text-primary-600"
+                  >
+                    Preview Map &rarr;
+                  </Link>
+                </div>
+              </div>
+
+              {/* Player Comparisons */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div className="h-40 bg-gradient-to-br from-secondary-500 via-secondary-600 to-accent-red flex items-center justify-center">
+                  <svg className="w-16 h-16 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                    Player Comparisons
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Go head-to-head with detailed stat breakdowns between any two players
+                  </p>
+                  <ul className="space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
+                    {[
+                      "HoH & PoV win comparisons",
+                      "Season-by-season performance breakdown",
+                      "Visual stat charts and graphs",
+                      "Share comparisons with friends",
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <svg className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/directory?tab=compare"
+                    className="inline-flex items-center gap-1 mt-4 text-sm font-medium text-primary-500 hover:text-primary-600"
+                  >
+                    Try Comparing &rarr;
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Payment Section */}
           <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 mb-10">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
@@ -399,7 +484,7 @@ export default function BecomeSupporterPage() {
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
             What You Get as a Supporter
           </h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
               {
                 icon: (
@@ -409,6 +494,24 @@ export default function BecomeSupporterPage() {
                 ),
                 title: "Ad-Free Experience",
                 description: "Browse the entire site without any ads interrupting your reading",
+              },
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                ),
+                title: "Interactive Player Map",
+                description: "Heatmaps, state stats, nearest player finder, and season timeline",
+              },
+              {
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                ),
+                title: "Player Comparisons",
+                description: "Head-to-head stat breakdowns, HoH/PoV charts, and performance analysis",
               },
               {
                 icon: (

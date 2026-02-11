@@ -1,14 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import L from "leaflet";
 import { MapContainer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet.markercluster";
+
+import MarkerClusterLayer from "./map/MarkerClusterLayer";
+import ColoredMarkerLayer, { ColorLegend } from "./map/ColoredMarkerLayer";
+import HeatmapLayer from "./map/HeatmapLayer";
+import StateStatsPanel from "./map/StateStatsPanel";
+import NearestPlayerCard from "./map/NearestPlayerCard";
+import MapControls from "./map/MapControls";
+import SeasonTimeline from "./map/SeasonTimeline";
 
 // Fix default marker icons in webpack/next.js
 delete L.Icon.Default.prototype._getIconUrl;
@@ -27,10 +33,27 @@ const ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 /**
- * Interactive player map with marker clustering
+ * Main map container with mode switching
+ *
+ * @param {Object} props
+ * @param {Array} props.players - Player data array
+ * @param {boolean} props.isDark - Dark mode state
+ * @param {boolean} props.isPremium - Premium access state
+ * @param {Object|null} props.stateStats - State aggregation data (premium)
+ * @param {Array|null} props.premiumSeasons - Seasons list for timeline (premium)
+ * @param {Function} props.onTimelineSeasonChange - Callback when timeline season changes
  */
-export default function PlayerMap({ players, isDark }) {
+export default function PlayerMap({
+  players,
+  isDark,
+  isPremium = false,
+  stateStats = null,
+  premiumSeasons = null,
+  onTimelineSeasonChange,
+}) {
   const tileUrl = isDark ? DARK_TILES : LIGHT_TILES;
+  const [mode, setMode] = useState("markers");
+  const [showNearest, setShowNearest] = useState(false);
 
   return (
     <div className="relative w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700" style={{ height: "min(70vh, 600px)" }}>
@@ -42,8 +65,44 @@ export default function PlayerMap({ players, isDark }) {
         style={{ height: "100%", width: "100%" }}
       >
         <TileUpdater tileUrl={tileUrl} />
-        <MarkerClusterLayer players={players} />
+
+        {/* Active layer based on mode */}
+        {mode === "markers" && <MarkerClusterLayer players={players} />}
+        {mode === "colored" && isPremium && <ColoredMarkerLayer players={players} />}
+        {mode === "heatmap" && isPremium && <HeatmapLayer players={players} />}
+        {mode === "states" && isPremium && stateStats && (
+          <StateStatsPanel stateStats={stateStats} players={players} />
+        )}
+
+        {/* Nearest player finder */}
+        {showNearest && isPremium && (
+          <NearestPlayerCard
+            players={players}
+            onClose={() => setShowNearest(false)}
+          />
+        )}
       </MapContainer>
+
+      {/* Mode toggle toolbar */}
+      <MapControls
+        mode={mode}
+        onModeChange={setMode}
+        isPremium={isPremium}
+        onFindNearest={() => setShowNearest(true)}
+      />
+
+      {/* Color legend for colored mode */}
+      {mode === "colored" && isPremium && <ColorLegend />}
+
+      {/* Season timeline (premium) */}
+      {isPremium && premiumSeasons?.length > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 z-[1000] bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 px-3 py-2">
+          <SeasonTimeline
+            seasons={premiumSeasons}
+            onSeasonChange={onTimelineSeasonChange}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -69,85 +128,6 @@ function TileUpdater({ tileUrl }) {
       }
     };
   }, [tileUrl, map]);
-
-  return null;
-}
-
-/**
- * Marker cluster layer using leaflet.markercluster directly
- * (react-leaflet v5 has no built-in cluster support)
- */
-function MarkerClusterLayer({ players }) {
-  const map = useMap();
-  const clusterRef = useRef(null);
-
-  useEffect(() => {
-    if (!map || !players?.length) return;
-
-    // Remove existing cluster group
-    if (clusterRef.current) {
-      map.removeLayer(clusterRef.current);
-    }
-
-    const cluster = L.markerClusterGroup({
-      chunkedLoading: true,
-      maxClusterRadius: 50,
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: false,
-      iconCreateFunction: (clusterObj) => {
-        const count = clusterObj.getChildCount();
-        let size = "small";
-        if (count >= 50) size = "large";
-        else if (count >= 10) size = "medium";
-
-        return L.divIcon({
-          html: `<div><span>${count}</span></div>`,
-          className: `marker-cluster marker-cluster-${size} bbj-cluster`,
-          iconSize: L.point(40, 40),
-        });
-      },
-    });
-
-    for (const player of players) {
-      if (!player.lat || !player.lng) continue;
-
-      const marker = L.marker([player.lat, player.lng]);
-
-      const winnerBadge = player.is_winner
-        ? '<span style="color:#059669;font-weight:700;font-size:11px">&#9733; Winner</span>'
-        : player.is_afp
-        ? '<span style="color:#EC4899;font-weight:700;font-size:11px">&#9733; AFP</span>'
-        : "";
-
-      const photoHtml = player.photo
-        ? `<img src="${player.photo}" alt="${player.name}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0" />`
-        : `<div style="width:48px;height:48px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#94a3b8;font-size:18px">${player.name?.charAt(0) || "?"}</div>`;
-
-      const hometown =
-        [player.hometown_city, player.hometown_state].filter(Boolean).join(", ") || "";
-
-      const popup = L.popup({ maxWidth: 220, minWidth: 180 }).setContent(`
-        <div style="text-align:center;font-family:system-ui,sans-serif">
-          <div style="display:flex;justify-content:center;margin-bottom:6px">${photoHtml}</div>
-          <a href="/bigbrother-players/${player.slug}" style="font-weight:600;font-size:14px;color:#35546e;text-decoration:none">${player.name}</a>
-          ${winnerBadge ? `<div style="margin-top:2px">${winnerBadge}</div>` : ""}
-          ${hometown ? `<div style="font-size:12px;color:#64748b;margin-top:2px">${hometown}</div>` : ""}
-        </div>
-      `);
-
-      marker.bindPopup(popup);
-      cluster.addLayer(marker);
-    }
-
-    map.addLayer(cluster);
-    clusterRef.current = cluster;
-
-    return () => {
-      if (clusterRef.current) {
-        map.removeLayer(clusterRef.current);
-      }
-    };
-  }, [map, players]);
 
   return null;
 }

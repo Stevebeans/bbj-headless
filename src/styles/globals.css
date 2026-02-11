@@ -373,3 +373,49 @@ div.max-w-screen-xl.py-1.flex.items-center.justify-center:empty,
 div.max-w-screen-xl.py-1.flex.items-center.justify-center:has(> :only-child:empty) {
   display: none;
 }
+
+/* ========================================
+   Player Map Styles
+   ======================================== */
+
+/* Remove default leaflet icon styling from custom colored markers */
+.colored-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* BBJ branded cluster colors */
+.bbj-cluster {
+  background: rgba(53, 84, 110, 0.15) !important;
+}
+.bbj-cluster div {
+  background: rgba(53, 84, 110, 0.8) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+}
+.marker-cluster-large.bbj-cluster {
+  background: rgba(255, 191, 15, 0.2) !important;
+}
+.marker-cluster-large.bbj-cluster div {
+  background: rgba(250, 145, 10, 0.85) !important;
+}
+
+/* Pulsing animation for user location marker */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 12px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+/* Leaflet popup dark mode override */
+.dark .leaflet-popup-content-wrapper {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+.dark .leaflet-popup-tip {
+  background: #1e293b;
+}
+.dark .leaflet-popup-content a {
+  color: #93c5fd;
+}
