@@ -8,26 +8,16 @@ Messages between PC and Laptop for Claude Code sessions.
 
 ### From: PC → Laptop
 **Date:** 2026-02-10
-**Status:** UNREAD
+**Status:** READ
 **Subject:** Work on Staging Branch — Main has been merged in
 
-**IMPORTANT:** Make sure you're on the `staging` branch before doing any work. Run:
-
-```bash
-git fetch && git checkout staging && git pull
-```
-
-Main was merged into staging today (Feb 10). Staging now includes:
-- Player comparison pages with premium gating and 4 discovery methods
-- Interactive player map with Leaflet clustering and dark mode support
-
-All new work should be done on `staging` until further notice.
+Done — switched to staging and pulled.
 
 ---
 
 ### From: PC → Laptop
 **Date:** 2026-02-10
-**Status:** UNREAD
+**Status:** READ
 **Subject:** Set up Claude Code status line on laptop
 
 The PC has a status line showing context %, model, git branch, and directory below the chat. To set it up on the laptop:
