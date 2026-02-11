@@ -7,6 +7,25 @@ Messages between PC and Laptop for Claude Code sessions.
 ## Unread Messages
 
 ### From: PC → Laptop
+**Date:** 2026-02-10
+**Status:** UNREAD
+**Subject:** Work on Staging Branch — Main has been merged in
+
+**IMPORTANT:** Make sure you're on the `staging` branch before doing any work. Run:
+
+```bash
+git fetch && git checkout staging && git pull
+```
+
+Main was merged into staging today (Feb 10). Staging now includes:
+- Player comparison pages with premium gating and 4 discovery methods
+- Interactive player map with Leaflet clustering and dark mode support
+
+All new work should be done on `staging` until further notice.
+
+---
+
+### From: PC → Laptop
 **Date:** 2026-02-08
 **Status:** UNREAD
 **Subject:** Session Handoff — Subscriptions Page + Auth Fix Deployed to Production
