@@ -2,6 +2,7 @@
 
 import { FaMapMarkerAlt, FaFire, FaLayerGroup, FaCrosshairs, FaLock } from "react-icons/fa";
 
+/** Map display mode definitions */
 const MODES = [
   { id: "markers", label: "Markers", icon: FaMapMarkerAlt, premium: false },
   { id: "colored", label: "Color-coded", icon: FaMapMarkerAlt, premium: true },
