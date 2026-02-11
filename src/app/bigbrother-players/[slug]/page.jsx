@@ -15,7 +15,9 @@ import {
   PlayerBio,
   PlayerJsonLd,
   RelatedPlayers,
+  CompareButton,
 } from "@/components/players";
+import { SuggestedPlayerComparisons } from "./components/SuggestedPlayerComparisons";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
@@ -107,8 +109,9 @@ export default async function PlayerPage({ params }) {
               <PlayerMeta player={player} slug={slug} />
 
               <div className="p-4 space-y-6">
-                {/* Admin Edit Button */}
-                <div className="flex justify-end">
+                {/* Admin Edit + Compare Buttons */}
+                <div className="flex justify-end gap-2">
+                  <CompareButton player={player} />
                   <PlayerEditButton slug={slug} />
                 </div>
 
@@ -149,8 +152,13 @@ export default async function PlayerPage({ params }) {
                 {related_players?.length > 0 && (
                   <section>
                     <h2 className="v2-primary-subheader mb-3">Castmates</h2>
-                    <RelatedPlayers seasons={related_players} />
+                    <RelatedPlayers seasons={related_players} currentPlayerSlug={slug} />
                   </section>
+                )}
+
+                {/* Suggested Comparisons */}
+                {related_players?.length > 0 && (
+                  <SuggestedPlayerComparisons player={player} relatedPlayers={related_players} />
                 )}
 
                 {/* Related Posts */}

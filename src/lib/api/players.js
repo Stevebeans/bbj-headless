@@ -213,6 +213,27 @@ export async function getAllPlayers(options = {}) {
 }
 
 /**
+ * Get all players with coordinates for map display (client-side fetch)
+ * Returns minimal data: id, name, slug, photo, hometown, lat/lng, is_winner
+ */
+export async function getPlayersForMap() {
+  const apiUrl =
+    process.env.NEXT_PUBLIC_WORDPRESS_API_URL ||
+    "https://bigbrotherjunkies.com/wp-json";
+
+  try {
+    const res = await fetch(`${apiUrl}/bbjd/v1/players/map`, {
+      next: { revalidate: 3600 },
+    });
+    const data = await res.json();
+    return data.success ? data.players : [];
+  } catch (error) {
+    console.error("Failed to fetch map players:", error);
+    return [];
+  }
+}
+
+/**
  * Update player (admin only, client-side)
  * @param {number} playerId - Player ID
  * @param {Object} data - Update data

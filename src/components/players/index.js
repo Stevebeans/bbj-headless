@@ -12,3 +12,7 @@ export { RelatedPlayers } from "./RelatedPlayers";
 // Season page components
 export { PlayerCard } from "./PlayerCard";
 export { PlayerBadge } from "./PlayerBadge";
+
+// Comparison components
+export { CompareButton } from "./CompareButton";
+export { PlayerPicker } from "./PlayerPicker";
