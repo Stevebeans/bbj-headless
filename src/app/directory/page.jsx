@@ -50,9 +50,11 @@ export default async function PlayersPage() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main Content */}
         <div className="flex-1 min-w-0">
-          <Suspense fallback={<DirectorySkeleton />}>
-            <PlayerDirectory initialPlayers={players} seasons={seasons} />
-          </Suspense>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 sm:p-6">
+            <Suspense fallback={<DirectorySkeleton />}>
+              <PlayerDirectory initialPlayers={players} seasons={seasons} />
+            </Suspense>
+          </div>
 
           {/* Bottom Ad */}
           <div className="mt-8">
