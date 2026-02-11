@@ -7,6 +7,19 @@ import { FaSearch, FaUsers, FaCalendarAlt, FaMapMarkerAlt, FaChartBar, FaExchang
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
+import dynamic from "next/dynamic";
+
+const PlayerMap = dynamic(() => import("./PlayerMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl" style={{ height: "min(70vh, 600px)" }}>
+      <div className="text-center">
+        <FaMapMarkerAlt className="w-8 h-8 text-slate-400 mx-auto mb-2 animate-pulse" />
+        <p className="text-sm text-slate-500">Loading map...</p>
+      </div>
+    </div>
+  ),
+});
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
@@ -688,19 +701,76 @@ function CompareTabPicker({ isOpen, onClose }) {
 }
 
 function MapTab() {
-  return (
-    <div className="text-center py-16">
-      <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full
-        flex items-center justify-center mx-auto mb-6">
-        <FaMapMarkerAlt className="w-10 h-10 text-slate-400" />
+  const [players, setPlayers] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Detect dark mode
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const match = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(document.documentElement.classList.contains("dark") || match.matches);
+
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Fetch map data on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchMapData() {
+      try {
+        const res = await fetch(`${API_URL}/bbjd/v1/players/map`);
+        const data = await res.json();
+        if (!cancelled) {
+          setPlayers(data.success ? data.players : []);
+        }
+      } catch (err) {
+        if (!cancelled) setError("Failed to load map data");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchMapData();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <FaMapMarkerAlt className="w-10 h-10 text-slate-400 mx-auto mb-4" />
+        <p className="text-slate-500 dark:text-slate-400">{error}</p>
       </div>
-      <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">
-        Player Map Coming Soon
-      </h3>
-      <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-        We&apos;re working on an interactive map showing where Big Brother houseguests
-        are from across the United States. Check back soon!
-      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Map */}
+      {loading || !players ? (
+        <div className="flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl" style={{ height: "min(70vh, 600px)" }}>
+          <div className="text-center">
+            <FaMapMarkerAlt className="w-8 h-8 text-slate-400 mx-auto mb-2 animate-pulse" />
+            <p className="text-sm text-slate-500">Loading {loading ? "player data" : "map"}...</p>
+          </div>
+        </div>
+      ) : (
+        <PlayerMap players={players} isDark={isDark} />
+      )}
+
+      {/* Stats bar */}
+      {players && (
+        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+          <span>{players.length} players mapped</span>
+          <span>Click markers for player details</span>
+        </div>
+      )}
     </div>
   );
 }
