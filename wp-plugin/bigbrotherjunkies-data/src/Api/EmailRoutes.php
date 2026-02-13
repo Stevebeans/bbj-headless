@@ -18,17 +18,11 @@ class EmailRoutes
 {
     private const NAMESPACE = 'bbjd/v1';
 
-    /**
-     * Initialize the routes
-     */
     public function init(): void
     {
         add_action('rest_api_init', [$this, 'registerRoutes']);
     }
 
-    /**
-     * Register REST routes
-     */
     public function registerRoutes(): void
     {
         // Public: subscribe
@@ -206,10 +200,6 @@ class EmailRoutes
         ]);
     }
 
-    // ──────────────────────────────────────────────
-    // Public endpoints
-    // ──────────────────────────────────────────────
-
     /**
      * Subscribe an email address
      */
@@ -246,9 +236,6 @@ class EmailRoutes
         ], 200);
     }
 
-    /**
-     * Confirm a subscription via token
-     */
     public function confirm(WP_REST_Request $request): WP_REST_Response
     {
         $token = $request->get_param('token');
@@ -269,9 +256,6 @@ class EmailRoutes
         ], 200);
     }
 
-    /**
-     * Unsubscribe via email + HMAC token
-     */
     public function unsubscribe(WP_REST_Request $request): WP_REST_Response
     {
         $email = $request->get_param('email');
@@ -292,10 +276,6 @@ class EmailRoutes
             'message' => 'You\'ve been unsubscribed. Sorry to see you go!',
         ], 200);
     }
-
-    // ──────────────────────────────────────────────
-    // Authenticated endpoints
-    // ──────────────────────────────────────────────
 
     /**
      * Get current user's email preferences (list memberships)
@@ -367,9 +347,6 @@ class EmailRoutes
         ], 200);
     }
 
-    /**
-     * Update current user's email preferences (list memberships)
-     */
     public function updatePreferences(WP_REST_Request $request): WP_REST_Response
     {
         global $wpdb;
@@ -435,10 +412,6 @@ class EmailRoutes
             'message' => 'Email preferences updated.',
         ], 200);
     }
-
-    // ──────────────────────────────────────────────
-    // Webhook endpoint
-    // ──────────────────────────────────────────────
 
     /**
      * Handle Resend webhook events (Svix signature verification)
@@ -526,10 +499,6 @@ class EmailRoutes
         return new WP_REST_Response(['success' => true], 200);
     }
 
-    // ──────────────────────────────────────────────
-    // Admin endpoints
-    // ──────────────────────────────────────────────
-
     /**
      * Get email system stats (subscriber counts, send metrics, engagement)
      */
@@ -545,9 +514,6 @@ class EmailRoutes
         ], 200);
     }
 
-    /**
-     * Get paginated subscribers for a list
-     */
     public function getSubscribers(WP_REST_Request $request): WP_REST_Response
     {
         $listSlug = $request->get_param('list');
@@ -558,10 +524,7 @@ class EmailRoutes
             'search' => $request->get_param('search'),
         ];
 
-        // Remove null filters
-        $filters = array_filter($filters, function ($v) {
-            return $v !== null;
-        });
+        $filters = array_filter($filters, fn($v) => $v !== null);
 
         $service = new EmailService();
         $result = $service->getSubscribers($listSlug, $filters);
@@ -572,9 +535,6 @@ class EmailRoutes
         ], 200);
     }
 
-    /**
-     * Bulk import subscribers from an email list
-     */
     public function importSubscribers(WP_REST_Request $request): WP_REST_Response
     {
         $params = $request->get_json_params();
@@ -620,9 +580,6 @@ class EmailRoutes
         ], 200);
     }
 
-    /**
-     * Send re-confirmation emails to selected subscribers
-     */
     public function sendReconfirmation(WP_REST_Request $request): WP_REST_Response
     {
         $params = $request->get_json_params();
@@ -647,9 +604,6 @@ class EmailRoutes
         ], 200);
     }
 
-    /**
-     * Send a test email (uses latest published post)
-     */
     public function sendTestEmail(WP_REST_Request $request): WP_REST_Response
     {
         $params = $request->get_json_params();
@@ -677,9 +631,6 @@ class EmailRoutes
         ], 200);
     }
 
-    /**
-     * Get all mailing lists with subscriber counts
-     */
     public function getLists(WP_REST_Request $request): WP_REST_Response
     {
         global $wpdb;
@@ -705,13 +656,12 @@ class EmailRoutes
             ARRAY_A
         );
 
-        // Cast numeric fields
-        $lists = array_map(function ($list) {
-            $list['id'] = (int) $list['id'];
-            $list['is_active'] = (bool) $list['is_active'];
-            $list['subscriber_count'] = (int) $list['subscriber_count'];
-            return $list;
-        }, $lists ?: []);
+        $lists = array_map(fn($list) => [
+            ...$list,
+            'id' => (int) $list['id'],
+            'is_active' => (bool) $list['is_active'],
+            'subscriber_count' => (int) $list['subscriber_count'],
+        ], $lists ?: []);
 
         return new WP_REST_Response([
             'success' => true,
@@ -719,29 +669,15 @@ class EmailRoutes
         ], 200);
     }
 
-    // ──────────────────────────────────────────────
-    // Permission callbacks
-    // ──────────────────────────────────────────────
-
-    /**
-     * Require authenticated user
-     */
     public function requireAuth(): bool
     {
         return is_user_logged_in();
     }
 
-    /**
-     * Require admin (manage_options) capability
-     */
     public function requireAdmin(): bool
     {
         return current_user_can('manage_options');
     }
-
-    // ──────────────────────────────────────────────
-    // Private helpers
-    // ──────────────────────────────────────────────
 
     /**
      * Process a Resend webhook event and update the sends table
@@ -765,49 +701,42 @@ class EmailRoutes
             return;
         }
 
-        switch ($eventType) {
-            case 'email.delivered':
-                $wpdb->update($sendsTable, [
-                    'delivered_at' => $now,
-                ], ['id' => $send->id]);
-                break;
+        // Simple timestamp events: delivered, opened, clicked
+        $timestampFields = [
+            'email.delivered' => 'delivered_at',
+            'email.opened'   => 'opened_at',
+            'email.clicked'  => 'clicked_at',
+        ];
 
-            case 'email.opened':
-                $wpdb->update($sendsTable, [
-                    'opened_at' => $now,
-                ], ['id' => $send->id]);
-                break;
+        if (isset($timestampFields[$eventType])) {
+            $wpdb->update($sendsTable, [
+                $timestampFields[$eventType] => $now,
+            ], ['id' => $send->id]);
+            return;
+        }
 
-            case 'email.clicked':
-                $wpdb->update($sendsTable, [
-                    'clicked_at' => $now,
-                ], ['id' => $send->id]);
-                break;
+        if ($eventType === 'email.bounced') {
+            $bounceType = ($data['bounce_type'] ?? '') === 'Permanent' ? 'hard' : 'soft';
 
-            case 'email.bounced':
-                $bounceType = ($data['bounce_type'] ?? '') === 'Permanent' ? 'hard' : 'soft';
+            $wpdb->update($sendsTable, [
+                'bounced_at' => $now,
+                'bounce_type' => $bounceType,
+            ], ['id' => $send->id]);
 
-                $wpdb->update($sendsTable, [
-                    'bounced_at' => $now,
-                    'bounce_type' => $bounceType,
-                ], ['id' => $send->id]);
-
-                // Auto-unsubscribe on hard bounce
-                if ($bounceType === 'hard') {
-                    $wpdb->update($subTable, [
-                        'status' => 'unsubscribed',
-                        'unsubscribed_at' => $now,
-                    ], ['id' => $send->subscriber_id]);
-                }
-                break;
-
-            case 'email.complained':
-                // Spam complaint — unsubscribe immediately
+            if ($bounceType === 'hard') {
                 $wpdb->update($subTable, [
                     'status' => 'unsubscribed',
                     'unsubscribed_at' => $now,
                 ], ['id' => $send->subscriber_id]);
-                break;
+            }
+            return;
+        }
+
+        if ($eventType === 'email.complained') {
+            $wpdb->update($subTable, [
+                'status' => 'unsubscribed',
+                'unsubscribed_at' => $now,
+            ], ['id' => $send->subscriber_id]);
         }
     }
 }

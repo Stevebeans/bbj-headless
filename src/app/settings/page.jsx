@@ -12,6 +12,8 @@ import {
   uploadAvatar,
   deleteAvatar,
   verifyEmailChange,
+  getEmailPreferences,
+  updateEmailPreferences,
 } from "@/lib/api/settings";
 import PlayerSearchDropdown from "@/components/settings/PlayerSearchDropdown";
 import EmailChangeModal from "@/components/settings/EmailChangeModal";
@@ -639,17 +641,14 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
       setNotifications(settings.notifications);
     }
     // Sync newsletter toggle with email preferences
-    const loadEmailPrefs = async () => {
-      try {
-        const { getEmailPreferences } = await import("@/lib/api/settings");
-        const result = await getEmailPreferences();
-        const isSubscribed = (result.lists || []).some((l) => l.slug === "post-notifications");
+    getEmailPreferences()
+      .then((result) => {
+        const isSubscribed = (result.lists || []).some(
+          (l) => l.slug === "post-notifications" && l.subscribed
+        );
         setNotifications((prev) => ({ ...prev, newsletter: isSubscribed }));
-      } catch {
-        // Silently fail — use existing usermeta value
-      }
-    };
-    loadEmailPrefs();
+      })
+      .catch(() => {});
   }, [settings]);
 
   // Load subscriptions
@@ -685,13 +684,8 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
       await updateNotifications(notifications);
 
       // Sync newsletter toggle with email preferences API
-      try {
-        const { updateEmailPreferences } = await import("@/lib/api/settings");
-        const lists = notifications.newsletter ? ["post-notifications"] : [];
-        await updateEmailPreferences(lists);
-      } catch {
-        // Email preferences sync failed but notification save succeeded
-      }
+      const lists = notifications.newsletter ? ["post-notifications"] : [];
+      await updateEmailPreferences(lists).catch(() => {});
 
       showToast("Notification preferences saved!");
       setHasChanges(false);

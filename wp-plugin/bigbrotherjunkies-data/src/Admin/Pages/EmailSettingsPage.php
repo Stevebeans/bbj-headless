@@ -9,17 +9,11 @@ class EmailSettingsPage
 {
     public const MENU_SLUG = 'bbjd-mailing-settings';
 
-    /**
-     * Handle actions
-     */
     public function handleActions(): void
     {
         add_action('admin_post_bbjd_save_email_settings', [$this, 'handleSaveSettings']);
     }
 
-    /**
-     * Handle save settings action
-     */
     public function handleSaveSettings(): void
     {
         if (!current_user_can('manage_options')) {
@@ -56,9 +50,6 @@ class EmailSettingsPage
         exit;
     }
 
-    /**
-     * Render the page
-     */
     public function render(): void
     {
         $settings = get_option('bbjd_email_settings', []);
@@ -238,9 +229,6 @@ class EmailSettingsPage
         <?php
     }
 
-    /**
-     * Render messages
-     */
     private function renderMessages(string $message): void
     {
         if ($message === 'saved') {

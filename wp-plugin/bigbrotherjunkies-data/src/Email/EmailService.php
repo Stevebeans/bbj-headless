@@ -421,13 +421,6 @@ class EmailService
         return hash_hmac('sha256', $email, $secret);
     }
 
-    // ──────────────────────────────────────────────
-    // Private helpers
-    // ──────────────────────────────────────────────
-
-    /**
-     * Add a subscriber to one or more lists (idempotent via REPLACE)
-     */
     private function addToLists(int $subscriberId, array $listSlugs): void
     {
         global $wpdb;
@@ -452,9 +445,6 @@ class EmailService
         }
     }
 
-    /**
-     * Send confirmation email via ResendClient
-     */
     private function sendConfirmationEmail(string $email, string $token): void
     {
         $settings = $this->getEmailSettings();
@@ -480,9 +470,6 @@ class EmailService
         }
     }
 
-    /**
-     * Build inline-CSS HTML for the confirmation email
-     */
     private function buildConfirmationTemplate(string $confirmUrl): string
     {
         $confirmUrl = esc_url($confirmUrl);
@@ -540,26 +527,17 @@ class EmailService
 HTML;
     }
 
-    /**
-     * Verify an HMAC unsubscribe token
-     */
     private function verifyUnsubscribeToken(string $email, string $token): bool
     {
         $expected = $this->generateUnsubscribeToken($email);
         return hash_equals($expected, $token);
     }
 
-    /**
-     * Generate a random confirmation token
-     */
     private function generateToken(): string
     {
         return bin2hex(random_bytes(32));
     }
 
-    /**
-     * Get email settings from WordPress options
-     */
     private function getEmailSettings(): array
     {
         return get_option('bbjd_email_settings', []);

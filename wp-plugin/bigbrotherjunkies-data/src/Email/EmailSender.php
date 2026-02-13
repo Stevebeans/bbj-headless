@@ -10,17 +10,12 @@ namespace BigBrotherJunkies\Data\Email;
  */
 class EmailSender
 {
-    /**
-     * Register WordPress hooks
-     */
     public function init(): void
     {
         add_action('transition_post_status', [$this, 'onPostStatusChange'], 10, 3);
     }
 
     /**
-     * Hook: fires on post status transitions
-     *
      * Only triggers for new posts being published (not updates).
      */
     public function onPostStatusChange(string $newStatus, string $oldStatus, \WP_Post $post): void
@@ -213,13 +208,6 @@ class EmailSender
         return $resendId !== null;
     }
 
-    // ──────────────────────────────────────────────
-    // Private helpers
-    // ──────────────────────────────────────────────
-
-    /**
-     * Build HTML template for a post notification email
-     */
     private function buildPostNotificationTemplate(\WP_Post $post): string
     {
         $title = esc_html($post->post_title);
@@ -302,9 +290,6 @@ HTML;
 HTML;
     }
 
-    /**
-     * Build HTML template for a re-confirmation email
-     */
     private function buildReconfirmationTemplate(string $confirmUrl): string
     {
         $confirmUrl = esc_url($confirmUrl);
@@ -362,9 +347,6 @@ HTML;
 HTML;
     }
 
-    /**
-     * Replace {{UNSUBSCRIBE_LINK}} placeholder with a real unsubscribe anchor tag
-     */
     private function injectUnsubscribeLink(string $html, string $email, string $token): string
     {
         $settings = get_option('bbjd_email_settings', []);

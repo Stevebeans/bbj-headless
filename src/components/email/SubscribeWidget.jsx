@@ -11,6 +11,12 @@ export function SubscribeWidget() {
   const [status, setStatus] = useState("idle"); // idle, loading, success, error
   const [message, setMessage] = useState("");
 
+  const STATUS_MESSAGES = {
+    already_subscribed: "You're already subscribed!",
+    pending: "Check your inbox to confirm!",
+    resubscribed_pending: "Check your inbox to re-confirm!",
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const submitEmail = isAuthenticated ? user?.user_email : email;
@@ -24,17 +30,8 @@ export function SubscribeWidget() {
         body: JSON.stringify({ email: submitEmail, list: "post-notifications" }),
       });
       const data = await res.json();
-
-      if (data.status === "already_subscribed") {
-        setStatus("success");
-        setMessage("You're already subscribed!");
-      } else if (data.status === "pending") {
-        setStatus("success");
-        setMessage("Check your inbox to confirm!");
-      } else {
-        setStatus("success");
-        setMessage("You're subscribed!");
-      }
+      setStatus("success");
+      setMessage(STATUS_MESSAGES[data.status] || "You're subscribed!");
     } catch {
       setStatus("error");
       setMessage("Something went wrong. Try again.");

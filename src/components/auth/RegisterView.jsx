@@ -499,7 +499,7 @@ export default function RegisterView() {
             htmlFor="register-newsletter"
             className="text-sm text-slate-600 dark:text-slate-400"
           >
-            Subscribe to our daily digest for Big Brother news and updates
+            Email me when new posts are published
           </label>
         </div>
 

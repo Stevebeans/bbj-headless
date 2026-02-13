@@ -27,12 +27,7 @@ class EmailStatsPage
                 <!-- Stat Cards -->
                 <div class="bbjd-grid bbjd-grid-cols-2 md:bbjd-grid-cols-4 bbjd-gap-4 bbjd-mb-6">
                     <?php
-                    $totalSubscribed = 0;
-                    foreach ($stats['subscribers'] as $status => $count) {
-                        if ($status === 'subscribed') {
-                            $totalSubscribed = $count;
-                        }
-                    }
+                    $totalSubscribed = $stats['subscribers']['subscribed'] ?? 0;
                     $cards = [
                         ['label' => 'Total Subscribed', 'value' => number_format($totalSubscribed), 'color' => 'bbjd-text-primary500'],
                         ['label' => 'Open Rate (90d)', 'value' => $sends['open_rate'] . '%', 'color' => 'bbjd-text-green-600'],

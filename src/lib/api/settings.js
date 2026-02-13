@@ -1,14 +1,7 @@
-/**
- * User Settings API functions
- */
-
 import { getToken } from "@/lib/auth/cookies";
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
-/**
- * Get all settings for current user
- */
 export async function getSettings() {
   const token = getToken();
   if (!token) {
@@ -29,15 +22,6 @@ export async function getSettings() {
   return response.json();
 }
 
-/**
- * Update profile settings
- * @param {Object} data - Profile data to update
- * @param {string} [data.display_name] - Display name
- * @param {string} [data.first_name] - First name
- * @param {string} [data.last_name] - Last name
- * @param {string} [data.bio] - User bio
- * @param {number|null} [data.favorite_player_id] - Favorite player ID
- */
 export async function updateSettings(data) {
   const token = getToken();
   if (!token) {
@@ -61,15 +45,6 @@ export async function updateSettings(data) {
   return response.json();
 }
 
-/**
- * Update notification preferences
- * @param {Object} notifications - Notification settings
- * @param {boolean} [notifications.new_reply] - Reply notifications
- * @param {boolean} [notifications.new_mention] - Mention notifications
- * @param {boolean} [notifications.new_message] - Message notifications
- * @param {boolean} [notifications.feed_updates] - Feed update notifications (premium)
- * @param {boolean} [notifications.newsletter] - Newsletter subscription
- */
 export async function updateNotifications(notifications) {
   const token = getToken();
   if (!token) {
@@ -96,10 +71,6 @@ export async function updateNotifications(notifications) {
   return result;
 }
 
-/**
- * Request email change (sends verification email)
- * @param {string} email - New email address
- */
 export async function requestEmailChange(email) {
   const token = getToken();
   if (!token) {
@@ -123,10 +94,6 @@ export async function requestEmailChange(email) {
   return response.json();
 }
 
-/**
- * Verify email change with token
- * @param {string} token - Verification token from email link
- */
 export async function verifyEmailChange(verifyToken) {
   const response = await fetch(`${API_URL}/bbjd/v1/settings/email/verify`, {
     method: "POST",
@@ -144,10 +111,6 @@ export async function verifyEmailChange(verifyToken) {
   return response.json();
 }
 
-/**
- * Search players for favorite player dropdown
- * @param {string} query - Search query (min 2 characters)
- */
 export async function searchPlayers(query) {
   const token = getToken();
   if (!token) {
@@ -171,9 +134,6 @@ export async function searchPlayers(query) {
   return response.json();
 }
 
-/**
- * Get help/FAQ data including rank definitions
- */
 export async function getHelpData() {
   const response = await fetch(`${API_URL}/bbjd/v1/settings/help`);
 
@@ -184,10 +144,6 @@ export async function getHelpData() {
   return response.json();
 }
 
-/**
- * Upload avatar image
- * @param {File} file - Image file to upload
- */
 export async function uploadAvatar(file) {
   const token = getToken();
   if (!token) {
@@ -213,9 +169,6 @@ export async function uploadAvatar(file) {
   return response.json();
 }
 
-/**
- * Get user preferences (feed per_page, etc.)
- */
 export async function getPreferences() {
   const token = getToken();
   if (!token) return { preferences: { feed_per_page: 20 } };
@@ -233,11 +186,6 @@ export async function getPreferences() {
   return response.json();
 }
 
-/**
- * Update user preferences
- * @param {Object} prefs - Preferences to update
- * @param {number} [prefs.feed_per_page] - Feed updates per page (10-100, premium only)
- */
 export async function updatePreferences(prefs) {
   const token = getToken();
   if (!token) {
@@ -262,10 +210,6 @@ export async function updatePreferences(prefs) {
   return result;
 }
 
-/**
- * Get email list preferences for current user
- * Returns which email lists the user is subscribed to
- */
 export async function getEmailPreferences() {
   const token = getToken();
   if (!token) return { lists: [] };
@@ -280,10 +224,6 @@ export async function getEmailPreferences() {
   return response.json();
 }
 
-/**
- * Update email list preferences for current user
- * @param {string[]} lists - Array of list slugs to be subscribed to
- */
 export async function updateEmailPreferences(lists) {
   const token = getToken();
   if (!token) {
@@ -307,9 +247,6 @@ export async function updateEmailPreferences(lists) {
   return response.json();
 }
 
-/**
- * Delete avatar (revert to Gravatar)
- */
 export async function deleteAvatar() {
   const token = getToken();
   if (!token) {

@@ -12,19 +12,12 @@ class EmailSchema
     public const TABLE_LIST_SUBSCRIBERS = 'bbj_email_list_subscribers';
     public const TABLE_SENDS = 'bbj_email_sends';
 
-    /**
-     * Get full table name with prefix
-     */
     public static function table(string $name): string
     {
         global $wpdb;
         return $wpdb->prefix . $name;
     }
 
-    /**
-     * Get the subscribers table schema
-     * Stores email subscribers (both registered users and anonymous)
-     */
     public static function getSubscribersTableSchema(): string
     {
         $table = self::table(self::TABLE_SUBSCRIBERS);
@@ -49,10 +42,6 @@ class EmailSchema
         ) {$charset};";
     }
 
-    /**
-     * Get the lists table schema
-     * Stores mailing lists (e.g., post-notifications, weekly-digest)
-     */
     public static function getListsTableSchema(): string
     {
         $table = self::table(self::TABLE_LISTS);
@@ -70,10 +59,6 @@ class EmailSchema
         ) {$charset};";
     }
 
-    /**
-     * Get the list subscribers junction table schema
-     * Maps subscribers to lists (many-to-many)
-     */
     public static function getListSubscribersTableSchema(): string
     {
         $table = self::table(self::TABLE_LIST_SUBSCRIBERS);
@@ -88,10 +73,6 @@ class EmailSchema
         ) {$charset};";
     }
 
-    /**
-     * Get the sends table schema
-     * Tracks individual email sends for analytics and deduplication
-     */
     public static function getSendsTableSchema(): string
     {
         $table = self::table(self::TABLE_SENDS);
@@ -118,9 +99,6 @@ class EmailSchema
         ) {$charset};";
     }
 
-    /**
-     * Get all table schemas
-     */
     public static function getAllSchemas(): array
     {
         return [
@@ -131,9 +109,6 @@ class EmailSchema
         ];
     }
 
-    /**
-     * Get charset collate string
-     */
     private static function getCharset(): string
     {
         global $wpdb;

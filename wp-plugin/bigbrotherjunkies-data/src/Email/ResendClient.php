@@ -106,25 +106,16 @@ class ResendClient
         return $allIds;
     }
 
-    /**
-     * Check if the Resend API key is configured
-     */
     public function isConfigured(): bool
     {
         return !empty($this->apiKey);
     }
 
-    /**
-     * Get the configured from address
-     */
     public function getFromAddress(): string
     {
         return $this->fromAddress;
     }
 
-    /**
-     * Get the configured from name
-     */
     public function getFromName(): string
     {
         return $this->fromName;

@@ -628,10 +628,7 @@ class Plugin
         $emailRoutes = new EmailRoutes();
         $emailRoutes->init();
 
-        add_action('bbj_send_post_notification', function (int $postId) {
-            $sender = new EmailSender();
-            $sender->sendPostNotification($postId);
-        });
+        add_action('bbj_send_post_notification', [$emailSender, 'sendPostNotification']);
     }
 
     /**

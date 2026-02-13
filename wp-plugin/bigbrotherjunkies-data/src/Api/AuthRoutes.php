@@ -417,14 +417,13 @@ class AuthRoutes
         // Send verification email
         $this->sendVerificationEmail($data['email'], $data['username'], $verificationToken);
 
-        // Handle newsletter subscription
+        // Handle post notifications subscription (double opt-in)
         if ($data['subscribe_newsletter']) {
             try {
-                $subscriber = new MailPoetSubscriber();
-                $subscriber->subscribe($data['email'], '', '');
+                $emailService = new \BigBrotherJunkies\Data\Email\EmailService();
+                $emailService->subscribe($data['email'], 'registration', ['post-notifications']);
             } catch (\Exception $e) {
-                // Log error but don't fail registration
-                error_log('BBJD Newsletter subscription failed: ' . $e->getMessage());
+                error_log('BBJD Email subscription failed: ' . $e->getMessage());
             }
         }
 

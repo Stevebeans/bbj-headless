@@ -10,9 +10,6 @@ class EmailMigrator
     public const DB_VERSION_OPTION = 'bbj_email_db_version';
     public const CURRENT_VERSION = '1.0.0';
 
-    /**
-     * Run migrations if needed
-     */
     public static function migrate(): array
     {
         $results = [];
@@ -32,9 +29,6 @@ class EmailMigrator
         return $results;
     }
 
-    /**
-     * Seed the default post-notifications list
-     */
     private static function seedDefaultList(): void
     {
         global $wpdb;
@@ -55,18 +49,12 @@ class EmailMigrator
         }
     }
 
-    /**
-     * Check if migration is needed
-     */
     public static function needsMigration(): bool
     {
         $currentVersion = get_option(self::DB_VERSION_OPTION, '0.0.0');
         return version_compare($currentVersion, self::CURRENT_VERSION, '<');
     }
 
-    /**
-     * Check if a table exists
-     */
     public static function tableExists(string $tableName): bool
     {
         global $wpdb;
@@ -77,9 +65,6 @@ class EmailMigrator
         return $result === $fullTableName;
     }
 
-    /**
-     * Get table row count
-     */
     public static function getTableRowCount(string $tableName): int
     {
         global $wpdb;
@@ -92,9 +77,6 @@ class EmailMigrator
         return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$fullTableName}");
     }
 
-    /**
-     * Get status of all email tables
-     */
     public static function getTablesStatus(): array
     {
         $tables = [
@@ -116,17 +98,11 @@ class EmailMigrator
         return $status;
     }
 
-    /**
-     * Get current database version
-     */
     public static function getCurrentVersion(): string
     {
         return get_option(self::DB_VERSION_OPTION, 'Not installed');
     }
 
-    /**
-     * Drop all email tables (for dev/testing)
-     */
     public static function dropAllTables(): array
     {
         global $wpdb;

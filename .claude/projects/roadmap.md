@@ -1,6 +1,6 @@
 # BBJ Next.js Roadmap
 
-**Last Updated:** February 7, 2026 (Added MetaBox removal plan, custom email system spec)
+**Last Updated:** February 13, 2026 (Email system built + testing checklist, MetaBox removal plan)
 **Target Launch:** Before BB28 (July 2026)
 **Status:** Off-season development
 
@@ -242,7 +242,7 @@ The core differentiator during the season.
 - [x] Email change with verification flow
 - [x] Notification settings with premium lock for feed updates
 - [x] Help/FAQ tab with dynamic rank information
-- [ ] **Polish Notifications tab** - Wire up to custom email system (see 7.1)
+- [x] **Polish Notifications tab** - Wired to custom email system (see 7.1)
 - [x] **Polish Premium tab** - Wired up to Stripe/PayPal billing system (see 4.2)
 - [x] Comment history (Feb 2026 - via public profile page)
 - [ ] Saved/bookmarked content
@@ -525,54 +525,117 @@ Ideas to keep premium users engaged year-round.
 
 ## Phase 7: PWA & Notifications (Priority: Medium-High for July)
 
-### 7.1 Custom Email System (replacing MailPoet)
+### 7.1 Custom Email System (replacing MailPoet) ✅
 
-**Goal:** Self-contained email system using a third-party transactional API for delivery. We own the list, templates, and logic. They handle sending and report back stats.
+**Status:** Built (Feb 13, 2026) — Deployed to staging, needs testing & Resend config
 
-**Why:** MailPoet costs $21.25/month for only 576 active subscribers, caused a recursive crawler loop that pegged the production server at 100% CPU, and adds PHP overhead on every page load. A custom system is cheaper, lighter, and gives us full control.
+**Provider:** Resend (free tier: 3K/month, then $20/100K). Replaces MailPoet at $21.25/month.
 
-**Subscriber stats (as of Feb 2026):** 576 subscribed, 7,299 unconfirmed, 48,153 unsubscribed, 235 bounced
-
-**Cost comparison at ~600 subscribers, 2-3 posts/day in summer (~90 emails/day = ~54K/month):**
-- MailPoet: $21.25/month (current)
-- Mailgun: ~$8/month (Flex plan, $0.80/1K after 1K free)
-- Resend: Free tier covers it (3K/month free, then $20/100K)
-- Amazon SES: ~$5.40/month ($0.10/1K)
+**Design doc:** `docs/plans/2026-02-13-email-system-design.md`
 
 **Database tables:**
-- [ ] `bbj_email_subscribers` — id, user_id (nullable for non-registered), email, status (subscribed/unconfirmed/unsubscribed/bounced), confirmed_at, subscribed_at, unsubscribed_at, source (registration/widget/import)
-- [ ] `bbj_email_preferences` — subscriber_id, frequency (instant/daily_digest/weekly), notify_posts (bool), notify_feed_updates (bool), notify_announcements (bool)
-- [ ] `bbj_email_sends` — id, subscriber_id, email_type (post_notification/digest/welcome/reconfirmation), external_id (Mailgun/Resend message ID), sent_at, opened_at, clicked_at, bounced_at
-- [ ] `bbj_email_templates` — id, name, subject_template, body_template (HTML with merge tags)
+- [x] `bbj_email_subscribers` — id, user_id, email, status, confirm_token, source, timestamps
+- [x] `bbj_email_lists` — id, name, slug, description, is_active
+- [x] `bbj_email_list_subscribers` — list_id, subscriber_id (junction)
+- [x] `bbj_email_sends` — id, subscriber_id, resend_id, subject, sent_at, opened_at, clicked_at, bounced_at, bounce_type
 
-**Backend (WP Plugin):**
-- [ ] `EmailService.php` — subscribe, unsubscribe, confirm, bulk send, handle webhooks
-- [ ] `EmailSender.php` — adapter interface for Mailgun/Resend/SES (swap providers without changing logic)
-- [ ] `EmailRoutes.php` — REST endpoints: subscribe, unsubscribe, confirm, preferences, webhook receiver
-- [ ] `EmailCron.php` — daily digest compiler, weekly summary compiler, re-confirmation campaigns for inactive subscribers
-- [ ] Admin settings page for API keys + provider selection
-- [ ] Migration script to import active MailPoet subscribers into new tables
+**Backend (WP Plugin — `bigbrotherjunkies-data`):**
+- [x] `Email/EmailSchema.php` — 4 table schemas
+- [x] `Email/EmailMigrator.php` — dbDelta migrations + seed default list
+- [x] `Email/ResendClient.php` — Resend REST API wrapper (send, sendBatch)
+- [x] `Email/EmailService.php` — subscribe, confirm, unsubscribe, stats, engagement scoring
+- [x] `Email/EmailSender.php` — post notification templates, batch send, reconfirmation
+- [x] `Api/EmailRoutes.php` — 11 REST endpoints (subscribe, confirm, unsubscribe, preferences, webhook, stats, subscribers, import, reconfirm, test, lists)
+- [x] `Admin/Pages/EmailSettingsPage.php` — Resend API key, from address, webhook secret, pause toggle
+- [x] `Admin/Pages/EmailListsPage.php` — List table, subscriber detail with per-person engagement stats, actions (unsub/resub/remove/delete), MailPoet import button
+- [x] `Admin/Pages/EmailStatsPage.php` — 4 stat cards, engagement scoring, recommendations, recent sends
+- [x] `Admin/Pages/EmailsPage.php` — Post notification status, test email, reconfirmation campaign
+- [x] `Plugin.php` — BBJ Mailing menu with 4 subpages, migration on admin_init, cron hook
 
 **Frontend (Next.js):**
-- [ ] Subscribe widget (email input in sidebar/footer)
-- [ ] Settings → Notifications tab wired to real subscription preferences
-- [ ] Unsubscribe page with one-click + optional feedback
-- [ ] Email preference center page (choose frequency, content types)
+- [x] `components/email/SubscribeWidget.jsx` — sidebar subscribe widget (replaces placeholder)
+- [x] `app/email/confirm/page.jsx` — double opt-in confirmation page
+- [x] `app/unsubscribe/page.jsx` — unsubscribe + re-subscribe page
+- [x] `app/settings/page.jsx` — Post Notifications toggle synced with email preferences API
+- [x] `lib/api/settings.js` — getEmailPreferences / updateEmailPreferences
 
-**Webhook flow (stats reporting back):**
-- [ ] Provider POSTs open/click/bounce/unsubscribe events to `/bbjd/v1/email/webhook`
-- [ ] Update `bbj_email_sends` with timestamps for each event
-- [ ] Admin dashboard widget: open rate, click rate, bounce rate, unsubscribe trend
-- [ ] Auto-flag subscribers who haven't opened in 90 days
+**Subscriber lifecycle:**
+- [x] Double opt-in for anonymous subscribers, auto-confirm for logged-in users
+- [x] Async post notification via WP Cron (non-blocking publish)
+- [x] HMAC-SHA256 unsubscribe tokens (no login required)
+- [x] Svix webhook signature verification for Resend events
+- [x] Bounce handling: hard bounce → auto-unsubscribe
+- [x] Spam complaint → auto-unsubscribe
+- [x] Reconfirmation campaign for dormant subscribers
+- [x] Per-subscriber engagement stats (sends, opens, clicks, last open)
+- [x] MailPoet import (one-click, pre-confirmed, WP user linking)
 
-**Subscriber lifecycle automation:**
-- [ ] Welcome email on subscribe (with confirmation link)
-- [ ] Re-confirmation email after 90 days inactive ("Still want to hear from us?")
-- [ ] Auto-unsubscribe after re-confirmation ignored for 14 days
-- [ ] Bounce handling: soft bounce → retry 3x, hard bounce → auto-unsubscribe
+**Testing Checklist (staging):**
 
-**Post-launch:**
-- [ ] Deactivate MailPoet plugin on production (save CPU + $21.25/month)
+_WP Admin Setup:_
+- [ ] Visit BBJ Mailing → Settings (triggers table migration)
+- [ ] Enter Resend API key
+- [ ] Set From Name, From Email, Frontend URL
+- [ ] Verify styled cards render (not raw HTML)
+- [ ] Save settings → success message
+
+_MailPoet Import:_
+- [ ] Go to BBJ Mailing → Lists
+- [ ] Verify "Import from MailPoet" card shows with subscriber count
+- [ ] Click Import → confirm dialog → wait for redirect
+- [ ] Verify imported/skipped counts in success message
+- [ ] Click into post-notifications list → see imported subscribers
+- [ ] Search for your own email → verify it shows as "subscribed"
+
+_Subscriber Management:_
+- [ ] In list detail, verify per-subscriber columns: Sends, Opens, Clicks, Last Open
+- [ ] Unsub a test subscriber → status changes to "unsubscribed"
+- [ ] Re-sub them → status changes back to "subscribed"
+- [ ] Remove a subscriber from list → disappears from list view
+- [ ] Delete a test subscriber → gone from system entirely
+
+_Subscribe Widget (frontend):_
+- [ ] Visit site → sidebar shows "Get Post Notifications" widget
+- [ ] Enter a test email → submit → "Check your inbox to confirm!"
+- [ ] Check inbox for confirmation email
+- [ ] Click confirm link → lands on /email/confirm with success message
+- [ ] Re-enter same email → "You're already subscribed!"
+- [ ] While logged in, widget auto-fills your email
+
+_Unsubscribe Flow:_
+- [ ] Click unsubscribe link from any email → lands on /unsubscribe
+- [ ] Shows success message with re-subscribe button
+- [ ] Click re-subscribe → shows re-subscribed message
+
+_Settings Page (frontend):_
+- [ ] Go to /settings → Notifications tab
+- [ ] Post Notifications toggle reflects your actual subscription status
+- [ ] Toggle OFF → Save → check WP admin list → status changed
+- [ ] Toggle ON → Save → check WP admin list → re-subscribed
+
+_Post Notifications:_
+- [ ] BBJ Mailing → Emails → Send Test Email → check inbox
+- [ ] Publish a new blog post → verify WP Cron fires notification
+- [ ] Check BBJ Mailing → Stats → verify send recorded
+
+_Stats & Engagement:_
+- [ ] BBJ Mailing → Stats → verify stat cards populate after sends
+- [ ] Engagement scoring shows breakdown (active/inactive/dormant/never)
+- [ ] Recent sends table shows individual blast stats
+
+_Resend Webhook:_
+- [ ] In Resend dashboard, configure webhook URL: `https://stg-wp.bigbrotherjunkies.com/wp-json/bbjd/v1/email/webhook`
+- [ ] Events: email.delivered, email.opened, email.clicked, email.bounced, email.complained
+- [ ] Copy webhook signing secret → paste in BBJ Mailing → Settings
+- [ ] Send a test email → open it → verify opened_at updates in subscriber detail
+- [ ] Click a link → verify clicked_at updates
+
+**Post-testing (production):**
+- [ ] Deploy plugin to production
+- [ ] Configure Resend API key on production
+- [ ] Run MailPoet import on production
+- [ ] Configure Resend webhook for production URL
+- [ ] Deactivate MailPoet plugin (save $21.25/month + CPU)
 - [ ] Clean up MailPoet database tables
 
 ### 7.2 Service Worker
@@ -737,7 +800,7 @@ _Go page by page on live site to identify gaps_
 
 - [x] Push notification setting hidden until mobile app ready
 - [x] Subscribed threads tested and working
-- [ ] Wire newsletter toggle to custom email system (see Phase 7.1)
+- [x] Wire newsletter toggle to custom email system (see Phase 7.1)
 
 ### Mobile Experience
 
