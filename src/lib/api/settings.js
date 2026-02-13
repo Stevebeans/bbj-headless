@@ -263,6 +263,51 @@ export async function updatePreferences(prefs) {
 }
 
 /**
+ * Get email list preferences for current user
+ * Returns which email lists the user is subscribed to
+ */
+export async function getEmailPreferences() {
+  const token = getToken();
+  if (!token) return { lists: [] };
+
+  const response = await fetch(`${API_URL}/bbjd/v1/email/preferences`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) return { lists: [] };
+  return response.json();
+}
+
+/**
+ * Update email list preferences for current user
+ * @param {string[]} lists - Array of list slugs to be subscribed to
+ */
+export async function updateEmailPreferences(lists) {
+  const token = getToken();
+  if (!token) {
+    throw new Error("You must be logged in");
+  }
+
+  const response = await fetch(`${API_URL}/bbjd/v1/email/preferences`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ lists }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Failed to update email preferences");
+  }
+
+  return response.json();
+}
+
+/**
  * Delete avatar (revert to Gravatar)
  */
 export async function deleteAvatar() {

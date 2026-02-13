@@ -633,11 +633,23 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
 
   const isSupporter = settings?.premium?.is_supporter;
 
-  // Initialize from settings
+  // Initialize from settings + load email preferences
   useEffect(() => {
     if (settings?.notifications) {
       setNotifications(settings.notifications);
     }
+    // Sync newsletter toggle with email preferences
+    const loadEmailPrefs = async () => {
+      try {
+        const { getEmailPreferences } = await import("@/lib/api/settings");
+        const result = await getEmailPreferences();
+        const isSubscribed = (result.lists || []).some((l) => l.slug === "post-notifications");
+        setNotifications((prev) => ({ ...prev, newsletter: isSubscribed }));
+      } catch {
+        // Silently fail — use existing usermeta value
+      }
+    };
+    loadEmailPrefs();
   }, [settings]);
 
   // Load subscriptions
@@ -671,6 +683,16 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
     setSaving(true);
     try {
       await updateNotifications(notifications);
+
+      // Sync newsletter toggle with email preferences API
+      try {
+        const { updateEmailPreferences } = await import("@/lib/api/settings");
+        const lists = notifications.newsletter ? ["post-notifications"] : [];
+        await updateEmailPreferences(lists);
+      } catch {
+        // Email preferences sync failed but notification save succeeded
+      }
+
       showToast("Notification preferences saved!");
       setHasChanges(false);
       onUpdate();
@@ -730,8 +752,8 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
     // },
     {
       id: "newsletter",
-      label: "Email Newsletter",
-      description: "Receive our weekly Big Brother newsletter",
+      label: "Post Notifications",
+      description: "Get an email when a new blog post is published",
     },
   ];
 

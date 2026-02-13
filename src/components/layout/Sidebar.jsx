@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { ClientAdPlaceholder } from "../ads/ClientAdPlaceholder";
+import { SubscribeWidget } from "../email/SubscribeWidget";
 
 // Client Component - Sidebar with widgets
 export function Sidebar({ showAds = true, sticky = true, children }) {
@@ -100,26 +101,8 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
       {/* Injected children (e.g. home page widgets) */}
       {children}
 
-      {/* Newsletter Signup Placeholder */}
-      <div className="v2-sidebar-container p-4">
-        <h3 className="v2-ad-subheader">Newsletter</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          Get the latest Big Brother updates delivered to your inbox!
-        </p>
-        <form className="space-y-2" action="#">
-          <input
-            type="email"
-            placeholder="Enter your email"
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-          <button
-            type="submit"
-            className="w-full v2-btn text-sm"
-          >
-            Subscribe
-          </button>
-        </form>
-      </div>
+      {/* Newsletter Signup */}
+      <SubscribeWidget />
 
       {/* Hot Posts Placeholder */}
       <div className="v2-sidebar-container p-4">

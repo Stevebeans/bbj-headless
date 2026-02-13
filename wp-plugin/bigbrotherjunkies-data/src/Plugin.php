@@ -13,6 +13,10 @@ use BigBrotherJunkies\Data\Admin\Pages\DevToolsPage;
 use BigBrotherJunkies\Data\Admin\Pages\ApiSettingsPage;
 use BigBrotherJunkies\Data\Admin\Pages\ImportPage;
 use BigBrotherJunkies\Data\Admin\Pages\SubscriptionsPage;
+use BigBrotherJunkies\Data\Admin\Pages\EmailSettingsPage;
+use BigBrotherJunkies\Data\Admin\Pages\EmailListsPage;
+use BigBrotherJunkies\Data\Admin\Pages\EmailStatsPage;
+use BigBrotherJunkies\Data\Admin\Pages\EmailsPage;
 use BigBrotherJunkies\Data\Ads\AdManager;
 use BigBrotherJunkies\Data\Ads\ContentInserter;
 use BigBrotherJunkies\Data\Api\AdRoutes;
@@ -36,10 +40,13 @@ use BigBrotherJunkies\Data\Api\FeedUpdateRoutes;
 use BigBrotherJunkies\Data\Api\BillingRoutes;
 use BigBrotherJunkies\Data\Api\BugReportRoutes;
 use BigBrotherJunkies\Data\Api\AnalyticsRoutes;
+use BigBrotherJunkies\Data\Api\EmailRoutes;
 use BigBrotherJunkies\Data\Auth\AuthManager;
 use BigBrotherJunkies\Data\Admin\Pages\SocialSettingsPage;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
+use BigBrotherJunkies\Data\Email\EmailMigrator;
+use BigBrotherJunkies\Data\Email\EmailSender;
 use BigBrotherJunkies\Data\Comments\MediaRoutes;
 use BigBrotherJunkies\Data\Api\AvatarRoutes;
 use BigBrotherJunkies\Data\Api\SettingsRoutes;
@@ -110,6 +117,9 @@ class Plugin
 
         // Initialize cron jobs
         $this->initCronJobs();
+
+        // Initialize Email System (tables, migration)
+        $this->initEmail();
 
         // Load admin functionality
         if (is_admin()) {
@@ -421,6 +431,10 @@ class Plugin
             'social_settings' => new SocialSettingsPage(),
             'api_settings' => new ApiSettingsPage(),
             'subscriptions' => new SubscriptionsPage(),
+            'email_settings' => new EmailSettingsPage(),
+            'email_lists' => new EmailListsPage(),
+            'email_stats' => new EmailStatsPage(),
+            'emails' => new EmailsPage(),
         ];
 
         // Register admin menus
@@ -546,6 +560,78 @@ class Plugin
             SubscriptionsPage::MENU_SLUG,
             [$this->adminPages['subscriptions'], 'render']
         );
+
+        // BBJ Mailing menu — Lists is the default page
+        add_menu_page(
+            __('BBJ Mailing', 'bigbrotherjunkies-data'),
+            __('BBJ Mailing', 'bigbrotherjunkies-data'),
+            'manage_options',
+            EmailListsPage::MENU_SLUG,
+            [$this->adminPages['email_lists'], 'render'],
+            'dashicons-email-alt',
+            30
+        );
+
+        // Lists (same as parent)
+        add_submenu_page(
+            EmailListsPage::MENU_SLUG,
+            __('Lists', 'bigbrotherjunkies-data'),
+            __('Lists', 'bigbrotherjunkies-data'),
+            'manage_options',
+            EmailListsPage::MENU_SLUG,
+            [$this->adminPages['email_lists'], 'render']
+        );
+
+        // Stats
+        add_submenu_page(
+            EmailListsPage::MENU_SLUG,
+            __('Stats', 'bigbrotherjunkies-data'),
+            __('Stats', 'bigbrotherjunkies-data'),
+            'manage_options',
+            EmailStatsPage::MENU_SLUG,
+            [$this->adminPages['email_stats'], 'render']
+        );
+
+        // Emails
+        add_submenu_page(
+            EmailListsPage::MENU_SLUG,
+            __('Emails', 'bigbrotherjunkies-data'),
+            __('Emails', 'bigbrotherjunkies-data'),
+            'manage_options',
+            EmailsPage::MENU_SLUG,
+            [$this->adminPages['emails'], 'render']
+        );
+
+        // Settings
+        add_submenu_page(
+            EmailListsPage::MENU_SLUG,
+            __('Settings', 'bigbrotherjunkies-data'),
+            __('Settings', 'bigbrotherjunkies-data'),
+            'manage_options',
+            EmailSettingsPage::MENU_SLUG,
+            [$this->adminPages['email_settings'], 'render']
+        );
+    }
+
+    /**
+     * Initialize Email System (database tables, sender hooks, cron)
+     */
+    private function initEmail(): void
+    {
+        if (EmailMigrator::needsMigration()) {
+            EmailMigrator::migrate();
+        }
+
+        $emailSender = new EmailSender();
+        $emailSender->init();
+
+        $emailRoutes = new EmailRoutes();
+        $emailRoutes->init();
+
+        add_action('bbj_send_post_notification', function (int $postId) {
+            $sender = new EmailSender();
+            $sender->sendPostNotification($postId);
+        });
     }
 
     /**
