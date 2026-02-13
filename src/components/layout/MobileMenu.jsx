@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 
 export function MobileMenuButton({ isOpen, onClick }) {
   return (
@@ -28,7 +30,10 @@ export function MobileMenuButton({ isOpen, onClick }) {
   );
 }
 
-export function MobileMenu({ isOpen, onClose }) {
+export function MobileMenu({ isOpen, onClose, onSearchOpen }) {
+  const { isAuthenticated, logout, loading } = useAuth();
+  const { openLogin, openRegister } = useAuthModal();
+
   // Prevent body scroll when menu is open
   useEffect(() => {
     if (isOpen) {
@@ -46,10 +51,10 @@ export function MobileMenu({ isOpen, onClose }) {
     { href: "/contact", label: "Contact" },
     { href: "/feed-updates", label: "Feed Updates" },
     { href: "/directory", label: "Directory" },
-    { href: "/login", label: "Log In" },
-    { href: "/register", label: "Register" },
     { href: "/become-supporter", label: "Go Ad Free" },
   ];
+
+  const linkClass = "block py-3 px-4 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-osw uppercase tracking-wide transition-colors";
 
   return (
     <>
@@ -64,7 +69,7 @@ export function MobileMenu({ isOpen, onClose }) {
 
       {/* Slide-in menu panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-72 max-w-[80vw] bg-white dark:bg-gray-900 z-50 shadow-xl transform transition-transform duration-300 ease-out md:hidden ${
+        className={`fixed top-0 right-0 h-full w-72 max-w-[80vw] bg-white dark:bg-gray-900 z-50 shadow-xl transform transition-transform duration-300 ease-out md:hidden flex flex-col ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -82,34 +87,28 @@ export function MobileMenu({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* Search bar */}
+        {/* Search button */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full px-4 py-2 pr-10 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-            <svg
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+          <button
+            onClick={() => { onClose(); onSearchOpen?.(); }}
+            className="w-full px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 hover:border-primary-500 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-          </div>
+            Search...
+          </button>
         </div>
 
         {/* Navigation links */}
-        <nav className="p-4" aria-label="Mobile navigation">
+        <nav className="flex-1 p-4 overflow-y-auto" aria-label="Mobile navigation">
           <ul className="space-y-1">
             {navLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
                   onClick={onClose}
-                  className="block py-3 px-4 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-osw uppercase tracking-wide transition-colors"
+                  className={linkClass}
                 >
                   {link.label}
                 </Link>
@@ -118,9 +117,41 @@ export function MobileMenu({ isOpen, onClose }) {
           </ul>
         </nav>
 
-        {/* BB Time (data-nosnippet prevents Google from indexing this as article timestamp) */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <div className="text-center text-xs text-gray-500 dark:text-gray-400" data-nosnippet>
+        {/* Bottom section: Auth action + BB Time */}
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          {!loading && (
+            <div className="px-4 pt-3">
+              {isAuthenticated ? (
+                <button
+                  onClick={() => { logout(); onClose(); }}
+                  className="w-full py-2.5 px-4 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg font-osw uppercase tracking-wide transition-colors flex items-center gap-2 justify-center"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Log Out
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { openLogin(); onClose(); }}
+                    className="flex-1 py-2.5 bg-primary-500 text-white rounded-lg font-osw uppercase tracking-wide hover:bg-primary-600 transition-colors text-center"
+                  >
+                    Log In
+                  </button>
+                  <button
+                    onClick={() => { openRegister(); onClose(); }}
+                    className="flex-1 py-2.5 border border-primary-500 text-primary-500 dark:text-primary-400 rounded-lg font-osw uppercase tracking-wide hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors text-center"
+                  >
+                    Register
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* BB Time */}
+          <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400" data-nosnippet>
             <span>BB Time: </span>
             <time suppressHydrationWarning>
               {new Date().toLocaleString("en-US", {
@@ -140,13 +171,13 @@ export function MobileMenu({ isOpen, onClose }) {
 }
 
 // Combined wrapper component for use in Header
-export function MobileMenuWrapper() {
+export function MobileMenuWrapper({ onSearchOpen }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
       <MobileMenuButton isOpen={isOpen} onClick={() => setIsOpen(!isOpen)} />
-      <MobileMenu isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      <MobileMenu isOpen={isOpen} onClose={() => setIsOpen(false)} onSearchOpen={onSearchOpen} />
     </>
   );
 }

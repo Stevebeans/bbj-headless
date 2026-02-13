@@ -30,6 +30,7 @@ export function ClientAdPlaceholder({ slot, minHeight = "250px", className = "" 
         }
 
         const data = await response.json();
+        console.log(`[Ad] ${slot}:`, data.show ? 'showing' : `hidden (${data.reason})`);
         setAdData(data);
       } catch (err) {
         // Silently fail - ads are non-critical

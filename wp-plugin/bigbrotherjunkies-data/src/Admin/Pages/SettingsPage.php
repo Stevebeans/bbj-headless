@@ -60,6 +60,7 @@ class SettingsPage
         }
 
         $settings = [
+            'enable_ads' => !empty($_POST['enable_ads']),
             'global_hidden_roles' => $globalHiddenRoles,
             'auto_insert_post_types' => $autoInsertPostTypes,
             'auto_insert_default_interval' => intval($_POST['auto_insert_default_interval'] ?? 4),
@@ -107,6 +108,28 @@ class SettingsPage
                 <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                     <?php wp_nonce_field('bbjd_save_settings'); ?>
                     <input type="hidden" name="action" value="bbjd_save_settings">
+
+                    <!-- Global Ad Toggle -->
+                    <div class="bbjd-bg-white bbjd-rounded-lg bbjd-shadow bbjd-p-6 bbjd-mb-6">
+                        <div class="bbjd-flex bbjd-items-center bbjd-justify-between">
+                            <div>
+                                <h2 class="bbjd-text-xl bbjd-font-semibold bbjd-text-gray-800 bbjd-mb-1">
+                                    Enable Ads
+                                </h2>
+                                <p class="bbjd-text-gray-600 bbjd-text-sm">
+                                    Master switch to enable or disable all ads site-wide. When off, no ad slots or ad network scripts will load for anyone.
+                                </p>
+                            </div>
+                            <label class="bbjd-relative bbjd-inline-flex bbjd-items-center bbjd-cursor-pointer bbjd-ml-4 bbjd-shrink-0">
+                                <input type="checkbox"
+                                       name="enable_ads"
+                                       value="1"
+                                       <?php checked($settings['enable_ads'] ?? true); ?>
+                                       class="bbjd-sr-only bbjd-peer">
+                                <div class="bbjd-w-11 bbjd-h-6 bbjd-bg-gray-300 bbjd-rounded-full peer-checked:bbjd-bg-green-500 bbjd-transition-colors after:bbjd-content-[''] after:bbjd-absolute after:bbjd-top-[2px] after:bbjd-left-[2px] after:bbjd-bg-white after:bbjd-rounded-full after:bbjd-h-5 after:bbjd-w-5 after:bbjd-transition-transform peer-checked:after:bbjd-translate-x-5"></div>
+                            </label>
+                        </div>
+                    </div>
 
                     <!-- Supporter Roles -->
                     <div class="bbjd-bg-white bbjd-rounded-lg bbjd-shadow bbjd-p-6 bbjd-mb-6">

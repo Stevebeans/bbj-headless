@@ -270,14 +270,19 @@ class AdRoutes
      */
     private function checkUserShouldSeeAds(WP_REST_Request $request): bool
     {
+        // Global kill switch — if ads are disabled, nobody sees them
+        $adManager = AdManager::getInstance();
+        if (!$adManager->getSetting('enable_ads', true)) {
+            return false;
+        }
+
         // If not logged in, show ads
         if (!is_user_logged_in()) {
             return true;
         }
 
         // Get the ad manager settings
-        $adManager = AdManager::getInstance();
-        $hiddenRoles = $adManager->getSetting('default_user_roles_hide', []);
+        $hiddenRoles = $adManager->getSetting('global_hidden_roles', []);
 
         $user = wp_get_current_user();
 

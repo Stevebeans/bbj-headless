@@ -164,7 +164,7 @@ export function Header() {
                 </button>
               )}
 
-              <MobileMenuWrapper />
+              <MobileMenuWrapper onSearchOpen={() => setIsMobileSearchOpen(true)} />
             </div>
           </div>
         </div>

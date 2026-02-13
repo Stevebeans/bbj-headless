@@ -22,6 +22,11 @@ export async function AdPlaceholder({
   // Fetch slot data from API
   const slotData = await getSlotAd(slot);
 
+  // If ads are globally disabled or user shouldn't see ads, render nothing
+  if (!slotData.show) {
+    return null;
+  }
+
   // Get size config for CLS prevention
   const sizeConfig = getSlotConfig(slot);
   const desktopHeight = sizeConfig.desktop?.height || 250;
