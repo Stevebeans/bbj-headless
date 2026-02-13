@@ -110,11 +110,11 @@ Pages that need to exist for site parity with current WordPress site.
   - JSON-LD structured data for rich snippets
   - [x] **Add `finish_place` field to database** - Track exact placement (1st, 2nd, 3rd, etc.) for display in player hero badges (added to `wp_bbj_v2_player_season` table)
 
-- [ ] **Player Comparison Pages** `/players/compare/[player1]-vs-[player2]`
+- [x] **Player Comparison Pages** `/compare/[matchup]`
   - Auto-generated head-to-head comparisons
-  - Stats comparison table
-  - SEO-optimized for "Player X vs Player Y" searches
-  - Track analytics on which comparisons are popular
+  - Stats comparison table, awards, timeline, suggested comparisons
+  - SEO-optimized with JSON-LD structured data
+  - [ ] Track analytics on which comparisons are popular
 
 ### 2.2 Season System
 
@@ -145,12 +145,12 @@ Pages that need to exist for site parity with current WordPress site.
 
 ### 2.4 Player Map
 
-- [ ] **Interactive Map** `/directory?tab=map`
-  - Map visualization of player hometowns (data ready: lat/lng imported)
-  - Click markers to see player info
-  - Filter by season, winner status, etc.
-  - Heat map option showing player density by region
-  - Current placeholder: "Coming Soon" message
+- [x] **Interactive Map** `/directory?tab=map`
+  - Map visualization of player hometowns with clustering
+  - Marker layers: colored markers, clusters, heatmap
+  - Season timeline filter, state stats panel
+  - Nearest player card, map controls
+  - Premium/free tier gating
 
 ### 2.5 Static Pages
 
