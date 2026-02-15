@@ -812,18 +812,79 @@ _Go page by page on live site to identify gaps_
 
 ---
 
+## Pre-Launch Checklist (Before DNS Switch to Vercel)
+
+> Everything in this section MUST be done before pointing bigbrotherjunkies.com to Vercel.
+
+### SEO — Critical
+
+- [ ] **Dynamic sitemap** — Create `src/app/sitemap.js` that generates URLs for all posts, players, seasons, feed updates, and static pages. Google needs this to discover content.
+- [ ] **Explicit robots.js** — Create `src/app/robots.js` to block indexing of `/admin/`, `/settings/`, `/login/`, `/register/`, `/reset-password/`, `/checkout/`, `/email/`, `/unsubscribe/`. Include sitemap URL.
+- [ ] **URL redirects** — Map old WordPress URLs to new Next.js routes in `next.config.js`. Audit top traffic pages in GA4 and ensure every old URL either works or redirects. Key patterns:
+  - Old post URLs (WordPress slug format) → new `[slug]` routes
+  - `/bigbrother-players/` → `/directory`
+  - `/category/*` pages → appropriate new pages or home
+  - Any legacy URLs showing in Google Search Console
+- [ ] **Canonical URLs** — Verify all pages have proper `<link rel="canonical">` and no duplicate content issues
+- [ ] **Open Graph / social meta** — Test sharing on Facebook, Twitter, Discord to ensure thumbnails and descriptions render correctly
+
+### Security Headers
+
+- [ ] **Add security headers** in `next.config.js` `headers()` function:
+  - `X-Frame-Options: DENY` (prevent clickjacking)
+  - `X-Content-Type-Options: nosniff`
+  - `Referrer-Policy: origin-when-cross-origin`
+  - `Strict-Transport-Security` (HSTS)
+  - Basic Content-Security-Policy
+
+### Environment & Infrastructure
+
+- [ ] **Production environment variables** — Set all env vars in Vercel dashboard (not just .env.local):
+  - `WORDPRESS_API_URL` → production WordPress URL
+  - `NEXT_PUBLIC_SITE_URL` → `https://bigbrotherjunkies.com`
+  - `REVALIDATION_SECRET` → strong random secret
+  - All Google/reCAPTCHA/Stripe keys
+- [ ] **WordPress API URL strategy** — Decide subdomain for WP after DNS switch (e.g., `wp.bigbrotherjunkies.com` or `api.bigbrotherjunkies.com`). The current domain will point to Vercel, so WP needs its own subdomain.
+- [ ] **Revalidation webhook** — Configure WordPress to POST to Vercel URL on content changes
+- [ ] **DNS plan** — Document the exact DNS changes needed (A records, CNAME, etc.)
+- [ ] **SSL certificates** — Verify Vercel auto-provisions SSL for custom domain
+
+### Testing Before Cutover
+
+- [ ] **Full page crawl** — Run a crawler (Screaming Frog or similar) on staging to find broken links, missing images, 404s
+- [ ] **Google Search Console** — Have it set up and ready to submit new sitemap immediately after DNS switch
+- [ ] **Performance audit** — Run Lighthouse on key pages (home, post, player, feed updates). Target LCP < 2.5s, CLS < 0.1
+- [ ] **Mobile testing** — Test all flows on actual phone (not just devtools)
+- [ ] **Auth flow** — Test login, register, Google OAuth, password reset end-to-end on staging
+- [ ] **Comment system** — Test posting, replying, voting, reporting on staging
+- [ ] **Ad system** — Verify ads load correctly, ad-free works for supporters/lifetime
+- [ ] **Email system** — Test subscribe, confirm, unsubscribe, post notification delivery
+
+### Post-Cutover (First 48 Hours)
+
+- [ ] **Monitor Search Console** — Watch for crawl errors, indexing issues
+- [ ] **Monitor error logs** — Check Vercel function logs for API failures
+- [ ] **Submit sitemap** — Submit to Google Search Console immediately
+- [ ] **Test revalidation** — Publish a test post in WordPress, verify it appears on new site
+- [ ] **Check analytics** — Ensure GA4 is tracking properly on new domain setup
+- [ ] **Old site redirect** — If WordPress was on same domain, ensure old server returns 301s or is fully decommissioned
+
+---
+
 ## Timeline Suggestion
 
-| Phase   | Target    | Notes                            |
-| ------- | --------- | -------------------------------- | --- |
-| Phase 1 | Feb 2026  | Core UX - comments, auth, ads    |
-| Phase 2 | Mar 2026  | Content pages - players, seasons |
-| Phase 3 | Apr 2026  | Feed updates system              | Th  |
-| Phase 4 | May 2026  | User profiles, Stripe            |
-| Phase 5 | May 2026  | Admin tools                      |
-| Phase 6 | Ongoing   | Community features               |
-| Phase 7 | June 2026 | PWA ready for BB28               |
-| Phase 8 | Post-BB28 | Expansion planning               |
+| Phase      | Target    | Notes                            |
+| ---------- | --------- | -------------------------------- |
+| Phase 1    | Feb 2026  | Core UX - comments, auth, ads    |
+| Phase 2    | Mar 2026  | Content pages - players, seasons |
+| Phase 3    | Apr 2026  | Feed updates system              |
+| Phase 4    | May 2026  | User profiles, Stripe            |
+| Phase 5    | May 2026  | Admin tools                      |
+| Phase 6    | Ongoing   | Community features               |
+| Pre-Launch | June 2026 | SEO, redirects, security, testing |
+| DNS Switch | June 2026 | Go live on Vercel                |
+| Phase 7    | June 2026 | PWA ready for BB28               |
+| Phase 8    | Post-BB28 | Expansion planning               |
 
 ---
 

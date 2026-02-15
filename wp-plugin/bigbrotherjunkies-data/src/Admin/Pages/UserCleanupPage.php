@@ -331,7 +331,7 @@ class UserCleanupPage
                         </p>
                     </div>
                     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>"
-                          onsubmit="return confirm('Delete up to <?php echo self::BATCH_SIZE; ?> spam supporter accounts? This cannot be undone.');">
+                          >
                         <?php wp_nonce_field('bbjd_delete_spam_supporters'); ?>
                         <input type="hidden" name="action" value="bbjd_delete_spam_supporters">
                         <button type="submit" class="bbjd-bg-red-600 bbjd-text-white bbjd-px-6 bbjd-py-2 bbjd-rounded bbjd-font-medium hover:bbjd-bg-red-700 bbjd-transition-colors">
@@ -358,7 +358,7 @@ class UserCleanupPage
                         </p>
                     </div>
                     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>"
-                          onsubmit="return confirm('Delete up to <?php echo self::BATCH_SIZE; ?> roleless spam accounts? This cannot be undone.');">
+                          >
                         <?php wp_nonce_field('bbjd_delete_roleless_users'); ?>
                         <input type="hidden" name="action" value="bbjd_delete_roleless_users">
                         <button type="submit" class="bbjd-bg-orange-600 bbjd-text-white bbjd-px-6 bbjd-py-2 bbjd-rounded bbjd-font-medium hover:bbjd-bg-orange-700 bbjd-transition-colors">
@@ -385,7 +385,7 @@ class UserCleanupPage
                         </p>
                     </div>
                     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>"
-                          onsubmit="return confirm('Demote all non-protected supporters to subscriber?');">
+                          >
                         <?php wp_nonce_field('bbjd_demote_supporters'); ?>
                         <input type="hidden" name="action" value="bbjd_demote_supporters">
                         <button type="submit" class="bbjd-bg-yellow-600 bbjd-text-white bbjd-px-6 bbjd-py-2 bbjd-rounded bbjd-font-medium hover:bbjd-bg-yellow-700 bbjd-transition-colors">
