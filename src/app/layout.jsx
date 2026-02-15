@@ -1,4 +1,5 @@
 import { Roboto, Oswald, Yanone_Kaffeesatz, Caveat } from "next/font/google";
+import Script from "next/script";
 import "@/styles/globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -59,6 +60,17 @@ export const metadata = {
     card: "summary_large_image",
   },
   manifest: "/manifest.json",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   alternates: {
     types: {
       "application/rss+xml": "/feed",
@@ -90,16 +102,6 @@ export default async function RootLayout({ children }) {
     >
       <head>
         <ThemeScript />
-        {/* Global scripts - always loaded for all users (analytics, etc.) */}
-        {adScripts.global_header && (
-          <script dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.global_header) }} />
-        )}
-        {extractExternalScripts(adScripts.global_header)}
-        {/* Ad network scripts - only for non-supporters */}
-        {!isSupporter && adScripts.ad_header && (
-          <script dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.ad_header) }} />
-        )}
-        {!isSupporter && extractExternalScripts(adScripts.ad_header)}
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
         <Providers initialUser={initialUser}>
@@ -113,16 +115,24 @@ export default async function RootLayout({ children }) {
           <BugReportFAB />
           <BackToTop />
         </Providers>
-        {/* Global footer scripts */}
-        {adScripts.global_footer && (
-          <script dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.global_footer) }} />
+        {/* Global scripts - deferred to not block rendering (analytics, etc.) */}
+        {adScripts.global_header && extractInlineScript(adScripts.global_header) && (
+          <Script id="global-header" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.global_header) }} />
         )}
-        {extractExternalScripts(adScripts.global_footer)}
-        {/* Ad network footer scripts - only for non-supporters */}
-        {!isSupporter && adScripts.ad_footer && (
-          <script dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.ad_footer) }} />
+        {extractDeferredScripts(adScripts.global_header, 'global-hdr')}
+        {adScripts.global_footer && extractInlineScript(adScripts.global_footer) && (
+          <Script id="global-footer" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.global_footer) }} />
         )}
-        {!isSupporter && extractExternalScripts(adScripts.ad_footer)}
+        {extractDeferredScripts(adScripts.global_footer, 'global-ftr')}
+        {/* Ad network scripts - only for non-supporters, deferred */}
+        {!isSupporter && adScripts.ad_header && extractInlineScript(adScripts.ad_header) && (
+          <Script id="ad-header" strategy="lazyOnload" dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.ad_header) }} />
+        )}
+        {!isSupporter && extractDeferredScripts(adScripts.ad_header, 'ad-hdr')}
+        {!isSupporter && adScripts.ad_footer && extractInlineScript(adScripts.ad_footer) && (
+          <Script id="ad-footer" strategy="lazyOnload" dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.ad_footer) }} />
+        )}
+        {!isSupporter && extractDeferredScripts(adScripts.ad_footer, 'ad-ftr')}
       </body>
     </html>
   );
@@ -146,23 +156,20 @@ function extractInlineScript(html) {
 }
 
 /**
- * Extract external script tags (with src) and return as Next.js-compatible elements
+ * Extract external script tags (with src) and return as deferred Next.js Script elements
  */
-function extractExternalScripts(html) {
+function extractDeferredScripts(html, prefix) {
   if (!html) return null;
   const matches = html.match(/<script\s[^>]*src\s*=\s*["'][^"']+["'][^>]*><\/script>/gi) || [];
   return matches.map((tag, i) => {
     const src = tag.match(/src\s*=\s*["']([^"']+)["']/i)?.[1];
-    const isAsync = /\basync\b/i.test(tag);
-    const isDefer = /\bdefer\b/i.test(tag);
     const crossOrigin = tag.match(/crossorigin\s*=\s*["']([^"']+)["']/i)?.[1];
     if (!src) return null;
     return (
-      <script
-        key={`ext-script-${i}`}
+      <Script
+        key={`${prefix}-${i}`}
         src={src}
-        async={isAsync || undefined}
-        defer={isDefer || undefined}
+        strategy="afterInteractive"
         crossOrigin={crossOrigin || undefined}
       />
     );

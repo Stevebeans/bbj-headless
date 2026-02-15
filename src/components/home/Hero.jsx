@@ -28,6 +28,7 @@ export function Hero({ post, season }) {
               fill
               className="object-cover group-hover/hero:scale-[1.02] transition-transform duration-500"
               priority
+              fetchPriority="high"
               sizes="(min-width: 1024px) 1024px, 100vw"
             />
           )}
@@ -51,9 +52,10 @@ export function Hero({ post, season }) {
         <div className="absolute bottom-4 right-4 z-10">
           <Link
             href={`/${post.slug}`}
+            aria-label={`Read more about ${post.title}`}
             className="inline-flex items-center text-sm md:text-base rounded px-3 md:px-4 py-1.5 font-bold text-white bg-gradient-to-r from-red-400 to-red-700 hover:from-red-500 hover:to-red-800 transition-colors"
           >
-            Read More
+            Read More<span className="sr-only">: {post.title}</span>
           </Link>
         </div>
       </div>
