@@ -1,6 +1,6 @@
-# Full Push - Git + Vercel + WordPress Plugin
+# Full Push - Git + Vercel + WordPress Plugin (STAGING)
 
-Push all changes to git (triggers Vercel deployment) and deploy the WordPress plugin to production.
+Push all changes to git (triggers Vercel staging deployment) and deploy the WordPress plugin to staging.
 
 ## Instructions
 
@@ -11,27 +11,18 @@ Push all changes to git (triggers Vercel deployment) and deploy the WordPress pl
    - Create a commit with a descriptive message
    - Push to the current branch
 
-2. **If on a feature branch, offer to merge to main:**
-   - Ask user if they want to merge to main
-   - If yes, checkout main, pull, merge, and push
-
-3. **Deploy WordPress plugin to production:**
+2. **Deploy WordPress plugin to STAGING:**
    - Run the deploy command:
    ```bash
-   cd /c/xampp/htdocs/bbj/wp-content/plugins/bigbrotherjunkies-data && \
-   tar -cf /tmp/plugin.tar --exclude='node_modules' --exclude='.git' --exclude='.DS_Store' . && \
-   gzip -f /tmp/plugin.tar && \
-   scp /tmp/plugin.tar.gz bbj-prod:~/plugin.tar.gz && \
-   ssh bbj-prod "cd /home/1358704.cloudwaysapps.com/duesaptjae/public_html/wp-content/plugins/bigbrotherjunkies-data && rm -rf src vendor assets build && tar -xzf ~/plugin.tar.gz && rm ~/plugin.tar.gz" && \
-   rm /tmp/plugin.tar.gz
+   bash /c/xampp/htdocs/bbj-app/.claude/scripts/deploy-plugin.sh --staging
    ```
 
-4. **Report success:**
+3. **Report success:**
    - Confirm git push completed
-   - Confirm Vercel will auto-deploy (if pushed to main)
-   - Confirm WordPress plugin deployed to production
+   - Confirm Vercel will auto-deploy staging
+   - Confirm WordPress plugin deployed to **staging**
 
 ## Notes
-- This pushes to PRODUCTION - make sure changes are tested locally first
-- Vercel only auto-deploys from `main` branch (per project settings)
+- This pushes to STAGING - safe for testing
+- Use `/full-push-live` when ready to deploy to production
 - WordPress plugin is deployed from local `C:\xampp\htdocs\bbj\wp-content\plugins\bigbrotherjunkies-data`

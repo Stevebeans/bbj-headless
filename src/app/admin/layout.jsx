@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { getMyPermissions } from "@/lib/api/admin";
+import { getMyPermissions, getRoles, simulatePermissions } from "@/lib/api/admin";
 import Link from "next/link";
 
 function HomeIcon({ className }) {
@@ -69,6 +69,9 @@ export default function AdminLayout({ children }) {
   const [permissions, setPermissions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [roles, setRoles] = useState([]);
+  const [simulatedRole, setSimulatedRole] = useState(null);
+  const [realPermissions, setRealPermissions] = useState(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -84,9 +87,24 @@ export default function AdminLayout({ children }) {
       try {
         const data = await getMyPermissions();
         setPermissions(data.features);
+        setRealPermissions(data.features);
 
         if (Object.keys(data.features).length === 0) {
           setError("You do not have permission to access the admin panel.");
+          return;
+        }
+
+        // Fetch roles for simulation dropdown (only if user has admin_settings)
+        if (data.features.admin_settings) {
+          try {
+            const rolesData = await getRoles();
+            const SIMULATION_HIDDEN_ROLES = [
+              "subscriber", "seo_manager", "seo_editor", "wiki_updater",
+              "ad_admin", "ad_manager", "lifetime", "beta_tester",
+              "wikiupdate", "legacy", "author", "editor", "contributor",
+            ];
+            setRoles(rolesData.filter((r) => !SIMULATION_HIDDEN_ROLES.includes(r.key)));
+          } catch {}
         }
       } catch (err) {
         setError(err.message);
@@ -97,6 +115,22 @@ export default function AdminLayout({ children }) {
 
     checkAccess();
   }, [authLoading, isAuthenticated, router]);
+
+  const handleSimulateRole = async (role) => {
+    if (!role) {
+      setSimulatedRole(null);
+      setPermissions(realPermissions);
+      return;
+    }
+
+    try {
+      const data = await simulatePermissions(role);
+      setSimulatedRole(role);
+      setPermissions(data.features);
+    } catch (err) {
+      console.error("Failed to simulate role:", err);
+    }
+  };
 
   // Loading state
   if (authLoading || loading) {
@@ -144,14 +178,56 @@ export default function AdminLayout({ children }) {
     <main className="min-h-screen bg-slate-200 dark:bg-gray-950 py-8">
       <div className="max-w-screen-xl mx-auto px-4">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white">
-            Admin Dashboard
-          </h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">
-            Manage content, reports, and site settings
-          </p>
+        <div className="mb-8 sm:flex sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white">
+              Admin Dashboard
+            </h1>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">
+              Manage content, reports, and site settings
+            </p>
+          </div>
+          {roles.length > 0 && (
+            <div className="flex items-center gap-2 mt-3 sm:mt-0">
+              <label className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                Preview as:
+              </label>
+              <select
+                value={simulatedRole || ""}
+                onChange={(e) => handleSimulateRole(e.target.value || null)}
+                className="text-sm px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="">My Permissions</option>
+                {roles.map((role) => (
+                  <option key={role.key} value={role.key}>
+                    {role.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+
+        {/* Simulation Banner */}
+        {simulatedRole && (
+          <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                Previewing as: <strong>{roles.find(r => r.key === simulatedRole)?.name || simulatedRole}</strong>
+              </span>
+            </div>
+            <button
+              onClick={() => handleSimulateRole(null)}
+              className="text-sm font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 underline"
+            >
+              Exit Preview
+            </button>
+          </div>
+        )}
 
         {/* Tabs + Content Container */}
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">

@@ -10,6 +10,13 @@ const HIDDEN_ROLES = [
   "wiki_updater",
   "ad_admin",
   "ad_manager",
+  "lifetime",
+  "beta_tester",
+  "wikiupdate",
+  "legacy",
+  "author",
+  "editor",
+  "contributor",
 ];
 
 export default function AdminSettings() {

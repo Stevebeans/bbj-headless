@@ -58,6 +58,11 @@ class AdminRoutes
             'description' => 'Send site-wide announcements to all users',
             'roles' => ['administrator'],
         ],
+        'bug_reports' => [
+            'label' => 'Bug Reports',
+            'description' => 'View and manage user-submitted bug reports',
+            'roles' => ['administrator'],
+        ],
     ];
 
     public function register(): void
@@ -267,6 +272,20 @@ class AdminRoutes
             'methods' => 'GET',
             'callback' => [$this, 'getRoles'],
             'permission_callback' => [$this, 'checkAdminSettingsAccess'],
+        ]);
+
+        // Simulate permissions for a role (admin preview)
+        register_rest_route($namespace, '/admin/simulate-permissions', [
+            'methods' => 'GET',
+            'callback' => [$this, 'simulatePermissions'],
+            'permission_callback' => [$this, 'checkAdminSettingsAccess'],
+            'args' => [
+                'role' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
         ]);
 
         // ========================================
@@ -1209,6 +1228,42 @@ class AdminRoutes
         return new \WP_REST_Response([
             'success' => true,
             'message' => 'Announcement deleted',
+        ], 200);
+    }
+
+    // ========================================
+    // ROLE SIMULATION
+    // ========================================
+
+    /**
+     * Simulate permissions for a given role (admin preview mode)
+     */
+    public function simulatePermissions(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $role = $request->get_param('role');
+
+        global $wp_roles;
+        if (!isset($wp_roles->roles[$role])) {
+            return new \WP_REST_Response([
+                'error' => 'Invalid role',
+            ], 400);
+        }
+
+        $permissions = get_option('bbj_admin_permissions', self::DEFAULT_PERMISSIONS);
+
+        $features = [];
+        foreach ($permissions as $key => $permission) {
+            if (in_array($role, $permission['roles'], true)) {
+                $features[$key] = [
+                    'label' => $permission['label'],
+                    'description' => $permission['description'],
+                ];
+            }
+        }
+
+        return new \WP_REST_Response([
+            'role' => $role,
+            'features' => $features,
         ], 200);
     }
 

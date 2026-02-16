@@ -136,6 +136,10 @@ export async function getRoles() {
   return adminFetch("/admin/roles");
 }
 
+export async function simulatePermissions(role) {
+  return adminFetch(`/admin/simulate-permissions?role=${encodeURIComponent(role)}`);
+}
+
 // ========================================
 // DATABASE / MIGRATIONS
 // ========================================
