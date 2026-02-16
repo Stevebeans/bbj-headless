@@ -63,6 +63,16 @@ class AdminRoutes
             'description' => 'View and manage user-submitted bug reports',
             'roles' => ['administrator'],
         ],
+        'ad_management' => [
+            'label' => 'Ad Management',
+            'description' => 'Manage ad slots, placements, and ad-free users',
+            'roles' => ['administrator'],
+        ],
+        'user_management' => [
+            'label' => 'User Management',
+            'description' => 'View and manage users, roles, and accounts',
+            'roles' => ['administrator'],
+        ],
     ];
 
     public function register(): void
