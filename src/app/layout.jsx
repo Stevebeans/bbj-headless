@@ -11,6 +11,7 @@ import { BugReportFAB } from "@/components/bug-report/BugReportFAB";
 import { BackToTop } from "@/components/layout/BackToTop";
 import { getInitialAuthState } from "@/lib/auth/serverCookies";
 import { getAdScripts } from "@/lib/api/ads";
+import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 
 const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
 
@@ -107,6 +108,7 @@ export default async function RootLayout({ children }) {
         <Providers initialUser={initialUser}>
           <Header />
           <SpoilerBarWrapper />
+          <RoleSimulationBanner />
           <main id="main-content" className="flex-1">
             {children}
           </main>

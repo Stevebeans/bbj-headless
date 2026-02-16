@@ -129,6 +129,7 @@ export default function AdminLayout({ children }) {
       setSimulatedRole(null);
       setPermissions(realPermissions);
       sessionStorage.removeItem("bbj_simulate_role");
+      sessionStorage.removeItem("bbj_simulate_role_name");
       return;
     }
 
@@ -137,6 +138,8 @@ export default function AdminLayout({ children }) {
       setSimulatedRole(role);
       setPermissions(data.features);
       sessionStorage.setItem("bbj_simulate_role", role);
+      const roleName = roles.find(r => r.key === role)?.name || role;
+      sessionStorage.setItem("bbj_simulate_role_name", roleName);
     } catch (err) {
       console.error("Failed to simulate role:", err);
     }
