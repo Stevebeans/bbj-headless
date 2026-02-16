@@ -104,6 +104,14 @@ export default function AdminLayout({ children }) {
               "wikiupdate", "legacy", "author", "editor", "contributor",
             ];
             setRoles(rolesData.filter((r) => !SIMULATION_HIDDEN_ROLES.includes(r.key)));
+
+            // Restore simulation from sessionStorage if active
+            const savedRole = sessionStorage.getItem("bbj_simulate_role");
+            if (savedRole) {
+              const simData = await simulatePermissions(savedRole);
+              setSimulatedRole(savedRole);
+              setPermissions(simData.features);
+            }
           } catch {}
         }
       } catch (err) {
@@ -120,6 +128,7 @@ export default function AdminLayout({ children }) {
     if (!role) {
       setSimulatedRole(null);
       setPermissions(realPermissions);
+      sessionStorage.removeItem("bbj_simulate_role");
       return;
     }
 
@@ -127,6 +136,7 @@ export default function AdminLayout({ children }) {
       const data = await simulatePermissions(role);
       setSimulatedRole(role);
       setPermissions(data.features);
+      sessionStorage.setItem("bbj_simulate_role", role);
     } catch (err) {
       console.error("Failed to simulate role:", err);
     }
