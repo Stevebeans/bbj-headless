@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getSettings, updateSettings, getRoles } from "@/lib/api/admin";
+import { getSettings, updateSettings, getRoles, getRoleMembers } from "@/lib/api/admin";
 
 const HIDDEN_ROLES = [
   "subscriber",
@@ -26,6 +26,8 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [rolePopover, setRolePopover] = useState(null); // { role, roleName, members, x, y }
+  const [loadingMembers, setLoadingMembers] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -93,6 +95,27 @@ export default function AdminSettings() {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleInfoClick = async (role, event) => {
+    // Toggle off if clicking same role
+    if (rolePopover?.role === role.key) {
+      setRolePopover(null);
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    setLoadingMembers(true);
+    setRolePopover({ role: role.key, roleName: role.name, members: [], x: rect.left, y: rect.bottom });
+
+    try {
+      const data = await getRoleMembers(role.key);
+      setRolePopover((prev) => prev ? { ...prev, members: data.members } : null);
+    } catch {
+      setRolePopover(null);
+    } finally {
+      setLoadingMembers(false);
     }
   };
 
@@ -184,7 +207,18 @@ export default function AdminSettings() {
                 <th className="text-left py-3 px-4 font-medium text-slate-700 dark:text-slate-300">Feature</th>
                 {roles.map((role) => (
                   <th key={role.key} className="text-center py-3 px-2 font-medium text-slate-700 dark:text-slate-300">
-                    <span className="text-xs">{role.name}</span>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-xs">{role.name}</span>
+                      <button
+                        onClick={(e) => handleInfoClick(role, e)}
+                        className="text-slate-400 hover:text-primary-500 transition-colors"
+                        title={`View users with ${role.name} role`}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    </div>
                   </th>
                 ))}
               </tr>
@@ -213,6 +247,47 @@ export default function AdminSettings() {
             </tbody>
           </table>
         </div>
+
+        {/* Role Members Popover */}
+        {rolePopover && (
+          <div className="fixed inset-0 z-50" onClick={() => setRolePopover(null)}>
+            <div
+              className="absolute bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-4 min-w-[200px] max-w-[280px]"
+              style={{ top: rolePopover.y + 8, left: Math.min(rolePopover.x, window.innerWidth - 300) }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2">
+                {rolePopover.roleName}
+              </h4>
+              {loadingMembers ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <div className="w-4 h-4 border-2 border-slate-300 border-t-primary-500 rounded-full animate-spin" />
+                  Loading...
+                </div>
+              ) : rolePopover.members.length === 0 ? (
+                <p className="text-sm text-slate-500">No users with this role</p>
+              ) : (
+                <ul className="space-y-2">
+                  {rolePopover.members.map((member) => (
+                    <li key={member.id} className="flex items-center gap-2">
+                      <img
+                        src={member.avatar}
+                        alt=""
+                        className="w-6 h-6 rounded-full"
+                      />
+                      <span className="text-sm text-slate-700 dark:text-slate-300 truncate">
+                        {member.display_name}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-xs text-slate-400 mt-2">
+                {rolePopover.members.length} {rolePopover.members.length === 1 ? "user" : "users"}
+              </p>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Save Button */}
