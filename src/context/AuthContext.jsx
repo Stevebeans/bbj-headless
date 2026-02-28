@@ -258,6 +258,8 @@ export function AuthProvider({ children, initialUser = null }) {
         token: data.token,
         user_display_name: data.user.display_name,
         user_email: data.user.email,
+        user_roles: normalizeRoles(data.user.roles),
+        avatar: data.user.avatar,
       });
 
       return { success: true };
@@ -297,6 +299,8 @@ export function AuthProvider({ children, initialUser = null }) {
         token: data.token,
         user_display_name: data.user.display_name,
         user_email: data.user.email,
+        user_roles: normalizeRoles(data.user.roles),
+        avatar: data.user.avatar,
       });
 
       return { success: true };
@@ -336,6 +340,8 @@ export function AuthProvider({ children, initialUser = null }) {
         token: data.token,
         user_display_name: data.user.display_name,
         user_email: data.user.email,
+        user_roles: normalizeRoles(data.user.roles),
+        avatar: data.user.avatar,
       });
 
       return { success: true };

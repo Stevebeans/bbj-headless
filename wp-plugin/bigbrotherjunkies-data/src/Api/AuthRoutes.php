@@ -308,6 +308,7 @@ class AuthRoutes
                 'username' => $user->user_login,
                 'display_name' => $user->display_name,
                 'avatar' => AvatarUploader::getAvatarUrl($user->ID),
+                'roles' => array_values((array) $user->roles),
             ],
             'is_new_user' => false,
             'account_linked' => $accountLinked,
@@ -828,6 +829,7 @@ class AuthRoutes
                 'username' => $user->user_login,
                 'display_name' => $user->display_name,
                 'avatar' => AvatarUploader::getAvatarUrl($user->ID),
+                'roles' => array_values((array) $user->roles),
             ],
         ], 200);
     }
@@ -906,6 +908,7 @@ class AuthRoutes
                 'username' => $user->user_login,
                 'display_name' => $user->display_name,
                 'avatar' => AvatarUploader::getAvatarUrl($user->ID),
+                'roles' => array_values((array) $user->roles),
             ],
             'is_new_user' => true,
         ], 201);
