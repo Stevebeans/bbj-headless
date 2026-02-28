@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { getMyPermissions, getRoles, simulatePermissions } from "@/lib/api/admin";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getRoles, simulatePermissions } from "@/lib/api/admin";
 import Link from "next/link";
 
 function HomeIcon({ className }) {
@@ -111,68 +112,61 @@ const TABS = [
 
 export default function AdminLayout({ children }) {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
-  const [permissions, setPermissions] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { permissions: realPermissions, loading: permLoading, hasAnyPermission } = usePermissions();
+  const [simulatedPermissions, setSimulatedPermissions] = useState(null);
   const [roles, setRoles] = useState([]);
   const [simulatedRole, setSimulatedRole] = useState(null);
-  const [realPermissions, setRealPermissions] = useState(null);
+  const [error, setError] = useState(null);
   const router = useRouter();
   const pathname = usePathname();
 
+  // The active permissions: simulated if active, otherwise real
+  const permissions = simulatedPermissions || realPermissions;
+
   useEffect(() => {
-    const checkAccess = async () => {
-      if (authLoading) return;
+    if (authLoading || permLoading) return;
 
-      if (!isAuthenticated) {
-        router.push("/login?redirect=/admin");
-        return;
-      }
+    if (!isAuthenticated) {
+      router.push("/login?redirect=/admin");
+      return;
+    }
 
-      try {
-        const data = await getMyPermissions();
-        setPermissions(data.features);
-        setRealPermissions(data.features);
+    if (!hasAnyPermission()) {
+      setError("You do not have permission to access the admin panel.");
+      return;
+    }
 
-        if (Object.keys(data.features).length === 0) {
-          setError("You do not have permission to access the admin panel.");
-          return;
-        }
+    // Fetch roles for simulation dropdown (only if admin)
+    if (realPermissions?.admin_settings) {
+      const SIMULATION_HIDDEN_ROLES = [
+        "subscriber", "seo_manager", "seo_editor", "wiki_updater",
+        "ad_admin", "ad_manager", "lifetime", "beta_tester",
+        "wikiupdate", "legacy", "author", "editor", "contributor",
+      ];
 
-        // Fetch roles for simulation dropdown (only if user has admin_settings)
-        if (data.features.admin_settings) {
-          try {
-            const rolesData = await getRoles();
-            const SIMULATION_HIDDEN_ROLES = [
-              "subscriber", "seo_manager", "seo_editor", "wiki_updater",
-              "ad_admin", "ad_manager", "lifetime", "beta_tester",
-              "wikiupdate", "legacy", "author", "editor", "contributor",
-            ];
-            setRoles(rolesData.filter((r) => !SIMULATION_HIDDEN_ROLES.includes(r.key)));
+      getRoles()
+        .then((rolesData) => {
+          setRoles(rolesData.filter((r) => !SIMULATION_HIDDEN_ROLES.includes(r.key)));
 
-            // Restore simulation from sessionStorage if active
-            const savedRole = sessionStorage.getItem("bbj_simulate_role");
-            if (savedRole) {
-              const simData = await simulatePermissions(savedRole);
-              setSimulatedRole(savedRole);
-              setPermissions(simData.features);
-            }
-          } catch {}
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAccess();
-  }, [authLoading, isAuthenticated, router]);
+          // Restore simulation from sessionStorage
+          const savedRole = sessionStorage.getItem("bbj_simulate_role");
+          if (savedRole) {
+            simulatePermissions(savedRole)
+              .then((simData) => {
+                setSimulatedRole(savedRole);
+                setSimulatedPermissions(simData.features);
+              })
+              .catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+  }, [authLoading, permLoading, isAuthenticated, realPermissions, router, hasAnyPermission]);
 
   const handleSimulateRole = async (role) => {
     if (!role) {
       setSimulatedRole(null);
-      setPermissions(realPermissions);
+      setSimulatedPermissions(null);
       sessionStorage.removeItem("bbj_simulate_role");
       sessionStorage.removeItem("bbj_simulate_role_name");
       return;
@@ -181,7 +175,7 @@ export default function AdminLayout({ children }) {
     try {
       const data = await simulatePermissions(role);
       setSimulatedRole(role);
-      setPermissions(data.features);
+      setSimulatedPermissions(data.features);
       sessionStorage.setItem("bbj_simulate_role", role);
       const roleName = roles.find(r => r.key === role)?.name || role;
       sessionStorage.setItem("bbj_simulate_role_name", roleName);
@@ -191,7 +185,7 @@ export default function AdminLayout({ children }) {
   };
 
   // Loading state
-  if (authLoading || loading) {
+  if (authLoading || permLoading) {
     return (
       <div className="min-h-screen bg-slate-200 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
