@@ -393,6 +393,8 @@ export function AuthProvider({ children, initialUser = null }) {
     setUserAndCache({
       ...data.user,
       token: data.token,
+      user_roles: normalizeRoles(data.user?.roles || data.user?.user_roles),
+      avatar: data.user?.avatar,
     });
   }, [setUserAndCache]);
 

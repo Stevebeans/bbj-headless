@@ -460,6 +460,7 @@ class AuthRoutes
                     'username' => $user->user_login,
                     'display_name' => $user->display_name,
                     'avatar' => AvatarUploader::getAvatarUrl($user->ID),
+                    'roles' => array_values((array) $user->roles),
                 ],
                 'requires_verification' => true,
             ], 201);
@@ -475,6 +476,7 @@ class AuthRoutes
                 'username' => $user->user_login,
                 'display_name' => $user->display_name,
                 'avatar' => AvatarUploader::getAvatarUrl($user->ID),
+                'roles' => array_values((array) $user->roles),
             ],
             'requires_verification' => true,
         ], 201);
