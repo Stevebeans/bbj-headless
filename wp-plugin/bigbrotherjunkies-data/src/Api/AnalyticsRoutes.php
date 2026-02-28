@@ -3,6 +3,7 @@
 namespace BigBrotherJunkies\Data\Api;
 
 use BigBrotherJunkies\Data\Admin\Pages\ApiSettingsPage;
+use BigBrotherJunkies\Data\Permissions\PermissionChecker;
 use Google\Analytics\Data\V1beta\Client\BetaAnalyticsDataClient;
 use Google\Analytics\Data\V1beta\RunReportRequest;
 use Google\Analytics\Data\V1beta\DateRange;
@@ -682,17 +683,6 @@ class AnalyticsRoutes
      */
     public function checkAnalyticsAccess(): bool
     {
-        if (!is_user_logged_in()) {
-            return false;
-        }
-
-        $user = wp_get_current_user();
-        $permissions = get_option('bbj_admin_permissions', AdminRoutes::DEFAULT_PERMISSIONS);
-
-        if (!isset($permissions['analytics_dashboard'])) {
-            return in_array('administrator', $user->roles, true);
-        }
-
-        return !empty(array_intersect($user->roles, $permissions['analytics_dashboard']['roles']));
+        return PermissionChecker::userCan('analytics_dashboard');
     }
 }

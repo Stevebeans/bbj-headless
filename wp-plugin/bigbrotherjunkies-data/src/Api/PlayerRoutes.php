@@ -2,6 +2,7 @@
 
 namespace BigBrotherJunkies\Data\Api;
 
+use BigBrotherJunkies\Data\Permissions\PermissionChecker;
 use BigBrotherJunkies\Data\Utils\Revalidation;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -1330,21 +1331,6 @@ class PlayerRoutes
      */
     public function checkPlayerManagementAccess(): bool
     {
-        if (!is_user_logged_in()) {
-            return false;
-        }
-
-        // Check for player_management permission from AdminRoutes
-        $permissions = get_option('bbj_admin_permissions', AdminRoutes::DEFAULT_PERMISSIONS);
-
-        if (!isset($permissions['player_management'])) {
-            // Fallback: only allow administrators
-            return current_user_can('manage_options');
-        }
-
-        $user = wp_get_current_user();
-        $userRoles = $user->roles;
-
-        return !empty(array_intersect($userRoles, $permissions['player_management']['roles']));
+        return PermissionChecker::userCan('player_management');
     }
 }

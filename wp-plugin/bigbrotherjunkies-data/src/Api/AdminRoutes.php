@@ -8,6 +8,7 @@ use BigBrotherJunkies\Data\Comments\RankCalculator;
 use BigBrotherJunkies\Data\BugReports\BugReportSchema;
 use BigBrotherJunkies\Data\BugReports\BugReportMigrator;
 use BigBrotherJunkies\Data\Announcements\AnnouncementService;
+use BigBrotherJunkies\Data\Permissions\PermissionChecker;
 
 /**
  * Admin API Routes
@@ -19,62 +20,6 @@ use BigBrotherJunkies\Data\Announcements\AnnouncementService;
  */
 class AdminRoutes
 {
-    /**
-     * Default admin permissions
-     */
-    public const DEFAULT_PERMISSIONS = [
-        'comment_moderation' => [
-            'label' => 'Moderate Comments',
-            'description' => 'View reports, approve/delete comments, manage blacklist',
-            'roles' => ['administrator', 'editor'],
-        ],
-        'feed_updates' => [
-            'label' => 'Feed Updater',
-            'description' => 'Post and edit live feed updates',
-            'roles' => ['administrator', 'updater'],
-        ],
-        'player_management' => [
-            'label' => 'Manage Players',
-            'description' => 'Add/edit player profiles',
-            'roles' => ['administrator', 'editor'],
-        ],
-        'season_management' => [
-            'label' => 'Manage Seasons',
-            'description' => 'Add/edit seasons, set current season',
-            'roles' => ['administrator'],
-        ],
-        'admin_settings' => [
-            'label' => 'Admin Settings',
-            'description' => 'Configure permissions and notifications',
-            'roles' => ['administrator'],
-        ],
-        'analytics_dashboard' => [
-            'label' => 'View Analytics',
-            'description' => 'Access site analytics and traffic data',
-            'roles' => ['administrator'],
-        ],
-        'announcements' => [
-            'label' => 'Announcements',
-            'description' => 'Send site-wide announcements to all users',
-            'roles' => ['administrator'],
-        ],
-        'bug_reports' => [
-            'label' => 'Bug Reports',
-            'description' => 'View and manage user-submitted bug reports',
-            'roles' => ['administrator'],
-        ],
-        'ad_management' => [
-            'label' => 'Ad Management',
-            'description' => 'Manage ad slots, placements, and ad-free users',
-            'roles' => ['administrator'],
-        ],
-        'user_management' => [
-            'label' => 'User Management',
-            'description' => 'View and manage users, roles, and accounts',
-            'roles' => ['administrator'],
-        ],
-    ];
-
     public function register(): void
     {
         add_action('rest_api_init', [$this, 'registerRoutes']);
@@ -469,22 +414,7 @@ class AdminRoutes
      */
     private function getUserFeatures(): array
     {
-        $permissions = get_option('bbj_admin_permissions', self::DEFAULT_PERMISSIONS);
-        $user = wp_get_current_user();
-        $userRoles = $user->roles;
-
-        $features = [];
-        foreach ($permissions as $key => $permission) {
-            $hasAccess = !empty(array_intersect($userRoles, $permission['roles']));
-            if ($hasAccess) {
-                $features[$key] = [
-                    'label' => $permission['label'],
-                    'description' => $permission['description'],
-                ];
-            }
-        }
-
-        return $features;
+        return PermissionChecker::getUserFeatures();
     }
 
     // ========================================
@@ -1046,7 +976,7 @@ class AdminRoutes
      */
     public function getSettings(): \WP_REST_Response
     {
-        $permissions = get_option('bbj_admin_permissions', self::DEFAULT_PERMISSIONS);
+        $permissions = PermissionChecker::getPermissionConfig();
         $notifications = get_option('bbj_admin_notifications', [
             'comment_reports' => [
                 'email' => get_option('admin_email'),
@@ -1259,7 +1189,7 @@ class AdminRoutes
             ], 400);
         }
 
-        $permissions = get_option('bbj_admin_permissions', self::DEFAULT_PERMISSIONS);
+        $permissions = PermissionChecker::getPermissionConfig();
 
         $features = [];
         foreach ($permissions as $key => $permission) {
@@ -1286,22 +1216,7 @@ class AdminRoutes
      */
     public function checkAdminAccess(): bool
     {
-        if (!is_user_logged_in()) {
-            return false;
-        }
-
-        $permissions = get_option('bbj_admin_permissions', self::DEFAULT_PERMISSIONS);
-        $user = wp_get_current_user();
-        $userRoles = $user->roles;
-
-        // Check if user has access to any feature
-        foreach ($permissions as $permission) {
-            if (!empty(array_intersect($userRoles, $permission['roles']))) {
-                return true;
-            }
-        }
-
-        return false;
+        return PermissionChecker::userCanAny();
     }
 
     /**
@@ -1333,19 +1248,6 @@ class AdminRoutes
      */
     private function checkFeatureAccess(string $feature): bool
     {
-        if (!is_user_logged_in()) {
-            return false;
-        }
-
-        $permissions = get_option('bbj_admin_permissions', self::DEFAULT_PERMISSIONS);
-
-        if (!isset($permissions[$feature])) {
-            return false;
-        }
-
-        $user = wp_get_current_user();
-        $userRoles = $user->roles;
-
-        return !empty(array_intersect($userRoles, $permissions[$feature]['roles']));
+        return PermissionChecker::userCan($feature);
     }
 }
