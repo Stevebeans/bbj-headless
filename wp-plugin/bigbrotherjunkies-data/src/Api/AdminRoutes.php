@@ -229,6 +229,20 @@ class AdminRoutes
             'permission_callback' => [$this, 'checkAdminSettingsAccess'],
         ]);
 
+        // Get users in a specific role (for info icon popovers)
+        register_rest_route($namespace, '/admin/role-members', [
+            'methods' => 'GET',
+            'callback' => [$this, 'getRoleMembers'],
+            'permission_callback' => [$this, 'checkAdminSettingsAccess'],
+            'args' => [
+                'role' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
+        ]);
+
         // Simulate permissions for a role (admin preview)
         register_rest_route($namespace, '/admin/simulate-permissions', [
             'methods' => 'GET',
@@ -1028,6 +1042,35 @@ class AdminRoutes
         }
 
         return new \WP_REST_Response($roles, 200);
+    }
+
+    /**
+     * Get users who have a specific role
+     */
+    public function getRoleMembers(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $role = $request->get_param('role');
+
+        $users = get_users([
+            'role' => $role,
+            'number' => 50,
+            'orderby' => 'display_name',
+            'order' => 'ASC',
+        ]);
+
+        $members = array_map(function ($user) {
+            return [
+                'id' => $user->ID,
+                'display_name' => $user->display_name,
+                'avatar' => get_avatar_url($user->ID, ['size' => 32]),
+            ];
+        }, $users);
+
+        return new \WP_REST_Response([
+            'role' => $role,
+            'count' => count($members),
+            'members' => $members,
+        ], 200);
     }
 
     // ========================================
