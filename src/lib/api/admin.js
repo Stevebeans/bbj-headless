@@ -221,3 +221,129 @@ export async function updateBugReport(id, data) {
 export async function getBugReportStats() {
   return adminFetch("/bug-reports/stats");
 }
+
+// ========================================
+// CONTENT ENGINE
+// ========================================
+
+export async function getContentDrafts(status = 'draft', page = 1) {
+  return adminFetch(`/content-engine/drafts?status=${status}&page=${page}`);
+}
+
+export async function createContentDraft(data) {
+  return adminFetch('/content-engine/drafts', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateContentDraft(id, data) {
+  return adminFetch(`/content-engine/drafts/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteContentDraft(id) {
+  return adminFetch(`/content-engine/drafts/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getContentQueue() {
+  return adminFetch('/content-engine/queue');
+}
+
+export async function rescheduleContent(id, scheduledAt) {
+  return adminFetch(`/content-engine/queue/${id}/reschedule`, {
+    method: 'POST',
+    body: JSON.stringify({ scheduled_at: scheduledAt }),
+  });
+}
+
+export async function getPostLog(page = 1) {
+  return adminFetch(`/content-engine/log?page=${page}`);
+}
+
+export async function getContentEngineSettings() {
+  return adminFetch('/content-engine/settings');
+}
+
+export async function updateContentEngineSettings(data) {
+  return adminFetch('/content-engine/settings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+// ========================================
+// FACEBOOK
+// ========================================
+
+export async function getFacebookPages() {
+  return adminFetch('/facebook/pages');
+}
+
+export async function postToFacebook(data) {
+  return adminFetch('/facebook/post', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function postPhotoToFacebook(data) {
+  return adminFetch('/facebook/post-photo', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+// ========================================
+// AI
+// ========================================
+
+export async function generateCaption(imageData, mediaType = 'image/jpeg', context = '') {
+  return adminFetch('/ai/caption', {
+    method: 'POST',
+    body: JSON.stringify({ image_data: imageData, media_type: mediaType, context }),
+  });
+}
+
+export async function rewriteArticle(articleText, sourceUrl = '') {
+  return adminFetch('/ai/rewrite', {
+    method: 'POST',
+    body: JSON.stringify({ article_text: articleText, source_url: sourceUrl }),
+  });
+}
+
+export async function enhanceTemplate(templateText) {
+  return adminFetch('/ai/enhance', {
+    method: 'POST',
+    body: JSON.stringify({ template_text: templateText }),
+  });
+}
+
+// ========================================
+// NEWS
+// ========================================
+
+export async function getNewsFeed(page = 1) {
+  return adminFetch(`/news/feed?page=${page}`);
+}
+
+export async function scanNewsArticle(url) {
+  return adminFetch('/news/scan', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+}
+
+export async function refreshNewsFeeds() {
+  return adminFetch('/news/refresh', {
+    method: 'POST',
+  });
+}
+
+export async function getNewsSources() {
+  return adminFetch('/news/sources');
+}

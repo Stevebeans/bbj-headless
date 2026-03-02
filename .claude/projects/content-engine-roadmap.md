@@ -235,6 +235,15 @@ All of these are interconnected and release together.
 | Content queue/scheduler UI                                  | Medium     |
 | "On This Day" date-based content generator                  | Low        |
 
+### Phase 1.5: Meta Pixel (do ASAP — before ad spend)
+| Task                                                        | Complexity |
+| ----------------------------------------------------------- | ---------- |
+| Install Meta Pixel on BBJ site (and TRJ when built)         | Low        |
+| Set up custom events (page view, post read, comment, signup)| Low        |
+| Build custom audiences for retargeting (site visitors, engagers) | Low   |
+
+> **Why now:** If running Meta Ads for BB season news/promotion, the pixel needs time to collect data and build audiences BEFORE ad spend starts. Every day without it is wasted audience data. Install it even before the content engine ships.
+
 ### Phase 2: Multi-show expansion
 | Task                                                        | Complexity |
 | ----------------------------------------------------------- | ---------- |

@@ -52,6 +52,11 @@ use BigBrotherJunkies\Data\Api\AvatarRoutes;
 use BigBrotherJunkies\Data\Api\SettingsRoutes;
 use BigBrotherJunkies\Data\Comments\AvatarUploader;
 use BigBrotherJunkies\Data\Cron\NotificationCleanup;
+use BigBrotherJunkies\Data\Api\ContentEngineRoutes;
+use BigBrotherJunkies\Data\Api\FacebookRoutes;
+use BigBrotherJunkies\Data\Api\AIRoutes;
+use BigBrotherJunkies\Data\Api\NewsAggregatorRoutes;
+use BigBrotherJunkies\Data\Cron\ContentEngineCron;
 
 /**
  * Main plugin class
@@ -217,6 +222,9 @@ class Plugin
     {
         $notificationCleanup = new NotificationCleanup();
         $notificationCleanup->init();
+
+        $contentEngineCron = new ContentEngineCron();
+        $contentEngineCron->init();
     }
 
     /**
@@ -408,6 +416,22 @@ class Plugin
         // Analytics routes (GA4 dashboard data)
         $analyticsRoutes = new AnalyticsRoutes();
         $analyticsRoutes->register();
+
+        // Content Engine routes (drafts, queue, log, settings)
+        $contentEngineRoutes = new ContentEngineRoutes();
+        $contentEngineRoutes->register();
+
+        // Facebook posting routes
+        $facebookRoutes = new FacebookRoutes();
+        $facebookRoutes->register();
+
+        // AI proxy routes (Anthropic API)
+        $aiRoutes = new AIRoutes();
+        $aiRoutes->register();
+
+        // News aggregator routes (RSS feeds, article scanning)
+        $newsRoutes = new NewsAggregatorRoutes();
+        $newsRoutes->register();
     }
 
     /**

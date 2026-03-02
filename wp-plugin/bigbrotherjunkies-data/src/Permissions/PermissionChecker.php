@@ -64,6 +64,11 @@ class PermissionChecker
             'description' => 'View and manage users, roles, and accounts',
             'roles' => ['administrator'],
         ],
+        'content_engine' => [
+            'label' => 'Content Engine',
+            'description' => 'Create, schedule, and post content to Facebook and the site',
+            'roles' => ['administrator', 'editor', 'second_in_command'],
+        ],
     ];
 
     public static function userCan(string $feature, ?int $userId = null): bool
