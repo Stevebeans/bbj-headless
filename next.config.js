@@ -25,6 +25,7 @@ const nextConfig = {
     ];
   },
   images: {
+    unoptimized: true, // Images served directly from Cloudflare/origin CDNs — no Vercel transformations
     remotePatterns: [
       {
         protocol: "https",
