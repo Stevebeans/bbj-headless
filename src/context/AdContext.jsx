@@ -7,6 +7,8 @@ const AdContext = createContext({
   isPWA: false,
   isAdBlocked: false,
   sdkReady: false,
+  disabledPlacements: [],
+  pwaSuppressed: [],
 });
 
 const SDK_TIMEOUT_MS = 5000;
@@ -20,7 +22,7 @@ function detectPWA() {
   );
 }
 
-export function AdProvider({ children, initialShouldShowAds = true }) {
+export function AdProvider({ children, initialShouldShowAds = true, disabledPlacements = [], pwaSuppressed = [] }) {
   const [isPWA, setIsPWA] = useState(false);
   const [isAdBlocked, setIsAdBlocked] = useState(false);
   const [sdkReady, setSdkReady] = useState(false);
@@ -64,6 +66,8 @@ export function AdProvider({ children, initialShouldShowAds = true }) {
         isPWA,
         isAdBlocked,
         sdkReady,
+        disabledPlacements,
+        pwaSuppressed,
       }}
     >
       {children}

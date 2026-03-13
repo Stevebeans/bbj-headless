@@ -12,12 +12,12 @@ function SessionHeartbeat({ children }) {
   return children;
 }
 
-export function Providers({ children, initialUser, shouldShowAds = true }) {
+export function Providers({ children, initialUser, shouldShowAds = true, disabledPlacements = [], pwaSuppressed = [] }) {
   return (
     <AuthProvider initialUser={initialUser}>
       <SessionHeartbeat>
         <AuthModalProvider>
-          <AdProvider initialShouldShowAds={shouldShowAds}>
+          <AdProvider initialShouldShowAds={shouldShowAds} disabledPlacements={disabledPlacements} pwaSuppressed={pwaSuppressed}>
             {children}
             <AuthModal />
           </AdProvider>

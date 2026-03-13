@@ -11,6 +11,7 @@ import { BugReportFAB } from "@/components/bug-report/BugReportFAB";
 import { BackToTop } from "@/components/layout/BackToTop";
 import { getInitialAuthState } from "@/lib/auth/serverCookies";
 import { getAdScripts } from "@/lib/api/ads";
+import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
 import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 
 const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
@@ -96,7 +97,8 @@ export default async function RootLayout({ children }) {
 
   // Check if user is a supporter (ad-free) server-side
   const roles = Array.isArray(initialUser?.user_roles) ? initialUser.user_roles : [];
-  const isSupporter = roles.some((role) => SUPPORTER_ROLES.includes(role));
+  const supporterRoles = adSettings.supporter_roles || SUPPORTER_ROLES;
+  const isSupporter = roles.some((role) => supporterRoles.includes(role));
   const shouldShowAds = !isSupporter && adSettings.ads_enabled !== false;
 
   return (
@@ -114,7 +116,12 @@ export default async function RootLayout({ children }) {
         <link rel="preconnect" href="https://d.pub.network/" crossOrigin="anonymous" />
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
-        <Providers initialUser={initialUser} shouldShowAds={shouldShowAds}>
+        <Providers
+          initialUser={initialUser}
+          shouldShowAds={shouldShowAds}
+          disabledPlacements={adSettings.disabled_placements || []}
+          pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
+        >
           <Header />
           <SpoilerBarWrapper />
           <RoleSimulationBanner />

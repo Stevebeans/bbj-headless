@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useId } from "react";
 import Link from "next/link";
 import { useAds } from "@/context/AdContext";
-import { getSlotConfig, DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
+import { getSlotConfig } from "@/config/ads";
 
 export function FreestarSlot({ placementName, slotId: customSlotId, className = "", showBranding = true }) {
-  const { shouldShowAds, isPWA, isAdBlocked, sdkReady } = useAds();
+  const { shouldShowAds, isPWA, isAdBlocked, sdkReady, disabledPlacements, pwaSuppressed } = useAds();
   const slotRef = useRef(null);
   const registeredRef = useRef(false);
-  const instanceId = useRef(customSlotId || `${placementName}_${Math.random().toString(36).slice(2, 8)}`);
-  const slotId = instanceId.current;
+  const reactId = useId();
+  const slotId = customSlotId || `${placementName}_${reactId.replace(/:/g, '')}`;
 
   const config = getSlotConfig(placementName);
   const desktopHeight = config.desktop?.height || 250;
@@ -42,7 +42,8 @@ export function FreestarSlot({ placementName, slotId: customSlotId, className = 
   }, [placementName, slotId, shouldShowAds, isAdBlocked, sdkReady]);
 
   if (!shouldShowAds) return null;
-  if (isPWA && DEFAULT_PWA_SUPPRESSED.includes(placementName)) return null;
+  if (disabledPlacements.includes(placementName)) return null;
+  if (isPWA && pwaSuppressed.includes(placementName)) return null;
 
   if (isAdBlocked) {
     return (
