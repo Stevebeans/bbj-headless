@@ -1,5 +1,5 @@
 import { Sidebar } from "@/components/layout/Sidebar";
-import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
+import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { getHomepageData } from "@/lib/api/home";
 import {
   Hero,
@@ -39,13 +39,13 @@ export default async function HomePage() {
             )}
 
             {/* Top Ad */}
-            <AdPlaceholder slot="index_top" minHeight="100px" />
+            <FreestarSlot placementName="bigbrotherjunkies_incontent_reusable" />
 
             {/* Feed Updates - Full width */}
             <FeedUpdatesSection updates={data.feedUpdates.updates} />
 
             {/* Mid Ad */}
-            <AdPlaceholder slot="index_mid" minHeight="100px" />
+            <FreestarSlot placementName="bigbrotherjunkies_incontent_reusable_Homepage2" />
 
             {/* More Stories */}
             <MoreStories posts={posts} heroId={heroPostId} />
