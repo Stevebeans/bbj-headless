@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getPlayerBySlug } from "@/lib/api/players";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommentSection } from "@/components/comments";
-import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
+import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
 import { PlayerEditButton } from "@/components/admin";
 import {
@@ -119,7 +119,7 @@ export default async function PlayerPage({ params }) {
                 {hasAwards && <PlayerBadges awards={player.awards} />}
 
                 {/* Before Content Ad */}
-                <AdPlaceholder slot="before-content" minHeight="100px" />
+                <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" />
 
                 {/* Career Statistics */}
                 <section>
