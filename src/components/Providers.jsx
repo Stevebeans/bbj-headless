@@ -2,6 +2,7 @@
 
 import { AuthProvider } from "@/context/AuthContext";
 import { AuthModalProvider } from "@/context/AuthModalContext";
+import { AdProvider } from "@/context/AdContext";
 import { AuthModal } from "@/components/auth";
 import { useSessionHeartbeat } from "@/hooks/useSessionHeartbeat";
 
@@ -11,13 +12,15 @@ function SessionHeartbeat({ children }) {
   return children;
 }
 
-export function Providers({ children, initialUser }) {
+export function Providers({ children, initialUser, shouldShowAds = true }) {
   return (
     <AuthProvider initialUser={initialUser}>
       <SessionHeartbeat>
         <AuthModalProvider>
-          {children}
-          <AuthModal />
+          <AdProvider initialShouldShowAds={shouldShowAds}>
+            {children}
+            <AuthModal />
+          </AdProvider>
         </AuthModalProvider>
       </SessionHeartbeat>
     </AuthProvider>

@@ -105,7 +105,7 @@ export default async function RootLayout({ children }) {
         <ThemeScript />
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
-        <Providers initialUser={initialUser}>
+        <Providers initialUser={initialUser} shouldShowAds={!isSupporter}>
           <Header />
           <SpoilerBarWrapper />
           <RoleSimulationBanner />
