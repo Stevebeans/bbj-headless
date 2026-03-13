@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getAllPlayers } from "@/lib/api/players";
 import { getSeasons } from "@/lib/api/seasons";
 import { PlayerDirectory } from "./components/PlayerDirectory";
-import { ClientAdPlaceholder } from "@/components/ads/ClientAdPlaceholder";
+import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { Sidebar } from "@/components/layout/Sidebar";
 
 export const metadata = {
@@ -43,7 +43,7 @@ export default async function PlayersPage() {
 
       {/* Top Ad */}
       <div className="mb-6">
-        <ClientAdPlaceholder slot="directory_top" />
+        <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" />
       </div>
 
       {/* Two Column Layout */}
@@ -58,7 +58,7 @@ export default async function PlayersPage() {
 
           {/* Bottom Ad */}
           <div className="mt-8">
-            <ClientAdPlaceholder slot="directory_bottom" />
+            <FreestarSlot placementName="bigbrotherjunkies_incontent_reusable" />
           </div>
         </div>
 
