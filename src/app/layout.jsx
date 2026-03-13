@@ -86,14 +86,18 @@ export const viewport = {
 };
 
 export default async function RootLayout({ children }) {
-  const [initialUser, adScripts] = await Promise.all([
+  const [initialUser, adScripts, adSettings] = await Promise.all([
     getInitialAuthState(),
     getAdScripts(),
+    fetch(`${process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json"}/bbjd/v1/ad-settings`, { next: { revalidate: 60 } })
+      .then(r => r.ok ? r.json() : { ads_enabled: true })
+      .catch(() => ({ ads_enabled: true })),
   ]);
 
   // Check if user is a supporter (ad-free) server-side
   const roles = Array.isArray(initialUser?.user_roles) ? initialUser.user_roles : [];
   const isSupporter = roles.some((role) => SUPPORTER_ROLES.includes(role));
+  const shouldShowAds = !isSupporter && adSettings.ads_enabled !== false;
 
   return (
     <html
@@ -103,9 +107,14 @@ export default async function RootLayout({ children }) {
     >
       <head>
         <ThemeScript />
+        {/* Freestar preconnect for faster ad loading */}
+        <link rel="preconnect" href="https://a.pub.network/" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://b.pub.network/" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://c.pub.network/" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://d.pub.network/" crossOrigin="anonymous" />
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
-        <Providers initialUser={initialUser} shouldShowAds={!isSupporter}>
+        <Providers initialUser={initialUser} shouldShowAds={shouldShowAds}>
           <Header />
           <SpoilerBarWrapper />
           <RoleSimulationBanner />
@@ -126,15 +135,23 @@ export default async function RootLayout({ children }) {
           <Script id="global-footer" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.global_footer) }} />
         )}
         {extractDeferredScripts(adScripts.global_footer, 'global-ftr')}
-        {/* Ad network scripts - only for non-supporters, deferred */}
-        {!isSupporter && adScripts.ad_header && extractInlineScript(adScripts.ad_header) && (
-          <Script id="ad-header" strategy="lazyOnload" dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.ad_header) }} />
+        {/* Freestar SDK — only when ads should show */}
+        {shouldShowAds && (
+          <>
+            <Script id="freestar-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
+              window.freestar = window.freestar || {};
+              window.freestar.queue = window.freestar.queue || [];
+              window.freestar.config = window.freestar.config || {};
+              window.freestar.config.enabled_slots = window.freestar.config.enabled_slots || [];
+            `}} />
+            <Script
+              id="freestar-sdk"
+              src="https://a.pub.network/bigbrotherjunkies-com/pubfig.min.js"
+              strategy="afterInteractive"
+              crossOrigin="anonymous"
+            />
+          </>
         )}
-        {!isSupporter && extractDeferredScripts(adScripts.ad_header, 'ad-hdr')}
-        {!isSupporter && adScripts.ad_footer && extractInlineScript(adScripts.ad_footer) && (
-          <Script id="ad-footer" strategy="lazyOnload" dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.ad_footer) }} />
-        )}
-        {!isSupporter && extractDeferredScripts(adScripts.ad_footer, 'ad-ftr')}
       </body>
     </html>
   );
