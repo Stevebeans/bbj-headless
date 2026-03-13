@@ -117,6 +117,16 @@
     @apply border-0;
   }
 
+  /* Freestar slot responsive heights */
+  .freestar-slot {
+    min-height: var(--ad-h);
+  }
+  @media (min-width: 768px) {
+    .freestar-slot {
+      min-height: var(--ad-h-desktop);
+    }
+  }
+
   .front-card {
     @apply rounded-sm bg-white shadow-md dark:bg-gray-800;
   }
