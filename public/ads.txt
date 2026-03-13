@@ -1,0 +1,7 @@
+# Freestar ads.txt for bigbrotherjunkies.com
+# IMPORTANT: Copy the full content from pubos.freestar.io > Site Configuration > Ads.txt
+# This file MUST be kept in sync with Freestar's dashboard
+#
+# AdSense publisher lines:
+google.com, pub-1172879704296990, DIRECT, f08c47fec0942fa0
+google.com, pub-3657293189229655, DIRECT, f08c47fec0942fa0
