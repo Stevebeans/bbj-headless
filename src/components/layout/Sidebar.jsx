@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
-import { ClientAdPlaceholder } from "../ads/ClientAdPlaceholder";
+import { FreestarSlot } from "../ads/FreestarSlot";
 import { SubscribeWidget } from "../email/SubscribeWidget";
 
 // Client Component - Sidebar with widgets
@@ -39,6 +39,7 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
                   width={48}
                   height={48}
                   className="rounded-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="w-12 h-12 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold text-lg">
@@ -96,7 +97,7 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
       </div>
 
       {/* Ad Placeholder - Top */}
-      {showAds && <ClientAdPlaceholder slot="sidebar_top" minHeight="250px" />}
+      {showAds && <FreestarSlot placementName="bigbrotherjunkies_siderail_right_1" />}
 
       {/* Injected children (e.g. home page widgets) */}
       {children}
@@ -113,7 +114,7 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
       </div>
 
       {/* Ad Placeholder - Bottom */}
-      {showAds && <ClientAdPlaceholder slot="sidebar_bottom" minHeight="250px" />}
+      {showAds && <FreestarSlot placementName="bigbrotherjunkies_siderail_right_2" />}
     </aside>
   );
 }
