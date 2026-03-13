@@ -9,7 +9,7 @@ import { QuickLinks } from "@/components/posts/QuickLinks";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
 import { FeedUpdates } from "@/components/posts/FeedUpdates";
 import { ContentWithAds } from "@/components/posts/ContentWithAds";
-import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
+import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { CommentSection } from "@/components/comments";
 import { JumpToComments } from "@/components/posts/JumpToComments";
 
@@ -131,7 +131,7 @@ export default async function ContentPage({ params }) {
 
                 {/* Before Content Ad - only for posts without hideAds */}
                 {showAds && (
-                  <AdPlaceholder slot="before-content" minHeight="100px" className="mb-4" />
+                  <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" className="mb-4" />
                 )}
 
                 {/* Article Body with In-Content Ads (posts) or plain content (pages) */}
