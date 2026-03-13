@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
+import { FreestarSlot } from "@/components/ads/FreestarSlot";
 
 // Insert an ad every X updates
 const AD_INTERVAL = 5;
@@ -41,7 +41,6 @@ export function FeedUpdates({ updates = [], dateFormatted, total = 0 }) {
       {updates.map((update, index) => {
         const position = index + 1;
         const showAd = position % AD_INTERVAL === 0 && position < updates.length;
-        const adSlot = `feed-update-ad-${Math.ceil(position / AD_INTERVAL)}`;
 
         return (
           <div key={update.id}>
@@ -90,7 +89,11 @@ export function FeedUpdates({ updates = [], dateFormatted, total = 0 }) {
             {/* Insert ad after every X updates */}
             {showAd && (
               <div className="my-4">
-                <AdPlaceholder slot={adSlot} minHeight="100px" />
+                <FreestarSlot
+                  placementName="bigbrotherjunkies_middle_feed"
+                  slotId={`bigbrotherjunkies_middle_feed_${Math.ceil(position / AD_INTERVAL)}`}
+                  showBranding={false}
+                />
               </div>
             )}
           </div>
