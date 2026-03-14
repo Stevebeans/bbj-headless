@@ -8,6 +8,6 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "node C:\\Users\\sbeli\\.claude\\statusline.js"
+    "command": "input=$(cat); remaining=$(echo \"$input\" | jq -r '.context_window.remaining_percentage // empty'); model=$(echo \"$input\" | jq -r '.model.display_name // \"Claude\"'); dir=$(echo \"$input\" | jq -r '.workspace.current_dir // \"\"' | xargs basename 2>/dev/null); branch=$(git -C \"$(echo \"$input\" | jq -r '.workspace.current_dir // \".\"')\" branch --show-current 2>/dev/null); parts=\"\"; [ -n \"$remaining\" ] && parts=\"ctx:${remaining%.*}%\"; parts=\"${parts:+$parts | }$model\"; [ -n \"$branch\" ] && parts=\"$parts | git:$branch\"; [ -n \"$dir\" ] && parts=\"$parts | $dir\"; echo \"$parts\""
   }
 }

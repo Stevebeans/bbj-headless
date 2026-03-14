@@ -1,0 +1,5 @@
+I need you to help me brainstorm a lazy thing I can do to keep pushing BB related content to my facebook page and ideally automate it as much as possible during this off-season while I work on other sites and rebuilding the app.  
+
+Essentially I get most of the content from IG but occasionally I can maybe ask a question that you'd help me come up with BB related.  Something to generate constant content and you know, we can even build it in the admin tab of the site if we need online access. So like I would like something to connect to IG, follow BB pages (Which my IG accounbt does) and not grab every new, but maybe have a script where I grab three random and I select it and generate a caption and post.   My goal is to pull in $5o or so a day from FB so I need to keep content flowing but it's so damn hard with seasonable sites so I also wonder if I can tap into other shows using the same thing or if I need to create new sub pages for other shows and auto push content there
+
+Ugh I need some real high level money making ideas here

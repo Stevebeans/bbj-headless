@@ -371,6 +371,7 @@ function PlayerResultItem({ item, isActive, id, onClose }) {
           width={36}
           height={36}
           className="w-9 h-9 rounded-full object-cover"
+          unoptimized
         />
       ) : (
         <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-500 text-sm font-bold">
@@ -411,6 +412,7 @@ function FeedUpdateResultItem({ item, isActive, id, onClose }) {
             width={40}
             height={40}
             className="w-10 h-10 rounded object-cover flex-shrink-0"
+            unoptimized
           />
         )}
         <div className="min-w-0 flex-1">

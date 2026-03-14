@@ -169,6 +169,7 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
                   width={40}
                   height={40}
                   className="w-full h-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">

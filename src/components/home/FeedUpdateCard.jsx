@@ -82,6 +82,7 @@ export function FeedUpdateCard({ update }) {
                 width={40}
                 height={40}
                 className="rounded-full w-10 h-10"
+                unoptimized
               />
             )}
             <div className="flex flex-col leading-tight">

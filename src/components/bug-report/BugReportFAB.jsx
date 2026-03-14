@@ -377,6 +377,7 @@ export function BugReportFAB() {
                     width={120}
                     height={80}
                     className="rounded-lg object-cover border border-gray-200 dark:border-gray-600"
+                    unoptimized
                   />
                   <button
                     type="button"

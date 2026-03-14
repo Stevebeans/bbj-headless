@@ -92,6 +92,7 @@ export function Header() {
                 height={40}
                 className="md:hidden h-10 w-auto"
                 priority
+                unoptimized
               />
               {/* Desktop logo - full */}
               <Image
@@ -141,6 +142,7 @@ export function Header() {
                         width={28}
                         height={28}
                         className="w-7 h-7 rounded-full object-cover ring-2 ring-transparent hover:ring-primary-300 transition-all"
+                        unoptimized
                       />
                     ) : (
                       <div className="w-7 h-7 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center ring-2 ring-transparent hover:ring-primary-300 transition-all">

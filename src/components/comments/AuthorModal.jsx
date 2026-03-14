@@ -153,6 +153,7 @@ export default function AuthorModal({ userId, isOpen, onClose }) {
                     width={80}
                     height={80}
                     className="w-full h-full object-cover"
+                    unoptimized
                   />
                 </div>
                 {profile.is_online && (

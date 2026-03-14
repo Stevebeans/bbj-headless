@@ -132,6 +132,7 @@ function PlayerCard({ player, afpId }) {
               fill
               className={`object-cover ${isEvicted ? "spoilerbar-evicted-img" : ""} ${isJury ? "spoilerbar-jury-img" : ""}`}
               sizes="(max-width: 1024px) 56px, 56px"
+              unoptimized
             />
             {/* Blue tint overlay for jury members */}
             {isJury && <div className="spoilerbar-jury-overlay" />}

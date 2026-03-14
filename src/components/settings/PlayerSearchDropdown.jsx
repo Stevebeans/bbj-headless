@@ -106,6 +106,7 @@ export default function PlayerSearchDropdown({
               width={40}
               height={40}
               className="w-10 h-10 rounded-full object-cover"
+              unoptimized
             />
           ) : (
             <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
@@ -202,6 +203,7 @@ export default function PlayerSearchDropdown({
                   width={36}
                   height={36}
                   className="w-9 h-9 rounded-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">

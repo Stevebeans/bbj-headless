@@ -34,6 +34,7 @@ export function PlayerBadge({ player, onRemove, removable = false, size = "defau
             rounded-full object-cover flex-shrink-0
             w-[${imageSizes[size]}px] h-[${imageSizes[size]}px]
           `}
+          unoptimized
         />
       ) : (
         <div

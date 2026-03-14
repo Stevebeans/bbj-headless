@@ -68,6 +68,7 @@ export default function NotificationItem({ notification, onClick, compact = fals
                   width={40}
                   height={40}
                   className="w-full h-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold">

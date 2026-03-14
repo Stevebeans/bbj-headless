@@ -55,6 +55,7 @@ use BigBrotherJunkies\Data\Cron\NotificationCleanup;
 use BigBrotherJunkies\Data\Api\ContentEngineRoutes;
 use BigBrotherJunkies\Data\Api\FacebookRoutes;
 use BigBrotherJunkies\Data\Api\AIRoutes;
+use BigBrotherJunkies\Data\Api\AdSettingsRoutes;
 use BigBrotherJunkies\Data\Api\NewsAggregatorRoutes;
 use BigBrotherJunkies\Data\Cron\ContentEngineCron;
 
@@ -432,6 +433,10 @@ class Plugin
         // News aggregator routes (RSS feeds, article scanning)
         $newsRoutes = new NewsAggregatorRoutes();
         $newsRoutes->register();
+
+        // Ad settings routes (Freestar configuration)
+        $adSettingsRoutes = new AdSettingsRoutes();
+        $adSettingsRoutes->register();
     }
 
     /**

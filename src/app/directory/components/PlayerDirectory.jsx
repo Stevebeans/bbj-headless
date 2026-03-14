@@ -660,6 +660,7 @@ function PlayerLink({ player }) {
           width={24}
           height={24}
           className="w-6 h-6 rounded-full object-cover"
+          unoptimized
         />
       )}
       <span className="hover:underline">{player.name}</span>
