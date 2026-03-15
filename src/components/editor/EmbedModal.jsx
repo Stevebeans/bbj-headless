@@ -35,9 +35,12 @@ export default function EmbedModal({ editor, onClose }) {
   function handleInsert() {
     if (!url.trim()) return;
 
+    // Escape URL for safe HTML attribute insertion
+    const safeUrl = url.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
     const embedHtml = preview
-      ? `<figure class="embed-container" data-embed-url="${url}">${preview}</figure>`
-      : `<figure class="embed-container"><a href="${url}" target="_blank">${url}</a></figure>`;
+      ? `<figure class="embed-container" data-embed-url="${safeUrl}">${preview}</figure>`
+      : `<figure class="embed-container"><a href="${safeUrl}" target="_blank">${safeUrl}</a></figure>`;
 
     editor.chain().focus().insertContent(embedHtml).run();
     onClose();

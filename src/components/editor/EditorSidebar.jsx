@@ -12,7 +12,7 @@ export default function EditorSidebar({
   title, slug, setSlug,
   metaDescription, setMetaDescription,
   checklist, saveStatus, reviewNote,
-  editor, onSave, onTitleChange,
+  editor, onSave, onTitleChange, isEditMode,
 }) {
   return (
     <div className="p-4 space-y-5">
@@ -21,6 +21,7 @@ export default function EditorSidebar({
         setCategoryIds={setCategoryIds}
         onTitleSuggestion={onTitleChange}
         onSave={onSave}
+        isEditMode={isEditMode}
       />
 
       <div>

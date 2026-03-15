@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { getCategories } from "@/lib/api/editor";
 
-export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSuggestion, onSave }) {
+export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSuggestion, onSave, isEditMode = false }) {
   const [seasons, setSeasons] = useState([]);
   const [selectedSeason, setSelectedSeason] = useState(null);
   const [selectedSub, setSelectedSub] = useState(null);
@@ -14,11 +14,21 @@ export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSug
       try {
         const data = await getCategories();
         setSeasons(data.seasons || []);
-        // Default to current season
-        const current = data.seasons?.find((s) => s.is_current);
-        if (current) {
-          setSelectedSeason(current);
-          setCategoryIds([current.id]);
+        // Default to current season only for new posts (not editing)
+        if (!isEditMode || categoryIds.length === 0) {
+          const current = data.seasons?.find((s) => s.is_current);
+          if (current) {
+            setSelectedSeason(current);
+            setCategoryIds([current.id]);
+          }
+        } else {
+          // For edit mode, find and select the season matching existing categories
+          const matchingSeason = data.seasons?.find((s) => categoryIds.includes(s.id));
+          if (matchingSeason) {
+            setSelectedSeason(matchingSeason);
+            const matchingSub = matchingSeason.subcategories?.find((sub) => categoryIds.includes(sub.id));
+            if (matchingSub) setSelectedSub(matchingSub);
+          }
         }
       } catch (err) {
         console.error("Failed to load categories:", err);

@@ -37,15 +37,23 @@ export default function EditorPage({ postId = null }) {
   const [reviewNote, setReviewNote] = useState("");
 
   // UI state
-  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
+  const [saveStatus, setSaveStatus] = useState("idle");
   const [lastSaved, setLastSaved] = useState(null);
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(!!postId);
 
-  // Auto-save refs
+  // Refs for auto-save — fixes stale closure bug (#3)
+  // The timer-captured savePost always reads from refs, not stale state
   const saveTimerRef = useRef(null);
   const isSavingRef = useRef(false);
   const isFirstSaveRef = useRef(!postId);
+  const stateRef = useRef({ title, slug, categoryIds, featuredImageId, metaDescription, currentPostId });
+  const pendingContentRef = useRef(null); // For editor content loading timing (#4)
+
+  // Keep stateRef in sync with latest state values
+  useEffect(() => {
+    stateRef.current = { title, slug, categoryIds, featuredImageId, metaDescription, currentPostId };
+  }, [title, slug, categoryIds, featuredImageId, metaDescription, currentPostId]);
 
   const canPublish = hasPermission("blog_publishing") || hasPermission("blog_review");
 
@@ -70,7 +78,6 @@ export default function EditorPage({ postId = null }) {
       attributes: {
         class: "prose prose-lg max-w-none focus:outline-none min-h-[300px] p-4",
       },
-      // Errata #6: Use transformPastedText for plain-text paste handling
       transformPastedText(text) {
         return text;
       },
@@ -79,6 +86,14 @@ export default function EditorPage({ postId = null }) {
       scheduleSave();
     },
   });
+
+  // Fix #4: If content was loaded before editor was ready, set it now
+  useEffect(() => {
+    if (editor && pendingContentRef.current) {
+      editor.commands.setContent(pendingContentRef.current);
+      pendingContentRef.current = null;
+    }
+  }, [editor]);
 
   // Load existing post
   useEffect(() => {
@@ -101,6 +116,9 @@ export default function EditorPage({ postId = null }) {
       setReviewNote(data.review_note);
       if (editor && data.content) {
         editor.commands.setContent(data.content);
+      } else if (data.content) {
+        // Editor not ready yet — store content for later
+        pendingContentRef.current = data.content;
       }
     } catch (err) {
       console.error("Failed to load post:", err);
@@ -109,38 +127,40 @@ export default function EditorPage({ postId = null }) {
     }
   }
 
-  // Auto-save logic
+  // Auto-save logic — reads from refs to avoid stale closures
   function scheduleSave() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      savePost();
+      doSave();
     }, 30000);
   }
 
-  const savePost = useCallback(async () => {
+  // The actual save function reads from refs, not closured state
+  const doSave = useCallback(async () => {
     if (isSavingRef.current || !editor) return;
     isSavingRef.current = true;
     setSaveStatus("saving");
 
+    const { title: t, slug: s, categoryIds: cats, featuredImageId: imgId, metaDescription: meta, currentPostId: pid } = stateRef.current;
+
     const postData = {
-      title: title || "Untitled Draft",
+      title: t || "Untitled Draft",
       content: editor.getHTML(),
-      category_id: categoryIds,
-      featured_image_id: featuredImageId,
-      meta_description: metaDescription,
-      slug,
+      category_id: cats,
+      featured_image_id: imgId,
+      meta_description: meta,
+      slug: s,
     };
 
     try {
       if (isFirstSaveRef.current) {
-        // First save — create post
         const result = await createPost(postData);
         setCurrentPostId(result.id);
         setSlug(result.slug);
         isFirstSaveRef.current = false;
         router.replace(`/editor/${result.id}`, { scroll: false });
       } else {
-        const result = await updatePost(currentPostId, postData);
+        const result = await updatePost(pid, postData);
         if (result.slug) setSlug(result.slug);
       }
 
@@ -152,27 +172,27 @@ export default function EditorPage({ postId = null }) {
     } finally {
       isSavingRef.current = false;
     }
-  }, [title, slug, categoryIds, featuredImageId, metaDescription, editor, currentPostId, router]);
+  }, [editor, router]);
 
   // Manual save
   async function handleManualSave() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    await savePost();
+    await doSave();
   }
 
   // Publish / Submit for review
-  // Errata #14: Generate meta description before publishing
   async function handlePublish() {
     await handleManualSave();
-    if (!currentPostId) return;
+    const pid = stateRef.current.currentPostId;
+    if (!pid) return;
 
     // Auto-generate meta description if not set
-    if (!metaDescription && editor) {
+    if (!stateRef.current.metaDescription && editor) {
       try {
         const metaResult = await generateMeta(editor.getText());
         if (metaResult.description) {
           setMetaDescription(metaResult.description);
-          await updatePost(currentPostId, { meta_description: metaResult.description });
+          await updatePost(pid, { meta_description: metaResult.description });
         }
       } catch (err) {
         console.error("Meta generation failed:", err);
@@ -181,10 +201,10 @@ export default function EditorPage({ postId = null }) {
 
     const newStatus = canPublish ? "publish" : "pending_review";
     try {
-      await changePostStatus(currentPostId, newStatus);
+      await changePostStatus(pid, newStatus);
       setStatus(newStatus);
       if (newStatus === "publish") {
-        router.push(`/posts/${slug}`);
+        router.push(`/posts/${stateRef.current.slug}`);
       }
     } catch (err) {
       console.error("Status change failed:", err);
@@ -194,8 +214,9 @@ export default function EditorPage({ postId = null }) {
   // Preview
   function handlePreview() {
     handleManualSave().then(() => {
-      if (currentPostId) {
-        window.open(`/preview/${currentPostId}`, "_blank");
+      const pid = stateRef.current.currentPostId;
+      if (pid) {
+        window.open(`/preview/${pid}`, "_blank");
       }
     });
   }
@@ -206,13 +227,13 @@ export default function EditorPage({ postId = null }) {
     scheduleSave();
   }
 
-  // Errata #7: Prop callback for title changes from sidebar components
+  // Prop callback for title changes from sidebar components
   function handleTitleSet(newTitle) {
     setTitle(newTitle);
     scheduleSave();
   }
 
-  // Errata #7: Prop callback for inline image uploads from toolbar
+  // Prop callback for inline image uploads from toolbar
   async function handleImageUpload(file) {
     if (!file || !editor) return;
     try {
@@ -285,6 +306,7 @@ export default function EditorPage({ postId = null }) {
     editor,
     onSave: scheduleSave,
     onTitleChange: handleTitleSet,
+    isEditMode: !!postId,
   };
 
   return (
