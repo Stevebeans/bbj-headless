@@ -9,6 +9,7 @@ import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
 import { BugReportFAB } from "@/components/bug-report/BugReportFAB";
 import { BackToTop } from "@/components/layout/BackToTop";
+import NewPostFAB from "@/components/editor/NewPostFAB";
 import { getInitialAuthState } from "@/lib/auth/serverCookies";
 import { getAdScripts } from "@/lib/api/ads";
 import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
@@ -132,6 +133,7 @@ export default async function RootLayout({ children }) {
           <FloatingUpdater />
           <BugReportFAB />
           <BackToTop />
+          <NewPostFAB />
         </Providers>
         {/* Global scripts - deferred to not block rendering (analytics, etc.) */}
         {adScripts.global_header && extractInlineScript(adScripts.global_header) && (

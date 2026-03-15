@@ -104,6 +104,14 @@ function UsersIcon({ className }) {
   );
 }
 
+function DocumentTextIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    </svg>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "Overview", href: "/admin", icon: HomeIcon, permission: null },
   { id: "feed-updates", label: "Feed Updates", href: "/admin/feed-updates", icon: FeedIcon, permission: "feed_updates" },
@@ -113,6 +121,7 @@ const TABS = [
   { id: "bug-reports", label: "Bugs", href: "/admin/bug-reports", icon: BugIcon, permission: "bug_reports" },
   { id: "announcements", label: "Announcements", href: "/admin/announcements", icon: MegaphoneIcon, permission: "announcements" },
   { id: "content-engine", label: "Content", href: "/admin/content-engine", icon: PencilSquareIcon, permission: "content_engine" },
+  { id: "posts", label: "Posts", href: "/admin/posts", icon: DocumentTextIcon, permission: "blog_review" },
   { id: "ads", label: "Ads", href: "/admin/ads", icon: AdIcon, permission: "ad_management" },
   { id: "users", label: "Users", href: "/admin/users", icon: UsersIcon, permission: "user_management" },
   { id: "stats", label: "Stats", href: "/admin/stats", icon: ChartIcon, permission: "analytics_dashboard" },

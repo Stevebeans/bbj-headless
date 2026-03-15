@@ -418,6 +418,16 @@ div.max-w-screen-xl.py-1.flex.items-center.justify-center:has(> :only-child:empt
   100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
 }
 
+/* Mobile settings sheet slide-up animation */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
 /* Leaflet popup dark mode override */
 .dark .leaflet-popup-content-wrapper {
   background: #1e293b;

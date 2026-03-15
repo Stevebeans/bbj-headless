@@ -9,6 +9,8 @@ import { MobileSearchModal } from "../search/MobileSearchModal";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import NotificationBell from "../notifications/NotificationBell";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
 // Roles that get supporter benefits (should match WordPress settings)
 const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
@@ -20,6 +22,7 @@ export function Header() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const { user, isAuthenticated, isAdmin, loading } = useAuth();
   const { openLogin, openRegister } = useAuthModal();
+  const { hasPermission } = usePermissions();
 
   // Check if user has a supporter role
   const isSupporter = isAuthenticated && Array.isArray(user?.user_roles) && user.user_roles.some(role => SUPPORTER_ROLES.includes(role));
@@ -127,6 +130,15 @@ export function Header() {
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
+                    </Link>
+                  )}
+                  {(hasPermission("blog_writing") || hasPermission("blog_publishing") || hasPermission("blog_review")) && (
+                    <Link
+                      href="/editor/new"
+                      className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-primary-500 transition-colors hidden md:block"
+                      title="New Post"
+                    >
+                      <PencilSquareIcon className="w-5 h-5" />
                     </Link>
                   )}
                   <NotificationBell />
