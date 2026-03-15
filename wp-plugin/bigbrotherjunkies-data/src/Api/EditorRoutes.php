@@ -23,7 +23,11 @@ class EditorRoutes
             'permission_callback' => [$this, 'canWrite'],
             'args' => [
                 'page' => ['default' => 1, 'type' => 'integer'],
-                'per_page' => ['default' => 20, 'type' => 'integer'],
+                'per_page' => [
+                    'default' => 20,
+                    'type' => 'integer',
+                    'sanitize_callback' => function($val) { return min(absint($val), 100); },
+                ],
                 'status' => ['default' => '', 'type' => 'string'],
             ],
         ]);
@@ -82,7 +86,11 @@ class EditorRoutes
             'permission_callback' => [$this, 'canReview'],
             'args' => [
                 'page' => ['default' => 1, 'type' => 'integer'],
-                'per_page' => ['default' => 20, 'type' => 'integer'],
+                'per_page' => [
+                    'default' => 20,
+                    'type' => 'integer',
+                    'sanitize_callback' => function($val) { return min(absint($val), 100); },
+                ],
             ],
         ]);
 
@@ -281,6 +289,11 @@ class EditorRoutes
             return new \WP_REST_Response(['error' => 'Not authorized'], 403);
         }
 
+        // Prevent T1 writers from editing published posts
+        if (!$this->canPublish() && $post->post_status === 'publish') {
+            return new \WP_REST_Response(['error' => 'Cannot edit published posts. Contact a reviewer.'], 403);
+        }
+
         $params = $request->get_json_params();
         $updateData = ['ID' => $postId];
 
@@ -375,10 +388,14 @@ class EditorRoutes
         // Map pending_review to WP's pending status
         $wpStatus = $newStatus === 'pending_review' ? 'pending' : 'publish';
 
-        wp_update_post([
+        $result = wp_update_post([
             'ID' => $postId,
             'post_status' => $wpStatus,
-        ]);
+        ], true);
+
+        if (is_wp_error($result)) {
+            return new \WP_REST_Response(['error' => $result->get_error_message()], 500);
+        }
 
         // Send email on pending_review
         if ($newStatus === 'pending_review') {
@@ -529,10 +546,14 @@ class EditorRoutes
         $authorName = get_the_author_meta('display_name', $post->post_author);
 
         if ($action === 'approve') {
-            wp_update_post([
+            $result = wp_update_post([
                 'ID' => $postId,
                 'post_status' => 'publish',
-            ]);
+            ], true);
+
+            if (is_wp_error($result)) {
+                return new \WP_REST_Response(['error' => $result->get_error_message()], 500);
+            }
 
             // Clear any review notes
             delete_post_meta($postId, '_bbj_review_note');
@@ -556,10 +577,14 @@ class EditorRoutes
         }
 
         // Reject: set back to draft, save note
-        wp_update_post([
+        $result = wp_update_post([
             'ID' => $postId,
             'post_status' => 'draft',
-        ]);
+        ], true);
+
+        if (is_wp_error($result)) {
+            return new \WP_REST_Response(['error' => $result->get_error_message()], 500);
+        }
 
         if ($note) {
             update_post_meta($postId, '_bbj_review_note', $note);
