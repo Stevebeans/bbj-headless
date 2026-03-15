@@ -57,6 +57,7 @@ use BigBrotherJunkies\Data\Api\FacebookRoutes;
 use BigBrotherJunkies\Data\Api\AIRoutes;
 use BigBrotherJunkies\Data\Api\AdSettingsRoutes;
 use BigBrotherJunkies\Data\Api\NewsAggregatorRoutes;
+use BigBrotherJunkies\Data\Api\EditorRoutes;
 use BigBrotherJunkies\Data\Cron\ContentEngineCron;
 
 /**
@@ -437,6 +438,10 @@ class Plugin
         // Ad settings routes (Freestar configuration)
         $adSettingsRoutes = new AdSettingsRoutes();
         $adSettingsRoutes->register();
+
+        // Blog editor routes (post CRUD, media, categories, review)
+        $editorRoutes = new EditorRoutes();
+        $editorRoutes->register();
     }
 
     /**
