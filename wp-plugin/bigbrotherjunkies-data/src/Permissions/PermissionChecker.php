@@ -69,6 +69,21 @@ class PermissionChecker
             'description' => 'Create, schedule, and post content to Facebook and the site',
             'roles' => ['administrator', 'editor', 'second_in_command'],
         ],
+        'blog_writing' => [
+            'label' => 'Blog Writer (T1)',
+            'description' => 'Create and edit blog posts, submit for review',
+            'roles' => ['administrator', 'editor', 'author'],
+        ],
+        'blog_publishing' => [
+            'label' => 'Blog Publisher (T2)',
+            'description' => 'Create, edit, and directly publish blog posts',
+            'roles' => ['administrator', 'editor'],
+        ],
+        'blog_review' => [
+            'label' => 'Blog Reviewer',
+            'description' => 'Review, approve, and reject blog post submissions',
+            'roles' => ['administrator'],
+        ],
     ];
 
     public static function userCan(string $feature, ?int $userId = null): bool
