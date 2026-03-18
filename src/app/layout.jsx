@@ -110,11 +110,21 @@ export default async function RootLayout({ children }) {
     >
       <head>
         <ThemeScript />
-        {/* Freestar preconnect for faster ad loading */}
-        <link rel="preconnect" href="https://a.pub.network/" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://b.pub.network/" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://c.pub.network/" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://d.pub.network/" crossOrigin="anonymous" />
+        {shouldShowAds && (
+          <>
+            {/* Freestar preconnects */}
+            <link rel="preconnect" href="https://a.pub.network/" crossOrigin="anonymous" />
+            <link rel="preconnect" href="https://b.pub.network/" crossOrigin="anonymous" />
+            <link rel="preconnect" href="https://c.pub.network/" crossOrigin="anonymous" />
+            <link rel="preconnect" href="https://d.pub.network/" crossOrigin="anonymous" />
+            <link rel="preconnect" href="https://c.amazon-adsystem.com" crossOrigin="anonymous" />
+            <link rel="preconnect" href="https://s.amazon-adsystem.com" crossOrigin="anonymous" />
+            <link rel="preconnect" href="https://btloader.com/" crossOrigin="anonymous" />
+            <link rel="preconnect" href="https://api.btloader.com/" crossOrigin="anonymous" />
+            {/* Freestar CLS prevention stylesheet */}
+            <link rel="stylesheet" href="https://a.pub.network/bigbrotherjunkies-com/cls.css" />
+          </>
+        )}
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
         <Providers
@@ -147,18 +157,26 @@ export default async function RootLayout({ children }) {
         {/* Freestar SDK — only when ads should show */}
         {shouldShowAds && (
           <>
+            {/* Freestar SDK init */}
             <Script id="freestar-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
-              window.freestar = window.freestar || {};
-              window.freestar.queue = window.freestar.queue || [];
-              window.freestar.config = window.freestar.config || {};
-              window.freestar.config.enabled_slots = window.freestar.config.enabled_slots || [];
+              var freestar = freestar || {};
+              freestar.queue = freestar.queue || [];
+              freestar.config = freestar.config || {};
+              freestar.config.enabled_slots = [];
+              freestar.initCallback = function () {
+                (freestar.config.enabled_slots.length === 0)
+                  ? freestar.initCallbackCalled = false
+                  : freestar.newAdSlots(freestar.config.enabled_slots)
+              }
             `}} />
+            {/* Freestar core SDK — data-cfasync prevents Cloudflare Rocket Loader from deferring */}
             <Script
               id="freestar-sdk"
               src="https://a.pub.network/bigbrotherjunkies-com/pubfig.min.js"
               strategy="afterInteractive"
-              crossOrigin="anonymous"
+              data-cfasync="false"
             />
+            {/* TODO: Add AdShield script from Freestar PDF (adblock recovery) */}
           </>
         )}
       </body>
