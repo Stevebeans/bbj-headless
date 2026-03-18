@@ -1,45 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useId } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useAds } from "@/context/AdContext";
 import { getSlotConfig } from "@/config/ads";
 
-export function FreestarSlot({ placementName, slotId: customSlotId, className = "", showBranding = true }) {
-  const { shouldShowAds, isPWA, isAdBlocked, sdkReady, disabledPlacements, pwaSuppressed } = useAds();
-  const slotRef = useRef(null);
-  const registeredRef = useRef(false);
-  const reactId = useId();
-  const slotId = customSlotId || `${placementName}_${reactId.replace(/:/g, '')}`;
+const FreestarAdSlot = dynamic(
+  () => import("@freestar/pubfig-adslot-react-component"),
+  { ssr: false }
+);
+
+export function FreestarSlot({
+  placementName,
+  slotId,
+  className = "",
+  showBranding = true,
+  targeting,
+}) {
+  const { shouldShowAds, isPWA, isAdBlocked, disabledPlacements, pwaSuppressed } = useAds();
 
   const config = getSlotConfig(placementName);
   const desktopHeight = config.desktop?.height || 250;
   const mobileHeight = config.mobile?.height ?? desktopHeight;
   const hiddenOnMobile = mobileHeight === 0;
-
-  useEffect(() => {
-    if (!shouldShowAds || isAdBlocked || !sdkReady) return;
-    if (registeredRef.current) return;
-
-    const slot = { placementName, slotId };
-
-    if (window.freestar && window.freestar.config) {
-      window.freestar.config.enabled_slots.push(slot);
-      window.freestar.newAdSlots([slot]);
-      registeredRef.current = true;
-    }
-
-    return () => {
-      if (registeredRef.current && window.freestar) {
-        try {
-          window.freestar.deleteAdSlots([slot]);
-        } catch (e) {
-          // Non-critical — slot will be overwritten on next page
-        }
-        registeredRef.current = false;
-      }
-    };
-  }, [placementName, slotId, shouldShowAds, isAdBlocked, sdkReady]);
 
   if (!shouldShowAds) return null;
   if (disabledPlacements.includes(placementName)) return null;
@@ -76,9 +59,6 @@ export function FreestarSlot({ placementName, slotId: customSlotId, className = 
 
   const slotDiv = (
     <div
-      ref={slotRef}
-      id={slotId}
-      data-freestar-ad
       className={`freestar-slot flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 ${
         hiddenOnMobile ? "hidden md:block" : ""
       } ${!showBranding ? className : ""}`}
@@ -86,7 +66,14 @@ export function FreestarSlot({ placementName, slotId: customSlotId, className = 
         "--ad-h": `${mobileHeight}px`,
         "--ad-h-desktop": `${desktopHeight}px`,
       }}
-    />
+    >
+      <FreestarAdSlot
+        publisher="bigbrotherjunkies-com"
+        placementName={placementName}
+        slotId={slotId}
+        targeting={targeting}
+      />
+    </div>
   );
 
   if (!showBranding) return slotDiv;
