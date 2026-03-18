@@ -11,6 +11,7 @@ const MANUAL_PLACEMENTS = [
   { key: "bigbrotherjunkies_middle_post", label: "Middle Post" },
   { key: "bigbrotherjunkies_siderail_right_1", label: "Siderail Right 1" },
   { key: "bigbrotherjunkies_siderail_right_2", label: "Siderail Right 2" },
+  { key: "bigbrotherjunkies_sticky_siderail_right", label: "Sticky Siderail Right" },
 ];
 
 const AUTO_MANAGED_PLACEMENTS = [

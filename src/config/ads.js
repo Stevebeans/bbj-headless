@@ -51,6 +51,10 @@ export const adSlots = {
     desktop: { height: 250 },
     mobile: { height: 0 },
   },
+  bigbrotherjunkies_sticky_siderail_right: {
+    desktop: { height: 250 },  // 300x250 primary (SDK handles sticky behavior)
+    mobile: { height: 0 },     // Hidden on mobile
+  },
 };
 
 /**
