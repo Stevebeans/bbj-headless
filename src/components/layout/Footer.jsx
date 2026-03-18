@@ -117,6 +117,7 @@ export function Footer() {
         {/* Copyright */}
         <div className="text-center text-xs py-4 border-t border-primary-400/30 mt-4 text-gray-600 dark:text-gray-400">
           <p>&copy; {currentYear} JunkyNet Media, LLC. All Rights Reserved</p>
+          <button id="pmLink">Privacy Manager</button>
         </div>
       </div>
     </footer>

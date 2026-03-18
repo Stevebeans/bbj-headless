@@ -127,6 +127,19 @@
     }
   }
 
+  /* Freestar CMP (Sourcepoint) privacy manager resurfacing link.
+     Starts hidden — Sourcepoint's script sets visibility: visible
+     based on user geolocation (CCPA/GDPR). */
+  #pmLink {
+    visibility: hidden;
+    text-decoration: none;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    font-size: 0.75rem;
+    color: inherit;
+  }
+
   .front-card {
     @apply rounded-sm bg-white shadow-md dark:bg-gray-800;
   }
