@@ -1,12 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 const AdContext = createContext({
   shouldShowAds: true,
   isPWA: false,
   isAdBlocked: false,
-  sdkReady: false,
   disabledPlacements: [],
   pwaSuppressed: [],
 });
@@ -25,39 +26,52 @@ function detectPWA() {
 export function AdProvider({ children, initialShouldShowAds = true, disabledPlacements = [], pwaSuppressed = [] }) {
   const [isPWA, setIsPWA] = useState(false);
   const [isAdBlocked, setIsAdBlocked] = useState(false);
-  const [sdkReady, setSdkReady] = useState(false);
+  const pathname = usePathname();
+  const isFirstRender = useRef(true);
+  const { user } = useAuth();
+  const userEmail = user?.user_email;
 
+  // PWA detection
   useEffect(() => {
     setIsPWA(detectPWA());
+  }, []);
 
+  // Ad-blocker detection — check if full SDK loaded after timeout
+  useEffect(() => {
     if (!initialShouldShowAds) return;
 
-    const checkSDK = () => {
-      if (window.freestar && window.freestar.config) {
-        setSdkReady(true);
-        return true;
-      }
-      return false;
-    };
-
-    if (checkSDK()) return;
-
-    const interval = setInterval(() => {
-      if (checkSDK()) clearInterval(interval);
-    }, 500);
-
     const timeout = setTimeout(() => {
-      clearInterval(interval);
-      if (!window.freestar || !window.freestar.config) {
+      if (typeof window.freestar?.newAdSlots !== "function") {
         setIsAdBlocked(true);
       }
     }, SDK_TIMEOUT_MS);
 
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
+    return () => clearTimeout(timeout);
   }, [initialShouldShowAds]);
+
+  // SPA route tracking — skip initial render (SDK tracks first page view itself)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (!initialShouldShowAds) return;
+    import("@freestar/pubfig-adslot-react-component").then((m) => {
+      if (typeof m.default?.trackPageView === "function") {
+        m.default.trackPageView();
+      }
+    }).catch(() => {
+      // SDK not loaded (ad-blocker or network issue) — non-critical
+    });
+  }, [pathname, initialShouldShowAds]);
+
+  // HEM email passthrough — pass logged-in user's email to Freestar for identity matching
+  useEffect(() => {
+    if (!initialShouldShowAds || !userEmail) return;
+    window.freestar?.queue?.push(function () {
+      window.freestar.identity.setIdentity({ email: userEmail });
+    });
+  }, [initialShouldShowAds, userEmail]);
 
   return (
     <AdContext.Provider
@@ -65,7 +79,6 @@ export function AdProvider({ children, initialShouldShowAds = true, disabledPlac
         shouldShowAds: initialShouldShowAds,
         isPWA,
         isAdBlocked,
-        sdkReady,
         disabledPlacements,
         pwaSuppressed,
       }}
