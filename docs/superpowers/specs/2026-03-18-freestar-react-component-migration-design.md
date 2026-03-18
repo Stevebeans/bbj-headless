@@ -32,7 +32,7 @@ Freestar provided a React-specific integration guide (PDF) and confirmed we shou
 npm install @freestar/pubfig-adslot-react-component --save
 ```
 
-Peer dependencies (`react`, `prop-types`) are already satisfied. Note: `prop-types` may need to be installed — check if it's already a dependency.
+Peer dependencies: `react` is already installed. `prop-types` is not currently in `package.json` and must be added.
 
 ### FreestarSlot.jsx Refactor
 
@@ -50,6 +50,11 @@ const FreestarAdSlot = dynamic(
 ```
 
 **Important:** Next.js `dynamic()` expects the factory to resolve with a `default` export. Since `FreestarAdSlot` is a named export, we wrap it in `{ default: m.FreestarAdSlot }`. Verify this against the actual package exports at implementation time — if it happens to be the default export, simplify to just `import(...)`.
+
+**Removed from current implementation:**
+- The entire `useEffect` that manages `enabled_slots`, `newAdSlots`, `deleteAdSlots` — replaced by the React component
+- The `sdkReady` dependency — the official component handles SDK readiness internally
+- The `useId()`-based `slotId` auto-generation — the React component manages its own DOM IDs. No existing callers pass a custom `slotId`, so this logic is dead code. The `slotId` prop is kept in the component interface as an optional pass-through for future use (e.g., same placementName multiple times on a page).
 
 **Preserved wrapper logic:**
 1. Return `null` if `!shouldShowAds` (supporter)
@@ -183,7 +188,7 @@ Replace current Freestar head code with the exact snippet from their PDF. Still 
   id="freestar-sdk"
   src="https://a.pub.network/bigbrotherjunkies-com/pubfig.min.js"
   strategy="afterInteractive"
-  data-cfasync="false"
+  data-cfasync="false"  // Prevents Cloudflare Rocket Loader from deferring — would break ad loading
 />
 
 {/* AdShield — adblock recovery (provided by Freestar) */}
