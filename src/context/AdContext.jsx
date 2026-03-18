@@ -57,8 +57,8 @@ export function AdProvider({ children, initialShouldShowAds = true, disabledPlac
     }
     if (!initialShouldShowAds) return;
     import("@freestar/pubfig-adslot-react-component").then((m) => {
-      if (typeof m.default?.trackPageView === "function") {
-        m.default.trackPageView();
+      if (typeof m.default?.trackPageview === "function") {
+        m.default.trackPageview();
       }
     }).catch(() => {
       // SDK not loaded (ad-blocker or network issue) — non-critical
@@ -69,7 +69,7 @@ export function AdProvider({ children, initialShouldShowAds = true, disabledPlac
   useEffect(() => {
     if (!initialShouldShowAds || !userEmail) return;
     window.freestar?.queue?.push(function () {
-      window.freestar.identity.setIdentity({ email: userEmail });
+      window.freestar?.identity?.setIdentity({ email: userEmail });
     });
   }, [initialShouldShowAds, userEmail]);
 
