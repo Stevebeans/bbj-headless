@@ -1,5 +1,6 @@
 import { getContent, getRelatedPosts } from "@/lib/api/posts";
 import { getFeedUpdatesByDate } from "@/lib/api/feedUpdates";
+import { wpFetch } from "@/lib/api/wordpress";
 import { notFound } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PostHero } from "@/components/posts/PostHero";
@@ -80,10 +81,16 @@ export default async function ContentPage({ params }) {
   // Only fetch related posts and feed updates for posts (not pages)
   let relatedPosts = [];
   let feedUpdatesData = null;
+  let adInterval = 5;
 
   if (!isPage) {
     const firstCategoryId = content.categoryIds?.[0];
-    relatedPosts = await getRelatedPosts(content.id, firstCategoryId, 4);
+    const [related, adSettings] = await Promise.all([
+      getRelatedPosts(content.id, firstCategoryId, 4),
+      wpFetch("/bbjd/v1/ad-settings", { revalidate: 60 }).catch(() => ({})),
+    ]);
+    relatedPosts = related;
+    adInterval = adSettings.incontent_interval || 5;
 
     if (content.liveFeedThread) {
       feedUpdatesData = await getFeedUpdatesByDate(content.date);
@@ -154,6 +161,7 @@ export default async function ContentPage({ params }) {
                   <ContentWithAds
                     content={content.content}
                     showAds={showAds}
+                    adInterval={adInterval}
                     className="prose-base prose-slate
                       max-w-none dark:prose-invert
                       break-words selection:bg-yellow-200 selection:text-black

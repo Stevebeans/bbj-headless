@@ -339,12 +339,20 @@ The core differentiator during the season.
 
 ### 5.1 Simplified Post Creator
 
-- [ ] Streamlined "New Post" interface for co-writers
-- [ ] Auto-select current season category
-- [ ] **Required** featured image with preview
-- [ ] Simple rich text editor (not full Gutenberg)
-- [ ] Draft/publish workflow
-- [ ] SEO fields (title, description) with helpers
+- [x] Streamlined "New Post" interface for co-writers (TipTap editor at `/editor/new`)
+- [x] Auto-select current season category (via "Default Post Category" in admin settings)
+- [x] **Required** featured image with preview
+- [x] Simple rich text editor (not full Gutenberg) — TipTap with toolbar
+- [x] Draft/publish workflow (auto-save, submit for review, publish for authorized users)
+- [x] SEO fields (title, description) with AI generation helpers
+
+### 5.1b Current Season Admin Setting
+
+- [ ] **"Current Season" setting in admin** — controls which season the spoiler bar, homepage headings, houseboard, and stats widgets reference
+  - Homepage already pulls season name dynamically from API (not hardcoded)
+  - Need to wire the admin setting to the spoiler bar API and homepage API so changing seasons is a single toggle
+  - Update SEO keywords in `layout.jsx` to pull dynamically instead of hardcoded "BB27"
+  - Should be separate from "Default Post Category" (which controls editor auto-select)
 
 ### 5.2 Player Photo Tool ✅
 

@@ -442,20 +442,40 @@ class EditorRoutes
 
     public function getCategories(\WP_REST_Request $request): \WP_REST_Response
     {
-        $currentSeasonOption = get_option('bbj_v2_current_season', '');
+        $currentSeasonId = (int) get_option('bbjd_current_season_category', 0);
 
-        // Get top-level categories (seasons) — those with parent=0 in "Big Brother" taxonomy
-        // Big Brother categories are standard WP categories
+        // Get top-level categories (parent=0)
         $parentCategories = get_categories([
             'taxonomy' => 'category',
             'parent' => 0,
             'hide_empty' => false,
-            'orderby' => 'name',
-            'order' => 'DESC',
         ]);
 
+        // Filter to only real season categories (slug starts with "big-brother-" or "celebrity-big-brother")
+        // Exclude junk like "bb19", "bb18-cast-members", "big-brother-19-spoilers"
+        $seasonSlugs = ['big-brother-', 'celebrity-big-brother'];
+        $excludePatterns = ['spoilers', 'cast-members'];
+
+        $filtered = array_filter($parentCategories, function ($cat) use ($seasonSlugs, $excludePatterns) {
+            $slug = $cat->slug;
+            foreach ($excludePatterns as $pattern) {
+                if (str_contains($slug, $pattern)) return false;
+            }
+            foreach ($seasonSlugs as $prefix) {
+                if (str_starts_with($slug, $prefix)) return true;
+            }
+            return false;
+        });
+
+        // Sort by season number descending (extract number from name, special seasons get 0)
+        usort($filtered, function ($a, $b) {
+            $numA = (int) preg_replace('/\D/', '', $a->name);
+            $numB = (int) preg_replace('/\D/', '', $b->name);
+            return $numB - $numA;
+        });
+
         $tree = [];
-        foreach ($parentCategories as $parent) {
+        foreach ($filtered as $parent) {
             $children = get_categories([
                 'taxonomy' => 'category',
                 'parent' => $parent->term_id,
@@ -472,18 +492,11 @@ class EditorRoutes
                 ];
             }, $children);
 
-            $isCurrent = false;
-            if ($currentSeasonOption) {
-                $isCurrent = $parent->slug === $currentSeasonOption
-                    || $parent->name === $currentSeasonOption
-                    || (string) $parent->term_id === (string) $currentSeasonOption;
-            }
-
             $tree[] = [
                 'id' => $parent->term_id,
                 'name' => $parent->name,
                 'slug' => $parent->slug,
-                'is_current' => $isCurrent,
+                'is_current' => $currentSeasonId === $parent->term_id,
                 'subcategories' => $childData,
             ];
         }

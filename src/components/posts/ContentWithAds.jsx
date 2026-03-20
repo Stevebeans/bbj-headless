@@ -1,14 +1,18 @@
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
 
+const MIN_LENGTH = 1500;
+const MIN_PARAGRAPH = 3;
+const MAX_ADS = 5;
+const DEFAULT_INTERVAL = 5;
+
 /**
- * Renders post content with optional mid-article ad
- * In-content ads are handled by Freestar's articles_dynamic_incontent (auto-inserted by SDK)
- * We place one manual mid-article slot as a guaranteed placement
+ * Renders post content with in-content ads inserted every N paragraphs.
+ * This is a Server Component — no hooks or context.
  */
-export function ContentWithAds({ content, className = "", showAds = true }) {
+export function ContentWithAds({ content, className = "", showAds = true, adInterval = DEFAULT_INTERVAL }) {
   if (!content) return null;
 
-  if (!showAds) {
+  if (!showAds || content.length < MIN_LENGTH) {
     return (
       <div
         className={className}
@@ -17,9 +21,9 @@ export function ContentWithAds({ content, className = "", showAds = true }) {
     );
   }
 
-  const midpoint = findMidpoint(content);
+  const paragraphs = splitParagraphs(content);
 
-  if (midpoint === -1) {
+  if (paragraphs.length < MIN_PARAGRAPH + 1) {
     return (
       <div
         className={className}
@@ -28,31 +32,60 @@ export function ContentWithAds({ content, className = "", showAds = true }) {
     );
   }
 
-  const firstHalf = content.slice(0, midpoint);
-  const secondHalf = content.slice(midpoint);
+  const interval = Math.max(2, Math.min(10, adInterval));
+  const chunks = [];
+  let adCount = 0;
+  let paragraphsSinceAd = 0;
 
-  return (
-    <div className={className}>
-      <div dangerouslySetInnerHTML={{ __html: firstHalf }} />
-      <div className="my-4">
-        <FreestarSlot placementName="bigbrotherjunkies_middle_post" />
-      </div>
-      <div dangerouslySetInnerHTML={{ __html: secondHalf }} />
-    </div>
-  );
+  for (let i = 0; i < paragraphs.length; i++) {
+    chunks.push(
+      <div key={`p-${i}`} dangerouslySetInnerHTML={{ __html: paragraphs[i] }} />
+    );
+    paragraphsSinceAd++;
+
+    const canInsertAd =
+      adCount < MAX_ADS &&
+      i + 1 >= MIN_PARAGRAPH &&
+      paragraphsSinceAd >= interval &&
+      i < paragraphs.length - 1;
+
+    if (canInsertAd) {
+      adCount++;
+      paragraphsSinceAd = 0;
+      chunks.push(
+        <div key={`ad-${adCount}`} className="my-4">
+          <FreestarSlot
+            placementName="bigbrotherjunkies_incontent_reusable"
+            slotId={`incontent-${adCount}`}
+          />
+        </div>
+      );
+    }
+  }
+
+  return <div className={className}>{chunks}</div>;
 }
 
 /**
- * Find a midpoint in the HTML content to split at a paragraph boundary
- * Returns the index after a closing </p> tag near the middle, or -1 if too short
+ * Split HTML content into paragraphs at </p> boundaries.
+ * Keeps the closing tag with each paragraph chunk.
  */
-function findMidpoint(content) {
-  const minLength = 1500;
-  if (content.length < minLength) return -1;
+function splitParagraphs(html) {
+  const parts = html.split(/(<\/p>)/i);
+  const paragraphs = [];
+  let current = "";
 
-  const mid = Math.floor(content.length / 2);
-  const afterMid = content.indexOf("</p>", mid);
-  if (afterMid === -1) return -1;
+  for (let i = 0; i < parts.length; i++) {
+    current += parts[i];
+    if (parts[i].toLowerCase() === "</p>") {
+      const trimmed = current.trim();
+      if (trimmed) paragraphs.push(trimmed);
+      current = "";
+    }
+  }
 
-  return afterMid + 4;
+  const remaining = current.trim();
+  if (remaining) paragraphs.push(remaining);
+
+  return paragraphs;
 }

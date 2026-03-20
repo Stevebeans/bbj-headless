@@ -135,6 +135,7 @@ export default function AdminLayout({ children }) {
   const [roles, setRoles] = useState([]);
   const [simulatedRole, setSimulatedRole] = useState(null);
   const [error, setError] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -180,6 +181,11 @@ export default function AdminLayout({ children }) {
         .catch(() => {});
     }
   }, [authLoading, permLoading, isAuthenticated, realPermissions, router, hasAnyPermission]);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   const handleSimulateRole = async (role) => {
     if (!role) {
@@ -244,40 +250,121 @@ export default function AdminLayout({ children }) {
     (tab) => !tab.permission || permissions?.[tab.permission]
   );
 
-  return (
-    <main className="min-h-screen bg-slate-200 dark:bg-gray-950 py-8">
-      <div className="max-w-screen-xl mx-auto px-4">
-        {/* Page Header */}
-        <div className="mb-8 sm:flex sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white">
-              Admin Dashboard
-            </h1>
-            <p className="mt-1 text-gray-500 dark:text-gray-400">
-              Manage content, reports, and site settings
-            </p>
-          </div>
-          {roles.length > 0 && (
-            <div className="flex items-center gap-2 mt-3 sm:mt-0">
-              <label className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                Preview as:
-              </label>
-              <select
-                value={simulatedRole || ""}
-                onChange={(e) => handleSimulateRole(e.target.value || null)}
-                className="text-sm px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <option value="">My Permissions</option>
-                {roles.map((role) => (
-                  <option key={role.key} value={role.key}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+  const sidebarContent = (
+    <>
+      {/* Header */}
+      <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+        <h1 className="text-lg font-display font-bold text-gray-900 dark:text-white">
+          Admin
+        </h1>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          {user?.user_display_name || "User"}
+        </p>
+      </div>
 
+      {/* Nav links */}
+      <nav className="flex-1 overflow-y-auto py-2 px-2" aria-label="Admin navigation">
+        {visibleTabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = tab.href === "/admin"
+            ? pathname === "/admin"
+            : pathname.startsWith(tab.href);
+          return (
+            <Link
+              key={tab.id}
+              href={tab.href}
+              className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg mb-0.5 transition-colors ${
+                isActive
+                  ? "bg-primary-500 text-white"
+                  : "text-gray-600 hover:bg-slate-100 dark:text-gray-400 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Icon className="w-5 h-5 shrink-0" />
+              <span>{tab.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Role simulation */}
+      {roles.length > 0 && (
+        <div className="p-3 border-t border-slate-200 dark:border-slate-700">
+          <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+            Preview as:
+          </label>
+          <select
+            value={simulatedRole || ""}
+            onChange={(e) => handleSimulateRole(e.target.value || null)}
+            className="w-full text-sm px-2 py-1.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          >
+            <option value="">My Permissions</option>
+            {roles.map((role) => (
+              <option key={role.key} value={role.key}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Back to site */}
+      <div className="p-3 border-t border-slate-200 dark:border-slate-700">
+        <Link
+          href="/"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-slate-100 dark:text-gray-400 dark:hover:bg-slate-800 rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          <span>Back to Site</span>
+        </Link>
+      </div>
+    </>
+  );
+
+  return (
+    <main className="min-h-screen bg-slate-200 dark:bg-gray-950">
+      {/* Mobile top bar */}
+      <div className="md:hidden sticky top-0 z-40 bg-primary-500 px-4 py-3 flex items-center justify-between">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="text-white p-1"
+          aria-label="Open menu"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <span className="text-white font-display font-bold">Admin</span>
+        <Link href="/" className="text-white text-sm hover:text-secondary-500">
+          Site
+        </Link>
+      </div>
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="relative w-64 bg-white dark:bg-gray-900 flex flex-col h-full shadow-xl">
+            {/* Close button */}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              aria-label="Close menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-screen-xl mx-auto px-2 py-6">
         {/* Simulation Banner */}
         {simulatedRole && (
           <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg px-4 py-3 flex items-center justify-between">
@@ -299,55 +386,17 @@ export default function AdminLayout({ children }) {
           </div>
         )}
 
-        {/* Tabs + Content Container */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-          {/* Tab Navigation */}
-          <div className="border-b border-slate-200 dark:border-slate-700">
-            <nav className="flex overflow-x-auto" aria-label="Admin tabs">
-              {visibleTabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = tab.href === "/admin"
-                  ? pathname === "/admin"
-                  : pathname.startsWith(tab.href);
-                return (
-                  <Link
-                    key={tab.id}
-                    href={tab.href}
-                    className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                      isActive
-                        ? "border-primary-500 text-primary-600 dark:text-primary-400"
-                        : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-slate-300"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="hidden sm:inline">{tab.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
+        <div className="flex gap-6">
+          {/* Desktop sidebar */}
+          <aside className="hidden md:flex md:flex-col md:w-52 shrink-0 sticky top-4 self-start bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+            {sidebarContent}
+          </aside>
 
-          {/* Tab Content */}
-          <div className="p-6">{children}</div>
-        </div>
-
-        {/* Back to Site */}
-        <div className="mt-6 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                Back to Site
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                Logged in as {user?.user_display_name || "User"}
-              </p>
+          {/* Main content area */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+              {children}
             </div>
-            <Link
-              href="/"
-              className="px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 border border-primary-200 dark:border-primary-800 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
-            >
-              Return to Site
-            </Link>
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getSettings, updateSettings, getRoles, getRoleMembers } from "@/lib/api/admin";
+import { getCategories } from "@/lib/api/editor";
 
 const HIDDEN_ROLES = [
   "subscriber",
@@ -28,15 +29,19 @@ export default function AdminSettings() {
   const [success, setSuccess] = useState(null);
   const [rolePopover, setRolePopover] = useState(null); // { role, roleName, members, x, y }
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [seasons, setSeasons] = useState([]);
 
   const fetchData = useCallback(async () => {
     try {
-      const [settingsData, rolesData] = await Promise.all([
+      const [settingsData, rolesData, categoriesData] = await Promise.all([
         getSettings(),
         getRoles(),
+        getCategories(),
       ]);
       setSettings(settingsData);
       setRoles(rolesData.filter((r) => !HIDDEN_ROLES.includes(r.key)));
+      const seasonList = Array.isArray(categoriesData) ? categoriesData : (categoriesData.seasons || []);
+      setSeasons(seasonList);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -143,6 +148,51 @@ export default function AdminSettings() {
           <p className="text-green-600 dark:text-green-400">{success}</p>
         </div>
       )}
+
+      {/* General Settings */}
+      <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
+        <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white mb-4">General</h2>
+
+        <div className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Current Season
+            </label>
+            <select
+              value={settings?.current_season || ""}
+              onChange={(e) => setSettings((prev) => ({ ...prev, current_season: parseInt(e.target.value) || 0 }))}
+              className="w-full max-w-md px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">None</option>
+              {(settings?.seasons_list || []).map((season) => (
+                <option key={season.id} value={season.id}>
+                  {season.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-slate-500 mt-1">Controls the spoiler bar, homepage headings, houseboard, and season stats across the site</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Default Post Category
+            </label>
+            <select
+              value={settings?.current_season_category || ""}
+              onChange={(e) => setSettings((prev) => ({ ...prev, current_season_category: parseInt(e.target.value) || 0 }))}
+              className="w-full max-w-md px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">None</option>
+              {seasons.map((season) => (
+                <option key={season.id} value={season.id}>
+                  {season.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-slate-500 mt-1">Auto-selected season/category when creating new posts in the editor</p>
+          </div>
+        </div>
+      </section>
 
       {/* Notifications Section */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">

@@ -23,6 +23,7 @@ class AdSettingsRoutes
         'house_ad'             => 'premium-cta',
         'supporter_roles'      => ['administrator', 'editor', 'supporter', 'lifetime'],
         'pwa_suppressed'       => ['bigbrotherjunkies_sticky_footer', 'bigbrotherjunkies_google_interstitial'],
+        'incontent_interval'   => 5,
     ];
 
     public function register(): void
@@ -67,6 +68,7 @@ class AdSettingsRoutes
             'house_ad'            => isset($body['house_ad']) ? sanitize_text_field($body['house_ad']) : $current['house_ad'],
             'supporter_roles'     => isset($body['supporter_roles']) ? array_map('sanitize_text_field', (array) $body['supporter_roles']) : $current['supporter_roles'],
             'pwa_suppressed'      => isset($body['pwa_suppressed']) ? array_map('sanitize_text_field', (array) $body['pwa_suppressed']) : $current['pwa_suppressed'],
+            'incontent_interval'  => isset($body['incontent_interval']) ? max(2, min(10, absint($body['incontent_interval']))) : $current['incontent_interval'],
         ];
 
         update_option(self::OPTION_KEY, $updated);

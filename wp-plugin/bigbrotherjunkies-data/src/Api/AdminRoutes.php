@@ -999,9 +999,35 @@ class AdminRoutes
             ],
         ]);
 
+        $currentSeasonCategory = (int) get_option('bbjd_current_season_category', 0);
+        $currentSeason = (int) get_option('bbj_v2_current_season', 0);
+
+        // Fetch all seasons (bigbrother-seasons CPT) for the dropdown
+        $seasonPosts = get_posts([
+            'post_type' => 'bigbrother-seasons',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'orderby' => 'title',
+            'order' => 'DESC',
+        ]);
+
+        $seasonsList = array_map(function ($post) {
+            return ['id' => $post->ID, 'name' => $post->post_title];
+        }, $seasonPosts);
+
+        // Sort by season number descending
+        usort($seasonsList, function ($a, $b) {
+            $numA = (int) preg_replace('/\D/', '', $a['name']);
+            $numB = (int) preg_replace('/\D/', '', $b['name']);
+            return $numB - $numA;
+        });
+
         return new \WP_REST_Response([
             'permissions' => $permissions,
             'notifications' => $notifications,
+            'current_season_category' => $currentSeasonCategory,
+            'current_season' => $currentSeason,
+            'seasons_list' => $seasonsList,
         ], 200);
     }
 
@@ -1018,6 +1044,19 @@ class AdminRoutes
 
         if (isset($params['notifications'])) {
             update_option('bbj_admin_notifications', $params['notifications']);
+        }
+
+        if (isset($params['current_season_category'])) {
+            update_option('bbjd_current_season_category', (int) $params['current_season_category']);
+        }
+
+        if (isset($params['current_season'])) {
+            update_option('bbj_v2_current_season', (int) $params['current_season']);
+            // Clear homepage cache so the new season shows immediately
+            delete_transient('bbjd_homepage_combined');
+            delete_transient('bbjd_homepage_hero');
+            delete_transient('bbjd_homepage_houseboard');
+            delete_transient('bbjd_homepage_season_stats');
         }
 
         return new \WP_REST_Response([

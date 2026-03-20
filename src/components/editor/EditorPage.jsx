@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Table from "@tiptap/extension-table";
-import TableRow from "@tiptap/extension-table-row";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { TableHeader } from "@tiptap/extension-table-header";
 import Color from "@tiptap/extension-color";
-import TextStyle from "@tiptap/extension-text-style";
+import { TextStyle } from "@tiptap/extension-text-style";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -58,6 +58,7 @@ export default function EditorPage({ postId = null }) {
   const canPublish = hasPermission("blog_publishing") || hasPermission("blog_review");
 
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         codeBlock: false,
@@ -310,59 +311,63 @@ export default function EditorPage({ postId = null }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Top bar */}
-      <div className="bg-primary-500 px-4 py-2 flex items-center justify-between sticky top-0 z-50">
-        <button
-          onClick={() => router.push("/editor")}
-          className="text-white text-sm hover:text-secondary-500 transition"
-        >
-          {"\u2190"} Back
-        </button>
-        <div className="flex gap-2">
-          <button onClick={handleManualSave} className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-500 transition">
-            Save Draft
-          </button>
-          <button onClick={handlePreview} className="px-3 py-1 border border-secondary-500 text-secondary-500 text-sm rounded hover:bg-secondary-500 hover:text-primary-600 transition">
-            Preview
-          </button>
-          <button
-            onClick={handlePublish}
-            disabled={!canSubmit}
-            className="px-3 py-1 bg-secondary-500 text-primary-600 text-sm font-bold rounded hover:bg-secondary-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {canPublish ? "Publish" : "Submit for Review"}
-          </button>
-          {/* Mobile settings toggle */}
-          <button
-            onClick={() => setMobileSettingsOpen(true)}
-            className="md:hidden px-3 py-1 border border-secondary-500 text-secondary-500 text-sm rounded"
-          >
-            {"⚙️"}
-          </button>
-        </div>
-      </div>
-
+    <div className="min-h-screen bg-slate-200 dark:bg-gray-950 flex flex-col">
       {/* Main content */}
-      <div className="flex flex-1">
+      <div className="max-w-screen-xl mx-auto px-2 py-6 flex flex-col flex-1 w-full gap-4">
+        {/* Action bar */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => router.push("/editor")}
+            className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+          >
+            {"\u2190"} Back
+          </button>
+          <div className="flex gap-2">
+            <button onClick={handleManualSave} className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+              Save Draft
+            </button>
+            <button onClick={handlePreview} className="px-3 py-1.5 text-sm font-medium border border-primary-500 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
+              Preview
+            </button>
+            <button
+              onClick={handlePublish}
+              disabled={!canSubmit}
+              className="px-3 py-1.5 bg-secondary-500 text-primary-600 text-sm font-bold rounded-lg hover:bg-secondary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {canPublish ? "Publish" : "Submit for Review"}
+            </button>
+            {/* Mobile settings toggle */}
+            <button
+              onClick={() => setMobileSettingsOpen(true)}
+              className="md:hidden px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 rounded-lg"
+            >
+              {"⚙️"}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-1 gap-6">
         {/* Editor area */}
-        <div className="flex-1 p-4 md:p-6">
-          <EditorToolbar editor={editor} onImageUpload={handleImageUpload} />
-          <input
-            type="text"
-            value={title}
-            onChange={handleTitleChange}
-            placeholder="Post title..."
-            className="w-full text-2xl font-bold border border-gray-200 rounded-lg p-3 mb-4 focus:outline-none focus:border-primary-400"
-          />
-          <div className="bg-white border border-gray-200 rounded-lg min-h-[400px]">
-            <EditorContent editor={editor} />
+        <div className="flex-1 min-w-0">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 md:p-6">
+            <EditorToolbar editor={editor} onImageUpload={handleImageUpload} />
+            <input
+              type="text"
+              value={title}
+              onChange={handleTitleChange}
+              placeholder="Post title..."
+              className="w-full text-2xl font-bold border border-gray-200 rounded-lg p-3 mb-4 focus:outline-none focus:border-primary-400"
+            />
+            <div className="bg-white border border-gray-200 rounded-lg min-h-[400px]">
+              <EditorContent editor={editor} />
+            </div>
           </div>
         </div>
 
         {/* Desktop sidebar */}
-        <div className="hidden md:block w-72 lg:w-80 border-l border-gray-200 bg-white overflow-y-auto sticky top-[48px] h-[calc(100vh-48px)]">
+        <div className="hidden md:block w-72 lg:w-80 shrink-0 sticky top-[48px] self-start bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
           <EditorSidebar {...sidebarProps} />
+        </div>
         </div>
       </div>
 

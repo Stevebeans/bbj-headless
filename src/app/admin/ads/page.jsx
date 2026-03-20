@@ -253,6 +253,34 @@ export default function AdminAds() {
         </div>
       </section>
 
+      {/* In-Content Ad Interval */}
+      <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
+        <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white mb-2">
+          In-Content Ad Interval
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+          Insert an ad every X paragraphs in blog posts. (Min: 2, Max: 10)
+        </p>
+        <div className="flex items-center gap-4">
+          <input
+            type="number"
+            min={2}
+            max={10}
+            value={settings?.incontent_interval ?? 5}
+            onChange={(e) =>
+              setSettings((prev) => ({
+                ...prev,
+                incontent_interval: Math.max(2, Math.min(10, parseInt(e.target.value) || 5)),
+              }))
+            }
+            className="w-24 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent text-center text-lg font-medium"
+          />
+          <span className="text-slate-600 dark:text-slate-400 text-sm">
+            paragraphs between ads (max 5 ads per article)
+          </span>
+        </div>
+      </section>
+
       {/* House Ad Selection */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
         <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white mb-2">

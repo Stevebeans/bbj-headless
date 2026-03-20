@@ -13,17 +13,18 @@ export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSug
     async function load() {
       try {
         const data = await getCategories();
-        setSeasons(data.seasons || []);
+        const seasonList = Array.isArray(data) ? data : (data.seasons || []);
+        setSeasons(seasonList);
         // Default to current season only for new posts (not editing)
         if (!isEditMode || categoryIds.length === 0) {
-          const current = data.seasons?.find((s) => s.is_current);
+          const current = seasonList.find((s) => s.is_current);
           if (current) {
             setSelectedSeason(current);
             setCategoryIds([current.id]);
           }
         } else {
           // For edit mode, find and select the season matching existing categories
-          const matchingSeason = data.seasons?.find((s) => categoryIds.includes(s.id));
+          const matchingSeason = seasonList.find((s) => categoryIds.includes(s.id));
           if (matchingSeason) {
             setSelectedSeason(matchingSeason);
             const matchingSub = matchingSeason.subcategories?.find((sub) => categoryIds.includes(sub.id));
