@@ -35,6 +35,7 @@ export default function EditorPage({ postId = null }) {
   const [featuredImageUrl, setFeaturedImageUrl] = useState(null);
   const [metaDescription, setMetaDescription] = useState("");
   const [reviewNote, setReviewNote] = useState("");
+  const [cropData, setCropData] = useState(null);
 
   // UI state
   const [saveStatus, setSaveStatus] = useState("idle");
@@ -47,13 +48,13 @@ export default function EditorPage({ postId = null }) {
   const saveTimerRef = useRef(null);
   const isSavingRef = useRef(false);
   const isFirstSaveRef = useRef(!postId);
-  const stateRef = useRef({ title, slug, categoryIds, featuredImageId, metaDescription, currentPostId });
+  const stateRef = useRef({ title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData });
   const pendingContentRef = useRef(null); // For editor content loading timing (#4)
 
   // Keep stateRef in sync with latest state values
   useEffect(() => {
-    stateRef.current = { title, slug, categoryIds, featuredImageId, metaDescription, currentPostId };
-  }, [title, slug, categoryIds, featuredImageId, metaDescription, currentPostId]);
+    stateRef.current = { title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData };
+  }, [title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData]);
 
   const canPublish = hasPermission("blog_publishing") || hasPermission("blog_review");
 
@@ -115,6 +116,7 @@ export default function EditorPage({ postId = null }) {
       setFeaturedImageUrl(data.featured_image_url);
       setMetaDescription(data.meta_description);
       setReviewNote(data.review_note);
+      setCropData(data.crop_data && Object.keys(data.crop_data).length > 0 ? data.crop_data : null);
       if (editor && data.content) {
         editor.commands.setContent(data.content);
       } else if (data.content) {
@@ -142,7 +144,7 @@ export default function EditorPage({ postId = null }) {
     isSavingRef.current = true;
     setSaveStatus("saving");
 
-    const { title: t, slug: s, categoryIds: cats, featuredImageId: imgId, metaDescription: meta, currentPostId: pid } = stateRef.current;
+    const { title: t, slug: s, categoryIds: cats, featuredImageId: imgId, metaDescription: meta, currentPostId: pid, cropData: cd } = stateRef.current;
 
     const postData = {
       title: t || "Untitled Draft",
@@ -151,6 +153,7 @@ export default function EditorPage({ postId = null }) {
       featured_image_id: imgId,
       meta_description: meta,
       slug: s,
+      crop_data: cd,
     };
 
     try {
@@ -296,6 +299,11 @@ export default function EditorPage({ postId = null }) {
     setFeaturedImageId,
     featuredImageUrl,
     setFeaturedImageUrl,
+    cropData,
+    onCropSave: (data) => {
+      setCropData(data);
+      scheduleSave();
+    },
     title,
     slug,
     setSlug,

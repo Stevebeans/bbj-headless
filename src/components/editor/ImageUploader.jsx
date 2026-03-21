@@ -3,11 +3,13 @@
 import { useState, useRef, useCallback } from "react";
 import imageCompression from "browser-image-compression";
 import { uploadMedia, generateAltText } from "@/lib/api/editor";
+import CropModal from "./CropModal";
 
-export default function ImageUploader({ imageId, imageUrl, onUpload, onRemove }) {
+export default function ImageUploader({ imageId, imageUrl, cropData, onUpload, onRemove, onCropSave }) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [showCrop, setShowCrop] = useState(false);
   const fileRef = useRef(null);
 
   const compressAndUpload = useCallback(async (file) => {
@@ -67,15 +69,36 @@ export default function ImageUploader({ imageId, imageUrl, onUpload, onRemove })
 
   if (imageUrl) {
     return (
-      <div className="relative group">
-        <img src={imageUrl} alt="Featured" className="w-full rounded-lg border border-gray-200" />
+      <>
+        <div className="relative group">
+          <img src={imageUrl} alt="Featured" className="w-full rounded-lg border border-gray-200" />
+          <button
+            onClick={onRemove}
+            className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs opacity-0 group-hover:opacity-100 transition"
+          >
+            ✕
+          </button>
+        </div>
         <button
-          onClick={onRemove}
-          className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs opacity-0 group-hover:opacity-100 transition"
+          onClick={() => setShowCrop(true)}
+          className="mt-2 w-full py-1.5 text-xs font-medium text-primary-500 hover:text-primary-600 border border-primary-300 hover:border-primary-400 rounded-lg transition-colors"
         >
-          \u2715
+          Crop Image
         </button>
-      </div>
+
+        {showCrop && (
+          <CropModal
+            imageUrl={imageUrl}
+            attachmentId={imageId}
+            initialCrops={cropData?.crops || null}
+            onSave={(data) => {
+              onCropSave?.(data);
+              setShowCrop(false);
+            }}
+            onClose={() => setShowCrop(false)}
+          />
+        )}
+      </>
     );
   }
 

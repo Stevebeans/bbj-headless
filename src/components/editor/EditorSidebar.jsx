@@ -9,6 +9,7 @@ export default function EditorSidebar({
   categoryIds, setCategoryIds,
   featuredImageId, setFeaturedImageId,
   featuredImageUrl, setFeaturedImageUrl,
+  cropData, onCropSave,
   title, slug, setSlug,
   metaDescription, setMetaDescription,
   checklist, saveStatus, reviewNote,
@@ -32,6 +33,7 @@ export default function EditorSidebar({
           <ImageUploader
             imageId={featuredImageId}
             imageUrl={featuredImageUrl}
+            cropData={cropData}
             onUpload={(id, url, altText) => {
               setFeaturedImageId(id);
               setFeaturedImageUrl(url);
@@ -40,8 +42,10 @@ export default function EditorSidebar({
             onRemove={() => {
               setFeaturedImageId(null);
               setFeaturedImageUrl(null);
+              onCropSave?.(null);
               onSave?.();
             }}
+            onCropSave={onCropSave}
           />
         </div>
       </div>
