@@ -58,7 +58,8 @@ export async function uploadMedia(file) {
   });
 
   if (!res.ok) {
-    throw new Error(`Upload failed: ${res.status}`);
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || `Upload failed: ${res.status}`);
   }
 
   return res.json();

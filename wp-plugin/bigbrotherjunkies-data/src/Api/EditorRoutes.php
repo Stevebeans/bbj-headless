@@ -416,7 +416,10 @@ class EditorRoutes
     public function uploadMedia(\WP_REST_Request $request): \WP_REST_Response
     {
         if (empty($_FILES['file'])) {
-            return new \WP_REST_Response(['error' => 'No file uploaded'], 400);
+            return new \WP_REST_Response([
+                'error' => 'No file uploaded',
+                'files_keys' => array_keys($_FILES),
+            ], 400);
         }
 
         require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -426,8 +429,10 @@ class EditorRoutes
         $attachmentId = media_handle_upload('file', 0);
 
         if (is_wp_error($attachmentId)) {
+            error_log('BBJ Editor media upload failed: ' . $attachmentId->get_error_message() . ' | Code: ' . $attachmentId->get_error_code());
             return new \WP_REST_Response([
                 'error' => $attachmentId->get_error_message(),
+                'code' => $attachmentId->get_error_code(),
             ], 500);
         }
 

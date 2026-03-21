@@ -23,8 +23,12 @@ export default function ImageUploader({ imageId, imageUrl, onUpload, onRemove })
       });
       setProgress(40);
 
+      // Ensure the compressed blob has a proper filename (WordPress rejects files without extensions)
+      const fileName = file.name || "image.jpg";
+      const fileToUpload = new File([compressed], fileName, { type: compressed.type || file.type });
+
       // Upload to WordPress
-      const result = await uploadMedia(compressed);
+      const result = await uploadMedia(fileToUpload);
       setProgress(70);
 
       // Generate AI alt text

@@ -7,7 +7,6 @@ import { ThemeScript } from "@/components/layout/ThemeScript";
 import { Providers } from "@/components/Providers";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
-import { BugReportFAB } from "@/components/bug-report/BugReportFAB";
 import { BackToTop } from "@/components/layout/BackToTop";
 import NewPostFAB from "@/components/editor/NewPostFAB";
 import { getInitialAuthState } from "@/lib/auth/serverCookies";
@@ -141,7 +140,6 @@ export default async function RootLayout({ children }) {
           </main>
           <Footer />
           <FloatingUpdater />
-          <BugReportFAB />
           <BackToTop />
           <NewPostFAB />
         </Providers>
