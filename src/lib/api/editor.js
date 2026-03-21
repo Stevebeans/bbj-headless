@@ -65,6 +65,15 @@ export async function uploadMedia(file) {
   return res.json();
 }
 
+// --- Image Cropping ---
+
+export async function cropImage(attachmentId, crops) {
+  return adminFetch("/editor/crop-image", {
+    method: "POST",
+    body: JSON.stringify({ attachment_id: attachmentId, crops }),
+  });
+}
+
 // --- Categories ---
 
 export async function getCategories() {
