@@ -70,6 +70,12 @@ class EditorRoutes
             'permission_callback' => [$this, 'canWrite'],
         ]);
 
+        register_rest_route($namespace, '/editor/crop-image', [
+            'methods' => 'POST',
+            'callback' => [$this, 'cropImage'],
+            'permission_callback' => [$this, 'canWrite'],
+        ]);
+
         // --- Categories ---
 
         register_rest_route($namespace, '/editor/categories', [
@@ -272,6 +278,7 @@ class EditorRoutes
             'featured_image' => $featuredImage,
             'meta_description' => get_post_meta($postId, '_bbj_meta_description', true) ?: '',
             'review_note' => $reviewNote ?: '',
+            'crop_data' => json_decode(get_post_meta($postId, '_bbj_crop_data', true) ?: '{}', true),
         ]);
     }
 
@@ -330,6 +337,15 @@ class EditorRoutes
         // Update meta description
         if (isset($params['meta_description'])) {
             update_post_meta($postId, '_bbj_meta_description', sanitize_text_field($params['meta_description']));
+        }
+
+        // Update crop data
+        if (isset($params['crop_data'])) {
+            if (empty($params['crop_data'])) {
+                delete_post_meta($postId, '_bbj_crop_data');
+            } else {
+                update_post_meta($postId, '_bbj_crop_data', wp_json_encode($params['crop_data']));
+            }
         }
 
         return new \WP_REST_Response(['success' => true]);
@@ -441,6 +457,97 @@ class EditorRoutes
             'url' => wp_get_attachment_url($attachmentId),
             'thumbnail' => wp_get_attachment_image_url($attachmentId, 'thumbnail'),
         ], 201);
+    }
+
+    // --- Image Cropping ---
+
+    private const CROP_SIZES = [
+        'header'    => ['width' => 928, 'height' => 333],
+        'thumbnail' => ['width' => 250, 'height' => 150],
+        'og'        => ['width' => 1200, 'height' => 630],
+    ];
+
+    public function cropImage(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $params = $request->get_json_params();
+        $attachmentId = (int) ($params['attachment_id'] ?? 0);
+        $crops = $params['crops'] ?? [];
+
+        if (!$attachmentId || !wp_get_attachment_url($attachmentId)) {
+            return new \WP_REST_Response(['error' => 'Invalid attachment ID'], 400);
+        }
+
+        if (empty($crops)) {
+            return new \WP_REST_Response(['error' => 'No crop data provided'], 400);
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+
+        $filePath = get_attached_file($attachmentId);
+        if (!$filePath || !file_exists($filePath)) {
+            return new \WP_REST_Response(['error' => 'Original file not found'], 404);
+        }
+
+        $uploadDir = wp_upload_dir();
+        $pathInfo = pathinfo($filePath);
+        $results = [];
+
+        foreach (self::CROP_SIZES as $key => $targetSize) {
+            if (!isset($crops[$key])) {
+                continue;
+            }
+
+            $crop = $crops[$key];
+            $x = (int) ($crop['x'] ?? 0);
+            $y = (int) ($crop['y'] ?? 0);
+            $w = (int) ($crop['width'] ?? 0);
+            $h = (int) ($crop['height'] ?? 0);
+
+            if ($w <= 0 || $h <= 0) {
+                continue;
+            }
+
+            $editor = wp_get_image_editor($filePath);
+            if (is_wp_error($editor)) {
+                error_log("BBJ crop failed for {$key}: " . $editor->get_error_message());
+                return new \WP_REST_Response([
+                    'error' => "Image editor failed: " . $editor->get_error_message(),
+                ], 500);
+            }
+
+            $cropped = $editor->crop($x, $y, $w, $h);
+            if (is_wp_error($cropped)) {
+                return new \WP_REST_Response([
+                    'error' => "Crop failed for {$key}: " . $cropped->get_error_message(),
+                ], 500);
+            }
+
+            $editor->resize($targetSize['width'], $targetSize['height'], true);
+
+            $outputName = $pathInfo['dirname'] . '/' . $pathInfo['filename'] . "-bbj-{$key}." . $pathInfo['extension'];
+            $saved = $editor->save($outputName);
+
+            if (is_wp_error($saved)) {
+                return new \WP_REST_Response([
+                    'error' => "Save failed for {$key}: " . $saved->get_error_message(),
+                ], 500);
+            }
+
+            $relPath = str_replace($uploadDir['basedir'], '', $saved['path']);
+            $url = $uploadDir['baseurl'] . $relPath;
+
+            $results[$key] = [
+                'url' => $url,
+                'width' => $saved['width'],
+                'height' => $saved['height'],
+            ];
+        }
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'crops' => $results,
+        ]);
     }
 
     // --- Categories ---
