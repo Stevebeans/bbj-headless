@@ -16,19 +16,11 @@ export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSug
         const seasonList = Array.isArray(data) ? data : (data.seasons || []);
         setSeasons(seasonList);
         // Default to current season only for new posts (not editing)
-        if (!isEditMode || categoryIds.length === 0) {
+        if (!isEditMode) {
           const current = seasonList.find((s) => s.is_current);
           if (current) {
             setSelectedSeason(current);
             setCategoryIds([current.id]);
-          }
-        } else {
-          // For edit mode, find and select the season matching existing categories
-          const matchingSeason = seasonList.find((s) => categoryIds.includes(s.id));
-          if (matchingSeason) {
-            setSelectedSeason(matchingSeason);
-            const matchingSub = matchingSeason.subcategories?.find((sub) => categoryIds.includes(sub.id));
-            if (matchingSub) setSelectedSub(matchingSub);
           }
         }
       } catch (err) {
@@ -39,6 +31,17 @@ export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSug
     }
     load();
   }, []);
+
+  // Re-sync selections when categoryIds change externally (e.g. post loaded)
+  useEffect(() => {
+    if (seasons.length === 0 || categoryIds.length === 0) return;
+    const matchingSeason = seasons.find((s) => categoryIds.includes(s.id));
+    if (matchingSeason && matchingSeason.id !== selectedSeason?.id) {
+      setSelectedSeason(matchingSeason);
+      const matchingSub = matchingSeason.subcategories?.find((sub) => categoryIds.includes(sub.id));
+      setSelectedSub(matchingSub || null);
+    }
+  }, [categoryIds, seasons]);
 
   function handleSeasonChange(e) {
     const seasonId = parseInt(e.target.value);

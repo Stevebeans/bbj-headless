@@ -49,7 +49,7 @@ export default function EditorPage({ postId = null }) {
   const isSavingRef = useRef(false);
   const isFirstSaveRef = useRef(!postId);
   const stateRef = useRef({ title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData });
-  const pendingContentRef = useRef(null); // For editor content loading timing (#4)
+  const [pendingContent, setPendingContent] = useState(null); // For editor content loading timing (#4)
 
   // Keep stateRef in sync with latest state values
   useEffect(() => {
@@ -91,11 +91,11 @@ export default function EditorPage({ postId = null }) {
 
   // Fix #4: If content was loaded before editor was ready, set it now
   useEffect(() => {
-    if (editor && pendingContentRef.current) {
-      editor.commands.setContent(pendingContentRef.current);
-      pendingContentRef.current = null;
+    if (editor && pendingContent) {
+      editor.commands.setContent(pendingContent);
+      setPendingContent(null);
     }
-  }, [editor]);
+  }, [editor, pendingContent]);
 
   // Load existing post
   useEffect(() => {
@@ -112,8 +112,8 @@ export default function EditorPage({ postId = null }) {
       setSlug(data.slug);
       setStatus(data.status === "pending" ? "pending_review" : data.status);
       setCategoryIds(data.categories?.map((c) => c.id) || []);
-      setFeaturedImageId(data.featured_image_id);
-      setFeaturedImageUrl(data.featured_image_url);
+      setFeaturedImageId(data.featured_image?.id || null);
+      setFeaturedImageUrl(data.featured_image?.url || null);
       setMetaDescription(data.meta_description);
       setReviewNote(data.review_note);
       setCropData(data.crop_data && Object.keys(data.crop_data).length > 0 ? data.crop_data : null);
@@ -121,7 +121,7 @@ export default function EditorPage({ postId = null }) {
         editor.commands.setContent(data.content);
       } else if (data.content) {
         // Editor not ready yet — store content for later
-        pendingContentRef.current = data.content;
+        setPendingContent(data.content);
       }
     } catch (err) {
       console.error("Failed to load post:", err);
@@ -135,7 +135,13 @@ export default function EditorPage({ postId = null }) {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       doSave();
-    }, 30000);
+    }, 5000);
+  }
+
+  // Immediate save for critical actions (image upload, crop, etc.)
+  function saveNow() {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    doSave();
   }
 
   // The actual save function reads from refs, not closured state
@@ -237,28 +243,41 @@ export default function EditorPage({ postId = null }) {
     scheduleSave();
   }
 
+  // Inline image upload state
+  const [inlineUpload, setInlineUpload] = useState(null); // { status, progress }
+
   // Prop callback for inline image uploads from toolbar
   async function handleImageUpload(file) {
     if (!file || !editor) return;
     try {
+      setInlineUpload({ status: "Compressing...", progress: 15 });
       const imageCompression = (await import("browser-image-compression")).default;
       const compressed = await imageCompression(file, {
         maxWidthOrHeight: 1600,
         initialQuality: 0.8,
         useWebWorker: true,
       });
-      const { uploadMedia, generateAltText } = await import("@/lib/api/editor");
-      const result = await uploadMedia(compressed);
+      const fileName = file.name || "image.jpg";
+      const fileToUpload = new File([compressed], fileName, { type: compressed.type || file.type });
 
+      setInlineUpload({ status: "Uploading...", progress: 50 });
+      const { uploadMedia, generateAltText } = await import("@/lib/api/editor");
+      const result = await uploadMedia(fileToUpload);
+
+      setInlineUpload({ status: "Generating alt text...", progress: 80 });
       let alt = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
       try {
         const altResult = await generateAltText(result.url);
         alt = altResult.altText;
       } catch {}
 
+      setInlineUpload({ status: "Done", progress: 100 });
       editor.chain().focus().setImage({ src: result.url, alt }).run();
+      setTimeout(() => setInlineUpload(null), 1000);
     } catch (err) {
       console.error("Image upload failed:", err);
+      setInlineUpload({ status: "Upload failed", progress: 0, error: true });
+      setTimeout(() => setInlineUpload(null), 3000);
     }
   }
 
@@ -271,18 +290,20 @@ export default function EditorPage({ postId = null }) {
   };
   const canSubmit = Object.values(checklist).every(Boolean);
 
-  // Save status display
-  function getSaveStatusText() {
-    if (saveStatus === "saving") return "Saving...";
-    if (saveStatus === "saved" && lastSaved) {
-      const seconds = Math.floor((Date.now() - lastSaved.getTime()) / 1000);
-      if (seconds < 5) return "Saved just now";
-      if (seconds < 60) return `Saved ${seconds}s ago`;
-      return `Saved ${Math.floor(seconds / 60)}m ago`;
+  // Auto-hide toast after save
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (saveStatus === "saving" || saveStatus === "error") {
+      setToastVisible(true);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    } else if (saveStatus === "saved") {
+      setToastVisible(true);
+      toastTimerRef.current = setTimeout(() => setToastVisible(false), 2500);
     }
-    if (saveStatus === "error") return "Save failed";
-    return "Draft";
-  }
+    return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
+  }, [saveStatus]);
 
   if (isLoading) {
     return (
@@ -302,7 +323,8 @@ export default function EditorPage({ postId = null }) {
     cropData,
     onCropSave: (data) => {
       setCropData(data);
-      scheduleSave();
+      // Use timeout to let state update before saving
+      setTimeout(() => saveNow(), 0);
     },
     title,
     slug,
@@ -310,10 +332,11 @@ export default function EditorPage({ postId = null }) {
     metaDescription,
     setMetaDescription,
     checklist,
-    saveStatus: getSaveStatusText(),
+    saveStatus: null, // displayed as toast now
     reviewNote,
     editor,
     onSave: scheduleSave,
+    onSaveNow: saveNow,
     onTitleChange: handleTitleSet,
     isEditMode: !!postId,
   };
@@ -330,35 +353,20 @@ export default function EditorPage({ postId = null }) {
           >
             {"\u2190"} Back
           </button>
-          <div className="flex gap-2">
-            <button onClick={handleManualSave} className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-              Save Draft
-            </button>
-            <button onClick={handlePreview} className="px-3 py-1.5 text-sm font-medium border border-primary-500 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
-              Preview
-            </button>
-            <button
-              onClick={handlePublish}
-              disabled={!canSubmit}
-              className="px-3 py-1.5 bg-secondary-500 text-primary-600 text-sm font-bold rounded-lg hover:bg-secondary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {canPublish ? "Publish" : "Submit for Review"}
-            </button>
-            {/* Mobile settings toggle */}
-            <button
-              onClick={() => setMobileSettingsOpen(true)}
-              className="md:hidden px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 rounded-lg"
-            >
-              {"⚙️"}
-            </button>
-          </div>
+          {/* Mobile settings toggle */}
+          <button
+            onClick={() => setMobileSettingsOpen(true)}
+            className="md:hidden px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 rounded-lg"
+          >
+            {"⚙️"}
+          </button>
         </div>
 
         <div className="flex flex-1 gap-6">
         {/* Editor area */}
         <div className="flex-1 min-w-0">
+          <EditorToolbar editor={editor} onImageUpload={handleImageUpload} inlineUpload={inlineUpload} />
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 md:p-6">
-            <EditorToolbar editor={editor} onImageUpload={handleImageUpload} />
             <input
               type="text"
               value={title}
@@ -385,6 +393,45 @@ export default function EditorPage({ postId = null }) {
         onClose={() => setMobileSettingsOpen(false)}
         {...sidebarProps}
       />
+
+      {/* Floating action buttons */}
+      <div className="fixed bottom-6 right-6 z-40 flex gap-2 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-700 rounded-full shadow-lg px-2 py-1.5">
+        <button onClick={handleManualSave} className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+          Save
+        </button>
+        <button onClick={handlePreview} className="px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 rounded-full hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
+          Preview
+        </button>
+        <button
+          onClick={handlePublish}
+          disabled={!canSubmit}
+          className="px-4 py-1.5 bg-secondary-500 text-primary-600 text-sm font-bold rounded-full hover:bg-secondary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {canPublish ? "Publish" : "Submit"}
+        </button>
+      </div>
+
+      {/* Save toast */}
+      <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toastVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
+        <div className={`px-4 py-2 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 ${
+          saveStatus === "error"
+            ? "bg-red-600 text-white"
+            : saveStatus === "saving"
+              ? "bg-gray-800 text-white"
+              : "bg-green-600 text-white"
+        }`}>
+          {saveStatus === "saving" && (
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+          )}
+          {saveStatus === "saved" && (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          )}
+          {saveStatus === "error" && (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          )}
+          {saveStatus === "saving" ? "Saving..." : saveStatus === "error" ? "Save failed" : "Saved"}
+        </div>
+      </div>
     </div>
   );
 }

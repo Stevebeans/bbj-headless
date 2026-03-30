@@ -12,8 +12,8 @@ export default function EditorSidebar({
   cropData, onCropSave,
   title, slug, setSlug,
   metaDescription, setMetaDescription,
-  checklist, saveStatus, reviewNote,
-  editor, onSave, onTitleChange, isEditMode,
+  checklist, reviewNote,
+  editor, onSave, onSaveNow, onTitleChange, isEditMode,
 }) {
   return (
     <div className="p-4 space-y-5">
@@ -37,7 +37,7 @@ export default function EditorSidebar({
             onUpload={(id, url, altText) => {
               setFeaturedImageId(id);
               setFeaturedImageUrl(url);
-              onSave?.();
+              setTimeout(() => onSaveNow?.(), 0);
             }}
             onRemove={() => {
               setFeaturedImageId(null);
@@ -60,9 +60,6 @@ export default function EditorSidebar({
       />
 
       <PublishChecklist checklist={checklist} />
-
-      {/* Save status */}
-      <div className="text-xs text-green-600">{saveStatus}</div>
 
       {/* Review note (if returned from reviewer) */}
       {reviewNote && (

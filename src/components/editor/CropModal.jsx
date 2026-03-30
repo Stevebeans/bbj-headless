@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import ReactCrop from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { cropImage } from "@/lib/api/editor";
@@ -111,7 +112,7 @@ export default function CropModal({ imageUrl, attachmentId, initialCrops, onSave
     imgRef.current.naturalHeight < activeConfig.height
   );
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
         {/* Header */}
@@ -156,22 +157,19 @@ export default function CropModal({ imageUrl, attachmentId, initialCrops, onSave
             </div>
           )}
 
-          {activeCrop && (
-            <ReactCrop
-              crop={activeCrop}
-              onChange={(_, percentCrop) => handleCropChange(activeConfig.key, percentCrop)}
-              aspect={activeConfig.aspect}
-              className="max-h-[50vh]"
-            >
-              <img
-                src={imageUrl}
-                alt="Crop preview"
-                onLoad={onImageLoad}
-                className="max-w-full"
-                crossOrigin="anonymous"
-              />
-            </ReactCrop>
-          )}
+          <ReactCrop
+            crop={activeCrop}
+            onChange={(_, percentCrop) => handleCropChange(activeConfig.key, percentCrop)}
+            aspect={activeConfig.aspect}
+            className="max-h-[50vh]"
+          >
+            <img
+              src={imageUrl}
+              alt="Crop preview"
+              onLoad={onImageLoad}
+              className="max-w-full"
+                          />
+          </ReactCrop>
 
           {/* Previews */}
           {imgRef.current && Object.keys(crops).length === 3 && (
@@ -198,8 +196,7 @@ export default function CropModal({ imageUrl, attachmentId, initialCrops, onSave
                           marginTop: -(c.y / 100) * nat.naturalHeight * (previewH / ((c.height / 100) * nat.naturalHeight)),
                           maxWidth: "none",
                         }}
-                        crossOrigin="anonymous"
-                      />
+                                              />
                     </div>
                     <span className="text-[10px] text-gray-400 mt-1 block">{config.label}</span>
                   </div>
@@ -226,6 +223,7 @@ export default function CropModal({ imageUrl, attachmentId, initialCrops, onSave
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

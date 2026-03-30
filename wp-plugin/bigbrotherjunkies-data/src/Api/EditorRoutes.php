@@ -199,7 +199,8 @@ class EditorRoutes
         ];
 
         if (!empty($params['category_id'])) {
-            $postData['post_category'] = [(int) $params['category_id']];
+            $cats = is_array($params['category_id']) ? array_map('intval', $params['category_id']) : [(int) $params['category_id']];
+            $postData['post_category'] = $cats;
         }
 
         $postId = wp_insert_post($postData, true);
@@ -220,9 +221,17 @@ class EditorRoutes
             update_post_meta($postId, '_bbj_meta_description', sanitize_text_field($params['meta_description']));
         }
 
+        // Save crop data
+        if (!empty($params['crop_data'])) {
+            update_post_meta($postId, '_bbj_crop_data', wp_json_encode($params['crop_data']));
+        }
+
+        $post = get_post($postId);
+
         return new \WP_REST_Response([
             'success' => true,
             'id' => $postId,
+            'slug' => $post->post_name,
         ], 201);
     }
 
@@ -314,7 +323,8 @@ class EditorRoutes
             $updateData['post_name'] = sanitize_title($params['slug']);
         }
         if (isset($params['category_id'])) {
-            $updateData['post_category'] = [(int) $params['category_id']];
+            $cats = is_array($params['category_id']) ? array_map('intval', $params['category_id']) : [(int) $params['category_id']];
+            $updateData['post_category'] = $cats;
         }
 
         $result = wp_update_post($updateData, true);
@@ -348,7 +358,8 @@ class EditorRoutes
             }
         }
 
-        return new \WP_REST_Response(['success' => true]);
+        $freshPost = get_post($postId);
+        return new \WP_REST_Response(['success' => true, 'slug' => $freshPost->post_name]);
     }
 
     public function deletePost(\WP_REST_Request $request): \WP_REST_Response
