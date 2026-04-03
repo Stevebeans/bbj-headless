@@ -82,9 +82,12 @@ export function AuthProvider({ children, initialUser = null }) {
     if (userData) {
       // Normalize roles before storing - PHP can send objects instead of arrays
       userData = { ...userData, user_roles: normalizeRoles(userData.user_roles) };
+      // Ensure display name is always a string (WP can return objects)
+      const displayName = userData.user_display_name || userData.display_name || "";
+      userData.user_display_name = typeof displayName === "string" ? displayName : String(displayName?.name || displayName || "");
       const avatar = userData.user_avatar || userData.avatar;
       setUserCache({
-        name: userData.user_display_name || userData.display_name || "",
+        name: userData.user_display_name,
         avatar: avatar || "",
         roles: userData.user_roles,
       });

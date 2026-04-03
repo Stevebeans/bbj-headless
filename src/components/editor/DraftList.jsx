@@ -82,9 +82,9 @@ export default function DraftList({ isAdmin = false }) {
                 className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-primary-400 cursor-pointer transition"
               >
                 {/* Thumbnail */}
-                <div className="w-12 h-12 bg-gray-100 rounded flex-shrink-0 overflow-hidden">
-                  {post.featured_image_thumb ? (
-                    <img src={post.featured_image_thumb} alt="" className="w-full h-full object-cover" />
+                <div className="w-24 h-[60px] bg-gray-100 rounded flex-shrink-0 overflow-hidden">
+                  {post.featured_image ? (
+                    <img src={post.featured_image} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-300 text-lg">{"📝"}</div>
                   )}
@@ -97,7 +97,7 @@ export default function DraftList({ isAdmin = false }) {
                     <span className={`text-xs px-2 py-0.5 rounded-full ${statusInfo.color}`}>
                       {statusInfo.label}
                     </span>
-                    {isAdmin && <span className="text-xs text-gray-400">by {post.author}</span>}
+                    {isAdmin && <span className="text-xs text-gray-400">by {typeof post.author === "object" ? post.author.name : post.author}</span>}
                     <span className="text-xs text-gray-400">
                       {new Date(post.modified + "Z").toLocaleDateString()}
                     </span>

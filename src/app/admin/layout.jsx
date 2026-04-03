@@ -258,7 +258,7 @@ export default function AdminLayout({ children }) {
           Admin
         </h1>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          {user?.user_display_name || "User"}
+          {typeof user?.user_display_name === "string" ? user.user_display_name : "User"}
         </p>
       </div>
 

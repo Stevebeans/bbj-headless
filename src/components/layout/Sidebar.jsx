@@ -12,8 +12,9 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
   const { user, isAuthenticated, logout, loading } = useAuth();
   const { openLogin, openRegister } = useAuthModal();
 
-  // Get display name - try different property names
-  const displayName = user?.user_display_name || user?.display_name || user?.name || "User";
+  // Get display name - try different property names (user.name can be an object from WP)
+  const rawName = user?.user_display_name || user?.display_name || (typeof user?.name === "string" ? user.name : null) || "User";
+  const displayName = typeof rawName === "string" ? rawName : "User";
   const firstName = displayName.split(" ")[0];
   const avatar = user?.avatar || user?.user_avatar;
 

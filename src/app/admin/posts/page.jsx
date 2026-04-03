@@ -55,7 +55,7 @@ export default function AdminPostsPage() {
               <div key={post.id} className="flex items-center gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{post.title || "Untitled"}</p>
-                  <p className="text-xs text-gray-500">by {post.author} {"\u2022"} {new Date(post.modified + "Z").toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-500">by {typeof post.author === "object" ? post.author.name : post.author} {"\u2022"} {new Date(post.modified + "Z").toLocaleDateString()}</p>
                 </div>
                 <div className="flex gap-2">
                   <button

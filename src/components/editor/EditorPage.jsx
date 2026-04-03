@@ -348,7 +348,7 @@ export default function EditorPage({ postId = null }) {
         {/* Action bar */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => router.push("/editor")}
+            onClick={() => router.back()}
             className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             {"\u2190"} Back
