@@ -214,7 +214,7 @@ export default function EditorPage({ postId = null }) {
       await changePostStatus(pid, newStatus);
       setStatus(newStatus);
       if (newStatus === "publish") {
-        router.push(`/posts/${stateRef.current.slug}`);
+        router.push(`/${stateRef.current.slug}`);
       }
     } catch (err) {
       console.error("Status change failed:", err);

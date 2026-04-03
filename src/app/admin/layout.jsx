@@ -114,6 +114,7 @@ function DocumentTextIcon({ className }) {
 
 const TABS = [
   { id: "overview", label: "Overview", href: "/admin", icon: HomeIcon, permission: null },
+  { id: "posts", label: "Posts", href: "/admin/posts", icon: DocumentTextIcon, permission: "blog_review" },
   { id: "feed-updates", label: "Feed Updates", href: "/admin/feed-updates", icon: FeedIcon, permission: "feed_updates" },
   { id: "comments", label: "Comments", href: "/admin/comments", icon: ChatIcon, permission: "comment_moderation" },
   { id: "players", label: "Players", href: "/admin/players", icon: PlayerIcon, permission: "player_management" },
@@ -121,7 +122,6 @@ const TABS = [
   { id: "bug-reports", label: "Bugs", href: "/admin/bug-reports", icon: BugIcon, permission: "bug_reports" },
   { id: "announcements", label: "Announcements", href: "/admin/announcements", icon: MegaphoneIcon, permission: "announcements" },
   { id: "content-engine", label: "Content", href: "/admin/content-engine", icon: PencilSquareIcon, permission: "content_engine" },
-  { id: "posts", label: "Posts", href: "/admin/posts", icon: DocumentTextIcon, permission: "blog_review" },
   { id: "ads", label: "Ads", href: "/admin/ads", icon: AdIcon, permission: "ad_management" },
   { id: "users", label: "Users", href: "/admin/users", icon: UsersIcon, permission: "user_management" },
   { id: "stats", label: "Stats", href: "/admin/stats", icon: ChartIcon, permission: "analytics_dashboard" },

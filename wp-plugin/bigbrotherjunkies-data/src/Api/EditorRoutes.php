@@ -147,7 +147,7 @@ class EditorRoutes
         ];
 
         // Status filter
-        if ($status) {
+        if ($status && $status !== 'any') {
             $queryArgs['post_status'] = $status;
         } else {
             $queryArgs['post_status'] = ['draft', 'pending', 'publish', 'private'];
@@ -175,7 +175,7 @@ class EditorRoutes
         $pendingCount = $pendingQuery->found_posts;
 
         return new \WP_REST_Response([
-            'items' => $posts,
+            'posts' => $posts,
             'pending_review_count' => $pendingCount,
             'pagination' => [
                 'total' => $query->found_posts,
@@ -647,7 +647,7 @@ class EditorRoutes
         $posts = array_map([$this, 'formatPostListItem'], $query->posts);
 
         return new \WP_REST_Response([
-            'items' => $posts,
+            'posts' => $posts,
             'pagination' => [
                 'total' => $query->found_posts,
                 'page' => $page,
