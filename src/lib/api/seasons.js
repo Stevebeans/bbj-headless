@@ -1,4 +1,4 @@
-import { bbjdFetch } from "./wordpress";
+import { bbjdFetch, wpRestFetch } from "./wordpress";
 
 // Always use production WordPress for admin features (auth tokens are from production)
 const API_URL = "https://bigbrotherjunkies.com/wp-json";
@@ -76,10 +76,12 @@ export async function getSeasonBySlug(slug, options = {}) {
       season: response.season,
       players: response.players || [],
       count: response.count || 0,
+      category_id: response.category_id || null,
+      article_count: response.article_count || 0,
     };
   } catch (error) {
     console.error(`Failed to fetch season ${slug}:`, error);
-    return { season: null, players: [], count: 0 };
+    return { season: null, players: [], count: 0, category_id: null, article_count: 0 };
   }
 }
 
@@ -351,5 +353,49 @@ export async function purgeSeasonCache(seasonId, token) {
       success: false,
       message: error.message || "Network error",
     };
+  }
+}
+
+/**
+ * Get articles for a season by WordPress category ID
+ * @param {number} categoryId - WordPress category ID for the season
+ * @param {number} perPage - Number of articles to fetch (default: 6)
+ * @returns {Promise<Object>} { posts, total }
+ */
+export async function getSeasonArticles(categoryId, perPage = 6) {
+  if (!categoryId) return { posts: [], total: 0 };
+
+  try {
+    const params = new URLSearchParams({
+      categories: String(categoryId),
+      per_page: String(perPage),
+      _embed: "wp:featuredmedia",
+      orderby: "date",
+      order: "desc",
+    });
+
+    const response = await wpRestFetch(`/posts?${params.toString()}`, {
+      tags: ["posts", `season-articles-${categoryId}`],
+      revalidate: 3600,
+    });
+
+    const posts = (Array.isArray(response) ? response : []).map((post) => ({
+      id: post.id,
+      title: post.title?.rendered || "",
+      slug: post.slug,
+      date: post.date,
+      excerpt: post.excerpt?.rendered || "",
+      comment_count: post.comment_count || 0,
+      featured_image:
+        post._embedded?.["wp:featuredmedia"]?.[0]?.media_details?.sizes
+          ?.thumbnail?.source_url ||
+        post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+        null,
+    }));
+
+    return { posts, total: posts.length };
+  } catch (error) {
+    console.error("Failed to fetch season articles:", error);
+    return { posts: [], total: 0 };
   }
 }
