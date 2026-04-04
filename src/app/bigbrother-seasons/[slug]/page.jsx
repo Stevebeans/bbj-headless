@@ -18,6 +18,7 @@ import {
   SeasonFAQSchema,
 } from "./components";
 import { SeasonInfoSidebar } from "./components/SeasonInfoSidebar";
+import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
@@ -265,6 +266,9 @@ export default async function SeasonPage({ params }) {
                     seasonIsActive={season.is_active}
                   />
                 </div>
+
+                {/* Ad between cast and eviction order */}
+                <AdPlaceholder slot="season_hub_mid" />
 
                 {/* Eviction Order */}
                 <EvictionOrder players={players} season={season} />
