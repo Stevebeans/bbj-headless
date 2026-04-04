@@ -1,6 +1,8 @@
 import { getContent, getRelatedPosts } from "@/lib/api/posts";
 import { getFeedUpdatesByDate } from "@/lib/api/feedUpdates";
+import { getSeasons } from "@/lib/api/seasons";
 import { wpFetch } from "@/lib/api/wordpress";
+import { autoLinkEntities, buildSeasonEntityMap } from "@/lib/utils/autoLink";
 import { notFound } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PostHero } from "@/components/posts/PostHero";
@@ -97,6 +99,11 @@ export default async function ContentPage({ params }) {
     }
   }
 
+  // Auto-link season mentions in post content
+  const { seasons } = await getSeasons();
+  const seasonEntities = buildSeasonEntityMap(seasons);
+  const linkedContent = autoLinkEntities(content.content, seasonEntities);
+
   return (
     <>
       {!isPage && <PostJsonLd post={content} siteUrl={SITE_URL} />}
@@ -155,11 +162,11 @@ export default async function ContentPage({ params }) {
                       prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
                       prose-pre:rounded-md prose-pre:p-4
                       prose-table:w-full prose-th:text-left prose-td:p-2"
-                    dangerouslySetInnerHTML={{ __html: content.content }}
+                    dangerouslySetInnerHTML={{ __html: linkedContent }}
                   />
                 ) : (
                   <ContentWithAds
-                    content={content.content}
+                    content={linkedContent}
                     showAds={showAds}
                     adInterval={adInterval}
                     className="prose-base prose-slate
