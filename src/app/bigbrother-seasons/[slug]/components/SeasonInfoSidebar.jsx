@@ -108,6 +108,24 @@ export function SeasonInfoSidebar({ season, juryCount, evictedCount, leaderboard
       <div className="hidden xl:block">
         <Leaderboards stats={leaderboardStats} />
       </div>
+
+      {/* More Seasons */}
+      <div className="v2-sidebar-container p-4">
+        <h2 className="v2-ad-subheader">More Seasons</h2>
+        <div className="flex items-center justify-between mt-3">
+          {Number(season.season_number) > 1 && (
+            <a href={`/bigbrother-seasons/big-brother-${Number(season.season_number) - 1}`}
+              className="text-sm text-primary-500 hover:text-primary-600 transition">
+              ← BB{Number(season.season_number) - 1}
+            </a>
+          )}
+          <span className="flex-1" />
+          <a href={`/bigbrother-seasons/big-brother-${Number(season.season_number) + 1}`}
+            className="text-sm text-primary-500 hover:text-primary-600 transition">
+            BB{Number(season.season_number) + 1} →
+          </a>
+        </div>
+      </div>
     </aside>
   );
 }

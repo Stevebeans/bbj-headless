@@ -56,6 +56,19 @@ export function BasicInfoSection({ values, errors, getFieldProps }) {
           ))}
         </FormField>
       </div>
+
+      {/* Season Description (for hub page) */}
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Season Description</label>
+        <textarea
+          value={values.description || ""}
+          onChange={(e) => getFieldProps("description").onChange(e)}
+          rows={3}
+          placeholder="Write a summary of this season for the hub page. Leave blank for auto-generated."
+          className="input w-full text-sm"
+        />
+        <p className="text-xs text-gray-400">Appears at the top of the season hub page. If blank, a summary is auto-generated from season data.</p>
+      </div>
     </FormSection>
   );
 }
