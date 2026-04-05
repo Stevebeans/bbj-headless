@@ -85,6 +85,9 @@ export default async function ContentPage({ params }) {
   let feedUpdatesData = null;
   let adInterval = 5;
 
+  // Fetch seasons for auto-linking (runs in parallel with other fetches)
+  const seasonsPromise = getSeasons();
+
   if (!isPage) {
     const firstCategoryId = content.categoryIds?.[0];
     const [related, adSettings] = await Promise.all([
@@ -99,8 +102,7 @@ export default async function ContentPage({ params }) {
     }
   }
 
-  // Auto-link season mentions in post content
-  const { seasons } = await getSeasons();
+  const { seasons } = await seasonsPromise;
   const seasonEntities = buildSeasonEntityMap(seasons);
   const linkedContent = autoLinkEntities(content.content, seasonEntities);
 

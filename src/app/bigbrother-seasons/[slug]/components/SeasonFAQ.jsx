@@ -15,7 +15,7 @@ export function SeasonFAQ({ questions }) {
       <h2 className="text-sm font-bold text-primary-500 uppercase tracking-wide mb-3">Frequently Asked Questions</h2>
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
         {questions.map((q, i) => (
-          <div key={i} className="py-3">
+          <div key={q.question} className="py-3">
             <button onClick={() => setOpenIndex(openIndex === i ? null : i)}
               className="w-full text-left flex items-center justify-between gap-2">
               <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{q.question}</span>

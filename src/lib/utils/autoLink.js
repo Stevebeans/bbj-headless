@@ -2,6 +2,13 @@
  * Auto-link entity mentions in HTML content
  * Links first occurrence of each entity name, skipping existing links and headings
  */
+// Pre-compiled tag patterns to avoid re-creating regexes per entity
+const SKIP_TAGS = ["a", "h1", "h2", "h3", "h4", "h5", "h6"];
+const TAG_PATTERNS = SKIP_TAGS.map((tag) => ({
+  open: new RegExp(`<${tag}[\\s>]`, "gi"),
+  close: new RegExp(`</${tag}>`, "gi"),
+}));
+
 export function autoLinkEntities(html, entities) {
   if (!html || !entities || entities.length === 0) return html;
 
@@ -15,7 +22,7 @@ export function autoLinkEntities(html, entities) {
     if (!match) continue;
 
     const before = result.substring(0, match.index);
-    if (isInsideTag(before, ["a", "h1", "h2", "h3", "h4", "h5", "h6"])) continue;
+    if (isInsideTag(before)) continue;
 
     const link = `<a href="${url}" class="auto-link">${match[0]}</a>`;
     result = result.substring(0, match.index) + link + result.substring(match.index + match[0].length);
@@ -28,17 +35,16 @@ function escapeRegex(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function isInsideTag(textBefore, tagNames) {
-  for (const tag of tagNames) {
-    const openPattern = new RegExp(`<${tag}[\\s>]`, "gi");
-    const closePattern = new RegExp(`</${tag}>`, "gi");
+function isInsideTag(textBefore) {
+  for (const { open, close } of TAG_PATTERNS) {
+    open.lastIndex = 0;
+    close.lastIndex = 0;
 
     let openCount = 0;
     let closeCount = 0;
 
-    let m;
-    while ((m = openPattern.exec(textBefore)) !== null) openCount++;
-    while ((m = closePattern.exec(textBefore)) !== null) closeCount++;
+    while (open.exec(textBefore) !== null) openCount++;
+    while (close.exec(textBefore) !== null) closeCount++;
 
     if (openCount > closeCount) return true;
   }

@@ -154,32 +154,18 @@ export default async function SeasonPage({ params }) {
     notFound();
   }
 
-  // Fetch articles if category exists
-  const { posts: articles, total: articlesTotal } = category_id
-    ? await getSeasonArticles(category_id)
-    : { posts: [], total: 0 };
+  // Fetch articles and feed updates in parallel
+  const feedParams = season.start_date && season.end_date
+    ? new URLSearchParams({ after: season.start_date, before: season.end_date, per_page: "5" })
+    : null;
 
-  // Fetch feed updates for the season date range
-  let feedUpdates = [];
-  if (season.start_date && season.end_date) {
-    try {
-      const feedParams = new URLSearchParams({
-        after: season.start_date,
-        before: season.end_date,
-        per_page: "5",
-      });
-      const feedData = await bbjdFetch(
-        `/feed-updates?${feedParams.toString()}`,
-        {
-          tags: ["feed-updates"],
-          revalidate: 60,
-        }
-      );
-      feedUpdates = feedData.updates || feedData.feed_updates || [];
-    } catch (e) {
-      console.error("Failed to fetch season feed updates:", e);
-    }
-  }
+  const [{ posts: articles }, feedData] = await Promise.all([
+    category_id ? getSeasonArticles(category_id) : Promise.resolve({ posts: [] }),
+    feedParams
+      ? bbjdFetch(`/feed-updates?${feedParams.toString()}`, { tags: ["feed-updates"], revalidate: 60 }).catch(() => null)
+      : Promise.resolve(null),
+  ]);
+  const feedUpdates = feedData?.updates || feedData?.feed_updates || [];
 
   // Separate players by status for different sections
   const activePlayers = players.filter(
@@ -239,7 +225,7 @@ export default async function SeasonPage({ params }) {
 
               <div className="p-4 space-y-6">
                 {/* Jump Nav */}
-                <SeasonJumpNav articleCount={article_count || articlesTotal} />
+                <SeasonJumpNav articleCount={article_count} />
 
                 {/* Season Overview */}
                 <SeasonOverview season={season} playerCount={count} />
@@ -281,7 +267,7 @@ export default async function SeasonPage({ params }) {
                 {/* Season Articles */}
                 <SeasonArticles
                   posts={articles}
-                  totalCount={article_count || articlesTotal}
+                  totalCount={article_count}
                   seasonSlug={slug}
                 />
 
