@@ -11,8 +11,7 @@ import { FaHeart, FaComments } from "react-icons/fa";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-// Render on-demand (layout reads cookies for auth)
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // 5 min ISR
 
 /**
  * Generate SEO metadata for user profile page

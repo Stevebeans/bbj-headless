@@ -6,8 +6,7 @@ import { CommentSection } from "@/components/comments";
 import { FeedUpdateVoting } from "./FeedUpdateVoting";
 import { getFeedUpdateBySlug, getFeedUpdates } from "@/lib/api/feedUpdates";
 
-// Render on-demand (layout reads cookies for auth)
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // 5 min ISR — webhook handles instant invalidation
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

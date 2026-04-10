@@ -12,8 +12,7 @@ import { SuggestedComparisons } from "./components/SuggestedComparisons";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-// Force dynamic for auth-gated content
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // 1 hour — player stats change rarely
 
 /**
  * Parse matchup param into two slugs.

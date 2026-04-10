@@ -11,8 +11,7 @@ export const metadata = {
     "Browse Big Brother houseguests and seasons. Search and filter players by season, gender, and more.",
 };
 
-// Render on-demand to avoid rate limiting during builds
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // 1 hour — directory changes rarely
 
 async function getInitialData() {
   const [playersData, seasonsData] = await Promise.all([

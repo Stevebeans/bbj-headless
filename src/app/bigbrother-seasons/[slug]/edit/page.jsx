@@ -5,8 +5,7 @@ import { SeasonEditForm } from "./components/SeasonEditForm";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FaEye } from "react-icons/fa";
 
-// Render on-demand (layout reads cookies for auth)
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // 1 min — admin edit pages need fresh data
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

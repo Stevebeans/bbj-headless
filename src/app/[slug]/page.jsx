@@ -18,8 +18,7 @@ import { JumpToComments } from "@/components/posts/JumpToComments";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-// Render on-demand (layout reads cookies for auth)
-export const dynamic = "force-dynamic";
+export const revalidate = 300; // 5 min ISR — webhook handles instant invalidation
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

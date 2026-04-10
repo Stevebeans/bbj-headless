@@ -19,6 +19,7 @@ export async function getSeasons(options = {}) {
 
     const response = await bbjdFetch(`/seasons?${params.toString()}`, {
       tags: ["seasons"],
+      revalidate: 86400, // 24h — seasons change rarely, webhook handles instant invalidation
     });
 
     if (!response.success) {
@@ -65,6 +66,7 @@ export async function getSeasonBySlug(slug, options = {}) {
 
     const response = await bbjdFetch(`/seasons/by-slug/${slug}?${params.toString()}`, {
       tags: ["seasons", `season-${slug}`, "players"],
+      revalidate: 86400, // 24h — seasons change rarely, webhook handles instant invalidation
     });
 
     if (!response.success) {
@@ -100,6 +102,7 @@ export async function getSeasonById(seasonId, options = {}) {
 
     const response = await bbjdFetch(`/seasons/${seasonId}?${params.toString()}`, {
       tags: ["seasons", `season-${seasonId}`, "players"],
+      revalidate: 86400, // 24h — seasons change rarely, webhook handles instant invalidation
     });
 
     if (!response.success) {
