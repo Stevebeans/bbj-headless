@@ -23,13 +23,31 @@ function detectPWA() {
   );
 }
 
-export function AdProvider({ children, initialShouldShowAds = true, disabledPlacements = [], pwaSuppressed = [] }) {
+export function AdProvider({
+  children,
+  initialShouldShowAds = true,
+  supporterRoles = [],
+  disabledPlacements = [],
+  pwaSuppressed = [],
+}) {
   const [isPWA, setIsPWA] = useState(false);
   const [isAdBlocked, setIsAdBlocked] = useState(false);
   const pathname = usePathname();
   const isFirstRender = useRef(true);
   const { user } = useAuth();
   const userEmail = user?.user_email;
+
+  // Supporter detection runs client-side against hydrated auth state.
+  // During the brief window before hydration, `user` is null so isSupporter=false
+  // and ads are shown by default (matching anonymous behavior). After AuthContext
+  // hydrates (~20-80ms), supporters will see ad slots unmount.
+  const isSupporter =
+    user &&
+    Array.isArray(user.user_roles) &&
+    supporterRoles.length > 0 &&
+    user.user_roles.some((role) => supporterRoles.includes(role));
+
+  const shouldShowAds = initialShouldShowAds && !isSupporter;
 
   // PWA detection
   useEffect(() => {
@@ -38,7 +56,7 @@ export function AdProvider({ children, initialShouldShowAds = true, disabledPlac
 
   // Ad-blocker detection — check if full SDK loaded after timeout
   useEffect(() => {
-    if (!initialShouldShowAds) return;
+    if (!shouldShowAds) return;
 
     const timeout = setTimeout(() => {
       if (typeof window.freestar?.newAdSlots !== "function") {
@@ -47,7 +65,7 @@ export function AdProvider({ children, initialShouldShowAds = true, disabledPlac
     }, SDK_TIMEOUT_MS);
 
     return () => clearTimeout(timeout);
-  }, [initialShouldShowAds]);
+  }, [shouldShowAds]);
 
   // SPA route tracking — skip initial render (SDK tracks first page view itself)
   useEffect(() => {
@@ -55,7 +73,7 @@ export function AdProvider({ children, initialShouldShowAds = true, disabledPlac
       isFirstRender.current = false;
       return;
     }
-    if (!initialShouldShowAds) return;
+    if (!shouldShowAds) return;
     import("@freestar/pubfig-adslot-react-component").then((m) => {
       if (typeof m.default?.trackPageview === "function") {
         m.default.trackPageview();
@@ -63,20 +81,20 @@ export function AdProvider({ children, initialShouldShowAds = true, disabledPlac
     }).catch(() => {
       // SDK not loaded (ad-blocker or network issue) — non-critical
     });
-  }, [pathname, initialShouldShowAds]);
+  }, [pathname, shouldShowAds]);
 
   // HEM email passthrough — pass logged-in user's email to Freestar for identity matching
   useEffect(() => {
-    if (!initialShouldShowAds || !userEmail) return;
+    if (!shouldShowAds || !userEmail) return;
     window.freestar?.queue?.push(function () {
       window.freestar?.identity?.setIdentity({ email: userEmail });
     });
-  }, [initialShouldShowAds, userEmail]);
+  }, [shouldShowAds, userEmail]);
 
   return (
     <AdContext.Provider
       value={{
-        shouldShowAds: initialShouldShowAds,
+        shouldShowAds,
         isPWA,
         isAdBlocked,
         disabledPlacements,

@@ -9,11 +9,12 @@ import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
 import { BackToTop } from "@/components/layout/BackToTop";
 import NewPostFAB from "@/components/editor/NewPostFAB";
-import { getInitialAuthState } from "@/lib/auth/serverCookies";
 import { getAdScripts } from "@/lib/api/ads";
 import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
 import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 
+// Default supporter roles — used as fallback if ad-settings doesn't provide a list.
+// AdContext and Header both do the client-side supporter check.
 const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
 
 const roboto = Roboto({
@@ -87,19 +88,22 @@ export const viewport = {
 };
 
 export default async function RootLayout({ children }) {
-  const [initialUser, adScripts, adSettings] = await Promise.all([
-    getInitialAuthState(),
+  // IMPORTANT: This layout must NOT call cookies()/headers()/draftMode().
+  // Doing so opts the entire route tree into dynamic rendering, which burns
+  // Vercel function duration on every page view. Auth hydration happens
+  // client-side in AuthContext via getUserCache()/getToken() from cookies.js.
+  // See: memory/project_vercel_cost_incident.md
+  const [adScripts, adSettings] = await Promise.all([
     getAdScripts(),
-    fetch(`${process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json"}/bbjd/v1/ad-settings`, { next: { revalidate: 60 } })
+    fetch(`${process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json"}/bbjd/v1/ad-settings`, { next: { revalidate: 3600 } })
       .then(r => r.ok ? r.json() : { ads_enabled: true })
       .catch(() => ({ ads_enabled: true })),
   ]);
 
-  // Check if user is a supporter (ad-free) server-side
-  const roles = Array.isArray(initialUser?.user_roles) ? initialUser.user_roles : [];
+  // Anonymous-baseline: do we show ads at all on this site?
+  // If a user is a supporter, AdContext will override this to false client-side.
+  const initialShouldShowAds = adSettings.ads_enabled !== false;
   const supporterRoles = adSettings.supporter_roles || SUPPORTER_ROLES;
-  const isSupporter = roles.some((role) => supporterRoles.includes(role));
-  const shouldShowAds = !isSupporter && adSettings.ads_enabled !== false;
 
   return (
     <html
@@ -109,7 +113,7 @@ export default async function RootLayout({ children }) {
     >
       <head>
         <ThemeScript />
-        {shouldShowAds && (
+        {initialShouldShowAds && (
           <>
             {/* Freestar preconnects */}
             <link rel="preconnect" href="https://a.pub.network/" crossOrigin="anonymous" />
@@ -127,8 +131,8 @@ export default async function RootLayout({ children }) {
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
         <Providers
-          initialUser={initialUser}
-          shouldShowAds={shouldShowAds}
+          initialShouldShowAds={initialShouldShowAds}
+          supporterRoles={supporterRoles}
           disabledPlacements={adSettings.disabled_placements || []}
           pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
         >
@@ -153,7 +157,7 @@ export default async function RootLayout({ children }) {
         )}
         {extractDeferredScripts(adScripts.global_footer, 'global-ftr')}
         {/* Freestar SDK — only when ads should show */}
-        {shouldShowAds && (
+        {initialShouldShowAds && (
           <>
             {/* Freestar SDK init */}
             <Script id="freestar-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `

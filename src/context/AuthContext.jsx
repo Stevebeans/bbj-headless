@@ -7,6 +7,7 @@ import {
   clearToken,
   getRememberPreference,
   setUserCache,
+  getUserCache,
 } from "@/lib/auth/cookies";
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
@@ -71,13 +72,16 @@ function migrateFromStorage() {
   localStorage.setItem("bbj_auth_migrated", "1");
 }
 
-export function AuthProvider({ children, initialUser = null }) {
-  const [user, setUser] = useState(initialUser);
-  const [loading, setLoading] = useState(!initialUser);
+export function AuthProvider({ children }) {
+  // Always start anonymous. Client-side hydration runs in useEffect below.
+  // Header components use `loading` to show a skeleton during the brief
+  // ~20-80ms window before hydration completes — no "Login → Welcome" flash.
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const didValidate = useRef(false);
+  const didHydrate = useRef(false);
 
-  // Update user state and cache profile for SSR
+  // Update user state and cache profile (cache is read back on next mount)
   const setUserAndCache = useCallback((userData) => {
     if (userData) {
       // Normalize roles before storing - PHP can send objects instead of arrays
@@ -95,55 +99,61 @@ export function AuthProvider({ children, initialUser = null }) {
     setUser(userData);
   }, []);
 
-  // On mount: migrate old storage, then reconcile token state.
-  // We trust the SSR-decoded initialUser for rendering — no server
-  // round-trip needed. The token is validated by WordPress automatically
-  // on every authenticated API call via the Bearer header.
+  // On mount: hydrate auth state purely from client-side cookies.
+  // Two cookie sources combined for a complete picture:
+  //   1. bbj_token   — JWT with id/email/display_name/roles (authoritative)
+  //   2. bbj_user    — cached profile blob with name/avatar/roles (has avatar)
+  //
+  // This replaces the old SSR-based getInitialAuthState() approach, which
+  // called cookies() in the root layout and opted every page into dynamic
+  // rendering (see memory/project_vercel_cost_incident.md).
   useEffect(() => {
     migrateFromStorage();
 
-    if (didValidate.current) return;
-    didValidate.current = true;
+    if (didHydrate.current) return;
+    didHydrate.current = true;
 
     const token = getToken();
 
     if (!token) {
-      // No cookie — if we had an initialUser from SSR, the token may have
-      // been cleared by middleware (expired). Reset to logged-out.
-      if (initialUser) {
-        setUser(null);
-      }
+      setUser(null);
       setLoading(false);
       return;
     }
 
-    // If SSR already gave us user data, trust it — just ensure the token is attached
-    if (initialUser) {
-      setUserAndCache({
-        ...initialUser,
-        token,
-        avatar: initialUser.avatar || initialUser.user_avatar,
-      });
-      setLoading(false);
-      return;
-    }
-
-    // No initialUser but we have a token (edge case: cookie set after SSR).
-    // Decode the JWT client-side to get basic user data.
+    // Decode JWT for authoritative id/email/roles
+    let jwtData = null;
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
-      setUserAndCache({
-        id: payload.data?.user?.id,
-        user_id: payload.data?.user?.id,
-        user_email: payload.data?.user?.email,
-        user_display_name: payload.data?.user?.display_name || "User",
-        user_roles: normalizeRoles(payload.data?.user?.roles),
+      const userData = payload.data?.user;
+      if (!userData?.id) throw new Error("Malformed JWT: missing user id");
+      jwtData = {
+        id: userData.id,
+        user_id: userData.id,
+        user_email: userData.email || null,
+        user_display_name: userData.display_name || "User",
+        user_roles: normalizeRoles(userData.roles),
         token,
-      });
+      };
     } catch {
+      // JWT is malformed or expired — clear and bail out
       clearToken();
       setUser(null);
+      setLoading(false);
+      return;
     }
+
+    // Enrich with cached profile data (avatar, possibly more recent name/roles)
+    const cache = getUserCache();
+    if (cache) {
+      if (cache.avatar) jwtData.avatar = cache.avatar;
+      if (cache.name) jwtData.user_display_name = cache.name;
+      if (Array.isArray(cache.roles) && cache.roles.length > 0) {
+        jwtData.user_roles = normalizeRoles(cache.roles);
+      }
+    }
+
+    setUserAndCache(jwtData);
     setLoading(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
