@@ -125,6 +125,14 @@ export function AuthProvider({ children }) {
     let jwtData = null;
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
+      // Check expiration — middleware no longer cleans expired tokens on
+      // content pages (narrowed to admin routes only for ISR caching)
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        clearToken();
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       const userData = payload.data?.user;
       if (!userData?.id) throw new Error("Malformed JWT: missing user id");
       jwtData = {

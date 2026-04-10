@@ -40,13 +40,16 @@ export function middleware(request) {
 export const config = {
   matcher: [
     /*
-     * Match all paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico, icons, manifest
-     * - API routes
-     * - Public assets
+     * IMPORTANT: Only match protected routes, NOT public content pages.
+     * Middleware that reads request.cookies prevents Vercel from ISR-caching
+     * the response (sets Cache-Control: private, no-store). Public pages
+     * (posts, players, seasons, feed-updates, etc.) must skip middleware
+     * entirely so they can be served from CDN cache.
+     * See: .claude/history/2026-04-10.md
      */
-    "/((?!_next/static|_next/image|favicon\\.ico|icons/|manifest\\.json|api/|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot)).*)",
+    "/admin/:path*",
+    "/settings/:path*",
+    "/editor/:path*",
+    "/notifications/:path*",
   ],
 };
