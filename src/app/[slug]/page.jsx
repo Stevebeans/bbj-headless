@@ -4,6 +4,7 @@ import { getSeasons } from "@/lib/api/seasons";
 import { wpFetch } from "@/lib/api/wordpress";
 import { autoLinkEntities, buildSeasonEntityMap } from "@/lib/utils/autoLink";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PostHero } from "@/components/posts/PostHero";
 import { PostMeta } from "@/components/posts/PostMeta";
@@ -201,7 +202,9 @@ export default async function ContentPage({ params }) {
             {/* Comments Section - only for posts */}
             {!isPage && (
               <section id="comments" className="v2-primary-container-inner p-4">
-                <CommentSection postId={content.id} initialCommentCount={content.commentCount} />
+                <Suspense fallback={null}>
+                  <CommentSection postId={content.id} initialCommentCount={content.commentCount} />
+                </Suspense>
               </section>
             )}
           </section>
