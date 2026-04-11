@@ -12,6 +12,7 @@ import NewPostFAB from "@/components/editor/NewPostFAB";
 import { getAdScripts } from "@/lib/api/ads";
 import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
 import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
+import { Analytics } from "@vercel/analytics/react";
 
 // Default supporter roles — used as fallback if ad-settings doesn't provide a list.
 // AdContext and Header both do the client-side supporter check.
@@ -181,6 +182,7 @@ export default async function RootLayout({ children }) {
             {/* TODO: Add AdShield script from Freestar PDF (adblock recovery) */}
           </>
         )}
+        <Analytics />
       </body>
     </html>
   );
