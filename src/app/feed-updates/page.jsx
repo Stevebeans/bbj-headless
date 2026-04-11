@@ -15,29 +15,20 @@ export const metadata = {
     "All Big Brother live feed updates and show updates. Stay up to date with what's happening in the house.",
 };
 
-// Render on-demand (layout reads cookies for auth)
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // 1 min ISR — feed updates change frequently
+export const dynamicParams = true;
 
-async function FeedUpdatesContent({ searchParams }) {
-  // Await searchParams for Next.js 15
-  const params = await searchParams;
-
-  // Fetch initial data server-side
-  const initialData = await getFeedUpdates({
-    page: params?.page || 1,
-    perPage: 20,
-    sort: params?.sort || "newest",
-    dateRange: params?.date_range || "all",
-    mode: params?.mode || undefined,
-    search: params?.search || undefined,
-  });
-
-  return <FeedUpdatesArchive initialData={initialData} />;
+export async function generateStaticParams() {
+  return [];
 }
 
-export default async function FeedUpdatesPage({ searchParams }) {
-  // Fetch houseboard data server-side
-  const houseboardData = await getHouseboard();
+export default async function FeedUpdatesPage() {
+  // Fetch default data server-side (page 1, newest, no filters)
+  // Client component handles all subsequent filtering/pagination/search
+  const [initialData, houseboardData] = await Promise.all([
+    getFeedUpdates({ page: 1, perPage: 20, sort: "newest", dateRange: "all" }),
+    getHouseboard(),
+  ]);
 
   return (
     <main className="v2-primary-container">
@@ -71,7 +62,7 @@ export default async function FeedUpdatesPage({ searchParams }) {
               </div>
             }
           >
-            <FeedUpdatesContent searchParams={searchParams} />
+            <FeedUpdatesArchive initialData={initialData} />
           </Suspense>
         </section>
 
