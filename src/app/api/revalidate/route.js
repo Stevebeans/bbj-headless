@@ -55,6 +55,8 @@ export async function POST(request) {
 
       case "spoiler-bar":
         revalidateTag("spoiler-bar");
+        revalidateTag("houseboard");
+        revalidateTag("season-stats");
         revalidatePath("/");
         break;
 
@@ -65,6 +67,7 @@ export async function POST(request) {
         break;
 
       case "comment":
+        revalidateTag("comments");
         if (slug) {
           revalidatePath(`/${slug}`);
           revalidateTag(`post-${slug}`);
@@ -73,6 +76,8 @@ export async function POST(request) {
 
       case "player":
         revalidateTag("players");
+        revalidateTag("season-stats");
+        revalidateTag("houseboard");
         if (slug) {
           revalidatePath(`/bigbrother-players/${slug}`);
         }

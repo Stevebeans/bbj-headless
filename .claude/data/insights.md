@@ -128,8 +128,60 @@ Cumulative Layout Shift
 Speed Index
 0.9 s
 
+## Apr 04, 2026 — Next.js Staging WITH Ads
 
+**Mobile (staging.bigbrotherjunkies.com):**
 
-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 
+Performance - 45
+Accessibility - 96
+Best Practices - 35
+SEO - 92
 
-AIzaSyD6bTBmPwr1BTGUSjiWa_KjLbjOar2qCzI
+First Contentful Paint: 1.7 s
+Largest Contentful Paint: 4.4 s
+Total Blocking Time: 3,390 ms
+Cumulative Layout Shift: 0
+Speed Index: 11.6 s
+
+Notes:
+
+- Freestar ad scripts are the main performance killer
+- TBT went from 10ms (no ads) to 3,390ms — ad JS blocking main thread
+- Best Practices dropped from 96 to 35 — likely console errors from ad scripts
+- Accessibility and SEO actually improved since Feb
+
+## Apr 04, 2026 — WordPress Live (Current)
+
+**Mobile (bigbrotherjunkies.com):**
+
+Performance - 19
+Accessibility - 84
+Best Practices - 27
+SEO - 85
+
+First Contentful Paint: 8.9 s
+Largest Contentful Paint: 24.9 s
+Total Blocking Time: 2,120 ms
+Cumulative Layout Shift: 0.182
+Speed Index: 19.9 s
+
+Notes:
+
+- Worst scores yet — WP performance has degraded over time
+- 24.9s LCP is catastrophic
+- CLS 0.182 (layout shift from ads loading)
+- Even with ads hurting Next.js, it still beats WP on every metric
+
+## Comparison Table (All Mobile)
+
+| Metric         | WP Legacy (Feb) | Next.js No Ads (Feb) | Next.js + Ads (Apr) | WP Live (Apr) |
+| -------------- | --------------- | -------------------- | ------------------- | ------------- |
+| Performance    | 27              | 93                   | 45                  | 19            |
+| Accessibility  | 86              | 92                   | 96                  | 84            |
+| Best Practices | 46              | 96                   | 35                  | 27            |
+| SEO            | 85              | 83                   | 92                  | 85            |
+| FCP            | 5.9s            | 1.2s                 | 1.7s                | 8.9s          |
+| LCP            | 19.1s           | 3.2s                 | 4.4s                | 24.9s         |
+| TBT            | 2,210ms         | 10ms                 | 3,390ms             | 2,120ms       |
+| CLS            | 0               | 0                    | 0                   | 0.182         |
+| Speed Index    | 15.1s           | 1.9s                 | 11.6s               | 19.9s         |

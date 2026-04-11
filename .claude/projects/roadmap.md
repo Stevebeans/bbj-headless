@@ -346,13 +346,12 @@ The core differentiator during the season.
 - [x] Draft/publish workflow (auto-save, submit for review, publish for authorized users)
 - [x] SEO fields (title, description) with AI generation helpers
 
-### 5.1b Current Season Admin Setting
+### 5.1b Current Season Admin Setting ✅
 
-- [ ] **"Current Season" setting in admin** — controls which season the spoiler bar, homepage headings, houseboard, and stats widgets reference
-  - Homepage already pulls season name dynamically from API (not hardcoded)
-  - Need to wire the admin setting to the spoiler bar API and homepage API so changing seasons is a single toggle
-  - Update SEO keywords in `layout.jsx` to pull dynamically instead of hardcoded "BB27"
-  - Should be separate from "Default Post Category" (which controls editor auto-select)
+- [x] **"Current Season" setting in admin** — controls which season the spoiler bar, homepage headings, houseboard, and stats widgets reference
+  - [x] Dropdown selector in Admin → Settings → General
+  - [x] Separate from "Default Post Category" (which controls editor auto-select)
+  - [ ] Update SEO keywords in `layout.jsx` to pull dynamically instead of hardcoded "BB27"
 
 ### 5.2 Player Photo Tool ✅
 
@@ -817,6 +816,54 @@ _Go page by page on live site to identify gaps_
 ### Other Pages
 
 - [ ] _audit notes here_
+
+---
+
+## Ad Performance Optimization
+
+> Freestar ads dropped mobile performance from 93 → 45. TBT went from 10ms → 3,390ms.
+> See full data: `.claude/data/insights.md`
+
+- [ ] **Lazy load below-fold ad slots** — Use IntersectionObserver to only init ad slots when they scroll into view
+- [ ] **Defer Freestar SDK init** — Load after first user interaction or after LCP, not on page load
+- [ ] **Audit ad script loading** — Check if `strategy="afterInteractive"` is actually deferring or if Freestar forces eager loading
+- [ ] **Minimize ad-related CLS** — Pre-size ad containers with explicit dimensions
+- [ ] **Investigate Best Practices score drop** (96 → 35) — Likely console errors from ad scripts, check and suppress where possible
+- [ ] **Target: Performance 70+ with ads** — Currently 45, was 93 without ads
+
+---
+
+## Migration Strategy: Hard Cutover (WordPress → Next.js)
+
+> Full details: `.claude/projects/merger-notes.md`
+> Decision: Hard cutover instead of gradual migration. Off-season = low risk, high reward.
+
+**Why now:** WordPress mobile performance is 19 with 24.9s LCP. Next.js even with ads is 45 with 4.4s LCP. Google uses Core Web Vitals as a ranking factor. Cutting over now gives months of SEO improvement before BB28 premiere. Currently #2 for "Big Brother Spoilers" and bottom of page 2 for "Big Brother 27" — faster site + fresh content could push to page 1.
+
+### Pre-Cutover (Do First)
+- [ ] Complete the Pre-Launch Checklist below (SEO, redirects, env vars, etc.)
+- [ ] Verify Freestar ads work on `bigbrotherjunkies.com` served from Vercel
+- [ ] Set Vercel spending limit as cost safety net
+- [ ] Confirm revalidation webhook works (post publish → home page refresh)
+- [ ] Delete 9 inactive WP plugins
+- [ ] Add GA4 `site_version` custom dimension to track before/after
+
+### Cutover Day
+- [ ] Move WordPress to `wp.bigbrotherjunkies.com` (API + wp-admin)
+- [ ] Point `www.bigbrotherjunkies.com` DNS to Vercel
+- [ ] Update `WORDPRESS_API_URL` env var in Vercel to `wp.bigbrotherjunkies.com`
+- [ ] Update revalidation constants in WP `wp-config.php` (`NEXT_PUBLIC_SITE_URL`)
+- [ ] Submit new sitemap to Google Search Console
+- [ ] Monitor error logs, analytics, ad revenue for 48 hours
+
+### Post-Cutover Content Strategy
+- [ ] Start posting BB28 content: cast rumors, speculation, predictions, off-season takes
+- [ ] Share posts on Facebook to drive real traffic and test the full stack
+- [ ] Test email subscription flow with real signups
+- [ ] Test comment system under real usage
+- [ ] Monitor Vercel usage dashboard weekly
+- [ ] Run PageSpeed Insights monthly to track improvement
+- [ ] Deactivate frontend-only WP plugins (SEO, Kadence, Asset CleanUp, Advanced Ads, ProfilePress, wpDiscuz)
 
 ---
 
