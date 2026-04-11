@@ -7,6 +7,13 @@ import { FeedUpdateVoting } from "./FeedUpdateVoting";
 import { getFeedUpdateBySlug, getFeedUpdates } from "@/lib/api/feedUpdates";
 
 export const revalidate = 300; // 5 min ISR — webhook handles instant invalidation
+export const dynamicParams = true;
+
+// Empty array — we don't pre-render feed updates, but generateStaticParams
+// is required for Next.js 15 to register this route for ISR caching.
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

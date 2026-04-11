@@ -13,6 +13,11 @@ import { SuggestedComparisons } from "./components/SuggestedComparisons";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
 export const revalidate = 3600; // 1 hour — player stats change rarely
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  return []; // Comparisons are user-generated — ISR-cache on first hit
+}
 
 /**
  * Parse matchup param into two slugs.

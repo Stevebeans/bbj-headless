@@ -22,6 +22,11 @@ import { SuggestedPlayerComparisons } from "./components/SuggestedPlayerComparis
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
 export const revalidate = 300; // 5 min ISR — webhook handles instant invalidation
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  return []; // No pre-rendering — player pages ISR-cache on first visit
+}
 
 /**
  * Generate SEO metadata for player page

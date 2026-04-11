@@ -6,6 +6,11 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { FaEye } from "react-icons/fa";
 
 export const revalidate = 60; // 1 min — admin edit pages need fresh data
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
