@@ -42,7 +42,7 @@ export async function generateMetadata({ params }) {
   const { matchup } = await params;
   const parsed = parseMatchup(matchup);
 
-  if (!parsed) return { title: "Player Comparison Not Found" };
+  if (!parsed) return { title: "Player Comparison Not Found", robots: { index: false, follow: false } };
 
   const [data1, data2] = await Promise.all([
     getPlayerBySlug(parsed.slug1),
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }) {
   ]);
 
   if (!data1?.player || !data2?.player) {
-    return { title: "Player Comparison Not Found" };
+    return { title: "Player Comparison Not Found", robots: { index: false, follow: false } };
   }
 
   const p1 = data1.player;
@@ -62,6 +62,7 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
+    robots: { index: false, follow: false },
     openGraph: {
       title,
       description,

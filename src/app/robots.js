@@ -4,7 +4,7 @@ export default function robots() {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/api/", "/settings", "/login", "/reset-password"],
+        disallow: ["/admin", "/api/", "/settings", "/login", "/reset-password", "/compare/"],
       },
     ],
     sitemap: "https://bigbrotherjunkies.com/sitemap.xml",
