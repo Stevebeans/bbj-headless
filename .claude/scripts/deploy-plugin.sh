@@ -31,7 +31,7 @@ fi
 # Create archive (exclude node_modules, .git, etc)
 echo "Creating archive..."
 cd "$LOCAL_PLUGIN"
-tar -cf /tmp/plugin.tar --exclude='node_modules' --exclude='.git' --exclude='.DS_Store' .
+tar -cf /tmp/plugin.tar --exclude='node_modules' --exclude='.git' --exclude='.DS_Store' --exclude='.claude' --exclude='do-not-upload' .
 gzip -f /tmp/plugin.tar
 
 # Transfer to server
@@ -40,7 +40,7 @@ scp /tmp/plugin.tar.gz ${TARGET}:~/plugin.tar.gz
 
 # Extract on server (replace old files)
 echo "Extracting on server..."
-ssh ${TARGET} "cd ${REMOTE_PATH} && rm -rf src vendor assets build && tar -xzf ~/plugin.tar.gz && rm ~/plugin.tar.gz"
+ssh ${TARGET} "cd ${REMOTE_PATH} && rm -rf src vendor assets build && mkdir -p .plugin-extract && tar -xzf ~/plugin.tar.gz -C .plugin-extract && cp -rf .plugin-extract/. . && rm -rf .plugin-extract ~/plugin.tar.gz"
 
 # Cleanup local
 rm /tmp/plugin.tar.gz

@@ -112,6 +112,11 @@ class HomeRoutes
                     'type' => 'integer',
                     'sanitize_callback' => 'absint',
                 ],
+                'tag' => [
+                    'default' => 0,
+                    'type' => 'integer',
+                    'sanitize_callback' => 'absint',
+                ],
             ],
         ]);
 
@@ -604,9 +609,10 @@ class HomeRoutes
         $perPage = min($request->get_param('per_page'), 30);
         $page = max(1, $request->get_param('page'));
         $category = $request->get_param('category');
+        $tag = $request->get_param('tag');
 
         // Build a cache key based on params
-        $cacheKey = "bbjd_posts_{$perPage}_{$page}_{$category}";
+        $cacheKey = "bbjd_posts_{$perPage}_{$page}_{$category}_{$tag}";
         $cached = get_transient($cacheKey);
         if ($cached !== false) {
             return $cached;
@@ -625,6 +631,10 @@ class HomeRoutes
 
         if ($category > 0) {
             $args['cat'] = $category;
+        }
+
+        if ($tag > 0) {
+            $args['tag_id'] = $tag;
         }
 
         $query = new \WP_Query($args);
