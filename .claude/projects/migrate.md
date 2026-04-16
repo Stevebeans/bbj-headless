@@ -9,11 +9,11 @@
 | 3   | Rename `/feed-updates` → `/live-feed-updates` | ✅ Done    | 11 files, 15 references updated. API endpoints untouched. Fixes ~3,000 404s.                                                                                |
 | 4   | Build `/category/[slug]` route                | ✅ Done    | ISR, PostCard grid, SEO metadata, Sidebar layout.                                                                                                           |
 | 5   | URL coverage audit                            | ✅ Done    | 5,452 URLs tested. See results below.                                                                                                                       |
-| 6   | Build `/tag/[slug]` route                     | ❌ Pending | 23 tag archive URLs currently 404. Decision needed: build route, redirect to home, or ignore.                                                               |
-| 7   | Add redirects for index pages                 | ❌ Pending | `/bigbrother-players` → `/directory`, `/bigbrother-seasons` → `/directory`, `/live-feed-archives` → `/live-feed-updates`                                    |
-| 8   | Nested category routes                        | ❌ Pending | URLs like `/category/big-brother-20/feed-updates-big-brother-20` — current route handles `/category/[slug]` but not nested. May need catch-all `[...slug]`. |
-| 9   | Verify placeholder pages are real             | ❌ Pending | `/contact`, `/privacy-policy` — confirm these have real content, not stubs.                                                                                 |
-| 10  | Rollback plan documented                      | ❌ Pending | DNS TTL, who flips back, abort trigger.                                                                                                                     |
+| 6   | Build `/tag/[slug]` route                     | ✅ Done    | Built — covers all 161 WP tags. Added `tag` param to bbjd/v1/posts endpoint.                                                                                |
+| 7   | Add redirects for index pages                 | ✅ Done    | 301s in next.config.js: `/bigbrother-players` & `/bigbrother-seasons` → `/directory`, `/live-feed-archives` → `/live-feed-updates`                          |
+| 8   | Nested category routes                        | ✅ Done    | Converted to catch-all `[...slug]`. Last segment used for query, full path used for canonical.                                                              |
+| 9   | Verify placeholder pages are real             | ✅ Done    | `/contact` already has full ContactForm. `/privacy-policy` was missing — built it (fetches WP page content via `getPage()`).                                |
+| 10  | Rollback plan documented                      | ✅ Done    | See `.claude/projects/rollback-plan.md` — abort triggers, procedure, validation timeline.                                                                   |
 | 11  | Set Vercel Spend Management caps              | ❌ Pending | User should set alerts at $75/$150/$300, hard cap at $600. Path: vercel.com → Settings → Billing → Spend Management.                                        |
 
 ---
