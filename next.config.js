@@ -3,6 +3,25 @@
 const nextConfig = {
   // Increase timeout for static page generation (default is 60s)
   staticPageGenerationTimeout: 120,
+  async redirects() {
+    return [
+      {
+        source: "/bigbrother-players",
+        destination: "/directory",
+        permanent: true,
+      },
+      {
+        source: "/bigbrother-seasons",
+        destination: "/directory",
+        permanent: true,
+      },
+      {
+        source: "/live-feed-archives",
+        destination: "/live-feed-updates",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

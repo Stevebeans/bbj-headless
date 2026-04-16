@@ -58,7 +58,10 @@ async function getCategoryPosts(categoryId, page = 1, perPage = 20) {
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const category = await getCategory(slug);
+  const segments = Array.isArray(slug) ? slug : [slug];
+  const categorySlug = segments[segments.length - 1];
+  const fullPath = segments.join("/");
+  const category = await getCategory(categorySlug);
 
   if (!category) {
     return { title: "Category Not Found | Big Brother Junkies" };
@@ -75,7 +78,7 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title: `${name} Archives | Big Brother Junkies`,
       description,
-      url: `${SITE_URL}/category/${slug}`,
+      url: `${SITE_URL}/category/${fullPath}`,
       type: "website",
     },
     twitter: {
@@ -84,14 +87,16 @@ export async function generateMetadata({ params }) {
       description,
     },
     alternates: {
-      canonical: `${SITE_URL}/category/${slug}`,
+      canonical: `${SITE_URL}/category/${fullPath}`,
     },
   };
 }
 
 export default async function CategoryArchivePage({ params }) {
   const { slug } = await params;
-  const category = await getCategory(slug);
+  const segments = Array.isArray(slug) ? slug : [slug];
+  const categorySlug = segments[segments.length - 1];
+  const category = await getCategory(categorySlug);
 
   if (!category) {
     notFound();
