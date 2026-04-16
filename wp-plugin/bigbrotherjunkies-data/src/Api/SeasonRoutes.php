@@ -268,11 +268,18 @@ class SeasonRoutes
             return strcasecmp($a['name'], $b['name']);
         });
 
+        // Look up matching blog category by slug for related articles
+        $categoryTerm = get_term_by('slug', $slug, 'category');
+        $categoryId = $categoryTerm ? (int) $categoryTerm->term_id : null;
+        $articleCount = $categoryId ? (int) $categoryTerm->count : 0;
+
         return new WP_REST_Response([
             'success' => true,
             'season' => $formattedSeason,
             'players' => $formattedPlayers,
             'count' => count($formattedPlayers),
+            'category_id' => $categoryId,
+            'article_count' => $articleCount,
         ], 200);
     }
 
@@ -372,29 +379,39 @@ class SeasonRoutes
             }
         }
 
-        if (empty($updateData)) {
+        $hasMetaUpdate = isset($params['description']);
+
+        if (empty($updateData) && !$hasMetaUpdate) {
             return new WP_REST_Response([
                 'success' => false,
                 'message' => 'No valid fields to update',
             ], 400);
         }
 
-        // Update the season table
-        $table = defined('BBJ_V2_TABLE_SEASONS') ? BBJ_V2_TABLE_SEASONS : $wpdb->prefix . 'bbj_seasons';
+        // Update the season table (skip if only meta fields changed)
+        if (!empty($updateData)) {
+            $table = defined('BBJ_V2_TABLE_SEASONS') ? BBJ_V2_TABLE_SEASONS : $wpdb->prefix . 'bbj_seasons';
 
-        $result = $wpdb->update(
-            $table,
-            $updateData,
-            ['id' => $seasonId],
-            $updateFormat,
-            ['%d']
-        );
+            $result = $wpdb->update(
+                $table,
+                $updateData,
+                ['id' => $seasonId],
+                $updateFormat,
+                ['%d']
+            );
 
-        if ($result === false) {
-            return new WP_REST_Response([
-                'success' => false,
-                'message' => 'Failed to update season: ' . $wpdb->last_error,
-            ], 500);
+            if ($result === false) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Failed to update season: ' . $wpdb->last_error,
+                ], 500);
+            }
+        }
+
+        // Save season description to post meta
+        if (isset($params['description'])) {
+            $postId = $season['post_id'] ?? $seasonId;
+            update_post_meta($postId, '_bbj_season_description', sanitize_textarea_field($params['description']));
         }
 
         // Also update the WordPress post if full_name changed
@@ -991,6 +1008,7 @@ class SeasonRoutes
             'winner_id' => $season['season_winner'] ? (int) $season['season_winner'] : null,
             'runner_up_id' => $season['runner_up'] ? (int) $season['runner_up'] : null,
             'afp_id' => $season['afp'] ? (int) $season['afp'] : null,
+            'description' => get_post_meta((int) ($season['post_id'] ?? $season['id']), '_bbj_season_description', true) ?: '',
         ]);
     }
 

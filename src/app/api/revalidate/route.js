@@ -62,7 +62,7 @@ export async function POST(request) {
 
       case "feed-update":
         revalidateTag("feed-updates");
-        revalidatePath("/feed-updates");
+        revalidatePath("/live-feed-updates");
         revalidatePath("/");
         break;
 

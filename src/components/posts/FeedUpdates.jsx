@@ -22,7 +22,7 @@ export function FeedUpdates({ updates = [], dateFormatted, total = 0 }) {
         <div className="end-feed-updates">
           If you would like to see more feed updates,{" "}
           <Link
-            href="/feed-updates"
+            href="/live-feed-updates"
             className="text-blue-600 dark:text-blue-400 font-bold underline hover:no-underline"
           >
             Visit our feed update page here
@@ -103,7 +103,7 @@ export function FeedUpdates({ updates = [], dateFormatted, total = 0 }) {
       <div className="end-feed-updates">
         If you would like to see more feed updates,{" "}
         <Link
-          href="/feed-updates"
+          href="/live-feed-updates"
           className="text-blue-600 dark:text-blue-400 font-bold underline hover:no-underline"
         >
           Visit our feed update page here

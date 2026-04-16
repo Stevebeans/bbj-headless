@@ -204,7 +204,7 @@ export function Header() {
             <ul className="hidden md:flex items-center gap-1 text-sm desktop-nav" role="menubar">
               <li role="none"><Link href="/" role="menuitem" className="px-2 py-1">Home</Link></li>
               <li role="none"><Link href="/contact" role="menuitem" className="px-2 py-1">Contact</Link></li>
-              <li role="none"><Link href="/feed-updates" role="menuitem" className="px-2 py-1">Feed Updates</Link></li>
+              <li role="none"><Link href="/live-feed-updates" role="menuitem" className="px-2 py-1">Feed Updates</Link></li>
               <li role="none"><Link href="/directory" role="menuitem" className="px-2 py-1">Directory</Link></li>
               {!isAuthenticated && !loading && (
                 <>

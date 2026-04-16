@@ -72,7 +72,7 @@ export function FeedUpdateCard({ update }) {
         id={update.slug}
         className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-l-3 border-l-primary-400 dark:border-l-primary-500 rounded-lg shadow-sm hover:border-gray-300 dark:hover:border-gray-600 hover:border-l-primary-500 dark:hover:border-l-primary-400 hover:shadow transition-all duration-200"
       >
-        <Link href={`/feed-updates/${update.slug}`} className="block">
+        <Link href={`/live-feed-updates/${update.slug}`} className="block">
           {/* Author Header */}
           <div className="flex gap-3 mb-3 items-center">
             {update.author?.avatar && (
@@ -136,7 +136,7 @@ export function FeedUpdateCard({ update }) {
               </div>
               {commentCount > 2 && (
                 <Link
-                  href={`/feed-updates/${update.slug}#comments`}
+                  href={`/live-feed-updates/${update.slug}#comments`}
                   className="text-xs py-1 text-primary-500 hover:text-primary-600 hover:underline"
                 >
                   Read all replies →
@@ -144,7 +144,7 @@ export function FeedUpdateCard({ update }) {
               )}
             </div>
             <Link
-              href={`/feed-updates/${update.slug}#comments`}
+              href={`/live-feed-updates/${update.slug}#comments`}
               className="block space-y-2"
             >
               {recentComments.slice(-3).map((comment, idx) => (
@@ -165,7 +165,7 @@ export function FeedUpdateCard({ update }) {
         {/* Footer */}
         <div className="text-xs border-t border-gray-300 dark:border-gray-600 pt-2 mt-2 text-slate-600 dark:text-slate-400 clear-both flex items-center justify-between">
           <Link
-            href={`/feed-updates/${update.slug}#comments`}
+            href={`/live-feed-updates/${update.slug}#comments`}
             className="flex items-center gap-1 hover:text-primary-500"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

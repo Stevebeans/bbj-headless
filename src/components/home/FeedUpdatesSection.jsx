@@ -104,7 +104,7 @@ export function FeedUpdatesSection({ updates: initialUpdates = [] }) {
       {/* View All Link */}
       <div className="w-full text-center text-xl font-display mt-4 py-3">
         <Link
-          href="/feed-updates"
+          href="/live-feed-updates"
           className="text-primary-500 hover:text-primary-600 dark:text-primary-400"
         >
           View All Feed Updates

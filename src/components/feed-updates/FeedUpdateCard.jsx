@@ -88,7 +88,7 @@ export function FeedUpdateCard({ update, onVoteChange }) {
 
             {/* Title */}
             <Link
-              href={`/feed-updates/${update.slug}`}
+              href={`/live-feed-updates/${update.slug}`}
               className="block mt-1 text-base font-semibold text-primary-600 dark:text-primary-400 hover:underline"
             >
               {update.title}
@@ -158,7 +158,7 @@ export function FeedUpdateCard({ update, onVoteChange }) {
 
         {/* Comments */}
         <Link
-          href={`/feed-updates/${update.slug}#comments`}
+          href={`/live-feed-updates/${update.slug}#comments`}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary-500 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -64,7 +64,7 @@ export default async function FeedUpdatePage({ params }) {
                 Home
               </Link>
               <span className="mx-2">/</span>
-              <Link href="/feed-updates" className="hover:text-primary-500">
+              <Link href="/live-feed-updates" className="hover:text-primary-500">
                 Feed Updates
               </Link>
               <span className="mx-2">/</span>

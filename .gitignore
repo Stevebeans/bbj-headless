@@ -46,6 +46,8 @@ next-env.d.ts
 # Claude Code
 .claude/private/
 .claude/plugins/
+.claude/taxes/
+.claude/scheduled_tasks.lock
 **/settings.local.json
 
 # Misc

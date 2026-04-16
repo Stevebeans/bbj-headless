@@ -49,7 +49,7 @@ export function MobileMenu({ isOpen, onClose, onSearchOpen }) {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/contact", label: "Contact" },
-    { href: "/feed-updates", label: "Feed Updates" },
+    { href: "/live-feed-updates", label: "Feed Updates" },
     { href: "/directory", label: "Directory" },
     { href: "/become-supporter", label: "Go Ad Free" },
   ];

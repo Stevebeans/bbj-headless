@@ -59,6 +59,7 @@ use BigBrotherJunkies\Data\Api\AdSettingsRoutes;
 use BigBrotherJunkies\Data\Api\NewsAggregatorRoutes;
 use BigBrotherJunkies\Data\Api\EditorRoutes;
 use BigBrotherJunkies\Data\Cron\ContentEngineCron;
+use BigBrotherJunkies\Data\Utils\Revalidation;
 
 /**
  * Main plugin class
@@ -123,6 +124,19 @@ class Plugin
             $token['data']['user']['roles'] = array_values((array) $user->roles);
             return $token;
         }, 10, 2);
+
+        // Revalidate Next.js cache when posts or feed updates are published
+        add_action('transition_post_status', function ($new_status, $old_status, $post) {
+            if ($new_status !== 'publish') return;
+            if ($old_status === 'publish' && $new_status === 'publish') {
+                // Post was updated while already published
+            }
+            if ($post->post_type === 'post') {
+                Revalidation::revalidatePost($post->post_name);
+            } elseif ($post->post_type === 'live-feed-updates') {
+                Revalidation::revalidateTag('feed-updates');
+            }
+        }, 10, 3);
 
         // Initialize REST API routes
         $this->initApiRoutes();
