@@ -3,6 +3,20 @@
 const nextConfig = {
   // Increase timeout for static page generation (default is 60s)
   staticPageGenerationTimeout: 120,
+  async rewrites() {
+    // Proxy WP media/assets through the apex so legacy absolute URLs
+    // (https://bigbrotherjunkies.com/wp-content/...) keep working after the DNS flip.
+    return [
+      {
+        source: "/wp-content/:path*",
+        destination: "https://wp.bigbrotherjunkies.com/wp-content/:path*",
+      },
+      {
+        source: "/wp-includes/:path*",
+        destination: "https://wp.bigbrotherjunkies.com/wp-includes/:path*",
+      },
+    ];
+  },
   async redirects() {
     return [
       {
