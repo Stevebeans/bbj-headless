@@ -21,7 +21,7 @@ import { SuggestedPlayerComparisons } from "./components/SuggestedPlayerComparis
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-export const revalidate = 300; // 5 min ISR — webhook handles instant invalidation
+export const revalidate = 3600; // 1h ISR — webhook handles instant invalidation on status/stat changes
 export const dynamicParams = true;
 
 export async function generateStaticParams() {

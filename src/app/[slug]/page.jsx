@@ -19,7 +19,7 @@ import { JumpToComments } from "@/components/posts/JumpToComments";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-export const revalidate = 300; // 5 min ISR — webhook handles instant invalidation
+export const revalidate = 86400; // 24h ISR — webhook handles instant invalidation on publish/edit
 export const dynamicParams = true; // Allow slugs not in generateStaticParams — they'll be ISR-cached on first hit
 
 export async function generateStaticParams() {

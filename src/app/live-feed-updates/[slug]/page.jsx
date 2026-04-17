@@ -6,7 +6,7 @@ import { CommentSection } from "@/components/comments";
 import { FeedUpdateVoting } from "./FeedUpdateVoting";
 import { getFeedUpdateBySlug, getFeedUpdates } from "@/lib/api/feedUpdates";
 
-export const revalidate = 300; // 5 min ISR — webhook handles instant invalidation
+export const revalidate = 3600; // 1h ISR — individual feed update pages rarely change after posting
 export const dynamicParams = true;
 
 // Empty array — we don't pre-render feed updates, but generateStaticParams

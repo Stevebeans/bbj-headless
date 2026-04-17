@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "src/app/**/*.{js,jsx}": {
-      "memory": 1024
-    }
-  }
-}

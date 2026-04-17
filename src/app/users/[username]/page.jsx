@@ -11,7 +11,7 @@ import { FaHeart, FaComments } from "react-icons/fa";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-export const revalidate = 300; // 5 min ISR
+export const revalidate = 3600; // 1h ISR
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
