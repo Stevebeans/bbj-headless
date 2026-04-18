@@ -42,6 +42,7 @@ use BigBrotherJunkies\Data\Api\BugReportRoutes;
 use BigBrotherJunkies\Data\Api\AnalyticsRoutes;
 use BigBrotherJunkies\Data\Api\EmailRoutes;
 use BigBrotherJunkies\Data\Auth\AuthManager;
+use BigBrotherJunkies\Data\Auth\WpSessionBridge;
 use BigBrotherJunkies\Data\Admin\Pages\SocialSettingsPage;
 use BigBrotherJunkies\Data\Hooks\HeaderFooterCode;
 use BigBrotherJunkies\Data\Comments\CommentMigrator;
@@ -334,6 +335,7 @@ class Plugin
     private function initAuth(): void
     {
         AuthManager::getInstance()->init();
+        WpSessionBridge::init();
     }
 
     /**
