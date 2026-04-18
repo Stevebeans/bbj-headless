@@ -108,6 +108,11 @@ class AuthRoutes
                     'required' => true,
                     'type' => 'string',
                 ],
+                'wp_session' => [
+                    'required' => false,
+                    'type' => 'integer',
+                    'default' => 0,
+                ],
             ],
         ]);
 
@@ -345,6 +350,10 @@ class AuthRoutes
      */
     public function handleRegister(\WP_REST_Request $request)
     {
+        if ($err = WpSessionBridge::verifyNonce($request)) {
+            return $err;
+        }
+
         // Verify reCAPTCHA if configured
         $recaptchaToken = $request->get_param('recaptcha_token');
         $recaptchaResult = $this->verifyRecaptcha($recaptchaToken);
@@ -474,6 +483,7 @@ class AuthRoutes
         if (is_wp_error($token)) {
             // Registration succeeded but token generation failed
             // Still return success but without token
+            WpSessionBridge::maybeSetAuthCookie((int) $user->ID, true, $request);
             return new \WP_REST_Response([
                 'success' => true,
                 'message' => __('Registration successful! Please check your email to verify your account.', 'bigbrotherjunkies-data'),
@@ -488,6 +498,8 @@ class AuthRoutes
                 'requires_verification' => true,
             ], 201);
         }
+
+        WpSessionBridge::maybeSetAuthCookie((int) $user->ID, true, $request);
 
         return new \WP_REST_Response([
             'success' => true,
