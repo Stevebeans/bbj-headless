@@ -42,7 +42,11 @@ class WpSessionBridge
         if ((int) $request->get_param('wp_session') !== 1) {
             return null; // Only enforce for theme consumers opting into WP session.
         }
-        $nonce = $request->get_header('X-WP-Nonce') ?: (string) $request->get_param('_wpnonce');
+        // Read from X-BBJ-Nonce (not X-WP-Nonce) because WP core's
+        // rest_cookie_check_errors intercepts X-WP-Nonce and validates against
+        // the 'wp_rest' action, which would reject our 'bbj_auth' nonce
+        // whenever the browser carries any WP cookie.
+        $nonce = $request->get_header('X-BBJ-Nonce') ?: (string) $request->get_param('_wpnonce');
         if (!$nonce || !wp_verify_nonce($nonce, 'bbj_auth')) {
             return new \WP_Error(
                 'invalid_nonce',
