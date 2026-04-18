@@ -223,6 +223,11 @@ class AuthRoutes
                     'type' => 'boolean',
                     'default' => true,
                 ],
+                'wp_session' => [
+                    'required' => false,
+                    'type' => 'integer',
+                    'default' => 0,
+                ],
             ],
         ]);
 
@@ -867,6 +872,10 @@ class AuthRoutes
      */
     public function handleCreateFromGoogle(\WP_REST_Request $request)
     {
+        if ($err = WpSessionBridge::verifyNonce($request)) {
+            return $err;
+        }
+
         $credential = $request->get_param('credential');
         $rememberMe = $request->get_param('remember_me') ?? true;
 
@@ -923,6 +932,8 @@ class AuthRoutes
         if (is_wp_error($token)) {
             return $token;
         }
+
+        WpSessionBridge::maybeSetAuthCookie((int) $user->ID, (bool) $rememberMe, $request);
 
         return new \WP_REST_Response([
             'success' => true,
