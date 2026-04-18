@@ -24,7 +24,6 @@
     "@tiptap/pm": "^3.20.1",
     "@tiptap/react": "^3.20.1",
     "@tiptap/starter-kit": "^3.20.1",
-    "@vercel/analytics": "^2.0.1",
     "browser-image-compression": "^2.0.2",
     "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
