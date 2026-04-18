@@ -4,6 +4,7 @@ namespace BigBrotherJunkies\Data\Api;
 
 use BigBrotherJunkies\Data\Auth\GoogleOAuth;
 use BigBrotherJunkies\Data\Auth\Integrations\MailPoetSubscriber;
+use BigBrotherJunkies\Data\Auth\WpSessionBridge;
 use BigBrotherJunkies\Data\Comments\AvatarUploader;
 use BigBrotherJunkies\Data\Comments\RankCalculator;
 use Firebase\JWT\JWT;
@@ -79,6 +80,11 @@ class AuthRoutes
                     'required' => false,
                     'type' => 'boolean',
                     'default' => true,
+                ],
+                'wp_session' => [
+                    'required' => false,
+                    'type' => 'integer',
+                    'default' => 0,
                 ],
             ],
         ]);
@@ -244,6 +250,10 @@ class AuthRoutes
      */
     public function handleGoogleAuth(\WP_REST_Request $request)
     {
+        if ($err = WpSessionBridge::verifyNonce($request)) {
+            return $err;
+        }
+
         $credential = $request->get_param('credential');
         $rememberMe = $request->get_param('remember_me') ?? true;
 
@@ -297,6 +307,9 @@ class AuthRoutes
         if ($accountLinked) {
             $message = __('Your Google account has been linked to your existing BBJ account.', 'bigbrotherjunkies-data');
         }
+
+        // Opt-in WP-native session for PHP theme consumers.
+        WpSessionBridge::maybeSetAuthCookie((int) $user->ID, (bool) $rememberMe, $request);
 
         return new \WP_REST_Response([
             'success' => true,
