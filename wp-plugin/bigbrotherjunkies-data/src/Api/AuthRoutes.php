@@ -150,6 +150,11 @@ class AuthRoutes
                     'required' => true,
                     'type' => 'string',
                 ],
+                'wp_session' => [
+                    'required' => false,
+                    'type' => 'integer',
+                    'default' => 0,
+                ],
             ],
         ]);
 
@@ -564,6 +569,10 @@ class AuthRoutes
      */
     public function handleResetPassword(\WP_REST_Request $request)
     {
+        if ($err = WpSessionBridge::verifyNonce($request)) {
+            return $err;
+        }
+
         $key = $request->get_param('key');
         $login = $request->get_param('login');
         $password = $request->get_param('password');
@@ -601,6 +610,8 @@ class AuthRoutes
 
         // Reset the password
         reset_password($user, $password);
+
+        WpSessionBridge::maybeSetAuthCookie((int) $user->ID, true, $request);
 
         return new \WP_REST_Response([
             'success' => true,
