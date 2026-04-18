@@ -185,6 +185,35 @@ class AuthRoutes
             ],
         ]);
 
+        // Username/password login → WordPress native session cookie.
+        // Intended for the bbj-v2 PHP theme. Next.js continues to use /jwt-auth/v1/token.
+        register_rest_route(self::NAMESPACE, '/auth/login', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handleLogin'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'username' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+                'password' => [
+                    'required' => true,
+                    'type' => 'string',
+                ],
+                'remember_me' => [
+                    'required' => false,
+                    'type' => 'boolean',
+                    'default' => true,
+                ],
+                'wp_session' => [
+                    'required' => false,
+                    'type' => 'integer',
+                    'default' => 1,
+                ],
+            ],
+        ]);
+
         // Link Google account to existing user (requires credentials)
         register_rest_route(self::NAMESPACE, '/auth/link-google', [
             'methods' => 'POST',
@@ -657,6 +686,90 @@ class AuthRoutes
             'exists' => username_exists($username) !== false,
             'message' => $message,
         ], 200);
+    }
+
+    /**
+     * Handle username/password login — WP-native session, no JWT.
+     * Rate-limited to 10 failed attempts per IP per 15 minutes.
+     *
+     * @return \WP_REST_Response|\WP_Error
+     */
+    public function handleLogin(\WP_REST_Request $request)
+    {
+        if ($err = WpSessionBridge::verifyNonce($request)) {
+            return $err;
+        }
+
+        // Rate limit by IP: 10 failed attempts per 15 minutes.
+        $ip = $this->clientIp();
+        $rlKey = 'bbj_login_fails_' . md5($ip);
+        $failCount = (int) get_transient($rlKey);
+        if ($failCount >= 10) {
+            return new \WP_Error(
+                'rate_limited',
+                __('Too many failed attempts. Please wait a few minutes and try again.', 'bigbrotherjunkies-data'),
+                ['status' => 429]
+            );
+        }
+
+        $username = $request->get_param('username');
+        $password = $request->get_param('password');
+        $remember = (bool) $request->get_param('remember_me');
+
+        if (!$username || !$password) {
+            return new \WP_Error('missing_credentials', __('Username and password are required.', 'bigbrotherjunkies-data'), ['status' => 400]);
+        }
+
+        $creds = [
+            'user_login'    => $username,
+            'user_password' => $password,
+            'remember'      => $remember,
+        ];
+        $user = wp_signon($creds, is_ssl());
+
+        if (is_wp_error($user)) {
+            set_transient($rlKey, $failCount + 1, 15 * MINUTE_IN_SECONDS);
+            return new \WP_Error(
+                'invalid_credentials',
+                __('Incorrect username or password.', 'bigbrotherjunkies-data'),
+                ['status' => 401]
+            );
+        }
+
+        // Clear the rate-limit counter on success.
+        delete_transient($rlKey);
+
+        WpSessionBridge::maybeSetAuthCookie((int) $user->ID, $remember, $request);
+
+        return new \WP_REST_Response([
+            'success' => true,
+            'user' => [
+                'id' => $user->ID,
+                'email' => $user->user_email,
+                'username' => $user->user_login,
+                'display_name' => $user->display_name,
+                'avatar' => AvatarUploader::getAvatarUrl($user->ID),
+                'roles' => array_values((array) $user->roles),
+            ],
+        ], 200);
+    }
+
+    /**
+     * Best-effort client IP detection. Respects Cloudflare and common
+     * proxy headers, falls back to REMOTE_ADDR.
+     */
+    private function clientIp(): string
+    {
+        $headers = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
+        foreach ($headers as $h) {
+            if (!empty($_SERVER[$h])) {
+                $ip = trim(explode(',', (string) $_SERVER[$h])[0]);
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    return $ip;
+                }
+            }
+        }
+        return '0.0.0.0';
     }
 
     /**
