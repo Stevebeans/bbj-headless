@@ -36,7 +36,7 @@ cd "$LOCAL_THEME"
 tar -cf /tmp/bbj-v2-theme.tar \
     --exclude='node_modules' \
     --exclude='.git' \
-    --exclude='src' \
+    --exclude='src/css' \
     --exclude='.DS_Store' \
     --exclude='.claude' \
     --exclude='package-lock.json' \
