@@ -11,7 +11,7 @@ export const metadata = {
     "Browse Big Brother houseguests and seasons. Search and filter players by season, gender, and more.",
 };
 
-export const revalidate = 3600; // 1 hour — directory changes rarely
+export const revalidate = false; // Pure webhook-driven via player/season tags
 
 async function getInitialData() {
   const [playersData, seasonsData] = await Promise.all([

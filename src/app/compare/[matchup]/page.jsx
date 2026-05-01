@@ -12,7 +12,7 @@ import { SuggestedComparisons } from "./components/SuggestedComparisons";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-export const revalidate = 3600; // 1 hour — player stats change rarely
+export const revalidate = false; // Pure webhook-driven via player tag — stats only change on player updates
 export const dynamicParams = true;
 
 export async function generateStaticParams() {

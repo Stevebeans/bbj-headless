@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-export const revalidate = 3600;
+export const revalidate = false; // Static page — invalidate via webhook on edit
 
 export async function generateMetadata() {
   const page = await getPage("privacy-policy");
