@@ -62,8 +62,8 @@ function transformPost(wpPost) {
 export async function getPost(slug) {
   try {
     const posts = await wpRestFetch(`/posts?_embed&slug=${slug}`, {
-      tags: ["posts", `post-${slug}`],
-      revalidate: 3600, // 1 hour - posts don't change often
+      tags: [`post-${slug}`], // Granular tag — webhook fires this on edit/comment, doesn't cascade to other posts
+      revalidate: 3600, // 1 hour
     });
 
     if (!posts.length) {
@@ -104,8 +104,8 @@ export async function getRelatedPosts(postId, categoryId, limit = 4) {
     const posts = await wpRestFetch(
       `/posts?_embed&per_page=${limit}&categories=${categoryId}&exclude=${postId}`,
       {
-        tags: ["posts"],
-        revalidate: 3600, // 1 hour
+        tags: [`related-posts-${categoryId}`], // Category-scoped — won't invalidate every post page on each new post
+        revalidate: 3600,
       }
     );
 
@@ -148,8 +148,8 @@ function transformPage(wpPage) {
 export async function getPage(slug) {
   try {
     const pages = await wpRestFetch(`/pages?_embed&slug=${slug}`, {
-      tags: ["pages", `page-${slug}`],
-      revalidate: 3600, // 1 hour - pages rarely change
+      tags: [`page-${slug}`], // Granular tag — pages rarely change
+      revalidate: 3600,
     });
 
     if (!pages.length) {
