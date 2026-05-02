@@ -9,8 +9,8 @@ import { bbjdFetch } from "./wordpress";
 export async function getSpoilerBar() {
   try {
     const response = await bbjdFetch("/spoiler-bar", {
-      tags: ["spoiler-bar", "players"],
-      revalidate: false, // Webhook-driven via spoiler-bar tag
+      tags: ["spoiler-bar"], // Spoiler bar lives in the layout; broad "players" tag would cascade to every page on every player edit
+      revalidate: false,
     });
 
     if (!response.success) {
@@ -43,8 +43,8 @@ export async function getCurrentSeasonPlayers(options = {}) {
     const params = new URLSearchParams({ size });
 
     const response = await bbjdFetch(`/current-season-players?${params.toString()}`, {
-      tags: ["players", "current-season", "spoiler-bar"],
-      revalidate: false, // Webhook-driven via spoiler-bar/players tags
+      tags: ["spoiler-bar", "current-season"], // No "players" tag — this fetch runs in the layout and would cascade to every page
+      revalidate: false,
     });
 
     if (!response.success) {
