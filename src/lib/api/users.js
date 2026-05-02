@@ -16,7 +16,7 @@ export async function getUserProfileByUsername(username) {
   try {
     const response = await bbjdFetch(`/users/by-username/${encodeURIComponent(username)}`, {
       tags: ["user-profile", `user-${username}`],
-      revalidate: 60,
+      revalidate: 3600, // No webhook coverage — 1h fallback acceptable for profile data
     });
 
     return response;
@@ -35,7 +35,7 @@ export async function getUserProfileById(userId) {
   try {
     const response = await bbjdFetch(`/users/${userId}/profile`, {
       tags: ["user-profile", `user-${userId}`],
-      revalidate: 60,
+      revalidate: 3600, // No webhook coverage — 1h fallback acceptable for profile data
     });
 
     return response;

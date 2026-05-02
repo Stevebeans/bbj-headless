@@ -15,7 +15,7 @@ export const metadata = {
     "All Big Brother live feed updates and show updates. Stay up to date with what's happening in the house.",
 };
 
-export const revalidate = 60; // 1 min ISR — feed updates change frequently
+export const revalidate = false; // Webhook-driven — fires on new feed update via revalidatePath
 export const dynamicParams = true;
 
 export async function generateStaticParams() {
