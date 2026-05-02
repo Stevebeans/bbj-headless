@@ -14,7 +14,7 @@ export async function getFeedUpdatesByDate(date) {
 
   try {
     const response = await bbjdFetch(`/feed-updates-by-date?date=${dateStr}`, {
-      tags: ["feed-updates", `feed-updates-${dateStr}`],
+      tags: [`feed-updates-${dateStr}`], // Date-scoped — old dates don't refresh when new feed updates posted
     });
     return response;
   } catch (error) {
@@ -61,8 +61,8 @@ export async function getFeedUpdates(options = {}) {
 export async function getFeedUpdateBySlug(slug) {
   try {
     const response = await bbjdFetch(`/feed-updates/single/${slug}`, {
-      tags: ["feed-updates", `feed-update-${slug}`],
-      revalidate: false, // Posted feed updates don't change; webhook covers edits
+      tags: [`feed-update-${slug}`], // Granular — new feed updates don't invalidate old ones
+      revalidate: false,
     });
     return response?.update || null;
   } catch (error) {

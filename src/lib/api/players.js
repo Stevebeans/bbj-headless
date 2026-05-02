@@ -107,7 +107,7 @@ export async function getSeasonPlayers(seasonId, options = {}) {
 export async function getPlayerBySlug(slug) {
   try {
     const response = await bbjdFetch(`/players/${slug}`, {
-      tags: ["players", `player-${slug}`],
+      tags: [`player-${slug}`], // Granular — webhook fires this on player update, doesn't cascade to other player pages
     });
 
     if (!response.success) {

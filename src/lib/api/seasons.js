@@ -65,8 +65,8 @@ export async function getSeasonBySlug(slug, options = {}) {
     const params = new URLSearchParams({ size });
 
     const response = await bbjdFetch(`/seasons/by-slug/${slug}?${params.toString()}`, {
-      tags: ["seasons", `season-${slug}`, "players"],
-      revalidate: 86400, // 24h — seasons change rarely, webhook handles instant invalidation
+      tags: [`season-${slug}`, "players"], // Granular season + broad players (season pages show all players)
+      revalidate: 86400,
     });
 
     if (!response.success) {
@@ -101,8 +101,8 @@ export async function getSeasonById(seasonId, options = {}) {
     const params = new URLSearchParams({ size });
 
     const response = await bbjdFetch(`/seasons/${seasonId}?${params.toString()}`, {
-      tags: ["seasons", `season-${seasonId}`, "players"],
-      revalidate: 86400, // 24h — seasons change rarely, webhook handles instant invalidation
+      tags: [`season-${seasonId}`, "players"], // Granular season + broad players
+      revalidate: 86400,
     });
 
     if (!response.success) {

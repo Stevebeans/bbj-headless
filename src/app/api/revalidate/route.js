@@ -48,9 +48,10 @@ export async function POST(request) {
       case "post":
         if (slug) {
           revalidatePath(`/${slug}`);
+          revalidateTag(`post-${slug}`); // Granular — invalidates this post's data fetches
         }
         revalidatePath("/");
-        revalidateTag("posts");
+        revalidateTag("posts"); // Broad — invalidates list pages (homepage, posts list)
         break;
 
       case "spoiler-bar":
@@ -61,7 +62,10 @@ export async function POST(request) {
         break;
 
       case "feed-update":
-        revalidateTag("feed-updates");
+        revalidateTag("feed-updates"); // Broad — invalidates list pages
+        if (slug) {
+          revalidateTag(`feed-update-${slug}`); // Granular — invalidates this update's page
+        }
         revalidatePath("/live-feed-updates");
         revalidatePath("/");
         break;
@@ -75,11 +79,12 @@ export async function POST(request) {
         break;
 
       case "player":
-        revalidateTag("players");
+        revalidateTag("players"); // Broad — invalidates directory + list fetches
         revalidateTag("season-stats");
         revalidateTag("houseboard");
         if (slug) {
           revalidatePath(`/bigbrother-players/${slug}`);
+          revalidateTag(`player-${slug}`); // Granular — invalidates this player's page only
         }
         revalidatePath("/bigbrother-players");
         break;
