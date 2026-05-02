@@ -19,7 +19,7 @@ export async function getHomepageData() {
   try {
     const data = await bbjdFetch("/homepage", {
       tags: ["hero-post", "posts", "feed-updates", "houseboard", "players", "season-stats", "comments"],
-      revalidate: 60,
+      revalidate: false, // Webhook-driven via tags
     });
 
     return {

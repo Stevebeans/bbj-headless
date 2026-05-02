@@ -8,7 +8,7 @@ import { decodeHtml } from "@/lib/utils/decodeHtml";
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-export const revalidate = 3600; // 1 hour ISR — category archives change infrequently
+export const revalidate = false; // Pure webhook-driven via posts tag
 export const dynamicParams = true; // Allow any slug — ISR-cached on first hit
 
 export async function generateStaticParams() {

@@ -19,7 +19,7 @@ import { JumpToComments } from "@/components/posts/JumpToComments";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-export const revalidate = 86400; // 24h ISR — webhook handles instant invalidation on publish/edit
+export const revalidate = false; // Pure webhook-driven — rebuild only when WP fires /api/revalidate
 export const dynamicParams = true; // Allow slugs not in generateStaticParams — they'll be ISR-cached on first hit
 
 export async function generateStaticParams() {

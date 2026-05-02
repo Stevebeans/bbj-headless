@@ -49,7 +49,7 @@ export async function getFeedUpdates(options = {}) {
 
   return bbjdFetch(endpoint, {
     tags: ["feed-updates"],
-    revalidate: 60,
+    revalidate: false, // Webhook-driven via feed-updates tag
   });
 }
 
@@ -62,7 +62,7 @@ export async function getFeedUpdateBySlug(slug) {
   try {
     const response = await bbjdFetch(`/feed-updates/single/${slug}`, {
       tags: ["feed-updates", `feed-update-${slug}`],
-      revalidate: 60,
+      revalidate: false, // Posted feed updates don't change; webhook covers edits
     });
     return response?.update || null;
   } catch (error) {

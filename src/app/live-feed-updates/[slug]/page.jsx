@@ -6,7 +6,7 @@ import { CommentSection } from "@/components/comments";
 import { FeedUpdateVoting } from "./FeedUpdateVoting";
 import { getFeedUpdateBySlug, getFeedUpdates } from "@/lib/api/feedUpdates";
 
-export const revalidate = 3600; // 1h ISR — individual feed update pages rarely change after posting
+export const revalidate = false; // Pure webhook-driven — feed updates don't change after posting
 export const dynamicParams = true;
 
 // Empty array — we don't pre-render feed updates, but generateStaticParams

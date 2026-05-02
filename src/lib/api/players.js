@@ -10,7 +10,7 @@ export async function getSpoilerBar() {
   try {
     const response = await bbjdFetch("/spoiler-bar", {
       tags: ["spoiler-bar", "players"],
-      revalidate: 60,
+      revalidate: false, // Webhook-driven via spoiler-bar tag
     });
 
     if (!response.success) {
@@ -44,7 +44,7 @@ export async function getCurrentSeasonPlayers(options = {}) {
 
     const response = await bbjdFetch(`/current-season-players?${params.toString()}`, {
       tags: ["players", "current-season", "spoiler-bar"],
-      revalidate: 60,
+      revalidate: false, // Webhook-driven via spoiler-bar/players tags
     });
 
     if (!response.success) {

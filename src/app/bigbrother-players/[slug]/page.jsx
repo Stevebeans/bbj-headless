@@ -21,7 +21,7 @@ import { SuggestedPlayerComparisons } from "./components/SuggestedPlayerComparis
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-export const revalidate = 3600; // 1h ISR — webhook handles instant invalidation on status/stat changes
+export const revalidate = false; // Pure webhook-driven — rebuild only when WP fires /api/revalidate
 export const dynamicParams = true;
 
 export async function generateStaticParams() {

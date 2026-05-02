@@ -16,7 +16,7 @@ export async function getPosts(options = {}) {
   try {
     const data = await bbjdFetch(endpoint, {
       tags: ["posts"],
-      revalidate: 60,
+      revalidate: false, // Webhook-driven via posts tag
     });
 
     return data.posts || [];
