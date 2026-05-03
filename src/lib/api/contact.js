@@ -9,7 +9,7 @@ const WORDPRESS_API_URL =
 export async function getContactReasons() {
   try {
     const reasons = await bbjdFetch("/contact/reasons", {
-      revalidate: 3600, // 1 hour - these rarely change
+      revalidate: 86400, // 24h — basically static config, no webhook coverage
     });
     return reasons;
   } catch (error) {
@@ -32,7 +32,7 @@ export async function getContactReasons() {
 export async function getRecaptchaSiteKey() {
   try {
     const response = await bbjdFetch("/contact/recaptcha-key", {
-      revalidate: 3600, // 1 hour
+      revalidate: 86400, // 24h — basically static config, no webhook coverage
     });
     return response.site_key || "";
   } catch (error) {

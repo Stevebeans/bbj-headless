@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPlayerBySlug } from "@/lib/api/players";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
@@ -100,6 +101,7 @@ export default async function PlayerPage({ params }) {
   return (
     <>
       <PlayerJsonLd player={player} siteUrl={SITE_URL} />
+      <SpoilerBarWrapper />
 
       <main className="v2-primary-container">
         <div className="flex w-full flex-col mb-4 lg:flex-row lg:gap-4 dark:text-gray-200">

@@ -5,13 +5,13 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ThemeScript } from "@/components/layout/ThemeScript";
 import { Providers } from "@/components/Providers";
-import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
 import { BackToTop } from "@/components/layout/BackToTop";
 import NewPostFAB from "@/components/editor/NewPostFAB";
 import { getAdScripts } from "@/lib/api/ads";
 import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
 import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
+import { FreestarSDKLoader } from "@/components/ads/FreestarSDKLoader";
 
 // Default supporter roles — used as fallback if ad-settings doesn't provide a list.
 // AdContext and Header both do the client-side supporter check.
@@ -113,21 +113,6 @@ export default async function RootLayout({ children }) {
     >
       <head>
         <ThemeScript />
-        {initialShouldShowAds && (
-          <>
-            {/* Freestar preconnects */}
-            <link rel="preconnect" href="https://a.pub.network/" crossOrigin="anonymous" />
-            <link rel="preconnect" href="https://b.pub.network/" crossOrigin="anonymous" />
-            <link rel="preconnect" href="https://c.pub.network/" crossOrigin="anonymous" />
-            <link rel="preconnect" href="https://d.pub.network/" crossOrigin="anonymous" />
-            <link rel="preconnect" href="https://c.amazon-adsystem.com" crossOrigin="anonymous" />
-            <link rel="preconnect" href="https://s.amazon-adsystem.com" crossOrigin="anonymous" />
-            <link rel="preconnect" href="https://btloader.com/" crossOrigin="anonymous" />
-            <link rel="preconnect" href="https://api.btloader.com/" crossOrigin="anonymous" />
-            {/* Freestar CLS prevention stylesheet */}
-            <link rel="stylesheet" href="https://a.pub.network/bigbrotherjunkies-com/cls.css" />
-          </>
-        )}
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
         <Providers
@@ -137,7 +122,6 @@ export default async function RootLayout({ children }) {
           pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
         >
           <Header />
-          <SpoilerBarWrapper />
           <RoleSimulationBanner />
           <main id="main-content" className="flex-1">
             {children}
@@ -146,6 +130,7 @@ export default async function RootLayout({ children }) {
           <FloatingUpdater />
           <BackToTop />
           <NewPostFAB />
+          <FreestarSDKLoader />
         </Providers>
         {/* Global scripts - deferred to not block rendering (analytics, etc.) */}
         {adScripts.global_header && extractInlineScript(adScripts.global_header) && (
@@ -156,31 +141,6 @@ export default async function RootLayout({ children }) {
           <Script id="global-footer" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: extractInlineScript(adScripts.global_footer) }} />
         )}
         {extractDeferredScripts(adScripts.global_footer, 'global-ftr')}
-        {/* Freestar SDK — only when ads should show */}
-        {initialShouldShowAds && (
-          <>
-            {/* Freestar SDK init */}
-            <Script id="freestar-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: `
-              var freestar = freestar || {};
-              freestar.queue = freestar.queue || [];
-              freestar.config = freestar.config || {};
-              freestar.config.enabled_slots = [];
-              freestar.initCallback = function () {
-                (freestar.config.enabled_slots.length === 0)
-                  ? freestar.initCallbackCalled = false
-                  : freestar.newAdSlots(freestar.config.enabled_slots)
-              }
-            `}} />
-            {/* Freestar core SDK — data-cfasync prevents Cloudflare Rocket Loader from deferring */}
-            <Script
-              id="freestar-sdk"
-              src="https://a.pub.network/bigbrotherjunkies-com/pubfig.min.js"
-              strategy="afterInteractive"
-              data-cfasync="false"
-            />
-            {/* TODO: Add AdShield script from Freestar PDF (adblock recovery) */}
-          </>
-        )}
       </body>
     </html>
   );

@@ -14,6 +14,7 @@ import { RelatedPosts } from "@/components/posts/RelatedPosts";
 import { FeedUpdates } from "@/components/posts/FeedUpdates";
 import { ContentWithAds } from "@/components/posts/ContentWithAds";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
+import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { JumpToComments } from "@/components/posts/JumpToComments";
 
@@ -97,7 +98,7 @@ export default async function ContentPage({ params }) {
     const firstCategoryId = content.categoryIds?.[0];
     const [related, adSettings] = await Promise.all([
       getRelatedPosts(content.id, firstCategoryId, 4),
-      wpFetch("/bbjd/v1/ad-settings", { revalidate: 60 }).catch(() => ({})),
+      wpFetch("/bbjd/v1/ad-settings", { revalidate: 3600 }).catch(() => ({})),
     ]);
     relatedPosts = related;
     adInterval = adSettings.incontent_interval || 5;
@@ -114,6 +115,7 @@ export default async function ContentPage({ params }) {
   return (
     <>
       {!isPage && <PostJsonLd post={content} siteUrl={SITE_URL} />}
+      {!isPage && <SpoilerBarWrapper />}
 
       <main className="v2-primary-container">
         <div className="flex w-full flex-col mb-4 lg:flex-row lg:gap-4 dark:text-gray-200">

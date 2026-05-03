@@ -2,12 +2,27 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getDashboard } from "@/lib/api/admin";
+import { getDashboard, purgeCache } from "@/lib/api/admin";
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [purgeState, setPurgeState] = useState({ status: "idle", message: "" });
+
+  const handlePurgeCache = async () => {
+    if (!confirm("Force-rebuild every page on next visit? This invalidates all cached pages and data.")) {
+      return;
+    }
+    setPurgeState({ status: "loading", message: "" });
+    try {
+      const result = await purgeCache();
+      setPurgeState({ status: "success", message: result.message || "Cache purged." });
+      setTimeout(() => setPurgeState({ status: "idle", message: "" }), 5000);
+    } catch (err) {
+      setPurgeState({ status: "error", message: err.message || "Purge failed." });
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -236,6 +251,50 @@ export default function AdminDashboard() {
             </LinkComponent>
           );
         })}
+      </div>
+
+      {/* Site Maintenance */}
+      <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white mt-8 mb-4">
+        Site Maintenance
+      </h2>
+      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="font-medium text-slate-800 dark:text-white">Purge All Caches</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Forces every page to rebuild on next visit. Use after bulk content changes.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handlePurgeCache}
+            disabled={purgeState.status === "loading"}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            {purgeState.status === "loading" ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                Purging…
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Purge All Caches
+              </>
+            )}
+          </button>
+        </div>
+        {purgeState.status === "success" && (
+          <p className="mt-3 text-sm text-green-600 dark:text-green-400">✓ {purgeState.message}</p>
+        )}
+        {purgeState.status === "error" && (
+          <p className="mt-3 text-sm text-red-600 dark:text-red-400">✗ {purgeState.message}</p>
+        )}
       </div>
     </div>
   );

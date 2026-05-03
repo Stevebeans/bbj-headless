@@ -55,6 +55,10 @@ export async function getMyPermissions() {
   return adminFetch("/admin/my-permissions");
 }
 
+export async function purgeCache() {
+  return adminFetch("/admin/purge-cache", { method: "POST" });
+}
+
 // ========================================
 // REPORTS
 // ========================================

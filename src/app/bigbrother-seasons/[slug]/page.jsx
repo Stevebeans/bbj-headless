@@ -2,6 +2,7 @@ import { getSeasonBySlug, getSeasonArticles } from "@/lib/api/seasons";
 import { bbjdFetch } from "@/lib/api/wordpress";
 import { notFound } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import {
   SeasonHeader,
   PlayerGrid,
@@ -166,7 +167,7 @@ export default async function SeasonPage({ params }) {
   const [{ posts: articles }, feedData] = await Promise.all([
     category_id ? getSeasonArticles(category_id) : Promise.resolve({ posts: [] }),
     feedParams
-      ? bbjdFetch(`/feed-updates?${feedParams.toString()}`, { tags: ["feed-updates"], revalidate: 60 }).catch(() => null)
+      ? bbjdFetch(`/feed-updates?${feedParams.toString()}`, { tags: ["feed-updates"], revalidate: false }).catch(() => null)
       : Promise.resolve(null),
   ]);
   const feedUpdates = feedData?.updates || feedData?.feed_updates || [];
@@ -214,6 +215,7 @@ export default async function SeasonPage({ params }) {
     <>
       <SeasonJsonLd season={season} siteUrl={SITE_URL} />
       {faqs.length > 0 && <SeasonFAQSchema questions={faqs} />}
+      <SpoilerBarWrapper />
 
       <main className="v2-primary-container">
         <div className="flex w-full flex-col mb-4 xl:flex-row xl:gap-4 dark:text-gray-200">
