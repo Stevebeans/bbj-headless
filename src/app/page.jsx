@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
+import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { getHomepageData } from "@/lib/api/home";
 import {
   Hero,
@@ -22,6 +23,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <SpoilerBarWrapper />
       {/* Main Content Area */}
       <main className="v2-primary-container">
         {isStaging && (

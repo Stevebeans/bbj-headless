@@ -19,7 +19,7 @@ export async function getSeasons(options = {}) {
 
     const response = await bbjdFetch(`/seasons?${params.toString()}`, {
       tags: ["seasons"],
-      revalidate: 86400, // 24h — seasons change rarely, webhook handles instant invalidation
+      revalidate: false, // Webhook-driven via seasons tag
     });
 
     if (!response.success) {
@@ -66,7 +66,7 @@ export async function getSeasonBySlug(slug, options = {}) {
 
     const response = await bbjdFetch(`/seasons/by-slug/${slug}?${params.toString()}`, {
       tags: [`season-${slug}`, "players"], // Granular season + broad players (season pages show all players)
-      revalidate: 86400,
+      revalidate: false, // Webhook-driven via season-${slug} + players tags
     });
 
     if (!response.success) {
@@ -102,7 +102,7 @@ export async function getSeasonById(seasonId, options = {}) {
 
     const response = await bbjdFetch(`/seasons/${seasonId}?${params.toString()}`, {
       tags: [`season-${seasonId}`, "players"], // Granular season + broad players
-      revalidate: 86400,
+      revalidate: false, // Webhook-driven via season-${id} + players tags
     });
 
     if (!response.success) {
@@ -379,7 +379,7 @@ export async function getSeasonArticles(categoryId, perPage = 6) {
 
     const response = await wpRestFetch(`/posts?${params.toString()}`, {
       tags: ["posts", `season-articles-${categoryId}`],
-      revalidate: 3600,
+      revalidate: false, // Webhook-driven via posts tag
     });
 
     const posts = (Array.isArray(response) ? response : []).map((post) => ({

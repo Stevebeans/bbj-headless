@@ -73,6 +73,22 @@ This file contains guidelines for:
 
 **On every session start, read the last 2 days of history from `.claude/history/` to understand current project context.** This provides quick recall of what was being worked on, even after crashes or session exits.
 
+## CRITICAL: Caching Comes First — Always
+
+**Before writing or changing ANYTHING on this site, your first question must be: "How does this affect caching / ISR?"** This rule overrides everything else, including new feature work, bug fixes, refactors, and "small tweaks."
+
+**Why:** This site cannot survive constant origin hits. We've already had a cost incident from `force-dynamic` on 10 pages (April 2026 — see `memory/project_vercel_cost_incident.md`) and a cascade from over-broad ISR tags (May 2026 — see `memory/project_isr_webhook_strategy.md`). Loose ends here = real money + slow pages.
+
+**Hard rules:**
+- Never call `cookies()`, `headers()`, or `draftMode()` in `layout.jsx` or any shared route segment — it opts the entire tree into dynamic rendering
+- Never use `force-dynamic` on content pages — pages are webhook-driven (`revalidate: false`) and rebuilt by `/api/revalidate`
+- Never add a per-request server fetch without justifying why it can't be ISR or client-side
+- Never widen an ISR cache tag — keep tags as narrow as possible (per-slug, not per-type) to prevent invalidation cascades
+- Per-user data (auth state, supporter flag, comments under user's name) is **always** client-side, never server-rendered
+- Any new fetch (server OR client) must declare its cache strategy before being merged
+
+**When in doubt, ask:** "Will this fire on every visit, or is it cached?" If you can't answer that, stop and figure it out before writing code.
+
 ## API Caching & Revalidation
 
 **IMPORTANT:** All API fetches MUST have a `revalidate` time set to prevent stale cache issues.

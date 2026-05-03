@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { FeedUpdateVoting } from "./FeedUpdateVoting";
 import { getFeedUpdateBySlug, getFeedUpdates } from "@/lib/api/feedUpdates";
@@ -53,7 +54,9 @@ export default async function FeedUpdatePage({ params }) {
   }
 
   return (
-    <main className="v2-primary-container">
+    <>
+      <SpoilerBarWrapper />
+      <main className="v2-primary-container">
       <div className="flex w-full flex-col mb-4 lg:flex-row lg:gap-4 dark:text-gray-200">
         {/* Main Content */}
         <section id="main-left" className="flex-grow space-y-4">
@@ -207,5 +210,6 @@ export default async function FeedUpdatePage({ params }) {
         <Sidebar showAds={true} />
       </div>
     </main>
+    </>
   );
 }

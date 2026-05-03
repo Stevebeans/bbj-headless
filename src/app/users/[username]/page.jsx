@@ -72,7 +72,7 @@ async function getInitialComments(userId) {
   try {
     const response = await bbjdFetch(`/users/${userId}/comments?page=1&per_page=10`, {
       tags: ["user-comments", `user-${userId}-comments`],
-      revalidate: 60,
+      revalidate: 300, // 5 min — initial SSR comments; client refetches latest after hydrate
     });
     return response;
   } catch {

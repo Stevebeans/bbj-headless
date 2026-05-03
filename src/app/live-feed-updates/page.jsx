@@ -3,6 +3,7 @@ import { FeedUpdatesArchive } from "@/components/feed-updates/FeedUpdatesArchive
 import { getFeedUpdates } from "@/lib/api/feedUpdates";
 import { getHouseboard } from "@/lib/api/home";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import {
   Houseboard,
   SocialFollow,
@@ -31,7 +32,9 @@ export default async function FeedUpdatesPage() {
   ]);
 
   return (
-    <main className="v2-primary-container">
+    <>
+      <SpoilerBarWrapper />
+      <main className="v2-primary-container">
       <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">
         {/* Main Content */}
         <section id="main-left" className="flex-grow space-y-4">
@@ -77,5 +80,6 @@ export default async function FeedUpdatesPage() {
         </Sidebar>
       </div>
     </main>
+    </>
   );
 }

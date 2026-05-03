@@ -63,7 +63,7 @@ export async function getPost(slug) {
   try {
     const posts = await wpRestFetch(`/posts?_embed&slug=${slug}`, {
       tags: [`post-${slug}`], // Granular tag — webhook fires this on edit/comment, doesn't cascade to other posts
-      revalidate: 3600, // 1 hour
+      revalidate: false, // Webhook-driven via post-${slug} tag
     });
 
     if (!posts.length) {
@@ -84,7 +84,7 @@ export async function getAllPostSlugs() {
   try {
     const posts = await wpRestFetch("/posts?per_page=100&_fields=slug", {
       tags: ["posts"],
-      revalidate: 3600, // 1 hour
+      revalidate: false, // Webhook-driven via posts tag
     });
 
     return posts.map((post) => post.slug);
@@ -98,13 +98,16 @@ export async function getAllPostSlugs() {
  * Get related posts from same category
  */
 export async function getRelatedPosts(postId, categoryId, limit = 4) {
-  if (!categoryId) return [];
+  const catId = Number.parseInt(categoryId, 10);
+  const pId = Number.parseInt(postId, 10);
+  if (!Number.isFinite(catId) || catId <= 0) return [];
+  if (!Number.isFinite(pId) || pId <= 0) return [];
 
   try {
     const posts = await wpRestFetch(
-      `/posts?_embed&per_page=${limit}&categories=${categoryId}&exclude=${postId}`,
+      `/posts?_embed&per_page=${limit}&categories=${catId}&exclude=${pId}`,
       {
-        tags: [`related-posts-${categoryId}`], // Category-scoped — won't invalidate every post page on each new post
+        tags: [`related-posts-${catId}`], // Category-scoped — won't invalidate every post page on each new post
         revalidate: 3600,
       }
     );

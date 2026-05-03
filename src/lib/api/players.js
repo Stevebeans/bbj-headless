@@ -190,7 +190,7 @@ export async function getAllPlayers(options = {}) {
 
     const response = await bbjdFetch(`/players?${params.toString()}`, {
       tags: ["players"],
-      revalidate: 3600, // 1 hour cache for directory
+      revalidate: false, // Webhook-driven via players tag
     });
 
     if (!response.success) {
