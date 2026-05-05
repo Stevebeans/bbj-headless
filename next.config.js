@@ -71,6 +71,10 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "wp.bigbrotherjunkies.com",
+      },
+      {
+        protocol: "https",
         hostname: "stg-wp.bigbrotherjunkies.com",
       },
       {
