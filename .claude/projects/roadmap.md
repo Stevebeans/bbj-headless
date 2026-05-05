@@ -157,7 +157,7 @@ Pages that need to exist for site parity with current WordPress site.
 - [x] Privacy Policy `/privacy-policy` (WordPress page via `[slug]`)
 - [x] Terms of Service `/terms` (WordPress page via `[slug]`)
 - [x] Contact `/contact` (full Next.js page with form + reCAPTCHA)
-- [x] About `/about` (WordPress page via `[slug]`)
+- [ ] About Us `/about` — needs creation. WP page does not exist (642 hits/24h getting 404 as of 2026-05-05). Either create as WP page (renders via `[slug]` catch-all) or as dedicated Next.js route.
 - [ ] Advertise `/advertise` (needs custom design)
 - [x] Premium/Membership info `/become-supporter` (complete with Stripe/PayPal checkout)
 
