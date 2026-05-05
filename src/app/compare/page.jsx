@@ -12,42 +12,16 @@ import { SuggestedComparisons } from "./components/SuggestedComparisons";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
-export const revalidate = false; // Pure webhook-driven via player tag — stats only change on player updates
-export const dynamicParams = true;
+export async function generateMetadata({ searchParams }) {
+  const sp = await searchParams;
+  const slug1 = (sp?.p1 || "").trim();
+  const slug2 = (sp?.p2 || "").trim();
 
-export async function generateStaticParams() {
-  return []; // Comparisons are user-generated — ISR-cache on first hit
-}
+  if (!slug1 || !slug2) {
+    return { title: "Player Comparison", robots: { index: false, follow: false } };
+  }
 
-/**
- * Parse matchup param into two slugs.
- * Returns null if the format is invalid.
- */
-function parseMatchup(matchup) {
-  const decoded = decodeURIComponent(matchup);
-  const parts = decoded.split("-vs-");
-  if (parts.length !== 2) return null;
-
-  const slug1 = parts[0].trim();
-  const slug2 = parts[1].trim();
-
-  if (!slug1 || !slug2) return null;
-  return { slug1, slug2 };
-}
-
-/**
- * Generate SEO metadata for comparison page
- */
-export async function generateMetadata({ params }) {
-  const { matchup } = await params;
-  const parsed = parseMatchup(matchup);
-
-  if (!parsed) return { title: "Player Comparison Not Found", robots: { index: false, follow: false } };
-
-  const [data1, data2] = await Promise.all([
-    getPlayerBySlug(parsed.slug1),
-    getPlayerBySlug(parsed.slug2),
-  ]);
+  const [data1, data2] = await Promise.all([getPlayerBySlug(slug1), getPlayerBySlug(slug2)]);
 
   if (!data1?.player || !data2?.player) {
     return { title: "Player Comparison Not Found", robots: { index: false, follow: false } };
@@ -66,7 +40,7 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title,
       description,
-      url: `${SITE_URL}/compare/${parsed.slug1}-vs-${parsed.slug2}`,
+      url: `${SITE_URL}/compare?p1=${p1.slug}&p2=${p2.slug}`,
       type: "website",
       images: p1.photo?.url
         ? [{ url: p1.photo.url, width: 375, height: 375, alt: `${p1.name} vs ${p2.name}` }]
@@ -78,33 +52,27 @@ export async function generateMetadata({ params }) {
       description,
     },
     alternates: {
-      canonical: `${SITE_URL}/compare/${parsed.slug1}-vs-${parsed.slug2}`,
+      canonical: `${SITE_URL}/compare?p1=${p1.slug}&p2=${p2.slug}`,
     },
   };
 }
 
-/**
- * Player Comparison Page
- */
-export default async function ComparisonPage({ params }) {
-  const { matchup } = await params;
-  const parsed = parseMatchup(matchup);
+export default async function ComparisonPage({ searchParams }) {
+  const sp = await searchParams;
+  const slug1 = (sp?.p1 || "").trim();
+  const slug2 = (sp?.p2 || "").trim();
 
-  if (!parsed) notFound();
+  if (!slug1 || !slug2) notFound();
 
-  const { slug1, slug2 } = parsed;
-
-  // Same player → redirect to their profile
   if (slug1 === slug2) {
     redirect(`/bigbrother-players/${slug1}`);
   }
 
-  // Canonical ordering: alphabetical. If not canonical, redirect.
+  // Canonical ordering: alphabetical, redirect to canonical form
   if (slug1 > slug2) {
-    redirect(`/compare/${slug2}-vs-${slug1}`);
+    redirect(`/compare?p1=${slug2}&p2=${slug1}`);
   }
 
-  // Fetch both players in parallel
   const [data1, data2] = await Promise.all([
     getPlayerBySlug(slug1),
     getPlayerBySlug(slug2),
@@ -115,7 +83,6 @@ export default async function ComparisonPage({ params }) {
   const player1 = data1.player;
   const player2 = data2.player;
 
-  // Find shared seasons
   const p1SeasonIds = new Set(player1.seasons?.map((s) => s.season_id) || []);
   const sharedSeasons = (player2.seasons || []).filter((s) => p1SeasonIds.has(s.season_id));
 
@@ -125,13 +92,10 @@ export default async function ComparisonPage({ params }) {
 
       <main className="v2-primary-container">
         <div className="flex w-full flex-col mb-4 lg:flex-row lg:gap-4 dark:text-gray-200">
-          {/* Main Content */}
           <section id="main-left" className="flex-grow space-y-4">
             <article className="v2-primary-container-inner">
-              {/* Hero — always visible */}
               <ComparisonHero player1={player1} player2={player2} />
 
-              {/* Gated content */}
               <div className="p-4 space-y-6">
                 <PremiumGate title="Unlock Player Comparisons" description="Get full head-to-head stats with a premium membership">
                   <div className="space-y-6">
@@ -151,7 +115,6 @@ export default async function ComparisonPage({ params }) {
                   </div>
                 </PremiumGate>
 
-                {/* Suggested comparisons — not gated */}
                 <SuggestedComparisons
                   player1={player1}
                   player2={player2}
@@ -162,7 +125,6 @@ export default async function ComparisonPage({ params }) {
             </article>
           </section>
 
-          {/* Sidebar */}
           <Sidebar />
         </div>
       </main>

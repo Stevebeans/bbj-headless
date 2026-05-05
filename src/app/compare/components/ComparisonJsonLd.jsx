@@ -7,7 +7,7 @@ export function ComparisonJsonLd({ player1, player2, siteUrl }) {
     "@type": "WebPage",
     name: `${player1.name} vs ${player2.name} - Big Brother Player Comparison`,
     description: `Head-to-head comparison of ${player1.name} and ${player2.name} across their Big Brother careers.`,
-    url: `${siteUrl}/compare/${player1.slug}-vs-${player2.slug}`,
+    url: `${siteUrl}/compare?p1=${player1.slug}&p2=${player2.slug}`,
     about: [
       {
         "@type": "Person",

@@ -15,10 +15,12 @@ export function SuggestedComparisons({ player1, player2, relatedPlayers1, relate
     <section>
       <h2 className="v2-primary-subheader mb-4">More Comparisons</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {suggestions.map(({ slug, p1, p2 }) => (
+        {suggestions.map(({ slug, p1, p2 }) => {
+          const [s1, s2] = slug.split("-vs-");
+          return (
           <Link
             key={slug}
-            href={`/compare/${slug}`}
+            href={`/compare?p1=${s1}&p2=${s2}`}
             className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-3 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-sm transition-all group"
           >
             {/* Player 1 mini photo */}
@@ -50,7 +52,8 @@ export function SuggestedComparisons({ player1, player2, relatedPlayers1, relate
               )}
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

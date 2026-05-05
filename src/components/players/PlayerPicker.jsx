@@ -48,7 +48,7 @@ export function PlayerPicker({ isOpen, onClose, preselectedPlayer = null }) {
         : [player2.slug, player1.slug];
 
     onClose();
-    router.push(`/compare/${s1}-vs-${s2}`);
+    router.push(`/compare?p1=${s1}&p2=${s2}`);
   }, [player1, player2, onClose, router]);
 
   if (!isOpen) return null;

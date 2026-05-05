@@ -18,8 +18,6 @@ import {
   RelatedPlayers,
   CompareButton,
 } from "@/components/players";
-import { SuggestedPlayerComparisons } from "./components/SuggestedPlayerComparisons";
-
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
 export const revalidate = false; // Pure webhook-driven — rebuild only when WP fires /api/revalidate
@@ -160,11 +158,6 @@ export default async function PlayerPage({ params }) {
                     <h2 className="v2-primary-subheader mb-3">Castmates</h2>
                     <RelatedPlayers seasons={related_players} currentPlayerSlug={slug} />
                   </section>
-                )}
-
-                {/* Suggested Comparisons */}
-                {related_players?.length > 0 && (
-                  <SuggestedPlayerComparisons player={player} relatedPlayers={related_players} />
                 )}
 
                 {/* Related Posts */}
