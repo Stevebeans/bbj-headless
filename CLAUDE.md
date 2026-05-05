@@ -185,14 +185,14 @@ cd /c/xampp/htdocs/bbj/wp-content/plugins/bigbrotherjunkies-data
 tar -cf /tmp/plugin.tar --exclude='node_modules' --exclude='.git' .
 gzip -f /tmp/plugin.tar
 scp /tmp/plugin.tar.gz bbj-prod:~/plugin.tar.gz
-ssh bbj-prod "cd /home/1358704.cloudwaysapps.com/duesaptjae/public_html/wp-content/plugins/bigbrotherjunkies-data && rm -rf src vendor assets build && tar -xzf ~/plugin.tar.gz && rm ~/plugin.tar.gz"
+ssh bbj-prod "cd /home/1620468.cloudwaysapps.com/duesaptjae/public_html/wp-content/plugins/bigbrotherjunkies-data && rm -rf src vendor assets build && tar -xzf ~/plugin.tar.gz && rm ~/plugin.tar.gz"
 ```
 
 **Server paths:**
 | Environment | Path |
 |-------------|------|
-| Production | `/home/1358704.cloudwaysapps.com/duesaptjae/public_html/wp-content/plugins/bigbrotherjunkies-data` |
-| Staging | `/home/1358704.cloudwaysapps.com/ftgtnduhbt/public_html/wp-content/plugins/bigbrotherjunkies-data` |
+| Production | `/home/1620468.cloudwaysapps.com/duesaptjae/public_html/wp-content/plugins/bigbrotherjunkies-data` |
+| Staging | `/home/1620468.cloudwaysapps.com/ftgtnduhbt/public_html/wp-content/plugins/bigbrotherjunkies-data` |
 
 **Important:** Always test locally before deploying to production.
 
