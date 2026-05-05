@@ -51,5 +51,7 @@ export const config = {
     "/settings/:path*",
     "/editor/:path*",
     "/notifications/:path*",
+    "/bigbrother-players/:slug/edit",
+    "/bigbrother-seasons/:slug/edit",
   ],
 };
