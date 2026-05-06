@@ -39,6 +39,38 @@ const nextConfig = {
         destination: "/live-feed-updates",
         permanent: true,
       },
+      // Legacy WP slug redirects — these were hitting the [slug] catch-all
+      // and creating ISR cache entries / wasting function invocations
+      {
+        source: "/premium",
+        destination: "/become-supporter",
+        permanent: true,
+      },
+      {
+        source: "/log-in",
+        destination: "/login",
+        permanent: true,
+      },
+      {
+        source: "/feed-updates",
+        destination: "/live-feed-updates",
+        permanent: true,
+      },
+      {
+        source: "/player-directory",
+        destination: "/directory",
+        permanent: true,
+      },
+      {
+        source: "/registration",
+        destination: "/login",
+        permanent: true,
+      },
+      {
+        source: "/big-brother-stats",
+        destination: "/directory",
+        permanent: true,
+      },
     ];
   },
   async headers() {

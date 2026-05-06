@@ -98,7 +98,7 @@ function PlayerCard({ player, currentPlayerSlug }) {
       currentPlayerSlug <= playerSlug
         ? [currentPlayerSlug, playerSlug]
         : [playerSlug, currentPlayerSlug];
-    compareHref = `/compare/${s1}-vs-${s2}`;
+    compareHref = `/compare?p1=${s1}&p2=${s2}`;
   }
 
   return (

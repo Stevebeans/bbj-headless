@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
 
+// Apex-domain probe paths from WP attack scanners. Bail with 404 before
+// the request hits any page handler so we don't pay function/ISR cost.
+const PROBE_PATH_EXACT = new Set(["/wp-login.php", "/xmlrpc.php"]);
+const PROBE_PATH_PREFIXES = ["/wp-admin"];
+
+function isProbePath(pathname) {
+  if (PROBE_PATH_EXACT.has(pathname)) return true;
+  return PROBE_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
 /**
  * Decode JWT payload to check expiration.
  * Runs at the edge — no Node.js Buffer, so use atob.
@@ -24,6 +34,13 @@ function isTokenExpired(token) {
 }
 
 export function middleware(request) {
+  const { pathname } = request.nextUrl;
+
+  // Block WP-attack probe paths early — saves function invocations + ISR writes
+  if (isProbePath(pathname)) {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const token = request.cookies.get("bbj_token")?.value;
 
   if (token && isTokenExpired(token)) {
@@ -51,5 +68,11 @@ export const config = {
     "/settings/:path*",
     "/editor/:path*",
     "/notifications/:path*",
+    "/bigbrother-players/:slug/edit",
+    "/bigbrother-seasons/:slug/edit",
+    // WP-attack probe paths — bail with 404 in middleware
+    "/wp-login.php",
+    "/wp-admin/:path*",
+    "/xmlrpc.php",
   ],
 };
