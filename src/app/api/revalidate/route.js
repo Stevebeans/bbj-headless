@@ -101,6 +101,14 @@ export async function POST(request) {
         revalidateTag("spoiler-bar");
         break;
 
+      case "ad-scripts":
+        revalidateTag("ad-scripts");
+        break;
+
+      case "ad-settings":
+        revalidateTag("ad-settings");
+        break;
+
       case "all":
         revalidatePath("/", "layout");
         break;
