@@ -92,10 +92,14 @@ export default async function RootLayout({ children }) {
   // Doing so opts the entire route tree into dynamic rendering, which burns
   // Vercel function duration on every page view. Auth hydration happens
   // client-side in AuthContext via getUserCache()/getToken() from cookies.js.
-  // See: memory/project_vercel_cost_incident.md
+  // ALSO: never use a time-based `revalidate` on a layout fetch — it floors
+  // every page in the tree to that interval (Next.js takes the lowest
+  // revalidate of the route segment), causing ISR write storms. Use
+  // `revalidate: false` + a tag invalidated via /api/revalidate.
+  // See: memory/project_vercel_cost_incident.md, project_isr_webhook_strategy.md
   const [adScripts, adSettings] = await Promise.all([
     getAdScripts(),
-    fetch(`${process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json"}/bbjd/v1/ad-settings`, { next: { revalidate: 3600 } })
+    fetch(`${process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json"}/bbjd/v1/ad-settings`, { next: { tags: ["ad-settings"], revalidate: false } })
       .then(r => r.ok ? r.json() : { ads_enabled: true })
       .catch(() => ({ ads_enabled: true })),
   ]);

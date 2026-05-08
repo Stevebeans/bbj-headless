@@ -13,7 +13,7 @@ export async function getAdScripts() {
   try {
     const data = await bbjdFetch("/ad-scripts", {
       tags: ["ad-scripts"],
-      revalidate: 300,
+      revalidate: false, // Layout-level fetch — timer-based revalidate floors every page in the tree to that interval. Webhook-driven via `ad-scripts` tag.
     });
     return data;
   } catch (error) {
