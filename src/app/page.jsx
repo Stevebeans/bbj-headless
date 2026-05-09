@@ -1,16 +1,17 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { getHomepageData } from "@/lib/api/home";
 import {
   Hero,
   FeedUpdatesSection,
   MoreStories,
-  SocialFollow,
-  Houseboard,
-  WatchLiveFeeds,
   SeasonStats,
   RecentComments,
+  StatusStrip,
+  HouseStrip,
+  HousePulse,
 } from "@/components/home";
 
 const isStaging = process.env.VERCEL_ENV === "preview" || process.env.NEXT_PUBLIC_SITE_URL?.includes("stg-");
@@ -21,10 +22,18 @@ export default async function HomePage() {
   const heroPostId = data.hero.post?.id;
   const posts = data.posts.posts || [];
 
+  const tickerItems = (data.feedUpdates.updates || [])
+    .slice(0, 3)
+    .map((u) => ({
+      id: u.id,
+      title: u.title,
+      permalink: u.permalink || `/live-feed-updates/${u.slug}`,
+    }));
+
   return (
     <>
       <SpoilerBarWrapper />
-      {/* Main Content Area */}
+      <StatusStrip season={data.currentSeason} tickerItems={tickerItems} />
       <main className="v2-primary-container">
         {isStaging && (
           <div className="mb-4 rounded-lg border border-secondary-500/30 bg-secondary-500/10 px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
@@ -33,38 +42,33 @@ export default async function HomePage() {
           </div>
         )}
         <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">
-          {/* Main Left Column */}
           <section id="main-left" className="flex-grow space-y-4">
-            {/* Hero Section */}
             {data.hero.post && (
               <Hero post={data.hero.post} season={data.hero.season} />
             )}
 
-            {/* Top Ad */}
+            <HouseStrip
+              houseboard={data.houseboard.houseboard}
+              season={data.houseboard.season}
+            />
+
+            <HousePulse housePulse={data.housePulse} />
+
             <FreestarSlot placementName="bigbrotherjunkies_incontent_reusable" />
 
-            {/* Feed Updates - Full width */}
             <FeedUpdatesSection updates={data.feedUpdates.updates} />
 
-            {/* Mid Ad */}
             <FreestarSlot placementName="bigbrotherjunkies_incontent_reusable_Homepage2" />
 
-            {/* More Stories */}
             <MoreStories posts={posts} heroId={heroPostId} />
           </section>
 
-          {/* Right Sidebar */}
           <Sidebar sticky={false}>
-            <Houseboard
-              houseboard={data.houseboard.houseboard}
-              seasonName={data.houseboard.season?.name}
-            />
-            <SocialFollow />
-            <WatchLiveFeeds />
             <SeasonStats
               season={data.seasonStats.season}
               players={data.seasonStats.players}
             />
+            <SubscribeWidget />
             <RecentComments comments={data.recentComments.comments} />
           </Sidebar>
         </div>
