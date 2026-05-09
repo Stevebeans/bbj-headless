@@ -10,7 +10,7 @@ import { FreestarSlot } from "../ads/FreestarSlot";
  */
 export function StickyAdSlot({ placementName = "bigbrotherjunkies_siderail_right_2" }) {
   return (
-    <div className="lg:sticky lg:top-24">
+    <div className="lg:sticky lg:top-36">
       <FreestarSlot placementName={placementName} />
     </div>
   );
