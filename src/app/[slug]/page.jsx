@@ -6,6 +6,7 @@ import { autoLinkEntities, buildSeasonEntityMap } from "@/lib/utils/autoLink";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { PostHero } from "@/components/posts/PostHero";
 import { PostMeta } from "@/components/posts/PostMeta";
 import { PostJsonLd } from "@/components/posts/PostJsonLd";
@@ -217,7 +218,9 @@ export default async function ContentPage({ params }) {
           </section>
 
           {/* Sidebar */}
-          <Sidebar showAds={showAds} />
+          <Sidebar showAds={showAds}>
+            <SubscribeWidget />
+          </Sidebar>
         </div>
 
         {/* Floating jump to comments button - only for posts */}

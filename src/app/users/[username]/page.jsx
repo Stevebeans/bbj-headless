@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getUserProfileByUsername } from "@/lib/api/users";
 import { bbjdFetch } from "@/lib/api/wordpress";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import {
   UserProfileHero,
   FavoritePlayerCard,
@@ -144,7 +145,9 @@ export default async function UserProfilePage({ params }) {
         </section>
 
         {/* Sidebar */}
-        <Sidebar />
+        <Sidebar>
+          <SubscribeWidget />
+        </Sidebar>
       </div>
     </main>
   );

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPlayerBySlug } from "@/lib/api/players";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
@@ -179,7 +180,9 @@ export default async function PlayerPage({ params }) {
           </section>
 
           {/* Sidebar */}
-          <Sidebar />
+          <Sidebar>
+            <SubscribeWidget />
+          </Sidebar>
         </div>
       </main>
     </>

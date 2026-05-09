@@ -2,6 +2,7 @@ import { getSeasonBySlug, getSeasonArticles } from "@/lib/api/seasons";
 import { bbjdFetch } from "@/lib/api/wordpress";
 import { notFound } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import {
   SeasonHeader,
@@ -295,7 +296,9 @@ export default async function SeasonPage({ params }) {
           />
 
           {/* Site Sidebar (right column) */}
-          <Sidebar />
+          <Sidebar>
+            <SubscribeWidget />
+          </Sidebar>
         </div>
       </main>
     </>

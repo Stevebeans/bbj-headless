@@ -3,6 +3,7 @@ import { FeedUpdatesArchive } from "@/components/feed-updates/FeedUpdatesArchive
 import { getFeedUpdates } from "@/lib/api/feedUpdates";
 import { getHouseboard } from "@/lib/api/home";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import {
   Houseboard,
@@ -77,6 +78,7 @@ export default async function FeedUpdatesPage() {
           />
           <SocialFollow />
           <WatchLiveFeeds />
+          <SubscribeWidget />
         </Sidebar>
       </div>
     </main>

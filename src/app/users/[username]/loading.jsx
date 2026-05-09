@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { UserProfileSkeleton } from "@/components/users";
 
 export default function UserProfileLoading() {
@@ -11,7 +12,9 @@ export default function UserProfileLoading() {
         </section>
 
         {/* Sidebar */}
-        <Sidebar />
+        <Sidebar>
+          <SubscribeWidget />
+        </Sidebar>
       </div>
     </main>
   );

@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getPlayerBySlug } from "@/lib/api/players";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { ComparisonHero } from "./components/ComparisonHero";
 import { ComparisonStats } from "./components/ComparisonStats";
 import { ComparisonAwards } from "./components/ComparisonAwards";
@@ -125,7 +126,9 @@ export default async function ComparisonPage({ searchParams }) {
             </article>
           </section>
 
-          <Sidebar />
+          <Sidebar>
+            <SubscribeWidget />
+          </Sidebar>
         </div>
       </main>
     </>
