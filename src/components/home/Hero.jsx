@@ -7,16 +7,11 @@ export function Hero({ post, season }) {
   return (
     <article className="v2-primary-container-inner" aria-labelledby="featured-post-title">
       {/* Section Header */}
-      <h1 className="font-display text-2xl text-primary-500 dark:text-primary-400 p-2">
-        Latest{" "}
-        {season?.permalink ? (
-          <Link href={season.permalink} className="hover:underline">
-            {season.name} Spoilers
-          </Link>
-        ) : (
-          "Big Brother Spoilers"
-        )}
-      </h1>
+      <div className="pb-3 mb-5 border-b border-gray-200 dark:border-gray-700 px-3 pt-3">
+        <h2 className="font-osw text-lg md:text-xl uppercase tracking-wide text-primary-500 dark:text-secondary-500 m-0">
+          Latest Update
+        </h2>
+      </div>
 
       {/* Hero Image */}
       <div className="relative h-[250px] md:h-[333px] bg-gray-100 dark:bg-gray-800 overflow-hidden group/hero">
@@ -62,11 +57,11 @@ export function Hero({ post, season }) {
 
       {/* Post Info */}
       <div className="p-3">
-        <h2 className="font-display text-2xl md:text-4xl text-primary-500 dark:text-primary-400">
+        <h3 className="font-display text-2xl md:text-4xl text-primary-500 dark:text-primary-400">
           <Link href={`/${post.slug}`} className="hover:underline">
             {post.title}
           </Link>
-        </h2>
+        </h3>
 
         {/* Meta */}
         <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mt-1">
