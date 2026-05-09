@@ -39,7 +39,7 @@ Bring the bbj-app Next.js homepage layout into parity with the WordPress source-
 | `HouseStrip` | Server | `{ houseboard, season }` (existing data shape) | Horizontal compact strip. Renders 4 status groups (HOH/VETO/NOMS/HAVE-NOTS) as small avatar pills + names. Empty bucket = dashed circle "TBD". |
 | `HousePulse` | Server | `{ housePulse: { active, buckets, total } }` | 8 vertical bars showing feed-updates/hour. Color ramp: gray (0) → amber-200/400 → red-400/600. Returns `null` when `!active`. Empty state: "Quiet house · no updates in the last 8 hours." |
 | `ParamountPlusCard` | Server | none | Dark navy box with "Watch Live on Paramount+" h2, copy, "Start free trial" yellow button. URL = hardcoded constant matching existing `WatchLiveFeeds` URL (`https://paramountplus.qflm.net/c/161260/3116110/3065`); promotable to env var later. |
-| `NewsletterCard` | Client | none | Email input + Subscribe button on dark navy bg. Submit handler shows "Coming soon" toast — no MailPoet wiring (see `memory/project_newsletter_direction.md`). |
+| (no new component — reuse `SubscribeWidget`) | Client | n/a | Existing `src/components/email/SubscribeWidget.jsx` is already wired to `/bbjd/v1/email/subscribe` (custom Resend-based system, replaced MailPoet in Feb 2026). Restyle if needed to match v2 dark-navy card; otherwise drop in as-is. |
 | `StickyAdSlot` | Client | `{ slot: "homepage_sidebar_sticky" }` | Wraps `ClientAdPlaceholder` in `lg:sticky lg:top-24`. Uses existing client ad pattern. |
 
 ### UPDATED components
@@ -145,7 +145,7 @@ Result: exactly one `<h1>` per home render, semantic hierarchy intact.
 | `src/components/home/HouseStrip.jsx` | NEW |
 | `src/components/home/HousePulse.jsx` | NEW |
 | `src/components/sidebar/ParamountPlusCard.jsx` | NEW |
-| `src/components/sidebar/NewsletterCard.jsx` | NEW (`"use client"`) |
+| `src/components/email/SubscribeWidget.jsx` | (existing — used directly in the new sidebar tree, no new file) |
 | `src/components/sidebar/StickyAdSlot.jsx` | NEW (`"use client"`) |
 | `src/components/home/HomeWidgets.jsx` | Update `SeasonStats` visuals; consider deleting `SocialFollow`/`WatchLiveFeeds`/`Houseboard` if unused |
 | `src/components/home/index.js` | Update exports to match deletions |
@@ -188,12 +188,25 @@ New slot `homepage_sidebar_sticky` (300x600 desktop, 300x250 mobile fallback) �
 
 ## Out of Scope
 
-- MailPoet integration (form is a stub — see `memory/project_newsletter_direction.md`)
 - Search bar in status-strip
 - New ad slot creation in WP admin (manual config)
-- Changes to SpoilerBarWrapper
+- Changes to `SpoilerBarWrapper`
 - Changes to existing cache tags or webhook routes
 - Refactor of unrelated homepage code
+
+## Sidebar Restructure (added after spec review)
+
+`src/components/layout/Sidebar.jsx` is shared across ~17 pages. User direction: modify it directly rather than create a homepage-specific variant.
+
+**Current Sidebar wraps children with:** Welcome widget → Top FreestarSlot ad → `{children}` → SubscribeWidget → "Hot Posts" placeholder → Bottom FreestarSlot ad
+
+**New Sidebar wraps children with:** Welcome widget (kept — auth-aware site-wide) → ParamountPlusCard → `{children}` → StickyAdSlot
+
+**Removed from Sidebar wrapper:** Top FreestarSlot (replaced by Paramount+), SubscribeWidget call (moves into per-page children so each page controls position), Hot Posts placeholder (was a placeholder, dropped), Bottom FreestarSlot (replaced by sticky variant).
+
+**Migration step for the 16 non-home pages:** add `<SubscribeWidget />` to their Sidebar children where they want the newsletter (most do). Mechanical change, included as a task in the plan so other pages don't lose newsletter on this PR.
+
+**Resulting home sidebar order (matches v2 PHP):** Welcome → Paramount+ → SeasonStats → SubscribeWidget → RecentComments → StickyAdSlot. The user-welcome widget is one extra item not in the v2 PHP, kept for site-wide auth UX.
 
 ## Risks / Open Questions
 
