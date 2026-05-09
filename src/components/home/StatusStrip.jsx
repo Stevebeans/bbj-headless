@@ -7,7 +7,7 @@ import Link from "next/link";
 export function StatusStrip({ season, tickerItems = [] }) {
   const heading = season?.full_name
     ? `${season.full_name} Spoilers`
-    : "Spoilers";
+    : "Big Brother Spoilers";
 
   // Render the headline list TWICE so the marquee loops seamlessly.
   const doubled = [...tickerItems, ...tickerItems];

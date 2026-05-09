@@ -1,3 +1,5 @@
+"use client";
+
 const PARAMOUNT_PLUS_URL =
   "https://paramountplus.qflm.net/c/161260/3116110/3065";
 
