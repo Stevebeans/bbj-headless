@@ -19,7 +19,7 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
   const avatar = user?.avatar || user?.user_avatar;
 
   return (
-    <aside className={`w-full lg:w-80 flex-shrink-0 lg:self-start ${sticky ? "lg:sticky lg:top-28" : ""} space-y-4`} aria-label="Sidebar">
+    <aside className={`w-full lg:w-80 flex-shrink-0 ${sticky ? "lg:self-start lg:sticky lg:top-28" : ""} space-y-4`} aria-label="Sidebar">
       {/* User Welcome Widget */}
       <div className="v2-sidebar-container p-4">
         {loading ? (
