@@ -99,6 +99,7 @@ export default function AdminAds() {
         expires: PREVIEW_COOKIE_DAYS,
         sameSite: "Lax",
         path: "/",
+        secure: window.location.protocol === "https:",
       });
     } else {
       Cookies.remove(PREVIEW_COOKIE_NAME, { path: "/" });
@@ -188,6 +189,7 @@ export default function AdminAds() {
         <div className="flex items-center gap-3">
           <button
             onClick={toggleKillSwitch}
+            aria-pressed={!!settings?.ads_enabled}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               settings?.ads_enabled
                 ? "bg-green-500"
