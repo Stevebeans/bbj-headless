@@ -24,36 +24,44 @@ export const DEFAULT_PWA_SUPPRESSED = [
 // Manual placement slot definitions with CLS prevention heights
 export const adSlots = {
   bigbrotherjunkies_leaderboard_atf: {
-    desktop: { height: 90 },    // 728x90 leaderboard
-    mobile: { height: 100 },    // 320x100 mobile banner
+    desktop: { width: 728, height: 90 },
+    mobile: { width: 320, height: 100 },
+    label: "Leaderboard ATF",
   },
   bigbrotherjunkies_incontent_reusable: {
-    desktop: { height: 280 },   // 336x280 large rectangle
-    mobile: { height: 250 },    // 300x250 medium rectangle
+    desktop: { width: 336, height: 280 },
+    mobile: { width: 300, height: 250 },
+    label: "In-Content Reusable",
   },
   bigbrotherjunkies_incontent_reusable_Homepage2: {
-    desktop: { height: 280 },
-    mobile: { height: 250 },
+    desktop: { width: 336, height: 280 },
+    mobile: { width: 300, height: 250 },
+    label: "In-Content (Homepage 2)",
   },
   bigbrotherjunkies_middle_feed: {
-    desktop: { height: 280 },
-    mobile: { height: 250 },
+    desktop: { width: 336, height: 280 },
+    mobile: { width: 300, height: 250 },
+    label: "Middle Feed",
   },
   bigbrotherjunkies_middle_post: {
-    desktop: { height: 280 },
-    mobile: { height: 250 },
+    desktop: { width: 336, height: 280 },
+    mobile: { width: 300, height: 250 },
+    label: "Middle Post",
   },
   bigbrotherjunkies_siderail_right_1: {
-    desktop: { height: 250 },   // 300x250 medium rectangle
-    mobile: { height: 0 },      // Hidden on mobile
+    desktop: { width: 300, height: 250 },
+    mobile: { width: 0, height: 0 },
+    label: "Siderail Right 1",
   },
   bigbrotherjunkies_siderail_right_2: {
-    desktop: { height: 250 },
-    mobile: { height: 0 },
+    desktop: { width: 300, height: 250 },
+    mobile: { width: 0, height: 0 },
+    label: "Siderail Right 2",
   },
   bigbrotherjunkies_sticky_siderail_right: {
-    desktop: { height: 250 },  // 300x250 primary (SDK handles sticky behavior)
-    mobile: { height: 0 },     // Hidden on mobile
+    desktop: { width: 300, height: 250 },
+    mobile: { width: 0, height: 0 },
+    label: "Sticky Siderail",
   },
 };
 
@@ -63,5 +71,11 @@ export const adSlots = {
  * @returns {object} Slot config with desktop/mobile heights
  */
 export function getSlotConfig(placementName) {
-  return adSlots[placementName] || { desktop: { height: 250 }, mobile: { height: 250 } };
+  return (
+    adSlots[placementName] || {
+      desktop: { width: 300, height: 250 },
+      mobile: { width: 300, height: 250 },
+      label: "Unknown Slot",
+    }
+  );
 }
