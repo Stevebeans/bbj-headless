@@ -134,11 +134,10 @@ export async function POST(request) {
         );
     }
 
-    let cfResult = { skipped: true, reason: "nothing to purge" };
     if (cfPurgeAll) {
-      cfResult = await purgeCloudflare("all");
+      await purgeCloudflare("all");
     } else if (cfPurgePaths.length > 0) {
-      cfResult = await purgeCloudflare(cfPurgePaths);
+      await purgeCloudflare(cfPurgePaths);
     }
 
     return NextResponse.json({
@@ -146,7 +145,6 @@ export async function POST(request) {
       type,
       slug,
       cf_purged: cfPurgeAll ? "all" : cfPurgePaths,
-      cf_result: cfResult,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -166,26 +164,25 @@ export async function POST(request) {
  *
  * @param {string[] | "all"} target  Array of paths/URLs, or "all" for purge_everything
  */
+/**
+ * Production apex — hardcoded because this is the only CF-proxied host on the
+ * zone. Using process.env.NEXT_PUBLIC_SITE_URL here would break: preview
+ * deploys set that to staging.bigbrotherjunkies.com which is DNS-only / not
+ * CF-cached, so purges would silently no-op against the wrong host.
+ */
+const CF_PURGE_BASE_URL = "https://bigbrotherjunkies.com";
+
 async function purgeCloudflare(target) {
   const token = process.env.CLOUDFLARE_PURGE_TOKEN;
   const zoneId = process.env.CLOUDFLARE_ZONE_ID;
-  const diag = {
-    has_token: !!token,
-    has_zone: !!zoneId,
-    token_len: token ? token.length : 0,
-    zone_len: zoneId ? zoneId.length : 0,
-  };
-  if (!token || !zoneId) {
-    return { ok: false, reason: "missing_env_vars", ...diag };
-  }
+  if (!token || !zoneId) return;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
   const body =
     target === "all"
       ? { purge_everything: true }
       : {
           files: [...new Set(target)].map((p) =>
-            p.startsWith("http") ? p : `${siteUrl}${p}`
+            p.startsWith("http") ? p : `${CF_PURGE_BASE_URL}${p}`
           ),
         };
 
@@ -201,15 +198,12 @@ async function purgeCloudflare(target) {
         body: JSON.stringify(body),
       }
     );
-    const responseText = await res.text();
     if (!res.ok) {
-      console.error(`[CF Purge] HTTP ${res.status}: ${responseText}`);
-      return { ok: false, reason: `http_${res.status}`, response: responseText.slice(0, 300), ...diag };
+      const err = await res.text();
+      console.error(`[CF Purge] HTTP ${res.status}: ${err}`);
     }
-    return { ok: true, status: res.status, response: responseText.slice(0, 300), site_url: siteUrl, files: body.files };
   } catch (err) {
     console.error("[CF Purge] error:", err.message);
-    return { ok: false, reason: "fetch_threw", error: err.message, ...diag };
   }
 }
 
