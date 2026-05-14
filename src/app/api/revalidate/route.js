@@ -4,6 +4,10 @@ import { NextResponse } from "next/server";
 /**
  * On-demand revalidation webhook endpoint
  *
+ * Invalidates both Next.js ISR (Vercel) AND Cloudflare's edge cache for the
+ * affected URLs. Without the CF purge, Vercel rebuilds in seconds but users
+ * keep seeing stale HTML until CF's edge TTL expires.
+ *
  * Called from WordPress when content changes:
  * - Post published/updated
  * - Spoiler bar updated
@@ -15,7 +19,6 @@ export async function POST(request) {
     const body = await request.json();
     const { secret, type, slug, path, tag } = body;
 
-    // Verify secret
     if (secret !== process.env.REVALIDATION_SECRET) {
       return NextResponse.json(
         { error: "Invalid secret" },
@@ -23,7 +26,6 @@ export async function POST(request) {
       );
     }
 
-    // Revalidate by tag if provided
     if (tag) {
       revalidateTag(tag);
       return NextResponse.json({
@@ -33,9 +35,9 @@ export async function POST(request) {
       });
     }
 
-    // Revalidate by path if provided
     if (path) {
       revalidatePath(path);
+      await purgeCloudflare([path]);
       return NextResponse.json({
         revalidated: true,
         type: "path",
@@ -43,15 +45,19 @@ export async function POST(request) {
       });
     }
 
-    // Revalidate by content type
+    const cfPurgePaths = [];
+    let cfPurgeAll = false;
+
     switch (type) {
       case "post":
         if (slug) {
           revalidatePath(`/${slug}`);
-          revalidateTag(`post-${slug}`); // Granular — invalidates this post's data fetches
+          revalidateTag(`post-${slug}`);
+          cfPurgePaths.push(`/${slug}`);
         }
         revalidatePath("/");
-        revalidateTag("posts"); // Broad — invalidates list pages (homepage, posts list)
+        revalidateTag("posts");
+        cfPurgePaths.push("/");
         break;
 
       case "spoiler-bar":
@@ -59,15 +65,18 @@ export async function POST(request) {
         revalidateTag("houseboard");
         revalidateTag("season-stats");
         revalidatePath("/");
+        cfPurgePaths.push("/");
         break;
 
       case "feed-update":
-        revalidateTag("feed-updates"); // Broad — invalidates list pages
+        revalidateTag("feed-updates");
         if (slug) {
-          revalidateTag(`feed-update-${slug}`); // Granular — invalidates this update's page
+          revalidateTag(`feed-update-${slug}`);
+          cfPurgePaths.push(`/live-feed-updates/${slug}`);
         }
         revalidatePath("/live-feed-updates");
         revalidatePath("/");
+        cfPurgePaths.push("/live-feed-updates", "/");
         break;
 
       case "comment":
@@ -75,18 +84,21 @@ export async function POST(request) {
         if (slug) {
           revalidatePath(`/${slug}`);
           revalidateTag(`post-${slug}`);
+          cfPurgePaths.push(`/${slug}`);
         }
         break;
 
       case "player":
-        revalidateTag("players"); // Broad — invalidates directory + list fetches
+        revalidateTag("players");
         revalidateTag("season-stats");
         revalidateTag("houseboard");
         if (slug) {
           revalidatePath(`/bigbrother-players/${slug}`);
-          revalidateTag(`player-${slug}`); // Granular — invalidates this player's page only
+          revalidateTag(`player-${slug}`);
+          cfPurgePaths.push(`/bigbrother-players/${slug}`);
         }
         revalidatePath("/bigbrother-players");
+        cfPurgePaths.push("/bigbrother-players");
         break;
 
       case "season":
@@ -95,10 +107,11 @@ export async function POST(request) {
           revalidatePath(`/bigbrother-seasons/${slug}`);
           revalidatePath(`/bigbrother-seasons/${slug}/edit`);
           revalidateTag(`season-${slug}`);
+          cfPurgePaths.push(`/bigbrother-seasons/${slug}`);
         }
         revalidatePath("/bigbrother-seasons");
-        // Also revalidate spoiler bar since it depends on season data
         revalidateTag("spoiler-bar");
+        cfPurgePaths.push("/bigbrother-seasons");
         break;
 
       case "ad-scripts":
@@ -111,6 +124,7 @@ export async function POST(request) {
 
       case "all":
         revalidatePath("/", "layout");
+        cfPurgeAll = true;
         break;
 
       default:
@@ -120,10 +134,17 @@ export async function POST(request) {
         );
     }
 
+    if (cfPurgeAll) {
+      await purgeCloudflare("all");
+    } else if (cfPurgePaths.length > 0) {
+      await purgeCloudflare(cfPurgePaths);
+    }
+
     return NextResponse.json({
       revalidated: true,
       type,
       slug,
+      cf_purged: cfPurgeAll ? "all" : cfPurgePaths,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -132,6 +153,50 @@ export async function POST(request) {
       { error: "Revalidation failed" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Purge URLs from Cloudflare's edge cache. Silently no-ops if env vars are
+ * missing (local dev, preview deploys without CF in front). Failures are
+ * logged but don't break the revalidation flow — the Vercel revalidate
+ * already succeeded; worst case is stale-on-CF until natural TTL.
+ *
+ * @param {string[] | "all"} target  Array of paths/URLs, or "all" for purge_everything
+ */
+async function purgeCloudflare(target) {
+  const token = process.env.CLOUDFLARE_PURGE_TOKEN;
+  const zoneId = process.env.CLOUDFLARE_ZONE_ID;
+  if (!token || !zoneId) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
+  const body =
+    target === "all"
+      ? { purge_everything: true }
+      : {
+          files: [...new Set(target)].map((p) =>
+            p.startsWith("http") ? p : `${siteUrl}${p}`
+          ),
+        };
+
+  try {
+    const res = await fetch(
+      `https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.text();
+      console.error(`[CF Purge] HTTP ${res.status}: ${err}`);
+    }
+  } catch (err) {
+    console.error("[CF Purge] error:", err.message);
   }
 }
 
@@ -156,6 +221,7 @@ export async function GET(request) {
 
   if (path) {
     revalidatePath(path);
+    await purgeCloudflare([path]);
     return NextResponse.json({ revalidated: true, path });
   }
 
