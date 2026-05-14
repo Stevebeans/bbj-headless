@@ -134,10 +134,11 @@ export async function POST(request) {
         );
     }
 
+    let cfResult = { skipped: true, reason: "nothing to purge" };
     if (cfPurgeAll) {
-      await purgeCloudflare("all");
+      cfResult = await purgeCloudflare("all");
     } else if (cfPurgePaths.length > 0) {
-      await purgeCloudflare(cfPurgePaths);
+      cfResult = await purgeCloudflare(cfPurgePaths);
     }
 
     return NextResponse.json({
@@ -145,6 +146,7 @@ export async function POST(request) {
       type,
       slug,
       cf_purged: cfPurgeAll ? "all" : cfPurgePaths,
+      cf_result: cfResult,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -167,7 +169,15 @@ export async function POST(request) {
 async function purgeCloudflare(target) {
   const token = process.env.CLOUDFLARE_PURGE_TOKEN;
   const zoneId = process.env.CLOUDFLARE_ZONE_ID;
-  if (!token || !zoneId) return;
+  const diag = {
+    has_token: !!token,
+    has_zone: !!zoneId,
+    token_len: token ? token.length : 0,
+    zone_len: zoneId ? zoneId.length : 0,
+  };
+  if (!token || !zoneId) {
+    return { ok: false, reason: "missing_env_vars", ...diag };
+  }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
   const body =
@@ -191,12 +201,15 @@ async function purgeCloudflare(target) {
         body: JSON.stringify(body),
       }
     );
+    const responseText = await res.text();
     if (!res.ok) {
-      const err = await res.text();
-      console.error(`[CF Purge] HTTP ${res.status}: ${err}`);
+      console.error(`[CF Purge] HTTP ${res.status}: ${responseText}`);
+      return { ok: false, reason: `http_${res.status}`, response: responseText.slice(0, 300), ...diag };
     }
+    return { ok: true, status: res.status, response: responseText.slice(0, 300), site_url: siteUrl, files: body.files };
   } catch (err) {
     console.error("[CF Purge] error:", err.message);
+    return { ok: false, reason: "fetch_threw", error: err.message, ...diag };
   }
 }
 
