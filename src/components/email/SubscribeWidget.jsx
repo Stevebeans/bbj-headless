@@ -5,17 +5,18 @@ import { useAuth } from "@/context/AuthContext";
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
 
+const STATUS_MESSAGES = {
+  subscribed: "You're subscribed!",
+  already_subscribed: "You're already subscribed.",
+  pending: "Check your inbox to confirm!",
+  resubscribed_pending: "Check your inbox to re-confirm!",
+};
+
 export function SubscribeWidget() {
   const { user, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("idle"); // idle, loading, success, error
+  const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [message, setMessage] = useState("");
-
-  const STATUS_MESSAGES = {
-    already_subscribed: "You're already subscribed!",
-    pending: "Check your inbox to confirm!",
-    resubscribed_pending: "Check your inbox to re-confirm!",
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,53 +28,61 @@ export function SubscribeWidget() {
       const res = await fetch(`${API_URL}/bbjd/v1/email/subscribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: submitEmail, list: "post-notifications" }),
+        body: JSON.stringify({
+          email: submitEmail,
+          lists: ["post-notifications"],
+        }),
       });
       const data = await res.json();
+      if (!res.ok || data.success === false) {
+        throw new Error(data.message || "Subscribe failed");
+      }
       setStatus("success");
       setMessage(STATUS_MESSAGES[data.status] || "You're subscribed!");
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setMessage("Something went wrong. Try again.");
+      setMessage(err.message || "Something went wrong. Try again.");
     }
   };
 
-  if (status === "success") {
-    return (
-      <div className="v2-sidebar-container p-4 text-center">
-        <p className="text-green-600 dark:text-green-400 font-medium">{message}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="v2-sidebar-container p-4">
-      <h3 className="v2-ad-subheader">Newsletter</h3>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-        Get the latest Big Brother updates delivered to your inbox!
+    <aside className="bg-primary-500 rounded-lg p-5 shadow-sm">
+      <h3 className="font-display text-3xl text-white leading-none mb-2">
+        Newsletter
+      </h3>
+      <p className="text-sm text-white/85 mb-4 leading-snug">
+        Get an email each time we publish a new post — no spam, just the latest Big Brother news.
       </p>
-      <form onSubmit={handleSubmit} className="space-y-2">
-        {!isAuthenticated && (
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            required
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          />
-        )}
-        <button
-          type="submit"
-          disabled={status === "loading"}
-          className="w-full v2-btn text-sm"
-        >
-          {status === "loading" ? "Subscribing..." : "Subscribe"}
-        </button>
-      </form>
-      {status === "error" && (
-        <p className="text-red-500 text-xs mt-2">{message}</p>
+
+      {status === "success" ? (
+        <p className="bg-secondary-500/15 border border-secondary-500/40 text-white text-sm font-medium rounded-md px-3 py-2.5">
+          ✓ {message}
+        </p>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-2.5">
+          {!isAuthenticated && (
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              required
+              autoComplete="email"
+              className="w-full px-3 py-2.5 text-sm bg-primary-600/40 border border-primary-400/60 text-white placeholder-white/60 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500/60 focus:border-secondary-500/60 transition-colors"
+            />
+          )}
+          <button
+            type="submit"
+            disabled={status === "loading"}
+            className="w-full bg-secondary-500 hover:bg-secondary-600 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 text-sm font-bold tracking-wide uppercase py-2.5 rounded-md transition-colors"
+          >
+            {status === "loading" ? "Subscribing…" : "Subscribe"}
+          </button>
+          {status === "error" && (
+            <p className="text-red-200 text-xs pt-1">{message}</p>
+          )}
+        </form>
       )}
-    </div>
+    </aside>
   );
 }
