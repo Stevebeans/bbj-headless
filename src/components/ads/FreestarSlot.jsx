@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useAds } from "@/context/AdContext";
 import { getSlotConfig } from "@/config/ads";
+import { AdPlaceholder } from "./AdPlaceholder";
 
 const FreestarAdSlot = dynamic(
   () => import("@freestar/pubfig-adslot-react-component"),
@@ -17,12 +18,23 @@ export function FreestarSlot({
   showBranding = true,
   targeting,
 }) {
-  const { shouldShowAds, isPWA, isAdBlocked, disabledPlacements, pwaSuppressed } = useAds();
+  const { shouldShowAds, isPWA, isAdBlocked, disabledPlacements, pwaSuppressed, previewMode } = useAds();
 
   const config = getSlotConfig(placementName);
   const desktopHeight = config.desktop?.height || 250;
   const mobileHeight = config.mobile?.height ?? desktopHeight;
   const hiddenOnMobile = mobileHeight === 0;
+
+  if (previewMode) {
+    return (
+      <AdPlaceholder
+        placementName={placementName}
+        config={config}
+        hiddenOnMobile={hiddenOnMobile}
+        className={className}
+      />
+    );
+  }
 
   if (!shouldShowAds) return null;
   if (disabledPlacements.includes(placementName)) return null;

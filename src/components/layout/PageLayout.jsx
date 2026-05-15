@@ -1,4 +1,5 @@
 import { Sidebar } from "./Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 
 // Page layout wrapper with optional sidebar
 // Server Component
@@ -12,7 +13,11 @@ export function PageLayout({ children, showSidebar = true, user = null }) {
         </article>
 
         {/* Sidebar */}
-        {showSidebar && <Sidebar user={user} />}
+        {showSidebar && (
+          <Sidebar user={user}>
+            <SubscribeWidget />
+          </Sidebar>
+        )}
       </div>
     </div>
   );

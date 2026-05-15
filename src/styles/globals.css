@@ -260,6 +260,41 @@
   .input {
     @apply w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all;
   }
+
+  .bbj-card {
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-5 mb-4;
+  }
+
+  .bbj-status-strip {
+    @apply bg-gray-900 dark:bg-black border-b border-gray-700 text-white;
+  }
+
+  .bbj-ticker {
+    @apply relative overflow-hidden min-w-0 flex-1;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+  }
+
+  .bbj-ticker-track {
+    @apply inline-flex items-center whitespace-nowrap;
+    animation: bbj-ticker-slide 60s linear infinite;
+  }
+
+  .bbj-ticker:hover .bbj-ticker-track,
+  .bbj-ticker:focus-within .bbj-ticker-track {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bbj-ticker-track { animation: none; }
+  }
+
+  .bbj-sidebar-card {
+    @apply pb-6 mb-6 last:mb-0 last:pb-0;
+  }
+
+  .bbj-house-strip { @apply block; }
+  .bbj-house-pulse { @apply block; }
 }
 
 @layer utilities {
@@ -451,4 +486,9 @@ div.max-w-screen-xl.py-1.flex.items-center.justify-center:has(> :only-child:empt
 }
 .dark .leaflet-popup-content a {
   color: #93c5fd;
+}
+
+@keyframes bbj-ticker-slide {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }

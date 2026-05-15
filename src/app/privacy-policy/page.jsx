@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPage } from "@/lib/api/posts";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
@@ -46,7 +47,9 @@ export default async function PrivacyPolicyPage() {
           </article>
         </section>
 
-        <Sidebar showAds={true} />
+        <Sidebar showAds={true}>
+          <SubscribeWidget />
+        </Sidebar>
       </div>
     </main>
   );

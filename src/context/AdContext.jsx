@@ -2,7 +2,11 @@
 
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import Cookies from "js-cookie";
 import { useAuth } from "@/context/AuthContext";
+
+const PREVIEW_COOKIE_NAME = "bbj_ad_preview";
+const PREVIEW_ADMIN_ROLES = ["administrator", "editor"];
 
 const AdContext = createContext({
   shouldShowAds: true,
@@ -10,6 +14,7 @@ const AdContext = createContext({
   isAdBlocked: false,
   disabledPlacements: [],
   pwaSuppressed: [],
+  previewMode: false,
 });
 
 const SDK_TIMEOUT_MS = 5000;
@@ -32,6 +37,7 @@ export function AdProvider({
 }) {
   const [isPWA, setIsPWA] = useState(false);
   const [isAdBlocked, setIsAdBlocked] = useState(false);
+  const [previewCookie, setPreviewCookie] = useState(false);
   const pathname = usePathname();
   const isFirstRender = useRef(true);
   const { user } = useAuth();
@@ -49,10 +55,24 @@ export function AdProvider({
 
   const shouldShowAds = initialShouldShowAds && !isSupporter;
 
+  // Preview mode: cookie present AND user is admin/editor.
+  // Always false for logged-out, non-admin, or cookie-absent users.
+  const isAdmin =
+    user &&
+    Array.isArray(user.user_roles) &&
+    user.user_roles.some((role) => PREVIEW_ADMIN_ROLES.includes(role));
+  const previewMode = previewCookie && isAdmin;
+
   // PWA detection
   useEffect(() => {
     setIsPWA(detectPWA());
   }, []);
+
+  // Read preview-mode cookie on mount and whenever auth state changes
+  useEffect(() => {
+    const value = Cookies.get(PREVIEW_COOKIE_NAME);
+    setPreviewCookie(value === "1");
+  }, [user?.user_email]);
 
   // Ad-blocker detection — check if full SDK loaded after timeout
   useEffect(() => {
@@ -99,6 +119,7 @@ export function AdProvider({
         isAdBlocked,
         disabledPlacements,
         pwaSuppressed,
+        previewMode,
       }}
     >
       {children}

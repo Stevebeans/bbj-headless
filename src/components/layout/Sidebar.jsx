@@ -4,8 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
-import { FreestarSlot } from "../ads/FreestarSlot";
-import { SubscribeWidget } from "../email/SubscribeWidget";
+import { ParamountPlusCard } from "../sidebar/ParamountPlusCard";
+import { StickyAdSlot } from "../sidebar/StickyAdSlot";
 
 // Client Component - Sidebar with widgets
 export function Sidebar({ showAds = true, sticky = true, children }) {
@@ -19,7 +19,7 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
   const avatar = user?.avatar || user?.user_avatar;
 
   return (
-    <aside className={`w-full lg:w-80 flex-shrink-0 lg:self-start ${sticky ? "lg:sticky lg:top-28" : ""} space-y-4`} aria-label="Sidebar">
+    <aside className={`w-full lg:w-80 flex-shrink-0 ${sticky ? "lg:self-start lg:sticky lg:top-28" : ""} space-y-4`} aria-label="Sidebar">
       {/* User Welcome Widget */}
       <div className="v2-sidebar-container p-4">
         {loading ? (
@@ -97,25 +97,14 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
         )}
       </div>
 
-      {/* Ad Placeholder - Top */}
-      {showAds && <FreestarSlot placementName="bigbrotherjunkies_siderail_right_1" />}
+      {/* Paramount+ Promo Card */}
+      <ParamountPlusCard />
 
       {/* Injected children (e.g. home page widgets) */}
       {children}
 
-      {/* Newsletter Signup */}
-      <SubscribeWidget />
-
-      {/* Hot Posts Placeholder */}
-      <div className="v2-sidebar-container p-4">
-        <h3 className="v2-ad-subheader">Hot Posts</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-          Popular posts coming soon
-        </p>
-      </div>
-
-      {/* Ad Placeholder - Bottom */}
-      {showAds && <FreestarSlot placementName="bigbrotherjunkies_siderail_right_2" />}
+      {/* Sticky Rail Ad */}
+      {showAds && <StickyAdSlot />}
     </aside>
   );
 }

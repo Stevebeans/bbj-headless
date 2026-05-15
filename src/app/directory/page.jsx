@@ -4,6 +4,7 @@ import { getSeasons } from "@/lib/api/seasons";
 import { PlayerDirectory } from "./components/PlayerDirectory";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 
 export const metadata = {
   title: "Big Brother Directory | Big Brother Junkies",
@@ -62,7 +63,9 @@ export default async function PlayersPage() {
         </div>
 
         {/* Sidebar */}
-        <Sidebar showAds={true} />
+        <Sidebar showAds={true}>
+          <SubscribeWidget />
+        </Sidebar>
       </div>
     </div>
   );

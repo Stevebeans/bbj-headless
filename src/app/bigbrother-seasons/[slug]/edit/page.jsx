@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { SeasonEditForm } from "./components/SeasonEditForm";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { FaEye } from "react-icons/fa";
 
 export async function generateMetadata({ params }) {
@@ -65,7 +66,9 @@ export default async function SeasonEditPage({ params }) {
           </div>
 
           {/* Sidebar */}
-          <Sidebar showAds={false} />
+          <Sidebar showAds={false}>
+            <SubscribeWidget />
+          </Sidebar>
         </div>
       </div>
     </main>

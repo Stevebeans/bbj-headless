@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { getPost } from "@/lib/api/editor";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { QuickLinks } from "@/components/posts/QuickLinks";
 import Image from "next/image";
 import { format, formatDistanceToNow } from "date-fns";
@@ -161,7 +162,9 @@ export default function PreviewPage() {
           </section>
 
           {/* Sidebar */}
-          <Sidebar showAds={false} />
+          <Sidebar showAds={false}>
+            <SubscribeWidget />
+          </Sidebar>
         </div>
       </main>
     </>

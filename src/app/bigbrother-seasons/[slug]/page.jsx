@@ -2,6 +2,7 @@ import { getSeasonBySlug, getSeasonArticles } from "@/lib/api/seasons";
 import { bbjdFetch } from "@/lib/api/wordpress";
 import { notFound } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import {
   SeasonHeader,
@@ -19,7 +20,6 @@ import {
   SeasonFAQSchema,
 } from "./components";
 import { SeasonInfoSidebar } from "./components/SeasonInfoSidebar";
-import { AdPlaceholder } from "@/components/ads/AdPlaceholder";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
@@ -259,9 +259,6 @@ export default async function SeasonPage({ params }) {
                   />
                 </div>
 
-                {/* Ad between cast and eviction order */}
-                <AdPlaceholder slot="season_hub_mid" />
-
                 {/* Eviction Order */}
                 <EvictionOrder players={players} season={season} />
 
@@ -295,7 +292,9 @@ export default async function SeasonPage({ params }) {
           />
 
           {/* Site Sidebar (right column) */}
-          <Sidebar />
+          <Sidebar>
+            <SubscribeWidget />
+          </Sidebar>
         </div>
       </main>
     </>

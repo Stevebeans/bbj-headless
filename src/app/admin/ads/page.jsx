@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Cookies from "js-cookie";
 import { getAdSettings, updateAdSettings } from "@/lib/api/ad-settings";
+
+const PREVIEW_COOKIE_NAME = "bbj_ad_preview";
+const PREVIEW_COOKIE_DAYS = 7;
 
 const MANUAL_PLACEMENTS = [
   { key: "bigbrotherjunkies_leaderboard_atf", label: "Leaderboard ATF" },
@@ -44,6 +48,7 @@ export default function AdminAds() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [previewMode, setPreviewMode] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -59,6 +64,10 @@ export default function AdminAds() {
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
+
+  useEffect(() => {
+    setPreviewMode(Cookies.get(PREVIEW_COOKIE_NAME) === "1");
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -81,6 +90,21 @@ export default function AdminAds() {
       ...prev,
       ads_enabled: !prev.ads_enabled,
     }));
+  };
+
+  const togglePreviewMode = () => {
+    const next = !previewMode;
+    if (next) {
+      Cookies.set(PREVIEW_COOKIE_NAME, "1", {
+        expires: PREVIEW_COOKIE_DAYS,
+        sameSite: "Lax",
+        path: "/",
+        secure: window.location.protocol === "https:",
+      });
+    } else {
+      Cookies.remove(PREVIEW_COOKIE_NAME, { path: "/" });
+    }
+    setPreviewMode(next);
   };
 
   const togglePlacement = (placementKey) => {
@@ -154,7 +178,7 @@ export default function AdminAds() {
         </div>
       )}
 
-      {/* Kill Switch */}
+      {/* Kill Switch + Preview Mode */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
         <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white mb-2">
           Global Ad Control
@@ -165,6 +189,7 @@ export default function AdminAds() {
         <div className="flex items-center gap-3">
           <button
             onClick={toggleKillSwitch}
+            aria-pressed={!!settings?.ads_enabled}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               settings?.ads_enabled
                 ? "bg-green-500"
@@ -180,6 +205,36 @@ export default function AdminAds() {
           <span className="text-slate-700 dark:text-slate-300 font-medium">
             {settings?.ads_enabled ? "Ads Enabled" : "Ads Disabled"}
           </span>
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+          <h3 className="text-base font-osw font-bold text-slate-800 dark:text-white mb-1">
+            Ad Preview Mode
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            Replaces all ads with sized placeholders so you can lay out the page without distractions.
+            Only YOU see this — visitors still get real ads. Setting persists 7 days in this browser.
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={togglePreviewMode}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                previewMode
+                  ? "bg-amber-500"
+                  : "bg-slate-300 dark:bg-slate-600"
+              }`}
+              aria-pressed={previewMode}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  previewMode ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+            <span className="text-slate-700 dark:text-slate-300 font-medium">
+              {previewMode ? "Preview Mode ON (showing placeholders)" : "Preview Mode OFF"}
+            </span>
+          </div>
         </div>
       </section>
 

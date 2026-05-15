@@ -177,8 +177,8 @@ export function SeasonStats({ season, players = [] }) {
   if (!season) return null;
 
   return (
-    <section className="v2-primary-container-inner p-4" aria-labelledby="stats-title">
-      <h2 id="stats-title" className="v2-primary-subheader">
+    <section className="bbj-card bbj-sidebar-card" aria-labelledby="stats-title">
+      <h2 id="stats-title" className="font-osw text-lg md:text-xl uppercase tracking-wide text-primary-500 dark:text-secondary-500 m-0 pb-3 mb-5 border-b border-gray-200 dark:border-gray-700">
         {season.name || "Big Brother"} Stats
       </h2>
 

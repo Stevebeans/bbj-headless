@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { FeedUpdateVoting } from "./FeedUpdateVoting";
@@ -207,7 +208,9 @@ export default async function FeedUpdatePage({ params }) {
         </section>
 
         {/* Sidebar */}
-        <Sidebar showAds={true} />
+        <Sidebar showAds={true}>
+          <SubscribeWidget />
+        </Sidebar>
       </div>
     </main>
     </>

@@ -10,6 +10,8 @@ const DEFAULTS = {
   seasonStats: { season: null, players: [] },
   recentComments: { comments: [], total: 0 },
   posts: { posts: [] },
+  housePulse: { active: false, buckets: [], total: 0 },
+  currentSeason: { number: 0, full_name: "" },
 };
 
 /**
@@ -29,6 +31,8 @@ export async function getHomepageData() {
       seasonStats: data.seasonStats || DEFAULTS.seasonStats,
       recentComments: data.recentComments || DEFAULTS.recentComments,
       posts: data.posts || DEFAULTS.posts,
+      housePulse: data.housePulse || DEFAULTS.housePulse,
+      currentSeason: data.currentSeason || DEFAULTS.currentSeason,
     };
   } catch (error) {
     console.error("Failed to fetch homepage data:", error);

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { wpRestFetch, bbjdFetch } from "@/lib/api/wordpress";
 import { PostCard } from "@/components/posts/PostCard";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { decodeHtml } from "@/lib/utils/decodeHtml";
 
@@ -148,7 +149,9 @@ export default async function CategoryArchivePage({ params }) {
         </section>
 
         {/* Sidebar */}
-        <Sidebar showAds={true} />
+        <Sidebar showAds={true}>
+          <SubscribeWidget />
+        </Sidebar>
       </div>
     </main>
   );
