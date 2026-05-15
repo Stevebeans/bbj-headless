@@ -645,21 +645,30 @@ _Resend Webhook:_
 - [ ] Deactivate MailPoet plugin (save $21.25/month + CPU)
 - [ ] Clean up MailPoet database tables
 
-### 7.2 Service Worker
+### 7.2 PWA Foundation (nothing built yet — net new work)
 
-- [ ] Implement next-pwa or serwist
-- [ ] Offline page support
-- [ ] Cache strategy for static content
-- [ ] Background sync for comments/actions
+Current state (2026-05-14): no service worker, no install prompt, manifest.json is a stub. Everything below is greenfield.
+
+- [ ] **Manifest** — flesh out `public/manifest.json` (icons at 192/512, theme color `#35546e`, display `standalone`, name/short_name, start_url)
+- [ ] **Icon set** — generate full PWA icon set from BBJ logo (maskable + monochrome variants)
+- [ ] **Service worker** — implement via `serwist` (preferred over `next-pwa`, better Next 15 / App Router support)
+- [ ] **Install prompt** — beforeinstallprompt handler + custom "Install BBJ" CTA (only show for engaged users, not first-visit)
+- [ ] **Offline page** — fallback when network fails on a non-cached route
+- [ ] **Cache strategy** — stale-while-revalidate for static, network-first for `/wp-json/*` API calls, never cache auth endpoints
+- [ ] **Background sync** — queue failed comment posts/votes when offline, replay when back online
+- [ ] **Update flow** — detect new SW, prompt user to refresh ("New version available")
 
 ### 7.3 Push Notifications
 
-- [ ] Opt-in flow for notifications
-- [ ] Spoiler alert notifications
-- [ ] New post notifications
-- [ ] Feed update alerts (premium)
-- [ ] Comment reply notifications
-- [ ] Granular notification preferences
+- [ ] **VAPID keys** — generate + store (`bbjd_vapid_public_key` / `bbjd_vapid_private_key` options)
+- [ ] **Subscribe flow** — request notification permission → `pushManager.subscribe()` → POST subscription to `/bbjd/v1/push/subscribe`
+- [ ] **Push subscriptions table** — new `wp_bbj_push_subscriptions` (user_id, endpoint, p256dh, auth, created_at)
+- [ ] **Send service** — PHP service that signs VAPID JWT + POSTs to subscription endpoints (use `minishlink/web-push` or roll our own)
+- [ ] **"Join the list" CTA** *(from mail-system.md)* — first push prompt offers one-tap subscribe to post-notifications email list; CTA deep-links to `/account/preferences` to manage choices
+- [ ] **Notification types** — new post, spoiler alert, feed update (premium), comment reply, thread subscription
+- [ ] **Granular preferences** — extend `/account/preferences` to cover push channels per type, mirroring email list structure
+- [ ] **Permission UX** — never auto-prompt on page load; offer in-app banner after N pageviews or after a meaningful interaction
+- [ ] **iOS Safari** — verify push works on iOS 16.4+ PWAs (install-to-home-screen required)
 
 ---
 

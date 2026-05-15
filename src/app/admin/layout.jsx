@@ -112,6 +112,14 @@ function DocumentTextIcon({ className }) {
   );
 }
 
+function MailIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 0v10a2 2 0 002 2h14a2 2 0 002-2V8m-18 0a2 2 0 012-2h14a2 2 0 012 2" />
+    </svg>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "Overview", href: "/admin", icon: HomeIcon, permission: null },
   { id: "posts", label: "Posts", href: "/admin/posts", icon: DocumentTextIcon, permission: "blog_review" },
@@ -123,6 +131,7 @@ const TABS = [
   { id: "announcements", label: "Announcements", href: "/admin/announcements", icon: MegaphoneIcon, permission: "announcements" },
   { id: "content-engine", label: "Content", href: "/admin/content-engine", icon: PencilSquareIcon, permission: "content_engine" },
   { id: "ads", label: "Ads", href: "/admin/ads", icon: AdIcon, permission: "ad_management" },
+  { id: "mailing", label: "Mailing", href: "/admin/mailing", icon: MailIcon, permission: "admin_settings" },
   { id: "users", label: "Users", href: "/admin/users", icon: UsersIcon, permission: "user_management" },
   { id: "stats", label: "Stats", href: "/admin/stats", icon: ChartIcon, permission: "analytics_dashboard" },
   { id: "settings", label: "Settings", href: "/admin/settings", icon: GearIcon, permission: "admin_settings" },
