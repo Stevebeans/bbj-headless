@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getDashboard, purgeCache } from "@/lib/api/admin";
+import { getMailingStats } from "@/lib/api/mailing";
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
+  const [mailing, setMailing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [purgeState, setPurgeState] = useState({ status: "idle", message: "" });
@@ -27,8 +29,13 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const dashboardData = await getDashboard();
+        // Fetch both in parallel; tolerate mailing failure (e.g. user lacks email perm)
+        const [dashboardData, mailingData] = await Promise.all([
+          getDashboard(),
+          getMailingStats().catch(() => null),
+        ]);
         setData(dashboardData);
+        setMailing(mailingData);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -193,6 +200,73 @@ export default function AdminDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Email Campaigns widget */}
+      {mailing && (
+        <>
+          <div className="flex items-baseline justify-between mt-8 mb-4">
+            <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white">
+              Email Campaigns
+            </h2>
+            <Link
+              href="/admin/mailing"
+              className="text-sm text-primary-500 hover:text-primary-600 font-medium"
+            >
+              View dashboard &rarr;
+            </Link>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {(() => {
+                const subs = mailing?.stats?.subscribers?.subscribed || 0;
+                const sends = mailing?.stats?.sends_90d || {};
+                const lastSend = (mailing?.recent_sends || [])[0];
+                const widgets = [
+                  {
+                    label: "Subscribers",
+                    value: new Intl.NumberFormat().format(subs),
+                    sub: "Active list size",
+                  },
+                  {
+                    label: "Open Rate (90d)",
+                    value: `${sends.open_rate ?? 0}%`,
+                    sub: `${new Intl.NumberFormat().format(sends.total || 0)} sent`,
+                  },
+                  {
+                    label: "Click Rate (90d)",
+                    value: `${sends.click_rate ?? 0}%`,
+                    sub: `${sends.bounce_rate ?? 0}% bounced`,
+                  },
+                  {
+                    label: "Last Campaign",
+                    value: lastSend?.subject
+                      ? `${lastSend.subject.slice(0, 22)}${lastSend.subject.length > 22 ? "…" : ""}`
+                      : "—",
+                    sub: lastSend
+                      ? `${new Intl.NumberFormat().format(lastSend.total || 0)} recipients`
+                      : "No sends yet",
+                    valueClass: "text-base",
+                  },
+                ];
+                return widgets.map((w) => (
+                  <div key={w.label}>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+                      {w.label}
+                    </p>
+                    <p
+                      className={`font-bold text-slate-800 dark:text-white ${w.valueClass || "text-2xl"}`}
+                      title={w.label === "Last Campaign" ? (lastSend?.subject || "") : undefined}
+                    >
+                      {w.value}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{w.sub}</p>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Quick Actions */}
       <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white mt-8 mb-4">
