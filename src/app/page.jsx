@@ -9,7 +9,6 @@ import {
   MoreStories,
   SeasonStats,
   RecentComments,
-  StatusStrip,
   HouseStrip,
   HousePulse,
 } from "@/components/home";
@@ -22,18 +21,9 @@ export default async function HomePage() {
   const heroPostId = data.hero.post?.id;
   const posts = data.posts.posts || [];
 
-  const tickerItems = (data.feedUpdates.updates || [])
-    .slice(0, 3)
-    .map((u) => ({
-      id: u.id,
-      title: u.title,
-      permalink: u.permalink || `/live-feed-updates/${u.slug}`,
-    }));
-
   return (
     <>
       <SpoilerBarWrapper />
-      <StatusStrip season={data.currentSeason} tickerItems={tickerItems} />
       <main className="v2-primary-container">
         {isStaging && (
           <div className="mb-4 rounded-lg border border-secondary-500/30 bg-secondary-500/10 px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
@@ -44,7 +34,7 @@ export default async function HomePage() {
         <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">
           <section id="main-left" className="flex-grow space-y-4">
             {data.hero.post && (
-              <Hero post={data.hero.post} season={data.hero.season} />
+              <Hero post={data.hero.post} season={data.currentSeason} />
             )}
 
             <HouseStrip

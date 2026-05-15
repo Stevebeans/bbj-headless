@@ -6,11 +6,11 @@ export function Hero({ post, season }) {
 
   return (
     <article className="v2-primary-container-inner" aria-labelledby="featured-post-title">
-      {/* Section Header */}
+      {/* Page H1 — defines the page topic for SEO */}
       <div className="pb-3 mb-5 border-b border-gray-200 dark:border-gray-700 px-3 pt-3">
-        <h2 className="font-osw text-lg md:text-xl uppercase tracking-wide text-primary-500 dark:text-secondary-500 m-0">
-          Latest Update
-        </h2>
+        <h1 className="font-osw text-lg md:text-xl uppercase tracking-wide text-primary-500 dark:text-secondary-500 m-0">
+          Latest {season?.full_name || "Big Brother"} Spoiler
+        </h1>
       </div>
 
       {/* Hero Image */}

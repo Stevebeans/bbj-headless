@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
 
 const STATUS_MESSAGES = {
-  subscribed: "You're subscribed!",
+  subscribed: "You're subscribed! New posts will hit your inbox.",
   already_subscribed: "You're already subscribed.",
-  pending: "Check your inbox to confirm!",
-  resubscribed_pending: "Check your inbox to re-confirm!",
+  pending: "Check your inbox — we just sent a confirmation link.",
+  resubscribed_pending: "Welcome back! Check your inbox to re-confirm.",
 };
 
 export function SubscribeWidget() {
@@ -18,9 +18,16 @@ export function SubscribeWidget() {
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [message, setMessage] = useState("");
 
+  // Pre-fill with the logged-in user's email as a courtesy — still editable.
+  useEffect(() => {
+    if (isAuthenticated && user?.user_email && !email) {
+      setEmail(user.user_email);
+    }
+  }, [isAuthenticated, user, email]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const submitEmail = isAuthenticated ? user?.user_email : email;
+    const submitEmail = email.trim();
     if (!submitEmail) return;
 
     setStatus("loading");
@@ -47,7 +54,7 @@ export function SubscribeWidget() {
 
   return (
     <aside className="bg-primary-500 rounded-lg p-5 shadow-sm">
-      <h3 className="font-display text-3xl text-white leading-none mb-2">
+      <h3 className="font-display text-2xl text-white leading-none mb-2">
         Newsletter
       </h3>
       <p className="text-sm text-white/85 mb-4 leading-snug">
@@ -60,20 +67,18 @@ export function SubscribeWidget() {
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-2.5">
-          {!isAuthenticated && (
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              required
-              autoComplete="email"
-              className="w-full px-3 py-2.5 text-sm bg-primary-600/40 border border-primary-400/60 text-white placeholder-white/60 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500/60 focus:border-secondary-500/60 transition-colors"
-            />
-          )}
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="your@email.com"
+            required
+            autoComplete="email"
+            className="w-full px-3 py-2.5 text-sm bg-white/15 border border-white/30 text-white placeholder-white/70 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500/60 focus:border-secondary-500/60 transition-colors"
+          />
           <button
             type="submit"
-            disabled={status === "loading"}
+            disabled={status === "loading" || !email.trim()}
             className="w-full bg-secondary-500 hover:bg-secondary-600 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 text-sm font-bold tracking-wide uppercase py-2.5 rounded-md transition-colors"
           >
             {status === "loading" ? "Subscribing…" : "Subscribe"}
