@@ -7,6 +7,29 @@ import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { postComment } from "@/lib/api/comments";
 
+const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
+
+function slugify(s) {
+  return (s || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function formatBbTime(iso) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "America/Los_Angeles",
+    });
+  } catch {
+    return "";
+  }
+}
+
 export function FeedUpdateCard({ update }) {
   const { user, isAuthenticated } = useAuth();
   const { openLogin } = useAuthModal();
@@ -15,13 +38,19 @@ export function FeedUpdateCard({ update }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replySuccess, setReplySuccess] = useState(false);
   const [commentCount, setCommentCount] = useState(update.comment_count || 0);
-  // API returns newest first, reverse to chronological order (oldest first)
-  const [recentComments, setRecentComments] = useState(
-    () => [...(update.recent_comments || [])].reverse()
+  // API returns newest first — reverse to chronological order
+  const [recentComments, setRecentComments] = useState(() =>
+    [...(update.recent_comments || [])].reverse()
   );
 
-  const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
-  const isPremium = isAuthenticated && Array.isArray(user?.user_roles) && user.user_roles.some(role => SUPPORTER_ROLES.includes(role));
+  const isPremium =
+    isAuthenticated &&
+    Array.isArray(user?.user_roles) &&
+    user.user_roles.some((role) => SUPPORTER_ROLES.includes(role));
+
+  const permalink = `/live-feed-updates/${update.slug}`;
+  const time12h = formatBbTime(update.modified);
+  const authorSlug = slugify(update.author?.name);
 
   const handleQuickReply = async (e) => {
     e.preventDefault();
@@ -31,15 +60,14 @@ export function FeedUpdateCard({ update }) {
     try {
       await postComment(update.id, replyContent.trim(), 0, null);
 
-      // Add the new comment to the recent comments preview
       const newComment = {
         author: user?.user_display_name || user?.user_login || "You",
-        content: replyContent.trim().length > 60
-          ? replyContent.trim().substring(0, 57) + "..."
-          : replyContent.trim(),
+        content:
+          replyContent.trim().length > 60
+            ? replyContent.trim().substring(0, 57) + "..."
+            : replyContent.trim(),
       };
       setRecentComments((prev) => [...prev, newComment].slice(-3));
-
       setReplyContent("");
       setShowReplyForm(false);
       setReplySuccess(true);
@@ -55,78 +83,72 @@ export function FeedUpdateCard({ update }) {
   const handleReplyClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!isAuthenticated) {
       openLogin();
       return;
     }
-
     if (isPremium) {
       setShowReplyForm(!showReplyForm);
     }
   };
 
   return (
-    <div className="group block w-full text-inherit dark:text-gray-200">
-      <article
-        id={update.slug}
-        className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-l-3 border-l-primary-400 dark:border-l-primary-500 rounded-lg shadow-sm hover:border-gray-300 dark:hover:border-gray-600 hover:border-l-primary-500 dark:hover:border-l-primary-400 hover:shadow transition-all duration-200"
-      >
-        <Link href={`/live-feed-updates/${update.slug}`} className="block">
-          {/* Author Header */}
-          <div className="flex gap-3 mb-3 items-center">
-            {update.author?.avatar && (
-              <Image
-                src={update.author.avatar}
-                alt={update.author.name}
-                width={40}
-                height={40}
-                className="rounded-full w-10 h-10"
-                unoptimized
-              />
-            )}
-            <div className="flex flex-col leading-tight">
-              <span className="font-sans font-semibold text-gray-600 dark:text-gray-300 text-sm">
-                {update.author?.name}
-              </span>
-              <time
-                dateTime={update.modified}
-                className="text-xs text-gray-500 dark:text-gray-400"
-                data-nosnippet
-              >
-                {update.time_ago}
-              </time>
-            </div>
-          </div>
+    <article id={update.slug} className="group flex gap-4 py-4">
+      {/* Left rail: time + relative (desktop only) */}
+      <div className="hidden sm:block w-20 shrink-0 text-right">
+        <div className="font-osw text-sm text-gray-900 dark:text-gray-200">
+          {time12h}
+        </div>
+        <div
+          className="text-[11px] text-gray-500 dark:text-gray-400"
+          data-nosnippet
+        >
+          {update.time_ago}
+        </div>
+      </div>
 
-          {/* Title */}
-          <h3 className="text-base font-sans font-semibold text-primary-500 dark:text-primary-400 group-hover:underline">
+      {/* Dot */}
+      <div className="relative flex-shrink-0">
+        <span
+          className="block w-3 h-3 rounded-full mt-1.5 bg-gray-400 dark:bg-gray-500"
+          aria-hidden="true"
+        />
+      </div>
+
+      {/* Card */}
+      <div className="flex-1 min-w-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+        <h3 className="font-display text-lg md:text-xl leading-snug mb-2 text-primary-500 dark:text-secondary-500">
+          <Link
+            href={permalink}
+            className="hover:text-primary-600 dark:hover:text-secondary-400"
+          >
             {update.title}
-          </h3>
+          </Link>
+        </h3>
 
-          {/* Content Preview */}
-          <div className="text-sm text-gray-700 dark:text-gray-300 mt-2 mb-2">
-            {update.thumbnail ? (
-              <div className="float-right ml-3 mb-2">
-                <Image
-                  src={update.thumbnail}
-                  alt=""
-                  width={120}
-                  height={80}
-                  className="rounded-lg object-cover"
-                />
-              </div>
-            ) : null}
-            <div
-              className="line-clamp-3 feed-content"
-              dangerouslySetInnerHTML={{ __html: update.content }}
+        {update.content && (
+          <div
+            className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-3 feed-content"
+            dangerouslySetInnerHTML={{ __html: update.content }}
+          />
+        )}
+
+        {update.thumbnail && (
+          <div className="mb-3 w-full md:max-w-[50%] mx-auto">
+            <Image
+              src={update.thumbnail}
+              alt=""
+              width={800}
+              height={533}
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="rounded-lg w-full h-auto"
             />
           </div>
-        </Link>
+        )}
 
         {/* Recent Comments Preview */}
         {recentComments?.length > 0 && (
-          <div className="mt-3 ml-4 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg border-l-2 border-gray-300 dark:border-gray-600">
+          <div className="mt-3 mb-3 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg border-l-2 border-gray-300 dark:border-gray-600">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,7 +158,7 @@ export function FeedUpdateCard({ update }) {
               </div>
               {commentCount > 2 && (
                 <Link
-                  href={`/live-feed-updates/${update.slug}#comments`}
+                  href={`${permalink}#comments`}
                   className="text-xs py-1 text-primary-500 hover:text-primary-600 hover:underline"
                 >
                   Read all replies →
@@ -144,7 +166,7 @@ export function FeedUpdateCard({ update }) {
               )}
             </div>
             <Link
-              href={`/live-feed-updates/${update.slug}#comments`}
+              href={`${permalink}#comments`}
               className="block space-y-2"
             >
               {recentComments.slice(-3).map((comment, idx) => (
@@ -163,27 +185,32 @@ export function FeedUpdateCard({ update }) {
         )}
 
         {/* Footer */}
-        <div className="text-xs border-t border-gray-300 dark:border-gray-600 pt-2 mt-2 text-slate-600 dark:text-slate-400 clear-both flex items-center justify-between">
-          <Link
-            href={`/live-feed-updates/${update.slug}#comments`}
-            className="flex items-center gap-1 hover:text-primary-500"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            {commentCount} {commentCount === 1 ? "Comment" : "Comments"}
-          </Link>
+        <div className="flex flex-wrap gap-3 items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex flex-wrap gap-3 items-center">
+            {authorSlug && <span className="font-osw">@{authorSlug}</span>}
+            <span>
+              {commentCount > 0
+                ? `${commentCount} ${commentCount === 1 ? "reply" : "replies"}`
+                : "No replies yet"}
+            </span>
+            <Link
+              href={`${permalink}#comments`}
+              className="text-primary-500 dark:text-secondary-500 hover:underline"
+            >
+              Join the thread →
+            </Link>
+          </div>
 
-          {/* Quick Reply Button */}
+          {/* Quick Reply */}
           <div className="relative">
             {replySuccess ? (
-              <span className="text-green-600 dark:text-green-400 text-xs">
+              <span className="text-green-600 dark:text-green-400">
                 ✓ Reply posted!
               </span>
             ) : (
               <button
                 onClick={handleReplyClick}
-                className={`flex items-center gap-1 text-xs transition-colors ${
+                className={`flex items-center gap-1 transition-colors ${
                   isPremium
                     ? "text-primary-500 hover:text-primary-600"
                     : "text-gray-500 cursor-help"
@@ -208,7 +235,6 @@ export function FeedUpdateCard({ update }) {
               </button>
             )}
 
-            {/* Premium upsell tooltip for non-premium users */}
             {!isPremium && isAuthenticated && (
               <div className="hidden group-hover:block absolute bottom-full right-0 mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg z-10">
                 Quick reply is a premium feature.
@@ -224,7 +250,7 @@ export function FeedUpdateCard({ update }) {
           </div>
         </div>
 
-        {/* Quick Reply Form (Premium only) */}
+        {/* Quick Reply Form (premium only) */}
         {showReplyForm && isPremium && (
           <form
             onSubmit={handleQuickReply}
@@ -263,7 +289,7 @@ export function FeedUpdateCard({ update }) {
             </div>
           </form>
         )}
-      </article>
-    </div>
+      </div>
+    </article>
   );
 }

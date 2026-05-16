@@ -220,7 +220,7 @@ export default function AdminLayout({ children }) {
   // Loading state
   if (authLoading || permLoading) {
     return (
-      <div className="min-h-screen bg-slate-200 dark:bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen bg-paper dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
           <p className="text-slate-600 dark:text-slate-400">Loading admin panel...</p>
@@ -232,7 +232,7 @@ export default function AdminLayout({ children }) {
   // Error state (no access)
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-200 dark:bg-gray-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-paper dark:bg-gray-950 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 max-w-md text-center">
           <div className="text-red-500 text-5xl mb-4">
             <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -332,7 +332,7 @@ export default function AdminLayout({ children }) {
   );
 
   return (
-    <main className="min-h-screen bg-slate-200 dark:bg-gray-950">
+    <main className="min-h-screen bg-paper dark:bg-gray-950">
       {/* Mobile top bar */}
       <div className="md:hidden sticky top-0 z-40 bg-primary-500 px-4 py-3 flex items-center justify-between">
         <button

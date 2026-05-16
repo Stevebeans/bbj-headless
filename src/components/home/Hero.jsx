@@ -1,80 +1,112 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SectionHeader } from "./SectionHeader";
 
 export function Hero({ post, season }) {
   if (!post) return null;
 
-  return (
-    <article className="v2-primary-container-inner" aria-labelledby="featured-post-title">
-      {/* Page H1 — defines the page topic for SEO */}
-      <div className="pb-3 mb-5 border-b border-gray-200 dark:border-gray-700 px-3 pt-3">
-        <h1 className="font-osw text-lg md:text-xl uppercase tracking-wide text-primary-500 dark:text-secondary-500 m-0">
-          Latest {season?.full_name || "Big Brother"} Spoiler
-        </h1>
-      </div>
+  const seasonNum = season?.number ?? 0;
+  const seasonName = season?.full_name || "Big Brother";
 
-      {/* Hero Image */}
-      <div className="relative h-[250px] md:h-[333px] bg-gray-100 dark:bg-gray-800 overflow-hidden group/hero">
-        <Link href={`/${post.slug}`} className="absolute inset-0" aria-label={post.title}>
-          {post.featured_image?.desktop && (
-            <Image
-              src={post.featured_image.desktop}
-              alt={post.title}
-              fill
-              className="object-cover group-hover/hero:scale-[1.02] transition-transform duration-500"
-              priority
-              fetchPriority="high"
-              sizes="(min-width: 1024px) 1024px, 100vw"
-            />
-          )}
+  const masthead = seasonNum > 0
+    ? `Latest Big Brother ${seasonNum} Spoilers`
+    : "Latest Big Brother Spoilers";
+
+  const kickerParts = [
+    seasonNum > 0 ? `BB${seasonNum}` : null,
+    seasonName,
+  ].filter(Boolean);
+  const kicker = kickerParts.join(" · ");
+
+  const badgeText = seasonName;
+
+  return (
+    <article
+      className="v2-primary-container-inner p-5 md:p-[22px]"
+      aria-labelledby="featured-post-title"
+    >
+      {/* Page H1 — defines the page topic for SEO */}
+      <SectionHeader as="h1">{masthead}</SectionHeader>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Image */}
+        <Link
+          href={`/${post.slug}`}
+          className="block group/hero relative"
+          aria-label={post.title}
+        >
+          <div className="aspect-[4/3] overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+            {post.featured_image?.desktop && (
+              <Image
+                src={post.featured_image.desktop}
+                alt={post.title}
+                width={800}
+                height={600}
+                className="w-full h-full object-cover group-hover/hero:scale-[1.02] transition-transform duration-300"
+                priority
+                fetchPriority="high"
+                sizes="(min-width: 768px) 50vw, 100vw"
+              />
+            )}
+          </div>
+          <span className="absolute top-3 left-3 inline-block bg-accent-red text-white px-2 py-1 text-[11px] font-osw uppercase tracking-wider">
+            {badgeText}
+          </span>
         </Link>
 
-        {/* Comment Count Badge */}
-        <div className="absolute bottom-0 left-0 z-10">
-          <div className="bg-white dark:bg-gray-800 px-4 py-1 rounded-tr-md font-sans text-xs text-slate-700 dark:text-slate-300 flex items-center gap-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            {post.comment_count === 0
-              ? "No comments"
-              : post.comment_count === 1
-              ? "1 comment"
-              : `${post.comment_count} comments`}
+        {/* Content */}
+        <div className="flex flex-col">
+          {kicker && (
+            <div className="flex items-center gap-2 text-accent-red font-osw uppercase tracking-wider text-xs">
+              <span className="w-1.5 h-1.5 bg-accent-red rounded-full inline-block" />
+              <span>{kicker}</span>
+            </div>
+          )}
+
+          <h2
+            id="featured-post-title"
+            className={`${kicker ? "mt-3" : ""} font-display font-bold text-3xl md:text-4xl lg:text-5xl leading-tight text-gray-900 dark:text-gray-100`}
+          >
+            <Link
+              href={`/${post.slug}`}
+              className="no-underline hover:text-primary-500 dark:hover:text-secondary-500"
+            >
+              {post.title}
+            </Link>
+          </h2>
+
+          {post.excerpt && (
+            <p className="mt-3 text-gray-700 dark:text-gray-300 leading-relaxed">
+              {post.excerpt}
+            </p>
+          )}
+
+          <div
+            className="mt-auto pt-4 flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-osw"
+            data-nosnippet
+          >
+            {post.author?.avatar && (
+              <span className="inline-block w-6 h-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
+                <Image
+                  src={post.author.avatar}
+                  alt={post.author?.name || ""}
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-cover"
+                />
+              </span>
+            )}
+            {post.author?.name && (
+              <>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  {post.author.name}
+                </span>
+                <span>·</span>
+              </>
+            )}
+            <time dateTime={post.date}>{post.date_formatted}</time>
           </div>
         </div>
-
-        {/* Read More Button */}
-        <div className="absolute bottom-4 right-4 z-10">
-          <Link
-            href={`/${post.slug}`}
-            aria-label={`Read more about ${post.title}`}
-            className="inline-flex items-center text-sm md:text-base rounded px-3 md:px-4 py-1.5 font-bold text-white bg-gradient-to-r from-red-400 to-red-700 hover:from-red-500 hover:to-red-800 transition-colors"
-          >
-            Read More<span className="sr-only">: {post.title}</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Post Info */}
-      <div className="p-3">
-        <h3 className="font-display text-2xl md:text-4xl text-primary-500 dark:text-primary-400">
-          <Link href={`/${post.slug}`} className="hover:underline">
-            {post.title}
-          </Link>
-        </h3>
-
-        {/* Meta */}
-        <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mt-1">
-          <time dateTime={post.date}>{post.date_formatted}</time>
-          <span data-nosnippet className="text-gray-500">
-            • {post.time_ago}
-          </span>
-        </div>
-
-        {/* Excerpt */}
-        <p className="text-sm text-gray-700 dark:text-gray-300 mt-2 line-clamp-3">
-          {post.excerpt}
-        </p>
       </div>
     </article>
   );

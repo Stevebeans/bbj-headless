@@ -1,115 +1,77 @@
-"use client";
-
-import { useState, useCallback } from "react";
 import Link from "next/link";
 import { FeedUpdateCard } from "./FeedUpdateCard";
+import { SectionHeader } from "./SectionHeader";
+import { FreestarSlot } from "@/components/ads/FreestarSlot";
 
-const WORDPRESS_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
+const FEED_HUB = "/live-feed-updates";
 
-export function FeedUpdatesSection({ updates: initialUpdates = [] }) {
-  const [updates, setUpdates] = useState(initialUpdates);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+export function FeedUpdatesSection({ updates = [] }) {
+  if (!updates.length) {
+    return (
+      <section id="latest-feeds" className="v2-primary-container-inner p-5 md:p-[22px]" aria-labelledby="latest-feeds-heading">
+        <SectionHeader id="latest-feeds-heading" href={FEED_HUB}>
+          Latest from the Feeds
+        </SectionHeader>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">No feed updates available.</div>
+      </section>
+    );
+  }
 
-  const loadMore = useCallback(async () => {
-    if (isLoading || !hasMore) return;
-
-    setIsLoading(true);
-    try {
-      // Calculate offset based on current updates
-      const offset = updates.length;
-      const response = await fetch(
-        `${WORDPRESS_API_URL}/bbjd/v1/feed-updates?per_page=10&offset=${offset}`
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch");
-
-      const data = await response.json();
-      const newUpdates = data.updates || [];
-
-      if (newUpdates.length === 0) {
-        setHasMore(false);
-      } else {
-        setUpdates((prev) => [...prev, ...newUpdates]);
-        // If we got fewer than requested, no more to load
-        if (newUpdates.length < 10) {
-          setHasMore(false);
-        }
-      }
-    } catch (error) {
-      console.error("Error loading more updates:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [updates.length, isLoading, hasMore]);
+  const batch1 = updates.slice(0, 4);    // cards 1–4
+  const batch2 = updates.slice(4, 12);   // cards 5–12
+  const batch3 = updates.slice(12);      // cards 13+
 
   return (
-    <section className="flex-grow" aria-labelledby="main-feeds">
-      <h2 id="main-feeds" className="v2-primary-subheader mb-3">
-        Latest Feed Updates
-      </h2>
+    <section id="latest-feeds" className="v2-primary-container-inner p-5 md:p-[22px]" aria-labelledby="latest-feeds-heading">
+      <SectionHeader id="latest-feeds-heading" href={FEED_HUB}>
+        Latest from the Feeds
+      </SectionHeader>
 
-      {/* Feed updates list */}
-      <div className="space-y-4">
-        {updates.length > 0 ? (
-          updates.map((update) => (
+      <div className="space-y-4 border-gray-200 dark:border-gray-700 pl-1 sm:pl-0">
+        {batch1.map(update => (
+          <FeedUpdateCard key={update.id} update={update} />
+        ))}
+      </div>
+
+      {batch1.length === 4 && batch2.length > 0 && (
+        <FreestarSlot
+          placementName="bigbrotherjunkies_middle_feed"
+          slotId="feed_inline_1"
+          showBranding={false}
+          className="my-4"
+        />
+      )}
+
+      {batch2.length > 0 && (
+        <div className="mt-4 space-y-4 border-gray-200 dark:border-gray-700 pl-1 sm:pl-0">
+          {batch2.map(update => (
             <FeedUpdateCard key={update.id} update={update} />
-          ))
-        ) : (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            No feed updates available.
-          </div>
-        )}
+          ))}
+        </div>
+      )}
 
-        {/* Load More Button - inside scrollable area for mobile */}
-        {hasMore && updates.length > 0 && (
-          <div className="py-4 text-center">
-            <button
-              onClick={loadMore}
-              disabled={isLoading}
-              className="inline-flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <>
-                  <svg
-                    className="animate-spin h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Loading...
-                </>
-              ) : (
-                "Load More Updates"
-              )}
-            </button>
-          </div>
-        )}
-      </div>
+      {batch1.length + batch2.length >= 12 && batch3.length > 0 && (
+        <FreestarSlot
+          placementName="bigbrotherjunkies_middle_feed"
+          slotId="feed_inline_2"
+          showBranding={false}
+          className="my-4"
+        />
+      )}
 
-      {/* View All Link */}
-      <div className="w-full text-center text-xl font-display mt-4 py-3">
-        <Link
-          href="/live-feed-updates"
-          className="text-primary-500 hover:text-primary-600 dark:text-primary-400"
-        >
-          View All Feed Updates
+      {batch3.length > 0 && (
+        <div className="mt-4 space-y-4 border-gray-200 dark:border-gray-700 pl-1 sm:pl-0">
+          {batch3.map(update => (
+            <FeedUpdateCard key={update.id} update={update} />
+          ))}
+        </div>
+      )}
+
+      <p className="mt-4 text-right">
+        <Link href={FEED_HUB} className="font-osw uppercase tracking-wider text-sm text-primary-500 dark:text-secondary-500 hover:underline">
+          Click here to see more updates →
         </Link>
-      </div>
+      </p>
     </section>
   );
 }

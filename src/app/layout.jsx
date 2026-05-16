@@ -118,7 +118,7 @@ export default async function RootLayout({ children }) {
       <head>
         <ThemeScript />
       </head>
-      <body className="font-sans antialiased min-h-screen flex flex-col bg-slate-200 dark:bg-slate-700">
+      <body className="font-sans antialiased min-h-screen flex flex-col bg-paper dark:bg-gray-900">
         <Providers
           initialShouldShowAds={initialShouldShowAds}
           supporterRoles={supporterRoles}

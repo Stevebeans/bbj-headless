@@ -27,6 +27,30 @@ export async function getPosts(options = {}) {
 }
 
 /**
+ * Paginated archive fetch — returns posts + pagination metadata
+ */
+export async function getPaginatedPosts({ page = 1, perPage = 20 } = {}) {
+  const endpoint = `/posts?per_page=${perPage}&page=${page}`;
+
+  try {
+    const data = await bbjdFetch(endpoint, {
+      tags: ["posts"],
+      revalidate: false, // Webhook-driven via posts tag
+    });
+
+    return {
+      posts: data.posts || [],
+      totalPages: data.total_pages || 0,
+      totalPosts: data.total_posts || 0,
+      currentPage: page,
+    };
+  } catch (error) {
+    console.error("Failed to fetch paginated posts:", error);
+    return { posts: [], totalPages: 0, totalPosts: 0, currentPage: page };
+  }
+}
+
+/**
  * Transform WP REST API post to our format (used for single post/related posts)
  */
 function transformPost(wpPost) {

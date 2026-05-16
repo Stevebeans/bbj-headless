@@ -29,6 +29,8 @@ module.exports = {
         accent: {
           red: "#E55C41",
         },
+        paper: "#F0E8D5",
+        "paper-2": "#E8E0CC",
         primary500: "#35546e",
         primarySoft: "#4D6D88",
         primaryHard: "#2D4B65",
