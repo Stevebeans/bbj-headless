@@ -10,6 +10,7 @@ import { BackToTop } from "@/components/layout/BackToTop";
 import NewPostFAB from "@/components/editor/NewPostFAB";
 import { getAdScripts } from "@/lib/api/ads";
 import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
+import { getActiveLiveThread } from "@/lib/api/liveThread";
 import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 import { FreestarSDKLoader } from "@/components/ads/FreestarSDKLoader";
 
@@ -97,11 +98,12 @@ export default async function RootLayout({ children }) {
   // revalidate of the route segment), causing ISR write storms. Use
   // `revalidate: false` + a tag invalidated via /api/revalidate.
   // See: memory/project_vercel_cost_incident.md, project_isr_webhook_strategy.md
-  const [adScripts, adSettings] = await Promise.all([
+  const [adScripts, adSettings, liveThread] = await Promise.all([
     getAdScripts(),
     fetch(`${process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json"}/bbjd/v1/ad-settings`, { next: { tags: ["ad-settings"], revalidate: false } })
       .then(r => r.ok ? r.json() : { ads_enabled: true })
       .catch(() => ({ ads_enabled: true })),
+    getActiveLiveThread(),
   ]);
 
   // Anonymous-baseline: do we show ads at all on this site?
@@ -125,7 +127,7 @@ export default async function RootLayout({ children }) {
           disabledPlacements={adSettings.disabled_placements || []}
           pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
         >
-          <Header />
+          <Header liveThread={liveThread} />
           <RoleSimulationBanner />
           <main id="main-content" className="flex-1">
             {children}

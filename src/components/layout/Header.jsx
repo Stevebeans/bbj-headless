@@ -19,7 +19,7 @@ const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
 const LOGO_URL = "https://bigbrotherjunkies.com/wp-content/themes/BBJ/images/bbjlogo2020.png";
 const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
 
-export function Header() {
+export function Header({ liveThread = null }) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const { user, isAuthenticated, isAdmin, loading } = useAuth();
   const { openLogin, openRegister } = useAuthModal();
@@ -131,14 +131,27 @@ export function Header() {
         {/* Tier 2: Nav Bar */}
         <div className="bg-primary-500">
           <div className="max-w-screen-xl mx-auto px-2 py-1.5 flex items-center justify-between">
-            {/* Watch Feeds */}
-            <a href="https://paramountplus.qflm.net/c/161260/3116112/3065" target="_blank" rel="noopener noreferrer" className="v2-highlight-text flex items-center gap-2 text-sm">
-              Watch Feeds
-              <span className="inline-flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded-full text-white text-xs font-semibold">
-                <span className="w-2 h-2 bg-white rounded-full" />
-                LIVE
-              </span>
-            </a>
+            {/* Watch Feeds / Live Thread — flips to active thread when one is set */}
+            {liveThread ? (
+              <Link
+                href={`/${liveThread.slug}`}
+                className="inline-flex items-center gap-2 text-sm text-secondary-500 font-bold hover:text-secondary-400"
+              >
+                <span className="inline-flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded-full text-white text-xs font-semibold">
+                  <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                  LIVE
+                </span>
+                <span>{liveThread.title} →</span>
+              </Link>
+            ) : (
+              <a href="https://paramountplus.qflm.net/c/161260/3116112/3065" target="_blank" rel="noopener noreferrer" className="v2-highlight-text flex items-center gap-2 text-sm">
+                Watch Feeds
+                <span className="inline-flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded-full text-white text-xs font-semibold">
+                  <span className="w-2 h-2 bg-white rounded-full" />
+                  LIVE
+                </span>
+              </a>
+            )}
 
             {/* Desktop Navigation */}
             <ul className="hidden md:flex items-center gap-1 text-sm desktop-nav" role="menubar">
