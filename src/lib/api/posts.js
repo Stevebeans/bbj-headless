@@ -77,6 +77,14 @@ function transformPost(wpPost) {
     commentCount: wpPost.comment_count || 0,
     liveFeedThread: wpPost.live_feed_thread || false,
     hideAds: wpPost.hide_ads || false,
+    // Live Update Thread fields — registered via register_rest_field in Task 7,
+    // appear at the top level of the WP REST response as snake_case.
+    liveUpdates: !!(wpPost.live_updates ?? wpPost.meta?.live_updates),
+    liveState: wpPost.live_state ?? wpPost.meta?.live_state ?? "none",
+    liveStart: wpPost.live_start ?? wpPost.meta?.live_start ?? 0,
+    liveEnd: wpPost.live_end ?? wpPost.meta?.live_end ?? 0,
+    closedAt: wpPost.closed_at ?? wpPost.meta?.closed_at ?? 0,
+    closingSummary: wpPost.closing_summary ?? wpPost.meta?.closing_summary ?? "",
   };
 }
 
