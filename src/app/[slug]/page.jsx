@@ -8,7 +8,7 @@ import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { PostHero } from "@/components/posts/PostHero";
-import { PostMeta } from "@/components/posts/PostMeta";
+import { PostHeader } from "@/components/posts/PostHeader";
 import { PostJsonLd } from "@/components/posts/PostJsonLd";
 import { QuickLinks } from "@/components/posts/QuickLinks";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
@@ -122,34 +122,39 @@ export default async function ContentPage({ params }) {
         <div className="flex w-full flex-col mb-4 lg:flex-row lg:gap-4 dark:text-gray-200">
           {/* Main Content */}
           <section id="main-left" className="flex-grow space-y-4">
-            <article className="v2-primary-container-inner">
-              {/* Title */}
-              <h1
-                className="font-display text-3xl md:text-4xl text-primary-500 dark:text-primary-400 p-2"
-                dangerouslySetInnerHTML={{ __html: content.title }}
-              />
-
-              {/* Hero Image - only show for posts or pages with featured image */}
-              {(!isPage || content.featuredImage) && (
-                <PostHero
-                  title={content.title}
-                  featuredImage={content.featuredImage}
-                  commentCount={isPage ? 0 : content.commentCount}
-                />
+            <article className="v2-primary-container-inner p-5 md:p-[22px]">
+              {isPage ? (
+                <>
+                  <h1
+                    className="font-display text-3xl md:text-4xl text-primary-500 dark:text-primary-400 mb-4"
+                    dangerouslySetInnerHTML={{ __html: content.title }}
+                  />
+                  {content.featuredImage && (
+                    <PostHero
+                      title={content.title}
+                      featuredImage={content.featuredImage}
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  <PostHeader
+                    title={content.title}
+                    date={content.date}
+                    author={content.author}
+                    categories={content.categories}
+                    commentCount={content.commentCount}
+                    content={content.content}
+                    shareUrl={`${SITE_URL}/${slug}`}
+                  />
+                  <PostHero
+                    title={content.title}
+                    featuredImage={content.featuredImage}
+                  />
+                </>
               )}
 
-              {/* Meta: Date, Author, Breadcrumbs - only for posts */}
-              {!isPage && (
-                <PostMeta
-                  date={content.date}
-                  modified={content.modified}
-                  author={content.author}
-                  categories={content.categories}
-                  title={content.title}
-                />
-              )}
-
-              <div className="p-2">
+              <div className="mt-6">
                 {/* Quick Links (Social Follow) - only for posts */}
                 {!isPage && <QuickLinks />}
 

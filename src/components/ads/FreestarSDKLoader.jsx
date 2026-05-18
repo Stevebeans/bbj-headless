@@ -13,14 +13,15 @@ export function FreestarSDKLoader() {
 
   return (
     <>
+      {/* Lighthouse warns if >4 preconnects. Keep only the critical origin warm; DNS-prefetch the rest. */}
       <link rel="preconnect" href="https://a.pub.network/" crossOrigin="anonymous" />
-      <link rel="preconnect" href="https://b.pub.network/" crossOrigin="anonymous" />
-      <link rel="preconnect" href="https://c.pub.network/" crossOrigin="anonymous" />
-      <link rel="preconnect" href="https://d.pub.network/" crossOrigin="anonymous" />
-      <link rel="preconnect" href="https://c.amazon-adsystem.com" crossOrigin="anonymous" />
-      <link rel="preconnect" href="https://s.amazon-adsystem.com" crossOrigin="anonymous" />
-      <link rel="preconnect" href="https://btloader.com/" crossOrigin="anonymous" />
-      <link rel="preconnect" href="https://api.btloader.com/" crossOrigin="anonymous" />
+      <link rel="dns-prefetch" href="https://b.pub.network/" />
+      <link rel="dns-prefetch" href="https://c.pub.network/" />
+      <link rel="dns-prefetch" href="https://d.pub.network/" />
+      <link rel="dns-prefetch" href="https://c.amazon-adsystem.com" />
+      <link rel="dns-prefetch" href="https://s.amazon-adsystem.com" />
+      <link rel="dns-prefetch" href="https://btloader.com/" />
+      <link rel="dns-prefetch" href="https://api.btloader.com/" />
       <link rel="stylesheet" href="https://a.pub.network/bigbrotherjunkies-com/cls.css" />
 
       <Script

@@ -31,6 +31,7 @@ export default async function HomePage() {
             This is the staging server, so things may load slower than the real site. If something seems off, try refreshing a couple times to clear stale data. Performance won't be an issue on the live site.
           </div>
         )}
+        <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" className="mb-4" />
         <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">
           <section id="main-left" className="flex-grow space-y-4">
             {data.hero.post && (

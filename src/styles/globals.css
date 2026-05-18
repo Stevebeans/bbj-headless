@@ -265,6 +265,13 @@
     @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-5 mb-4;
   }
 
+  .bbj-share-btn {
+    @apply inline-flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:text-primary-500 hover:border-primary-500 dark:hover:text-secondary-500 dark:hover:border-secondary-500 transition-colors cursor-pointer;
+  }
+  .bbj-share-btn.is-copied {
+    @apply text-emerald-600 border-emerald-600 dark:text-emerald-400 dark:border-emerald-400;
+  }
+
   .bbj-status-strip {
     @apply bg-gray-900 dark:bg-black border-b border-gray-700 text-white;
   }

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
+import { useBbTime } from "@/hooks/useBbTime";
 
 export function MobileMenuButton({ isOpen, onClick }) {
   return (
@@ -33,6 +34,7 @@ export function MobileMenuButton({ isOpen, onClick }) {
 export function MobileMenu({ isOpen, onClose, onSearchOpen }) {
   const { isAuthenticated, logout, loading } = useAuth();
   const { openLogin, openRegister } = useAuthModal();
+  const bbTime = useBbTime();
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -153,16 +155,7 @@ export function MobileMenu({ isOpen, onClose, onSearchOpen }) {
           {/* BB Time */}
           <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400" data-nosnippet>
             <span>BB Time: </span>
-            <time suppressHydrationWarning>
-              {new Date().toLocaleString("en-US", {
-                timeZone: "America/Los_Angeles",
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </time>
+            <time suppressHydrationWarning>{bbTime}</time>
           </div>
         </div>
       </div>

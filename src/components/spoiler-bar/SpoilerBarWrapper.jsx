@@ -1,24 +1,22 @@
-import { getCurrentSeasonPlayers } from "@/lib/api/players";
 import { SpoilerBar } from "./SpoilerBar";
 
 /**
- * Server component wrapper that fetches spoiler bar data
- * Uses /current-season-players endpoint for fresh data with game_status
- * Status is computed at render time, not from cached API response
+ * SSR shell that reserves space for the client-fetched spoiler bar.
+ *
+ * The actual data fetch happens client-side via /api/spoiler-bar so that
+ * pages using this wrapper aren't tagged with `spoiler-bar` at the SSR
+ * cache layer. Without this, every player/season edit's webhook would
+ * cascade-invalidate the page cache for every route that renders the bar
+ * (homepage, post pages, feed-update detail, etc.) — the cause of the
+ * 7:1 write/read ratio on /live-feed-updates/[slug].
+ *
+ * Reserved height matches SpoilerBar's banner (18) + image (56/80) + name
+ * (18) + py-1 (8) so the bar can't shift <main> when it hydrates.
  */
-export async function SpoilerBarWrapper() {
-  let data = { season: null, players: [], count: 0 };
-
-  try {
-    data = await getCurrentSeasonPlayers({ size: "bbj_v2_spoiler_bar" });
-  } catch (error) {
-    console.error("Failed to fetch spoiler bar data:", error);
-    return null;
-  }
-
-  if (!data.players || data.players.length === 0) {
-    return null;
-  }
-
-  return <SpoilerBar players={data.players} season={data.season} />;
+export function SpoilerBarWrapper() {
+  return (
+    <div className="min-h-[100px] lg:min-h-[124px]">
+      <SpoilerBar />
+    </div>
+  );
 }
