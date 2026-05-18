@@ -17,7 +17,7 @@ import { NextResponse } from "next/server";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { secret, type, slug, path, tag } = body;
+    const { secret, type, slug, path, tag, postId } = body;
 
     if (secret !== process.env.REVALIDATION_SECRET) {
       return NextResponse.json(
@@ -120,6 +120,30 @@ export async function POST(request) {
 
       case "ad-settings":
         revalidateTag("ad-settings");
+        break;
+
+      case "live-thread-state":
+        // Open / close / take-over: layout-level chrome needs to flip.
+        revalidateTag("live-thread-active");
+        revalidatePath("/", "layout");
+        if (slug) {
+          revalidatePath(`/${slug}`);
+          revalidateTag(`live-thread-${postId || slug}`);
+          cfPurgePaths.push(`/${slug}`);
+        }
+        revalidatePath("/");
+        cfPurgePaths.push("/");
+        break;
+
+      case "live-thread-update":
+        // New feed-update in an active thread: only that thread's page needs to update.
+        if (postId) {
+          revalidateTag(`live-thread-${postId}`);
+        }
+        if (slug) {
+          revalidatePath(`/${slug}`);
+          cfPurgePaths.push(`/${slug}`);
+        }
         break;
 
       case "all":
