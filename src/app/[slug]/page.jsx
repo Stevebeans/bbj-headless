@@ -1,5 +1,4 @@
 import { getContent, getRelatedPosts } from "@/lib/api/posts";
-import { getFeedUpdatesByDate } from "@/lib/api/feedUpdates";
 import { getSeasons } from "@/lib/api/seasons";
 import { wpFetch } from "@/lib/api/wordpress";
 import { autoLinkEntities, buildSeasonEntityMap } from "@/lib/utils/autoLink";
@@ -12,7 +11,7 @@ import { PostHeader } from "@/components/posts/PostHeader";
 import { PostJsonLd } from "@/components/posts/PostJsonLd";
 import { QuickLinks } from "@/components/posts/QuickLinks";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
-import { FeedUpdates } from "@/components/posts/FeedUpdates";
+import { LiveUpdateTimeline } from "@/components/posts/LiveUpdateTimeline";
 import { ContentWithAds } from "@/components/posts/ContentWithAds";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
@@ -87,9 +86,8 @@ export default async function ContentPage({ params }) {
   const isPage = content.type === "page";
   const showAds = !isPage && !content.hideAds;
 
-  // Only fetch related posts and feed updates for posts (not pages)
+  // Only fetch related posts for posts (not pages)
   let relatedPosts = [];
-  let feedUpdatesData = null;
   let adInterval = 5;
 
   // Fetch seasons for auto-linking (runs in parallel with other fetches)
@@ -103,10 +101,6 @@ export default async function ContentPage({ params }) {
     ]);
     relatedPosts = related;
     adInterval = adSettings.incontent_interval || 5;
-
-    if (content.liveFeedThread) {
-      feedUpdatesData = await getFeedUpdatesByDate(content.date);
-    }
   }
 
   const { seasons } = await seasonsPromise;
@@ -198,12 +192,13 @@ export default async function ContentPage({ params }) {
                   />
                 )}
 
-                {/* Feed Updates - only for posts with live feed thread */}
-                {feedUpdatesData && (
-                  <FeedUpdates
-                    updates={feedUpdatesData.updates}
-                    dateFormatted={feedUpdatesData.date_formatted}
-                    total={feedUpdatesData.total}
+                {/* Live Update Timeline - only for posts with live thread enabled */}
+                {content.liveUpdates && (
+                  <LiveUpdateTimeline
+                    postId={content.id}
+                    liveState={content.liveState}
+                    closedAt={content.closedAt}
+                    closingSummary={content.closingSummary}
                   />
                 )}
 
