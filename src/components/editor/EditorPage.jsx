@@ -37,6 +37,11 @@ export default function EditorPage({ postId = null }) {
   const [reviewNote, setReviewNote] = useState("");
   const [cropData, setCropData] = useState(null);
 
+  // Live-thread state
+  const [liveUpdates, setLiveUpdates] = useState(false);
+  const [liveStart, setLiveStart] = useState(0);
+  const [liveEnd, setLiveEnd] = useState(0);
+
   // UI state
   const [saveStatus, setSaveStatus] = useState("idle");
   const [lastSaved, setLastSaved] = useState(null);
@@ -48,13 +53,13 @@ export default function EditorPage({ postId = null }) {
   const saveTimerRef = useRef(null);
   const isSavingRef = useRef(false);
   const isFirstSaveRef = useRef(!postId);
-  const stateRef = useRef({ title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData });
+  const stateRef = useRef({ title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData, liveUpdates, liveStart, liveEnd });
   const [pendingContent, setPendingContent] = useState(null); // For editor content loading timing (#4)
 
   // Keep stateRef in sync with latest state values
   useEffect(() => {
-    stateRef.current = { title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData };
-  }, [title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData]);
+    stateRef.current = { title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData, liveUpdates, liveStart, liveEnd };
+  }, [title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData, liveUpdates, liveStart, liveEnd]);
 
   const canPublish = hasPermission("blog_publishing") || hasPermission("blog_review");
 
@@ -117,6 +122,9 @@ export default function EditorPage({ postId = null }) {
       setMetaDescription(data.meta_description);
       setReviewNote(data.review_note);
       setCropData(data.crop_data && Object.keys(data.crop_data).length > 0 ? data.crop_data : null);
+      setLiveUpdates(!!data.live_updates);
+      setLiveStart(Number(data.live_start) || 0);
+      setLiveEnd(Number(data.live_end) || 0);
       if (editor && data.content) {
         editor.commands.setContent(data.content);
       } else if (data.content) {
@@ -150,7 +158,7 @@ export default function EditorPage({ postId = null }) {
     isSavingRef.current = true;
     setSaveStatus("saving");
 
-    const { title: t, slug: s, categoryIds: cats, featuredImageId: imgId, metaDescription: meta, currentPostId: pid, cropData: cd } = stateRef.current;
+    const { title: t, slug: s, categoryIds: cats, featuredImageId: imgId, metaDescription: meta, currentPostId: pid, cropData: cd, liveUpdates: lu, liveStart: ls, liveEnd: le } = stateRef.current;
 
     const postData = {
       title: t || "Untitled Draft",
@@ -160,6 +168,9 @@ export default function EditorPage({ postId = null }) {
       meta_description: meta,
       slug: s,
       crop_data: cd,
+      live_updates: !!lu,
+      live_start: Number(ls) || 0,
+      live_end: Number(le) || 0,
     };
 
     try {
@@ -213,6 +224,27 @@ export default function EditorPage({ postId = null }) {
     try {
       await changePostStatus(pid, newStatus);
       setStatus(newStatus);
+
+      // If publishing a live thread, atomically open it (and close the previous one if any).
+      // /take-over is idempotent — safe to call even if no conflict.
+      if (newStatus === "publish" && stateRef.current.liveUpdates) {
+        try {
+          const { getToken } = await import("@/lib/auth/cookies");
+          const token = getToken();
+          const apiUrl = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "";
+          await fetch(`${apiUrl}/bbjd/v1/live-thread/take-over`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ new_post_id: pid }),
+          });
+        } catch (takeOverErr) {
+          console.error("Live-thread take-over failed:", takeOverErr);
+        }
+      }
+
       if (newStatus === "publish") {
         router.push(`/${stateRef.current.slug}`);
       }
@@ -339,6 +371,15 @@ export default function EditorPage({ postId = null }) {
     onSaveNow: saveNow,
     onTitleChange: handleTitleSet,
     isEditMode: !!postId,
+    liveUpdates,
+    liveStart,
+    liveEnd,
+    onLiveUpdatesChange: ({ liveUpdates: lu, liveStart: ls, liveEnd: le }) => {
+      setLiveUpdates(!!lu);
+      setLiveStart(Number(ls) || 0);
+      setLiveEnd(Number(le) || 0);
+      scheduleSave();
+    },
   };
 
   return (
