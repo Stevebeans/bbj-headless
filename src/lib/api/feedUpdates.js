@@ -3,27 +3,6 @@ import { bbjdFetch } from "./wordpress";
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
 
 /**
- * Get feed updates for a specific date
- * Used for "Live Feed Thread" feature on blog posts
- */
-export async function getFeedUpdatesByDate(date) {
-  if (!date) return { updates: [], total: 0 };
-
-  // Convert date to Y-m-d format if it's an ISO string
-  const dateStr = date.split("T")[0];
-
-  try {
-    const response = await bbjdFetch(`/feed-updates-by-date?date=${dateStr}`, {
-      tags: [`feed-updates-${dateStr}`], // Date-scoped — old dates don't refresh when new feed updates posted
-    });
-    return response;
-  } catch (error) {
-    console.error("Failed to fetch feed updates by date:", error);
-    return { updates: [], total: 0 };
-  }
-}
-
-/**
  * Fetch feed updates with optional filters
  * @param {Object} options - Query options
  * @param {number} options.page - Page number (default: 1)
