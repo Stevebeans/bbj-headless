@@ -12,6 +12,7 @@ import {
   HouseStrip,
   HousePulse,
 } from "@/components/home";
+import { LiveThreadBanner } from "@/components/home/LiveThreadBanner";
 
 const isStaging = process.env.VERCEL_ENV === "preview" || process.env.NEXT_PUBLIC_SITE_URL?.includes("stg-");
 
@@ -34,6 +35,7 @@ export default async function HomePage() {
         <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" className="mb-4" />
         <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">
           <section id="main-left" className="flex-grow space-y-4">
+            <LiveThreadBanner />
             {data.hero.post && (
               <Hero post={data.hero.post} season={data.currentSeason} />
             )}
