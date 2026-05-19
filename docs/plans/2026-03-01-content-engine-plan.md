@@ -1,7 +1,5 @@
 # Content Engine Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Build a unified content engine in the BBJ admin panel — image paste + AI caption, news aggregation, template generation, Facebook posting, and content scheduling.
 
 **Architecture:** WordPress plugin routes handle all backend logic (AI proxy, Facebook API, RSS feeds, CRUD). Next.js admin panel provides the UI with sub-tabs. All content flows through a single `bbj_content_queue` table. AI calls proxy through WP to keep API keys server-side.
@@ -1744,7 +1742,7 @@ git add -A && git commit -m "feat: wire all content engine sub-components into a
 **Step 1: Deploy WordPress plugin**
 
 ```bash
-bash .claude/scripts/deploy-plugin.sh --staging
+bash scripts/deploy-plugin.sh --staging
 ```
 
 **Step 2: Push Next.js to staging**

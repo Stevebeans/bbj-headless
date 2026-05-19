@@ -437,7 +437,7 @@ Each template type has query requirements:
 ### Player Data Source
 
 - Primary: `bbj_players` database table (already exists via PlayerRoutes)
-- Supplemental: Player CSV data in `.claude/data/` for enrichment
+- Supplemental: local Player CSV data for enrichment
 - Needs: play style tags, alliance data, season metadata for richer templates
 
 ---

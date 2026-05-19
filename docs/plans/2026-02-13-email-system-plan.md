@@ -1,7 +1,5 @@
 # BBJ Email System Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Replace MailPoet with a custom email system using Resend as the delivery provider.
 
 **Architecture:** WordPress plugin handles all email logic (subscribers, lists, sending, webhooks). Next.js provides subscribe widget, unsubscribe page, and wires existing settings toggles. Resend REST API for delivery.
@@ -1832,7 +1830,7 @@ feat(email): wire settings notification toggle to email preferences API
 **Step 2: Deploy plugin to staging**
 
 ```bash
-bash .claude/scripts/deploy-plugin.sh --staging
+bash scripts/deploy-plugin.sh --staging
 ```
 
 **Step 3: Configure Resend webhook**

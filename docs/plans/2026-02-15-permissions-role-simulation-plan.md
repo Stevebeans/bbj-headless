@@ -1,7 +1,5 @@
 # Permissions & Role Simulation Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Add role simulation mode to the admin panel so super admins can preview what each role sees, plus fix missing bug_reports permission and update hidden roles list.
 
 **Architecture:** Frontend-only simulation — a dropdown in the admin layout overrides the permissions state with what a selected role would see. One new backend endpoint returns the features for any given role. No auth changes.

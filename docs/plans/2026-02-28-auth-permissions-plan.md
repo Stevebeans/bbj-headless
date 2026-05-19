@@ -1,7 +1,5 @@
 # Auth & Permissions System Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Fix the admin badge hydration bug, create a global permission system (backend + frontend), add role member info icons to the settings page.
 
 **Architecture:** Backend gets a static `PermissionChecker` utility that centralizes all permission logic. Frontend gets a `usePermissions` hook that makes permission checks available anywhere. Auth responses are fixed to include roles. Admin settings page gets info icons showing role members.

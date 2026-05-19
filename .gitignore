@@ -43,11 +43,10 @@ next-env.d.ts
 # Vercel
 .vercel
 
-# Claude Code
-.claude/private/
-.claude/plugins/
-.claude/taxes/
-.claude/scheduled_tasks.lock
+# Local project notes & tooling (not for public repo)
+.claude/
+CLAUDE.md
+docs/superpowers/
 **/settings.local.json
 
 # Misc

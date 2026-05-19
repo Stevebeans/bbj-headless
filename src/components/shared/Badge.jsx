@@ -1,6 +1,6 @@
 /**
  * Generic badge component for status indicators and awards
- * Variants match the CLAUDE.md color palette for houseguest statuses
+ * Variants match the project color palette for houseguest statuses
  */
 
 const variantStyles = {

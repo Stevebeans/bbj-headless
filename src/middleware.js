@@ -62,7 +62,6 @@ export const config = {
      * the response (sets Cache-Control: private, no-store). Public pages
      * (posts, players, seasons, feed-updates, etc.) must skip middleware
      * entirely so they can be served from CDN cache.
-     * See: .claude/history/2026-04-10.md
      */
     "/admin/:path*",
     "/settings/:path*",
