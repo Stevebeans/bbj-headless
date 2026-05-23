@@ -63,6 +63,7 @@ function Cell({ people, grayscale }) {
       ))}
       {extra > 0 ? (
         <span
+          title={`+${extra} more`}
           className={`flex h-8 w-8 items-center justify-center rounded-full bg-gray-300 text-[10px] font-bold text-primary-500 ${RING}`}
         >
           +{extra}
