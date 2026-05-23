@@ -23,6 +23,18 @@ function initials(name = "") {
   return name.trim().slice(0, 2).toUpperCase() || "—";
 }
 
+/** Round 32px badge — shared by the initials fallback and the +N overflow count. */
+function Chip({ className = "", title, children }) {
+  return (
+    <span
+      title={title}
+      className={`flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold ${RING} ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 function Face({ person, grayscale }) {
   const inner = person.photo ? (
     <Image
@@ -33,11 +45,7 @@ function Face({ person, grayscale }) {
       className={`h-8 w-8 rounded-full object-cover ${RING} ${grayscale ? "grayscale" : ""}`}
     />
   ) : (
-    <span
-      className={`flex h-8 w-8 items-center justify-center rounded-full bg-primary-500 text-[10px] font-bold text-white ${RING}`}
-    >
-      {initials(person.name)}
-    </span>
+    <Chip className="bg-primary-500 text-white">{initials(person.name)}</Chip>
   );
 
   if (person.slug) {
@@ -62,12 +70,9 @@ function Cell({ people, grayscale }) {
         <Face key={p.id} person={p} grayscale={grayscale} />
       ))}
       {extra > 0 ? (
-        <span
-          title={`+${extra} more`}
-          className={`flex h-8 w-8 items-center justify-center rounded-full bg-gray-300 text-[10px] font-bold text-primary-500 ${RING}`}
-        >
+        <Chip title={`+${extra} more`} className="bg-gray-300 text-primary-500">
           +{extra}
-        </span>
+        </Chip>
       ) : null}
     </div>
   );
@@ -84,7 +89,7 @@ export function SeasonPowerMap({ weeks, seasonLabel = "" }) {
   for (const w of weeks) {
     const f = w.faces || {};
     byWeek.set(Number(w.week_num), f);
-    if (f.hoh?.length || f.pov?.length || f.noms?.length || f.evicted?.length) {
+    if (ROWS.some(({ key }) => f[key]?.length)) {
       hasAnyFace = true;
     }
   }
