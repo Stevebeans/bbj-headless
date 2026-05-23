@@ -16,8 +16,8 @@ export function SeasonWeeks({ weeks }) {
   if (!weeks?.length) return null;
 
   return (
-    <section className="my-8">
-      <h2 className="font-display text-2xl text-gray-900 dark:text-white mb-3">Week by Week</h2>
+    <section id="weeks" aria-labelledby="season-weeks-heading" className="my-8">
+      <h2 id="season-weeks-heading" className="font-display text-2xl text-gray-900 dark:text-white mb-3">Week by Week</h2>
       <div className="space-y-3">
         {weeks.map((w) => (
           <div

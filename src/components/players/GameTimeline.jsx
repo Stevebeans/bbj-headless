@@ -71,7 +71,7 @@ export function GameTimeline({ timeline, seasonLabel = "" }) {
           <div className="grid flex-1 gap-1 h-6" style={gridStyle}>
             {timeline.finale ? (
               <div
-                className={`flex items-center justify-center rounded text-[10px] font-bold ${CELL[timeline.finale.class]}`}
+                className={`flex items-center justify-center rounded text-[10px] font-bold ${CELL[timeline.finale.class] ?? CELL.runnerup}`}
                 style={{ gridColumnStart: totalCols }}
               >
                 {timeline.finale.label}

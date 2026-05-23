@@ -6,6 +6,7 @@ const SECTIONS = [
   { id: "overview", label: "Overview" },
   { id: "winners", label: "Winners" },
   { id: "cast", label: "Cast" },
+  { id: "weeks", label: "Weeks" },
   { id: "eviction-order", label: "Eviction Order" },
   { id: "articles", label: "Articles" },
   { id: "feed-updates", label: "Feed Updates" },
