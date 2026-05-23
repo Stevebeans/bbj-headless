@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SeasonTable, ProgressCell, ResultCell } from "@/components/shared";
+import { GameTimeline } from "./GameTimeline";
 
 /**
  * Season breakdown table for player profile
@@ -119,6 +120,15 @@ export function PlayerSeasons({ seasons, className = "" }) {
         footerData={totals}
         emptyText="No season data available"
       />
+      {seasons.map((s) =>
+        s.weekly_timeline?.tracked && s.weekly_timeline?.has_activity ? (
+          <GameTimeline
+            key={`tl-${s.season_id}`}
+            timeline={s.weekly_timeline}
+            seasonLabel={s.season_name}
+          />
+        ) : null
+      )}
     </div>
   );
 }
