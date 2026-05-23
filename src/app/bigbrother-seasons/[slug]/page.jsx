@@ -19,6 +19,7 @@ import {
   SeasonFAQ,
   SeasonFAQSchema,
   SeasonWeeks,
+  SeasonPowerMap,
 } from "./components";
 import { SeasonInfoSidebar } from "./components/SeasonInfoSidebar";
 
@@ -260,7 +261,8 @@ export default async function SeasonPage({ params }) {
                   />
                 </div>
 
-                {/* Week by Week breakdown */}
+                {/* Week-by-week power map (faces) + text breakdown */}
+                <SeasonPowerMap weeks={weeks} seasonLabel={season.name} />
                 <SeasonWeeks weeks={weeks} />
 
                 {/* Eviction Order */}
