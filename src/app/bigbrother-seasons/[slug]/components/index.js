@@ -11,3 +11,4 @@ export { SeasonArticles } from "./SeasonArticles";
 export { SeasonFeedUpdates } from "./SeasonFeedUpdates";
 export { SeasonFAQ } from "./SeasonFAQ";
 export { SeasonFAQSchema } from "./SeasonFAQSchema";
+export { SeasonWeeks } from "./SeasonWeeks";

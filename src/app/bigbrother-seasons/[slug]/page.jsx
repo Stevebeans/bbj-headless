@@ -18,6 +18,7 @@ import {
   SeasonFeedUpdates,
   SeasonFAQ,
   SeasonFAQSchema,
+  SeasonWeeks,
 } from "./components";
 import { SeasonInfoSidebar } from "./components/SeasonInfoSidebar";
 
@@ -152,7 +153,7 @@ function generateFAQs(season, players) {
 
 export default async function SeasonPage({ params }) {
   const { slug } = await params;
-  const { season, players, count, category_id, article_count } =
+  const { season, players, count, category_id, article_count, weeks } =
     await getSeasonBySlug(slug);
 
   if (!season) {
@@ -258,6 +259,9 @@ export default async function SeasonPage({ params }) {
                     seasonIsActive={season.is_active}
                   />
                 </div>
+
+                {/* Week by Week breakdown */}
+                <SeasonWeeks weeks={weeks} />
 
                 {/* Eviction Order */}
                 <EvictionOrder players={players} season={season} />
