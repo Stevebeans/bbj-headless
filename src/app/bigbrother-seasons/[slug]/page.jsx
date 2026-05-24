@@ -22,6 +22,7 @@ import {
   SeasonSwitcher,
   SeasonSectionNav,
   CompWinnersTable,
+  MemorableMoments,
 } from "./components";
 
 const SITE_URL =
@@ -263,6 +264,7 @@ export default async function SeasonPage({ params }) {
               <SeasonPowerMap weeks={weeks} seasonLabel={season.name} />
               <CompWinnersTable weeks={weeks} />
               <SeasonWeeks weeks={weeks} />
+              <MemorableMoments updates={feedUpdates} />
               <EvictionOrder players={players} season={season} />
               <Leaderboards stats={leaderboardStats} />
               <SeasonArticles posts={articles} totalCount={article_count} seasonSlug={slug} />
