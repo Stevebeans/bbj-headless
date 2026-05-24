@@ -19,6 +19,7 @@ import {
   SeasonWeeks,
   SeasonPowerMap,
   SeasonHero,
+  SeasonSwitcher,
 } from "./components";
 
 const SITE_URL =
@@ -228,7 +229,8 @@ export default async function SeasonPage({ params }) {
           </nav>
 
           <SeasonHero season={{ ...season, hg_count: count }} />
-          {/* SWITCHER / SECTION-NAV mount here in later tasks */}
+          <SeasonSwitcher seasons={seasons} currentSlug={slug} />
+          {/* SECTION-NAV mounts here in a later task */}
 
           <div className="season-page-grid">
             <div>
