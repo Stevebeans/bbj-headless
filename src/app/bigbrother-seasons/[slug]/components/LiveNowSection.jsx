@@ -6,8 +6,9 @@ import Link from "next/link";
  */
 export function LiveNowSection({ hoh, pov, nominees, juryCount, evictedCount, season }) {
   return (
-    <div className="v2-primary-container-inner p-4 rounded-lg">
-      <h2 className="v2-primary-subheader mb-4">Live Now</h2>
+    <section id="live">
+      <div className="sech"><h2>Live Now</h2><span className="sub">Current week</span></div>
+      <div className="card">
 
       <div className="grid grid-cols-2 gap-3">
         {/* Head of Household */}
@@ -80,7 +81,8 @@ export function LiveNowSection({ hoh, pov, nominees, juryCount, evictedCount, se
           <div className="font-semibold text-lg">{evictedCount}</div>
         </div>
       </div>
-    </div>
+      </div>
+    </section>
   );
 }
 
