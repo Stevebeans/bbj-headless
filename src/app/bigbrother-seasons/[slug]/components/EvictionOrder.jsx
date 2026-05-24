@@ -1,7 +1,19 @@
+import Image from "next/image";
 
 /**
  * Eviction order table — shows houseguests in order of elimination
  */
+
+/** Round 28px avatar — player photo, falling back to initials (styled by .evtable .hg .a). */
+function HgAvatar({ player }) {
+  if (player.photo) {
+    return (
+      <Image className="a" src={player.photo} alt="" width={28} height={28} style={{ objectFit: "cover" }} />
+    );
+  }
+  return <span className="a">{(player.name || "XX").slice(0, 2).toUpperCase()}</span>;
+}
+
 export function EvictionOrder({ players, season }) {
   const ordered = players
     .filter((p) => p.finish_place !== null && p.finish_place !== undefined)
@@ -31,7 +43,7 @@ export function EvictionOrder({ players, season }) {
                   <td className="wk">{idx + 1}</td>
                   <td>
                     <a className="hg" href={player.permalink || "#"}>
-                      <span className="a">{(player.name || "XX").slice(0, 2).toUpperCase()}</span>{player.name}
+                      <HgAvatar player={player} />{player.name}
                     </a>
                   </td>
                   <td className="day">{evictedDate ? evictedDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</td>
@@ -45,7 +57,7 @@ export function EvictionOrder({ players, season }) {
                 <td className="wk">—</td>
                 <td>
                   <a className="hg" href={player.permalink || "#"}>
-                    <span className="a">{(player.name || "XX").slice(0, 2).toUpperCase()}</span>{player.name}
+                    <HgAvatar player={player} />{player.name}
                   </a>
                 </td>
                 <td className="day" colSpan={2}>Still in the house</td>
