@@ -30,12 +30,24 @@ function PodiumCard({ player, cls, label, role, prize }) {
   );
 }
 
+function resolvePerson(players, ref) {
+  if (!ref) return null;
+  const full = players.find((p) => p.id === ref.id || p.player_id === ref.id) || {};
+  return {
+    name: full.name || ref.name,
+    slug: full.slug || ref.slug,
+    permalink: full.permalink || ref.permalink,
+    photo: full.photo || ref.photo,
+    stats: full.stats || {},
+  };
+}
+
 export function WinnerPodium({ season, players }) {
   if (season.status !== "completed") return null;
-  const winner = players.find((p) => p.finish_place === 1);
+  const winner = resolvePerson(players, season.winner);
   if (!winner) return null;
-  const runnerUp = players.find((p) => p.finish_place === 2);
-  const afp = season.afp ? players.find((p) => p.player_id === season.afp.id || p.id === season.afp.id) : null;
+  const runnerUp = resolvePerson(players, season.runner_up);
+  const afp = resolvePerson(players, season.afp);
 
   return (
     <section id="winners">
