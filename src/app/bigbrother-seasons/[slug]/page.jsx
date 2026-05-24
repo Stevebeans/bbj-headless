@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import {
-  PlayerGrid,
+  CastGrid,
   LiveNowSection,
   Leaderboards,
   SeasonJsonLd,
@@ -258,7 +258,7 @@ export default async function SeasonPage({ params }) {
                 <LiveNowSection hoh={currentHoH} pov={currentPoV} nominees={nominees}
                   juryCount={juryPlayers.length} evictedCount={evictedPlayers.length} season={season} />
               )}
-              <div id="cast"><PlayerGrid players={players} seasonIsActive={season.is_active} /></div>
+              <CastGrid players={players} season={season} />
               <SeasonPowerMap weeks={weeks} seasonLabel={season.name} />
               <SeasonWeeks weeks={weeks} />
               <EvictionOrder players={players} season={season} />

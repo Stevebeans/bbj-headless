@@ -1,4 +1,5 @@
 export { SeasonHeader } from "./SeasonHeader";
+export { CastGrid } from "./CastGrid";
 export { PlayerGrid } from "./PlayerGrid";
 export { LiveNowSection } from "./LiveNowSection";
 export { Leaderboards } from "./Leaderboards";
