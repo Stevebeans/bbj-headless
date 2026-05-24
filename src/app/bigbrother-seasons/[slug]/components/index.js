@@ -13,3 +13,4 @@ export { SeasonFAQ } from "./SeasonFAQ";
 export { SeasonFAQSchema } from "./SeasonFAQSchema";
 export { SeasonWeeks } from "./SeasonWeeks";
 export { SeasonPowerMap } from "./SeasonPowerMap";
+export { SeasonHero } from "./SeasonHero";
