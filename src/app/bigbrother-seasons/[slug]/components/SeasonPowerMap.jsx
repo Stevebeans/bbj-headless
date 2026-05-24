@@ -94,14 +94,8 @@ export function SeasonPowerMap({ weeks, seasonLabel = "" }) {
   const gridStyle = { gridTemplateColumns: "2.75rem repeat(4, minmax(58px, 1fr))" };
 
   return (
-    <section className="mt-6">
-      <div className="mb-2">
-        <h3 className="font-display text-xl text-gray-900 dark:text-white">
-          Power Map
-          {seasonLabel ? <span className="text-gray-400 text-base"> — {seasonLabel}</span> : null}
-        </h3>
-        <span className="text-xs uppercase tracking-wide text-gray-400">Week-by-week house power</span>
-      </div>
+    <section id="power-map">
+      <div className="sech"><h2>Power Map</h2><span className="sub">Week-by-week house power</span></div>
 
       <div className="rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 overflow-x-auto">
         {/* Column headers — the 4 roles */}
