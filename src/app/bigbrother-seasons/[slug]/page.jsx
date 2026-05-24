@@ -1,16 +1,14 @@
-import { getSeasonBySlug, getSeasonArticles } from "@/lib/api/seasons";
+import "./season-profile.css";
+import { getSeasonBySlug, getSeasonArticles, getSeasons } from "@/lib/api/seasons";
 import { bbjdFetch } from "@/lib/api/wordpress";
 import { notFound } from "next/navigation";
-import { Sidebar } from "@/components/layout/Sidebar";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import {
-  SeasonHeader,
   PlayerGrid,
   LiveNowSection,
   Leaderboards,
   SeasonJsonLd,
-  SeasonJumpNav,
   SeasonOverview,
   WinnerSpotlight,
   EvictionOrder,
@@ -21,7 +19,6 @@ import {
   SeasonWeeks,
   SeasonPowerMap,
 } from "./components";
-import { SeasonInfoSidebar } from "./components/SeasonInfoSidebar";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
@@ -166,11 +163,12 @@ export default async function SeasonPage({ params }) {
     ? new URLSearchParams({ after: season.start_date, before: season.end_date, per_page: "5" })
     : null;
 
-  const [{ posts: articles }, feedData] = await Promise.all([
+  const [{ posts: articles }, feedData, { seasons }] = await Promise.all([
     category_id ? getSeasonArticles(category_id) : Promise.resolve({ posts: [] }),
     feedParams
       ? bbjdFetch(`/feed-updates?${feedParams.toString()}`, { tags: ["feed-updates"], revalidate: false }).catch(() => null)
       : Promise.resolve(null),
+    getSeasons().catch(() => ({ seasons: [] })),
   ]);
   const feedUpdates = feedData?.updates || feedData?.feed_updates || [];
 
@@ -219,90 +217,45 @@ export default async function SeasonPage({ params }) {
       {faqs.length > 0 && <SeasonFAQSchema questions={faqs} />}
       <SpoilerBarWrapper />
 
-      <main className="v2-primary-container">
-        <div className="flex w-full flex-col mb-4 xl:flex-row xl:gap-4 dark:text-gray-200">
-          {/* Main Content */}
-          <section id="main-left" className="flex-grow space-y-4">
-            <article className="v2-primary-container-inner">
-              {/* Season Header */}
-              <SeasonHeader
-                season={season}
-                playerCount={count}
-                slug={slug}
-              />
+      <div className="season-profile">
+        <main className="wrap">
+          {/* Breadcrumb */}
+          <nav className="crumb" aria-label="Breadcrumb">
+            <a href="/">Home</a><span className="sep">/</span>
+            <a href="/bigbrother-seasons/">Seasons</a><span className="sep">/</span>
+            <b>{season.name}</b>
+          </nav>
 
-              <div className="p-4 space-y-6">
-                {/* Jump Nav */}
-                <SeasonJumpNav articleCount={article_count} />
+          {/* HERO / SWITCHER / SECTION-NAV mount here in later tasks */}
 
-                {/* Season Overview */}
-                <SeasonOverview season={season} playerCount={count} />
+          <div className="season-page-grid">
+            <div>
+              {/* sections — restyled task-by-task; existing components for now */}
+              <SeasonOverview season={season} playerCount={count} />
+              <WinnerSpotlight season={season} players={players} />
+              {season.is_active && (
+                <LiveNowSection hoh={currentHoH} pov={currentPoV} nominees={nominees}
+                  juryCount={juryPlayers.length} evictedCount={evictedPlayers.length} season={season} />
+              )}
+              <div id="cast"><PlayerGrid players={players} seasonIsActive={season.is_active} /></div>
+              <SeasonPowerMap weeks={weeks} seasonLabel={season.name} />
+              <SeasonWeeks weeks={weeks} />
+              <EvictionOrder players={players} season={season} />
+              <Leaderboards stats={leaderboardStats} />
+              <SeasonArticles posts={articles} totalCount={article_count} seasonSlug={slug} />
+              <SeasonFeedUpdates updates={feedUpdates} seasonSlug={slug} />
+              {faqs.length > 0 && <SeasonFAQ questions={faqs} />}
+            </div>
 
-                {/* Winner Spotlight */}
-                <WinnerSpotlight season={season} players={players} />
-
-                {/* Live Now Section (only for active seasons) */}
-                {season.is_active && (
-                  <LiveNowSection
-                    hoh={currentHoH}
-                    pov={currentPoV}
-                    nominees={nominees}
-                    juryCount={juryPlayers.length}
-                    evictedCount={evictedPlayers.length}
-                    season={season}
-                  />
-                )}
-
-                {/* Player Grid */}
-                <div id="cast">
-                  <PlayerGrid
-                    players={players}
-                    seasonIsActive={season.is_active}
-                  />
-                </div>
-
-                {/* Week-by-week power map (faces) + text breakdown */}
-                <SeasonPowerMap weeks={weeks} seasonLabel={season.name} />
-                <SeasonWeeks weeks={weeks} />
-
-                {/* Eviction Order */}
-                <EvictionOrder players={players} season={season} />
-
-                {/* Leaderboards (in main content for mobile/tablet, hidden on desktop) */}
-                <div className="xl:hidden">
-                  <Leaderboards stats={leaderboardStats} />
-                </div>
-
-                {/* Season Articles */}
-                <SeasonArticles
-                  posts={articles}
-                  totalCount={article_count}
-                  seasonSlug={slug}
-                />
-
-                {/* Season Feed Updates */}
-                <SeasonFeedUpdates updates={feedUpdates} seasonSlug={slug} />
-
-                {/* FAQ */}
-                {faqs.length > 0 && <SeasonFAQ questions={faqs} />}
+            {/* ASIDE — cards added in a later task */}
+            <aside>
+              <div className="stick">
+                <SubscribeWidget />
               </div>
-            </article>
-          </section>
-
-          {/* Season Info Sidebar (middle column) */}
-          <SeasonInfoSidebar
-            season={season}
-            juryCount={juryPlayers.length}
-            evictedCount={evictedPlayers.length}
-            leaderboardStats={leaderboardStats}
-          />
-
-          {/* Site Sidebar (right column) */}
-          <Sidebar>
-            <SubscribeWidget />
-          </Sidebar>
-        </div>
-      </main>
+            </aside>
+          </div>
+        </main>
+      </div>
     </>
   );
 }
