@@ -81,8 +81,9 @@ function Cell({ people, grayscale }) {
 export function SeasonPowerMap({ weeks, seasonLabel = "" }) {
   if (!weeks?.length) return null;
 
+  // Latest week first.
   const sorted = [...weeks].sort(
-    (a, b) => (Number(a.week_num) || 0) - (Number(b.week_num) || 0)
+    (a, b) => (Number(b.week_num) || 0) - (Number(a.week_num) || 0)
   );
   const hasAnyFace = sorted.some((w) => {
     const f = w.faces || {};
@@ -94,8 +95,8 @@ export function SeasonPowerMap({ weeks, seasonLabel = "" }) {
   const gridStyle = { gridTemplateColumns: "2.75rem repeat(4, minmax(58px, 1fr))" };
 
   return (
-    <section id="power-map">
-      <div className="sech"><h2>Power Map</h2><span className="sub">Week-by-week house power</span></div>
+    <section id="weekly-results">
+      <div className="sech"><h2>Weekly Results</h2><span className="sub">Week-by-week house power</span></div>
 
       <div className="rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 overflow-x-auto">
         {/* Column headers — the 4 roles */}

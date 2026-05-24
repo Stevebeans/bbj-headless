@@ -22,7 +22,6 @@ import {
   SeasonHero,
   SeasonSwitcher,
   SeasonSectionNav,
-  CompWinnersTable,
   MemorableMoments,
   SeasonTOC,
   QuickFacts,
@@ -225,8 +224,7 @@ export default async function SeasonPage({ params }) {
     (season.winner || season.runner_up) && { id: "winners", label: "Top 3 & AFP" },
     season.is_active && { id: "live", label: "Live Now" },
     { id: "cast", label: "Cast", count: count },
-    weeks?.length && { id: "power-map", label: "Power Map" },
-    weeks?.length && { id: "comps", label: "Comp Winners" },
+    weeks?.length && { id: "weekly-results", label: "Weekly Results" },
     { id: "evictions", label: "Evictions" },
     weeks?.some((w) => w.summary) && { id: "week-recap", label: "Week Recap" },
     feedUpdates?.length && { id: "memories", label: "Moments" },
@@ -266,7 +264,6 @@ export default async function SeasonPage({ params }) {
               )}
               <CastGrid players={players} season={season} />
               <SeasonPowerMap weeks={weeks} seasonLabel={season.name} />
-              <CompWinnersTable weeks={weeks} />
               <SeasonWeeks weeks={weeks} />
               <MemorableMoments updates={feedUpdates} />
               <EvictionOrder players={players} season={season} />
