@@ -20,6 +20,7 @@ import {
   SeasonPowerMap,
   SeasonHero,
   SeasonSwitcher,
+  SeasonSectionNav,
 } from "./components";
 
 const SITE_URL =
@@ -213,6 +214,22 @@ export default async function SeasonPage({ params }) {
   // Generate FAQ data
   const faqs = generateFAQs(season, players);
 
+  const sectionNav = [
+    { id: "overview", label: "Overview" },
+    (season.winner || season.runner_up) && { id: "winners", label: "Top 3 & AFP" },
+    season.is_active && { id: "live", label: "Live Now" },
+    { id: "cast", label: "Cast", count: count },
+    weeks?.length && { id: "power-map", label: "Power Map" },
+    weeks?.length && { id: "comps", label: "Comp Winners" },
+    { id: "evictions", label: "Evictions" },
+    weeks?.some((w) => w.summary) && { id: "week-recap", label: "Week Recap" },
+    feedUpdates?.length && { id: "memories", label: "Moments" },
+    { id: "leaderboards", label: "Leaderboards" },
+    articles?.length && { id: "articles", label: "Articles", count: article_count || undefined },
+    feedUpdates?.length && { id: "feed-updates", label: "Feed" },
+    faqs.length > 0 && { id: "faq", label: "FAQ" },
+  ].filter(Boolean);
+
   return (
     <>
       <SeasonJsonLd season={season} siteUrl={SITE_URL} />
@@ -230,7 +247,7 @@ export default async function SeasonPage({ params }) {
 
           <SeasonHero season={{ ...season, hg_count: count }} />
           <SeasonSwitcher seasons={seasons} currentSlug={slug} />
-          {/* SECTION-NAV mounts here in a later task */}
+          <SeasonSectionNav sections={sectionNav} />
 
           <div className="season-page-grid">
             <div>

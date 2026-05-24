@@ -15,3 +15,4 @@ export { SeasonWeeks } from "./SeasonWeeks";
 export { SeasonPowerMap } from "./SeasonPowerMap";
 export { SeasonHero } from "./SeasonHero";
 export { SeasonSwitcher } from "./SeasonSwitcher";
+export { SeasonSectionNav } from "./SeasonSectionNav";
