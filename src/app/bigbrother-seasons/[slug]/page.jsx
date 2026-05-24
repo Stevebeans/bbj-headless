@@ -4,6 +4,7 @@ import { bbjdFetch } from "@/lib/api/wordpress";
 import { notFound } from "next/navigation";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
+import { StickyAdSlot } from "@/components/sidebar/StickyAdSlot";
 import {
   CastGrid,
   LiveNowSection,
@@ -23,6 +24,9 @@ import {
   SeasonSectionNav,
   CompWinnersTable,
   MemorableMoments,
+  SeasonTOC,
+  QuickFacts,
+  MoreSeasons,
 } from "./components";
 
 const SITE_URL =
@@ -272,10 +276,13 @@ export default async function SeasonPage({ params }) {
               {faqs.length > 0 && <SeasonFAQ questions={faqs} />}
             </div>
 
-            {/* ASIDE — cards added in a later task */}
             <aside>
               <div className="stick">
+                <SeasonTOC sections={sectionNav} />
+                <QuickFacts season={season} playerCount={count} />
+                <MoreSeasons seasons={seasons} currentSlug={slug} />
                 <SubscribeWidget />
+                <StickyAdSlot />
               </div>
             </aside>
           </div>

@@ -20,3 +20,6 @@ export { SeasonSwitcher } from "./SeasonSwitcher";
 export { SeasonSectionNav } from "./SeasonSectionNav";
 export { CompWinnersTable } from "./CompWinnersTable";
 export { MemorableMoments } from "./MemorableMoments";
+export { SeasonTOC } from "./SeasonTOC";
+export { QuickFacts } from "./QuickFacts";
+export { MoreSeasons } from "./MoreSeasons";
