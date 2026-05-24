@@ -159,23 +159,29 @@ function generateFAQs(season, players) {
 
 /**
  * Tally per-player competition wins from the weekly junction `faces` — the same
- * source that powers Weekly Results. The API's aggregate `stats.hoh/pov/nom` are
- * stale for hand-entered seasons (BB23–25), so we derive these for an accurate
- * leaderboard. Returns top-5 entries shaped for the Leaderboards component
- * (`{ id, name, permalink, stats: { [statKey]: count } }`).
+ * source that powers Weekly Results (the API's aggregate stats.hoh/pov/nom are
+ * stale for hand-entered seasons). Enriches each entry with the player's
+ * first_name/nickname/photo (matched from `players`) for the Leaderboards display.
  */
-function tallyComp(weeks, facesKey, statKey) {
+function tallyComp(weeks, players, facesKey, statKey) {
   const byId = new Map();
   for (const w of weeks || []) {
     for (const f of (w.faces?.[facesKey] || [])) {
-      const entry = byId.get(f.id) || {
-        id: f.id,
-        name: f.name,
-        permalink: f.slug ? `/bigbrother-players/${f.slug}` : "#",
-        stats: { [statKey]: 0 },
-      };
+      let entry = byId.get(f.id);
+      if (!entry) {
+        const full = players.find((p) => p.id === f.id || p.player_id === f.id) || {};
+        entry = {
+          id: f.id,
+          name: f.name,
+          first_name: full.first_name,
+          nickname: full.nickname,
+          photo: f.photo || full.photo,
+          permalink: full.permalink || (f.slug ? `/bigbrother-players/${f.slug}` : "#"),
+          stats: { [statKey]: 0 },
+        };
+        byId.set(f.id, entry);
+      }
       entry.stats[statKey] += 1;
-      byId.set(f.id, entry);
     }
   }
   return [...byId.values()]
@@ -226,9 +232,9 @@ export default async function SeasonPage({ params }) {
   // (accurate + matches Weekly Results); votes_received comes from the API stat
   // (which is computed correctly, unlike the stale hoh/pov/nom totals).
   const leaderboardStats = {
-    hoh: tallyComp(weeks, "hoh", "hoh"),
-    pov: tallyComp(weeks, "pov", "pov"),
-    nom: tallyComp(weeks, "noms", "nom"),
+    hoh: tallyComp(weeks, players, "hoh", "hoh"),
+    pov: tallyComp(weeks, players, "pov", "pov"),
+    nom: tallyComp(weeks, players, "noms", "nom"),
     votes: [...players]
       .filter((p) => p.stats.votes_received > 0)
       .sort((a, b) => b.stats.votes_received - a.stats.votes_received)

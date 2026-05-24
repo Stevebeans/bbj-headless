@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { formalName } from "./playerName";
 
 /**
  * Eviction order table — shows houseguests in order of elimination
@@ -43,7 +44,7 @@ export function EvictionOrder({ players, season }) {
                   <td className="wk">{idx + 1}</td>
                   <td>
                     <a className="hg" href={player.permalink || "#"}>
-                      <HgAvatar player={player} />{player.name}
+                      <HgAvatar player={player} />{formalName(player)}
                     </a>
                   </td>
                   <td className="day">{evictedDate ? evictedDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</td>
@@ -57,7 +58,7 @@ export function EvictionOrder({ players, season }) {
                 <td className="wk">—</td>
                 <td>
                   <a className="hg" href={player.permalink || "#"}>
-                    <HgAvatar player={player} />{player.name}
+                    <HgAvatar player={player} />{formalName(player)}
                   </a>
                 </td>
                 <td className="day" colSpan={2}>Still in the house</td>

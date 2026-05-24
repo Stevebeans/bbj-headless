@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { displayName } from "./playerName";
 
 function initials(name = "") { return name.trim().slice(0, 2).toUpperCase() || "XX"; }
 function ordinal(n) {
@@ -41,11 +42,11 @@ export function CastGrid({ players, season }) {
 
   return (
     <section id="cast">
-      <div className="sech"><h2>Cast of {season.abbreviation}</h2><span className="sub">{players.length} houseguests</span></div>
+      <div className="sech"><h2>Cast of {season.name}</h2><span className="sub">{players.length} houseguests</span></div>
       <div className="castgrid">
         {sorted.map((p) => {
           const [tagCls, tagText] = tagFor(p);
-          const display = p.first_name || p.name;
+          const display = displayName(p);
           return (
             <Link key={p.id} className="c" href={p.permalink || `/bigbrother-players/${p.slug || ""}`} title={p.name}>
               <div className="face" {...(!p.photo ? { "data-i": initials(display) } : {})}>
