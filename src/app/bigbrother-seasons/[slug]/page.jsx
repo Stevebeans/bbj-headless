@@ -276,7 +276,7 @@ export default async function SeasonPage({ params }) {
             <div>
               {/* sections — restyled task-by-task; existing components for now */}
               <SeasonOverview season={season} playerCount={count} />
-              <WinnerPodium season={season} players={players} />
+              <WinnerPodium season={season} players={players} weeks={weeks} />
               {season.is_active && (
                 <LiveNowSection hoh={currentHoH} pov={currentPoV} nominees={nominees}
                   juryCount={juryPlayers.length} evictedCount={evictedPlayers.length} season={season} />

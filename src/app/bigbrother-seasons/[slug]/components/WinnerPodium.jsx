@@ -30,7 +30,29 @@ function PodiumCard({ player, cls, label, role, prize }) {
   );
 }
 
-function resolvePerson(players, ref) {
+/**
+ * Per-player HoH/PoV/Nom counts tallied from the weekly junction faces (keyed by
+ * both player id and slug). The API's aggregate stats.hoh/pov/nom are stale for
+ * hand-entered seasons, so we count from the same source as Weekly Results.
+ */
+function compTotals(weeks) {
+  const map = {};
+  const keys = [["hoh", "hoh"], ["pov", "pov"], ["noms", "nom"]];
+  for (const w of weeks || []) {
+    const f = w.faces || {};
+    for (const [facesKey, statKey] of keys) {
+      for (const person of (f[facesKey] || [])) {
+        for (const k of [person.id, person.slug].filter(Boolean)) {
+          if (!map[k]) map[k] = { hoh: 0, pov: 0, nom: 0 };
+          map[k][statKey] += 1;
+        }
+      }
+    }
+  }
+  return map;
+}
+
+function resolvePerson(players, ref, totals) {
   if (!ref) return null;
   const full = players.find((p) => p.id === ref.id || p.player_id === ref.id) || {};
   return {
@@ -38,16 +60,17 @@ function resolvePerson(players, ref) {
     slug: full.slug || ref.slug,
     permalink: full.permalink || ref.permalink,
     photo: full.photo || ref.photo,
-    stats: full.stats || {},
+    stats: totals[ref.id] || totals[ref.slug] || { hoh: 0, pov: 0, nom: 0 },
   };
 }
 
-export function WinnerPodium({ season, players }) {
+export function WinnerPodium({ season, players, weeks }) {
   if (season.status !== "completed") return null;
-  const winner = resolvePerson(players, season.winner);
+  const totals = compTotals(weeks);
+  const winner = resolvePerson(players, season.winner, totals);
   if (!winner) return null;
-  const runnerUp = resolvePerson(players, season.runner_up);
-  const afp = resolvePerson(players, season.afp);
+  const runnerUp = resolvePerson(players, season.runner_up, totals);
+  const afp = resolvePerson(players, season.afp, totals);
 
   return (
     <section id="winners">
