@@ -21,6 +21,7 @@ import {
   SeasonHero,
   SeasonSwitcher,
   SeasonSectionNav,
+  CompWinnersTable,
 } from "./components";
 
 const SITE_URL =
@@ -260,6 +261,7 @@ export default async function SeasonPage({ params }) {
               )}
               <CastGrid players={players} season={season} />
               <SeasonPowerMap weeks={weeks} seasonLabel={season.name} />
+              <CompWinnersTable weeks={weeks} />
               <SeasonWeeks weeks={weeks} />
               <EvictionOrder players={players} season={season} />
               <Leaderboards stats={leaderboardStats} />

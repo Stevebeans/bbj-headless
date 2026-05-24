@@ -18,3 +18,4 @@ export { SeasonPowerMap } from "./SeasonPowerMap";
 export { SeasonHero } from "./SeasonHero";
 export { SeasonSwitcher } from "./SeasonSwitcher";
 export { SeasonSectionNav } from "./SeasonSectionNav";
+export { CompWinnersTable } from "./CompWinnersTable";
