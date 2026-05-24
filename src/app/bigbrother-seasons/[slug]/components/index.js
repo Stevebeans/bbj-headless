@@ -6,6 +6,7 @@ export { SeasonJsonLd } from "./SeasonJsonLd";
 export { SeasonJumpNav } from "./SeasonJumpNav";
 export { SeasonOverview } from "./SeasonOverview";
 export { WinnerSpotlight } from "./WinnerSpotlight";
+export { WinnerPodium } from "./WinnerPodium";
 export { EvictionOrder } from "./EvictionOrder";
 export { SeasonArticles } from "./SeasonArticles";
 export { SeasonFeedUpdates } from "./SeasonFeedUpdates";

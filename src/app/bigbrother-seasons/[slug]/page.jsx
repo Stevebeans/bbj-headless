@@ -10,7 +10,7 @@ import {
   Leaderboards,
   SeasonJsonLd,
   SeasonOverview,
-  WinnerSpotlight,
+  WinnerPodium,
   EvictionOrder,
   SeasonArticles,
   SeasonFeedUpdates,
@@ -253,7 +253,7 @@ export default async function SeasonPage({ params }) {
             <div>
               {/* sections — restyled task-by-task; existing components for now */}
               <SeasonOverview season={season} playerCount={count} />
-              <WinnerSpotlight season={season} players={players} />
+              <WinnerPodium season={season} players={players} />
               {season.is_active && (
                 <LiveNowSection hoh={currentHoH} pov={currentPoV} nominees={nominees}
                   juryCount={juryPlayers.length} evictedCount={evictedPlayers.length} season={season} />
