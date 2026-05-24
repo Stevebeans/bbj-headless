@@ -1,0 +1,280 @@
+/**
+ * Single Season Profile — editorial redesign.
+ *
+ * Scoped to body.single-bigbrother-seasons (loaded only on that template
+ * via inc/enqueue.php). Ported from the Claude Design mockup at
+ * .claude/claude-design/bbj-season-profile/bbj-home-page/project/BBJ Season Profile.html
+ *
+ * Theme chrome (topbar, header, nav, footer, .wrap, html/body/a/button resets) stripped — provided by theme globals.
+ */
+
+.season-profile{
+  /* palette (unchanged from theme) */
+  --bb-blue:#35546e;--bb-blue-dk:#233C52;--bb-yellow:#FFBF0F;--bb-red:#D23B2B;--bb-green:#1D8A5C;--bb-purple:#6E4A9E;
+  --ink:#15181E;--ink-2:#3A404B;--muted:#6B7280;
+  --line:#E5E7EB;--line-2:#D6DADF;--paper:#F5F2EA;--paper-2:#F3F1EA;
+  /* fonts remapped onto app fonts + the 2 new ones (avoids loading Inter Tight) */
+  --display: var(--font-oswald), 'Oswald', sans-serif;
+  --serif: var(--font-source-serif-4), Georgia, serif;
+  --sans: var(--font-roboto), system-ui, sans-serif;
+  --mono: var(--font-ibm-plex-mono), monospace;
+  background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* page container — the theme doesn't define .wrap globally, each
+   page-scoped stylesheet provides its own (matches player-profile.css) */
+.season-profile .wrap{max-width:1280px;margin:0 auto;padding:0 20px}
+
+/* breadcrumb */
+.season-profile .crumb{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;padding:14px 0 10px}
+.season-profile .crumb a:hover{color:var(--bb-blue)}
+.season-profile .crumb .sep{opacity:.4;margin:0 6px}
+.season-profile .crumb b{color:var(--ink);font-weight:600}
+
+/* ==== HERO ==== */
+.season-profile main{padding-bottom:60px}
+.season-profile .hero{background:linear-gradient(135deg,#1a2935 0%,#35546e 40%,#4b3a5a 100%);color:#fff;border-radius:8px;overflow:hidden;position:relative;margin-bottom:22px}
+.season-profile .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 60% at 20% 10%,rgba(255,191,15,.18),transparent 55%), radial-gradient(80% 80% at 90% 100%,rgba(210,59,43,.18),transparent 60%)}
+.season-profile .hero::after{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 1px,transparent 1px 60px), repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 1px,transparent 1px 60px);opacity:.6}
+.season-profile .hero .inner{position:relative;display:grid;grid-template-columns:1fr auto;gap:32px;padding:34px 36px 30px;align-items:end}
+.season-profile .hero .kk{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--bb-yellow);font-weight:700;display:inline-flex;align-items:center;gap:10px;margin-bottom:10px}
+.season-profile .hero .kk b{background:var(--bb-yellow);color:var(--ink);padding:3px 7px;border-radius:2px;letter-spacing:.1em}
+.season-profile .hero h1{font-family:var(--display);font-size:120px;line-height:.88;font-weight:600;letter-spacing:-.03em;text-wrap:balance}
+.season-profile .hero h1 em{font-style:normal;color:var(--bb-yellow);display:block;font-size:44px;letter-spacing:.02em;margin-top:6px}
+.season-profile .hero h1 em span{color:#fff;font-size:24px;font-style:italic;font-family:var(--serif);font-weight:400;margin-left:12px}
+.season-profile .hero .sub{font-family:var(--serif);font-size:18px;color:rgba(255,255,255,.82);max-width:58ch;margin-top:16px;line-height:1.5;text-wrap:pretty}
+.season-profile .hero .stripstats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:22px;padding-top:22px;border-top:1px solid rgba(255,255,255,.15);max-width:640px}
+.season-profile .hero .stripstats .s{display:flex;flex-direction:column;gap:2px}
+.season-profile .hero .stripstats .s .k{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.6);letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.season-profile .hero .stripstats .s .v{font-family:var(--display);font-size:28px;font-weight:600;color:#fff;letter-spacing:.01em;line-height:1}
+.season-profile .hero .stripstats .s .v b{color:var(--bb-yellow);font-weight:600}
+
+.season-profile .hero .poster{position:relative;width:260px;aspect-ratio:3/4;background:linear-gradient(170deg,#D23B2B 0%,#8E1E15 55%,#3A0A06 100%);border-radius:6px;box-shadow:0 16px 44px -12px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px;overflow:hidden;border:3px solid #fff}
+.season-profile .hero .poster::before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 20%,rgba(255,255,255,.18),transparent 55%), repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 16px,transparent 16px 32px)}
+.season-profile .hero .poster .tag{position:relative;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:4px;font-weight:600}
+.season-profile .hero .poster .num{position:relative;font-family:var(--display);font-weight:700;font-size:160px;line-height:.85;color:#fff;letter-spacing:-.04em;text-shadow:4px 4px 0 rgba(0,0,0,.25);margin-bottom:6px}
+.season-profile .hero .poster .ttl{position:relative;font-family:var(--display);font-size:18px;letter-spacing:.14em;color:var(--bb-yellow);font-weight:600;text-transform:uppercase}
+.season-profile .hero .poster .chip{position:absolute;bottom:-1px;left:-1px;right:-1px;background:#fff;color:var(--ink);font-family:var(--mono);font-size:10px;padding:5px;text-align:center;letter-spacing:.1em;text-transform:uppercase;font-weight:600;border-top:1px solid var(--line)}
+
+.season-profile .hero .actions{display:flex;gap:8px;margin-top:22px;flex-wrap:wrap}
+.season-profile .hero .actions .b{padding:11px 18px;font-family:var(--display);text-transform:uppercase;font-weight:600;font-size:12px;letter-spacing:.05em;border-radius:3px;display:inline-flex;align-items:center;gap:8px}
+.season-profile .hero .actions .prim{background:var(--bb-yellow);color:var(--ink)}
+.season-profile .hero .actions .prim:hover{background:#fff}
+.season-profile .hero .actions .alt{background:var(--bb-red);color:#fff}
+.season-profile .hero .actions .alt:hover{background:#b52a1b}
+.season-profile .hero .actions .ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.25)}
+.season-profile .hero .actions .ghost:hover{background:rgba(255,255,255,.1)}
+
+/* ==== SEASON SWITCHER RAIL ==== */
+.season-profile .switcher{background:#fff;border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:22px;display:flex;align-items:center;gap:14px;overflow-x:auto;scrollbar-width:thin}
+.season-profile .switcher .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;white-space:nowrap}
+.season-profile .switcher .pills{display:flex;gap:4px}
+.season-profile .switcher a{padding:6px 12px;font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.04em;color:var(--ink-2);border-radius:3px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.season-profile .switcher a:hover{background:var(--paper-2);color:var(--bb-blue)}
+.season-profile .switcher a.on{background:var(--bb-blue);color:#fff}
+.season-profile .switcher a small{font-family:var(--mono);font-size:9px;opacity:.6;font-weight:500}
+.season-profile .switcher .all{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--bb-blue);font-weight:600;white-space:nowrap}
+
+/* ==== TAB NAV (section jumps) ==== */
+.season-profile .sectionnav{background:#fff;border:1px solid var(--line);border-radius:6px;padding:0;margin-bottom:22px;display:flex;overflow-x:auto;position:sticky;top:64px;z-index:3}
+.season-profile .sectionnav a{padding:14px 18px;font-family:var(--display);font-size:13px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;color:var(--ink-2);white-space:nowrap;border-bottom:3px solid transparent}
+.season-profile .sectionnav a:hover{color:var(--bb-blue)}
+.season-profile .sectionnav a.on{color:var(--bb-blue);border-bottom-color:var(--bb-yellow)}
+.season-profile .sectionnav a .ct{font-family:var(--mono);font-size:10px;margin-left:6px;opacity:.6;letter-spacing:.04em;font-weight:500}
+
+/* layout */
+.season-profile .season-page-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:28px}
+.season-profile section{margin-bottom:32px;scroll-margin-top:96px}
+.season-profile .sech{display:flex;align-items:baseline;gap:14px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
+.season-profile .sech h2{font-family:var(--display);font-size:24px;font-weight:600;letter-spacing:.01em;text-transform:uppercase}
+.season-profile .sech .sub{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:13px}
+.season-profile .sech .spacer{flex:1}
+.season-profile .sech .link{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--bb-blue);font-weight:600}
+.season-profile .sech .link:hover{color:var(--bb-blue-dk)}
+
+/* OVERVIEW CARD */
+.season-profile .overview{background:#fff;border:1px solid var(--line);border-radius:6px;padding:24px 28px;display:grid;grid-template-columns:1.4fr 1fr;gap:28px}
+.season-profile .overview .copy p{font-family:var(--serif);font-size:16px;line-height:1.6;color:var(--ink-2);text-wrap:pretty}
+.season-profile .overview .copy p + p{margin-top:10px}
+.season-profile .overview .copy .lead{font-size:17px;color:var(--ink)}
+.season-profile .overview .copy .lead::first-letter{font-family:var(--display);font-size:44px;float:left;line-height:.85;margin:4px 8px 0 0;color:var(--bb-blue);font-weight:600}
+.season-profile .overview .facts{background:var(--paper-2);border-radius:4px;padding:18px;align-self:start}
+.season-profile .overview .facts h4{font-family:var(--display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--bb-blue);margin-bottom:10px}
+.season-profile .overview .facts dl{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:13px}
+.season-profile .overview .facts dt{font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;align-self:center}
+.season-profile .overview .facts dd{font-family:var(--sans);color:var(--ink);font-weight:500}
+.season-profile .overview .twist{margin-top:14px;padding:12px 14px;background:#fff;border-left:3px solid var(--bb-red);border-radius:0 3px 3px 0}
+.season-profile .overview .twist b{font-family:var(--mono);font-size:10px;color:var(--bb-red);letter-spacing:.08em;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px}
+.season-profile .overview .twist span{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--ink);line-height:1.4}
+
+/* WINNERS PODIUM */
+.season-profile .podium{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px;align-items:end}
+.season-profile .podium .p{background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative;text-align:center;display:flex;flex-direction:column}
+.season-profile .podium .p .pc{aspect-ratio:3/4;background:linear-gradient(160deg,#B87456,#6E4430);position:relative}
+.season-profile .podium .p .pc::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.18),transparent 55%)}
+.season-profile .podium .p .pc::after{content:attr(data-i);position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.4);font-family:var(--display);font-size:54px;font-weight:600;letter-spacing:.04em}
+.season-profile .podium .p .lbl{position:absolute;top:10px;left:10px;font-family:var(--display);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;padding:4px 8px;border-radius:3px}
+.season-profile .podium .p .body{padding:14px 14px 18px}
+.season-profile .podium .p .name{font-family:var(--display);font-size:22px;font-weight:600;color:var(--ink);letter-spacing:-.005em}
+.season-profile .podium .p .role{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--muted);margin-top:2px;margin-bottom:10px}
+.season-profile .podium .p .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.season-profile .podium .p .nums b{display:block;font-family:var(--display);font-size:16px;color:var(--ink);font-weight:600;letter-spacing:0}
+.season-profile .podium .w{order:2}
+.season-profile .podium .w .pc{background:linear-gradient(160deg,#7B2A42 0%,#3D1421 100%);border-bottom:4px solid var(--bb-yellow)}
+.season-profile .podium .w .lbl{background:var(--bb-yellow);color:var(--ink-2)}
+.season-profile .podium .w .prize{margin-top:8px;padding:6px;background:var(--bb-yellow);color:var(--ink);font-family:var(--display);font-size:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;border-radius:3px}
+.season-profile .podium .r{order:1}
+.season-profile .podium .r .lbl{background:var(--line-2);color:var(--ink-2)}
+.season-profile .podium .a{order:3}
+.season-profile .podium .a .pc{background:linear-gradient(160deg,#6E4A9E,#3D2855)}
+.season-profile .podium .a .lbl{background:var(--bb-purple);color:#fff}
+
+/* CAST GRID */
+.season-profile .castgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+.season-profile .c{background:#fff;border:1px solid var(--line);border-radius:5px;overflow:hidden;text-align:center;position:relative;transition:transform .15s,border-color .15s}
+.season-profile .c:hover{transform:translateY(-2px);border-color:var(--bb-blue)}
+.season-profile .c .face{aspect-ratio:1/1;background:linear-gradient(160deg,#B87456,#6E4430);position:relative}
+.season-profile .c .face::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 35%,rgba(255,255,255,.2),transparent 60%)}
+.season-profile .c .face::after{content:attr(data-i);position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.55);font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:.05em}
+.season-profile .c .tag{position:absolute;top:6px;right:6px;padding:2px 6px;font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;border-radius:2px;color:#fff;background:rgba(0,0,0,.55)}
+.season-profile .c .tag.win{background:var(--bb-yellow);color:var(--ink)}
+.season-profile .c .tag.ru{background:var(--ink);color:#fff}
+.season-profile .c .tag.afp{background:var(--bb-red);color:#fff}
+.season-profile .c .tag.jury{background:var(--bb-purple);color:#fff}
+.season-profile .c .tag.pre{background:var(--line-2);color:var(--ink-2)}
+.season-profile .c .n{padding:7px 4px;font-family:var(--display);font-size:12px;letter-spacing:.02em;color:var(--ink);font-weight:500;text-transform:uppercase;border-top:1px solid var(--line)}
+.season-profile .c .s{padding:0 4px 7px;font-family:var(--mono);font-size:9px;letter-spacing:.04em;color:var(--muted)}
+
+/* EVICTION ORDER TABLE */
+.season-profile .evtable{background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.season-profile .evtable table{width:100%;border-collapse:collapse}
+.season-profile .evtable th{background:var(--paper-2);padding:10px 14px;text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:2px solid var(--ink)}
+.season-profile .evtable td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink-2)}
+.season-profile .evtable tr:last-child td{border-bottom:0}
+.season-profile .evtable tr:hover td{background:var(--paper)}
+.season-profile .evtable .wk{font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink);width:52px}
+.season-profile .evtable .hg{display:inline-flex;align-items:center;gap:10px;font-family:var(--display);letter-spacing:.02em;color:var(--ink);font-weight:600;font-size:14px}
+.season-profile .evtable .hg .a{width:28px;height:28px;border-radius:50%;background:linear-gradient(160deg,#B87456,#6E4430);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:600}
+.season-profile .evtable .vote{font-family:var(--mono);font-size:12px;color:var(--ink)}
+.season-profile .evtable .day{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+.season-profile .evtable .typ{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:2px;font-weight:600}
+.season-profile .evtable .typ.reg{background:var(--paper-2);color:var(--ink-2)}
+.season-profile .evtable .typ.db{background:#FDE8E6;color:#9B2315}
+.season-profile .evtable .typ.fin{background:#FEF4D2;color:#7a5b00}
+
+/* TWIST LIST */
+.season-profile .twists{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.season-profile .tw{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px 18px;position:relative;overflow:hidden}
+.season-profile .tw::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bb-red)}
+.season-profile .tw .wkk{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.season-profile .tw .wkk b{color:var(--bb-red);margin-right:6px}
+.season-profile .tw h3{font-family:var(--display);font-size:17px;letter-spacing:.01em;color:var(--ink);font-weight:600;margin:4px 0}
+.season-profile .tw p{font-family:var(--serif);font-size:13.5px;color:var(--ink-2);line-height:1.45;text-wrap:pretty}
+
+/* COMP WINNERS TABLE */
+.season-profile .comptable{background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.season-profile .comptable table{width:100%;border-collapse:collapse}
+.season-profile .comptable th{background:var(--paper-2);padding:10px 12px;text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;border-bottom:2px solid var(--ink)}
+.season-profile .comptable td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px}
+.season-profile .comptable tr:last-child td{border-bottom:0}
+.season-profile .comptable .wkhead{font-family:var(--display);font-weight:600;color:var(--ink);font-size:14px}
+.season-profile .comptable .cell{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-size:13px;color:var(--ink);font-weight:500;letter-spacing:.02em}
+.season-profile .comptable .cell .a{width:24px;height:24px;border-radius:50%;background:linear-gradient(160deg,#B87456,#6E4430);color:#fff;display:grid;place-items:center;font-size:10px;font-weight:600}
+.season-profile .comptable .cell.empty{color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:500}
+
+/* MEMORIES (quote grid) */
+.season-profile .memories{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.season-profile .mem{background:#fff;border:1px solid var(--line);border-radius:6px;padding:18px 20px;display:flex;flex-direction:column;position:relative}
+.season-profile .mem::before{content:"\201C";position:absolute;top:-10px;left:14px;font-family:var(--serif);font-size:84px;line-height:1;color:var(--bb-yellow);font-weight:700}
+.season-profile .mem .qt{font-family:var(--serif);font-style:italic;font-size:15.5px;color:var(--ink);line-height:1.45;padding-top:12px;text-wrap:pretty}
+.season-profile .mem .att{margin-top:14px;padding-top:10px;border-top:1px dashed var(--line-2);font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;display:flex;justify-content:space-between}
+.season-profile .mem .att b{color:var(--ink);font-weight:600}
+
+/* RATINGS BAR */
+.season-profile .ratings{background:#fff;border:1px solid var(--line);border-radius:6px;padding:20px 24px;display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center}
+.season-profile .ratings .score{text-align:center}
+.season-profile .ratings .score .n{font-family:var(--display);font-size:76px;font-weight:700;color:var(--bb-blue);line-height:.95;letter-spacing:-.02em}
+.season-profile .ratings .score .n small{font-size:30px;color:var(--muted);font-weight:500}
+.season-profile .ratings .score .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:4px}
+.season-profile .ratings .score .d{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:12px;margin-top:2px}
+.season-profile .ratings .gauges{display:grid;gap:8px}
+.season-profile .ratings .g{display:grid;grid-template-columns:110px 1fr auto;gap:12px;align-items:center;font-family:var(--mono);font-size:11px}
+.season-profile .ratings .g .k{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.season-profile .ratings .g .bar{height:8px;background:var(--paper-2);border-radius:999px;overflow:hidden;position:relative}
+.season-profile .ratings .g .bar b{position:absolute;inset:0 auto 0 0;border-radius:999px}
+.season-profile .ratings .g .v{font-family:var(--display);font-weight:600;color:var(--ink);font-size:13px;min-width:32px;text-align:right}
+
+/* ARTICLES */
+.season-profile .artrow{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.season-profile .art{background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;display:grid;grid-template-columns:140px 1fr}
+.season-profile .art .thm{aspect-ratio:4/3;background:linear-gradient(135deg,var(--bb-blue),var(--bb-blue-dk));position:relative}
+.season-profile .art .thm::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 40%,rgba(255,255,255,.15),transparent 60%)}
+.season-profile .art .thm::after{content:attr(data-label);position:absolute;bottom:8px;left:10px;font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.8);letter-spacing:.08em;text-transform:uppercase}
+.season-profile .art .txt{padding:14px 16px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.season-profile .art .txt .k{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--bb-red);font-weight:600}
+.season-profile .art .txt h3{font-family:var(--serif);font-size:16px;font-weight:600;line-height:1.3;margin:4px 0;text-wrap:pretty}
+.season-profile .art .txt h3:hover{color:var(--bb-blue)}
+.season-profile .art .txt .m{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-top:auto}
+
+/* SIDEBAR */
+.season-profile aside{min-width:0}
+.season-profile .stick{position:sticky;top:70px;display:grid;gap:16px}
+.season-profile .card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+.season-profile .card h4{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);font-weight:600;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
+
+/* season TOC */
+.season-profile .toc ul{list-style:none;display:grid;gap:2px}
+.season-profile .toc a{display:flex;justify-content:space-between;padding:7px 10px;border-radius:3px;font-family:var(--display);font-size:13px;color:var(--ink-2);font-weight:500;letter-spacing:.03em}
+.season-profile .toc a:hover{background:var(--paper-2);color:var(--bb-blue)}
+.season-profile .toc a span{font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:500;letter-spacing:.04em}
+
+/* facts card */
+.season-profile .facts-card dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13px}
+.season-profile .facts-card dt{font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;align-self:center}
+.season-profile .facts-card dd{font-family:var(--sans);color:var(--ink);font-weight:500}
+
+/* records card */
+.season-profile .records li{list-style:none;padding:8px 0;border-bottom:1px dashed var(--line-2);font-family:var(--sans);font-size:13px;color:var(--ink-2);display:grid;grid-template-columns:1fr auto;gap:8px}
+.season-profile .records li:last-child{border-bottom:0}
+.season-profile .records li b{font-family:var(--display);color:var(--ink);font-weight:600}
+.season-profile .records li .k{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;grid-column:1/-1;margin-top:1px}
+
+/* fan polls */
+.season-profile .poll .opt{display:grid;grid-template-columns:1fr auto;gap:4px;margin-bottom:10px}
+.season-profile .poll .opt .n{font-family:var(--sans);font-size:13px;color:var(--ink);font-weight:500}
+.season-profile .poll .opt .v{font-family:var(--display);font-size:12px;color:var(--bb-blue);font-weight:600}
+.season-profile .poll .opt .bar{grid-column:1/-1;height:6px;background:var(--paper-2);border-radius:999px;overflow:hidden;position:relative}
+.season-profile .poll .opt .bar b{position:absolute;inset:0 auto 0 0;background:var(--bb-blue);border-radius:999px}
+.season-profile .poll .opt.win .bar b{background:var(--bb-yellow)}
+.season-profile .poll small{display:block;margin-top:8px;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+
+/* more seasons */
+.season-profile .seas-mini{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.season-profile .seas-mini a{aspect-ratio:3/4;background:linear-gradient(160deg,#35546e,#233C52);border-radius:4px;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;color:#fff;position:relative;overflow:hidden}
+.season-profile .seas-mini a:hover{transform:translateY(-2px);transition:transform .15s}
+.season-profile .seas-mini a::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 40% at 50% 20%,rgba(255,255,255,.2),transparent 60%)}
+.season-profile .seas-mini a .num{position:relative;font-family:var(--display);font-size:34px;font-weight:700;line-height:.9;letter-spacing:-.02em}
+.season-profile .seas-mini a .win{position:relative;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-top:4px}
+.season-profile .seas-mini a .win b{display:block;color:var(--bb-yellow);font-family:var(--display);font-size:12px;letter-spacing:.02em;font-weight:600;margin-top:2px}
+
+/* ad */
+.season-profile .ad{position:relative;background:var(--paper-2);border:1px solid var(--line);border-radius:4px;padding:18px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;min-height:250px;display:flex;flex-direction:column;justify-content:center}
+.season-profile .ad::before{content:"Advertisement";position:absolute;top:-9px;left:12px;background:var(--paper);padding:0 6px;color:var(--muted);font-size:9px;letter-spacing:.1em}
+.season-profile .ad .mock{font-family:var(--display);font-size:22px;color:var(--ink-2);letter-spacing:.04em;font-weight:500}
+
+@media (max-width:1000px){
+  .season-profile .season-page-grid{grid-template-columns:1fr;gap:22px}
+  .season-profile .hero .inner{grid-template-columns:1fr;gap:22px;padding:24px}
+  .season-profile .hero h1{font-size:62px}
+  .season-profile .hero h1 em{font-size:26px}
+  .season-profile .hero .poster{width:200px}
+  .season-profile .hero .stripstats{grid-template-columns:repeat(2,1fr)}
+  .season-profile .overview{grid-template-columns:1fr}
+  .season-profile .castgrid{grid-template-columns:repeat(4,1fr)}
+  .season-profile .twists,.season-profile .memories,.season-profile .artrow{grid-template-columns:1fr}
+  .season-profile .podium{grid-template-columns:1fr}
+  .season-profile .podium .w,.season-profile .podium .r,.season-profile .podium .a{order:initial}
+  .season-profile .ratings{grid-template-columns:1fr}
+  .season-profile .stick{position:static}
+}
