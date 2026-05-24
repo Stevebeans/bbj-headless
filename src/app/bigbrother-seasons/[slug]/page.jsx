@@ -157,6 +157,32 @@ function generateFAQs(season, players) {
   return faqs;
 }
 
+/**
+ * Tally per-player competition wins from the weekly junction `faces` — the same
+ * source that powers Weekly Results. The API's aggregate `stats.hoh/pov/nom` are
+ * stale for hand-entered seasons (BB23–25), so we derive these for an accurate
+ * leaderboard. Returns top-5 entries shaped for the Leaderboards component
+ * (`{ id, name, permalink, stats: { [statKey]: count } }`).
+ */
+function tallyComp(weeks, facesKey, statKey) {
+  const byId = new Map();
+  for (const w of weeks || []) {
+    for (const f of (w.faces?.[facesKey] || [])) {
+      const entry = byId.get(f.id) || {
+        id: f.id,
+        name: f.name,
+        permalink: f.slug ? `/bigbrother-players/${f.slug}` : "#",
+        stats: { [statKey]: 0 },
+      };
+      entry.stats[statKey] += 1;
+      byId.set(f.id, entry);
+    }
+  }
+  return [...byId.values()]
+    .sort((a, b) => b.stats[statKey] - a.stats[statKey])
+    .slice(0, 5);
+}
+
 export default async function SeasonPage({ params }) {
   const { slug } = await params;
   const { season, players, count, category_id, article_count, weeks } =
@@ -196,20 +222,13 @@ export default async function SeasonPage({ params }) {
   const currentPoV = players.find((p) => p.game_status?.pov);
   const nominees = players.filter((p) => p.game_status?.nom);
 
-  // Leaderboard data
+  // Leaderboard data. HoH/PoV/Noms are tallied from the weekly junction faces
+  // (accurate + matches Weekly Results); votes_received comes from the API stat
+  // (which is computed correctly, unlike the stale hoh/pov/nom totals).
   const leaderboardStats = {
-    hoh: [...players]
-      .filter((p) => p.stats.hoh > 0)
-      .sort((a, b) => b.stats.hoh - a.stats.hoh)
-      .slice(0, 5),
-    pov: [...players]
-      .filter((p) => p.stats.pov > 0)
-      .sort((a, b) => b.stats.pov - a.stats.pov)
-      .slice(0, 5),
-    nom: [...players]
-      .filter((p) => p.stats.nom > 0)
-      .sort((a, b) => b.stats.nom - a.stats.nom)
-      .slice(0, 5),
+    hoh: tallyComp(weeks, "hoh", "hoh"),
+    pov: tallyComp(weeks, "pov", "pov"),
+    nom: tallyComp(weeks, "noms", "nom"),
     votes: [...players]
       .filter((p) => p.stats.votes_received > 0)
       .sort((a, b) => b.stats.votes_received - a.stats.votes_received)
