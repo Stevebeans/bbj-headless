@@ -81,21 +81,17 @@ function Cell({ people, grayscale }) {
 export function SeasonPowerMap({ weeks, seasonLabel = "" }) {
   if (!weeks?.length) return null;
 
-  const maxWeek = weeks.reduce((m, w) => Math.max(m, Number(w.week_num) || 0), 0);
-  if (maxWeek <= 0) return null;
-
-  const byWeek = new Map();
-  let hasAnyFace = false;
-  for (const w of weeks) {
+  const sorted = [...weeks].sort(
+    (a, b) => (Number(a.week_num) || 0) - (Number(b.week_num) || 0)
+  );
+  const hasAnyFace = sorted.some((w) => {
     const f = w.faces || {};
-    byWeek.set(Number(w.week_num), f);
-    if (ROWS.some(({ key }) => f[key]?.length)) {
-      hasAnyFace = true;
-    }
-  }
+    return ROWS.some(({ key }) => f[key]?.length);
+  });
   if (!hasAnyFace) return null;
 
-  const gridStyle = { gridTemplateColumns: `repeat(${maxWeek}, minmax(44px, 1fr))` };
+  // Week label column + the 4 role columns.
+  const gridStyle = { gridTemplateColumns: "2.75rem repeat(4, minmax(58px, 1fr))" };
 
   return (
     <section className="mt-6">
@@ -108,43 +104,43 @@ export function SeasonPowerMap({ weeks, seasonLabel = "" }) {
       </div>
 
       <div className="rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 overflow-x-auto">
-        {/* Ruler — supplies week numbers */}
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-16 shrink-0" />
-          <div className="grid flex-1 gap-1 text-[10px] font-mono uppercase text-gray-400" style={gridStyle}>
-            {Array.from({ length: maxWeek }, (_, i) => (
-              <span key={i} className="text-center">W{i + 1}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* Rows */}
-        {ROWS.map((row) => (
-          <div key={row.key} className="flex items-center gap-2 mb-1">
-            <div className="w-16 shrink-0 text-xs font-semibold text-gray-500 dark:text-gray-400">{row.label}</div>
-            <div className="grid flex-1 gap-1 items-center" style={gridStyle}>
-              {Array.from({ length: maxWeek }, (_, i) => {
-                const col = i + 1;
-                const people = byWeek.get(col)?.[row.key] || [];
-                return (
-                  <div key={col} className="flex min-h-[2.25rem] items-center justify-center">
-                    <Cell people={people} grayscale={row.grayscale} />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-
-        {/* Legend */}
-        <div className="flex flex-wrap gap-3 mt-2 text-[10px] text-gray-500 dark:text-gray-400">
+        {/* Column headers — the 4 roles */}
+        <div
+          className="grid gap-1 mb-1 pb-2 border-b-2 border-slate-200 dark:border-gray-700"
+          style={gridStyle}
+        >
+          <span className="text-[10px] font-mono uppercase text-gray-400 self-end">Wk</span>
           {ROWS.map((row) => (
-            <span key={row.key} className="flex items-center gap-1">
-              <i className={`w-3 h-3 rounded-sm inline-block ${row.dot}`} />
+            <span
+              key={row.key}
+              className="flex items-center justify-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300"
+            >
+              <i className={`w-2 h-2 rounded-full inline-block ${row.dot}`} />
               {row.label}
             </span>
           ))}
         </div>
+
+        {/* One row per week */}
+        {sorted.map((w) => {
+          const f = w.faces || {};
+          return (
+            <div
+              key={w.week_num}
+              className="grid gap-1 items-center py-1 border-b border-slate-100 dark:border-gray-700/40 last:border-0"
+              style={gridStyle}
+            >
+              <span className="text-[11px] font-mono font-semibold text-gray-500 dark:text-gray-400">
+                W{w.week_num}
+              </span>
+              {ROWS.map((row) => (
+                <div key={row.key} className="flex min-h-[2.25rem] items-center justify-center">
+                  <Cell people={f[row.key] || []} grayscale={row.grayscale} />
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
