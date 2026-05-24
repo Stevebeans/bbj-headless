@@ -7,8 +7,9 @@ export function SeasonFeedUpdates({ updates, seasonSlug }) {
   if (!updates || updates.length === 0) return null;
 
   return (
-    <section id="feed-updates" className="v2-primary-container-inner p-4 rounded-lg">
-      <h2 className="text-sm font-bold text-primary-500 uppercase tracking-wide mb-3">Live Feed Updates</h2>
+    <section id="feed-updates">
+      <div className="sech"><h2>Live Feed Updates</h2><span className="sub">Recent</span></div>
+      <div className="card">
       <div className="space-y-3">
         {updates.map((update) => (
           <Link key={update.id} href={`/live-feed-updates/${update.slug}`}
@@ -27,6 +28,7 @@ export function SeasonFeedUpdates({ updates, seasonSlug }) {
           className="text-sm font-semibold text-primary-500 hover:text-primary-600 transition">
           View all feed updates →
         </Link>
+      </div>
       </div>
     </section>
   );

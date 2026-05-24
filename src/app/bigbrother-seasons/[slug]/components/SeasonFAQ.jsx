@@ -11,8 +11,9 @@ export function SeasonFAQ({ questions }) {
   if (!questions || questions.length === 0) return null;
 
   return (
-    <section id="faq" className="v2-primary-container-inner p-4 rounded-lg">
-      <h2 className="text-sm font-bold text-primary-500 uppercase tracking-wide mb-3">Frequently Asked Questions</h2>
+    <section id="faq">
+      <div className="sech"><h2>FAQ</h2><span className="sub">Common questions</span></div>
+      <div className="card">
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
         {questions.map((q, i) => (
           <div key={q.question} className="py-3">
@@ -26,6 +27,7 @@ export function SeasonFAQ({ questions }) {
             )}
           </div>
         ))}
+      </div>
       </div>
     </section>
   );

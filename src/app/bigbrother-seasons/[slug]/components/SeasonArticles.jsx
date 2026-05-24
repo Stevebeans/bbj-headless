@@ -8,11 +8,9 @@ export function SeasonArticles({ posts, totalCount, seasonSlug }) {
   if (!posts || posts.length === 0) return null;
 
   return (
-    <section id="articles" className="v2-primary-container-inner p-4 rounded-lg">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-bold text-primary-500 uppercase tracking-wide">Articles</h2>
-        {totalCount > 0 && <span className="text-xs text-gray-400">{totalCount} posts</span>}
-      </div>
+    <section id="articles">
+      <div className="sech"><h2>Articles</h2>{totalCount > 0 ? <span className="sub">{totalCount} posts</span> : null}</div>
+      <div className="card">
       <div className="space-y-3">
         {posts.map((post) => (
           <Link key={post.id} href={`/${post.slug}`}
@@ -42,6 +40,7 @@ export function SeasonArticles({ posts, totalCount, seasonSlug }) {
           </Link>
         </div>
       )}
+      </div>
     </section>
   );
 }

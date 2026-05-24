@@ -19,9 +19,9 @@ export function Leaderboards({ stats }) {
   };
 
   return (
-    <div className="v2-primary-container-inner p-4 rounded-lg">
-      <h2 className="v2-primary-subheader mb-4">Leaderboards</h2>
-
+    <section id="leaderboards">
+      <div className="sech"><h2>Leaderboards</h2><span className="sub">Season records</span></div>
+      <div className="card">
       {categories.map(({ key, title, statKey, color }) => {
         const players = stats[key] || [];
         const maxValue = players[0]?.stats[statKey] || 1;
@@ -68,6 +68,7 @@ export function Leaderboards({ stats }) {
           </div>
         );
       })}
-    </div>
+      </div>
+    </section>
   );
 }
