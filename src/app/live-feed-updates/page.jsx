@@ -1,87 +1,96 @@
-import { Suspense } from "react";
-import { FeedUpdatesArchive } from "@/components/feed-updates/FeedUpdatesArchive";
-import { getFeedUpdates } from "@/lib/api/feedUpdates";
+import { Source_Serif_4, IBM_Plex_Mono } from "next/font/google";
+import { getFeedHub } from "@/lib/api/feedUpdates";
 import { getHouseboard } from "@/lib/api/home";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { SubscribeWidget } from "@/components/email/SubscribeWidget";
-import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
-import {
-  Houseboard,
-  SocialFollow,
-  WatchLiveFeeds,
-} from "@/components/home";
+import { FeedHubHeader } from "./components/FeedHubHeader";
+import { FeedHubLiveBanner } from "./components/FeedHubLiveBanner";
+import { FeedHubFeatured } from "./components/FeedHubFeatured";
+import { FeedHubThread } from "./components/FeedHubThread";
+import { FeedHubSidebar } from "./components/FeedHubSidebar";
+import { seasonNumber } from "./components/feedHubName";
+import "./feed-hub.css";
 
-export const metadata = {
-  title: "Live Feed Updates",
-  description:
-    "All Big Brother live feed updates and show updates. Stay up to date with what's happening in the house.",
-};
+const sourceSerif = Source_Serif_4({ subsets: ["latin"], display: "swap", variable: "--font-source-serif-4" });
+const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--font-ibm-plex-mono" });
 
-export const revalidate = false; // Webhook-driven — fires on new feed update via revalidatePath
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com").replace(/\/$/, "");
+const ORG_LOGO = "https://bigbrotherjunkies.com/wp-content/themes/BBJ/images/bbjlogo2020.png";
+
+export const revalidate = false; // Webhook-driven via feed-updates tag
 export const dynamicParams = true;
 
-export async function generateStaticParams() {
-  return [];
+function buildSeo(hub) {
+  const n = seasonNumber(hub?.season?.name);
+  const bb = n > 0 ? `Big Brother ${n}` : "Big Brother";
+  const titlePrefix = `${bb} Live Feed Updates & Spoilers`;
+  const fullTitle = `${titlePrefix} | Big Brother Junkies`;
+  const description = `Live, real-time ${bb} feed updates and spoilers — eviction news, comp results, alliances and house drama, updated by the Big Brother Junkies community.`;
+  const ogImage = hub?.featured?.thumbnail || ORG_LOGO;
+  return { titlePrefix, fullTitle, description, ogImage, url: `${SITE_URL}/live-feed-updates` };
+}
+
+export async function generateMetadata() {
+  const hub = await getFeedHub();
+  const { titlePrefix, fullTitle, description, ogImage, url } = buildSeo(hub);
+  return {
+    title: titlePrefix, // layout template appends " | Big Brother Junkies"
+    description,
+    alternates: { canonical: url },
+    openGraph: { title: fullTitle, description, url, type: "website", images: [{ url: ogImage }] },
+    twitter: { card: "summary_large_image", title: fullTitle, description, images: [ogImage] },
+  };
 }
 
 export default async function FeedUpdatesPage() {
-  // Fetch default data server-side (page 1, newest, no filters)
-  // Client component handles all subsequent filtering/pagination/search
-  const [initialData, houseboardData] = await Promise.all([
-    getFeedUpdates({ page: 1, perPage: 20, sort: "newest", dateRange: "all" }),
-    getHouseboard(),
-  ]);
+  const [hub, houseboardData] = await Promise.all([getFeedHub(), getHouseboard()]);
+  const seo = buildSeo(hub);
+  const houseboard = houseboardData?.houseboard;
+  const recent = (hub?.thread?.updates || []).slice(0, 20);
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "LiveBlogPosting",
+        "@id": `${seo.url}#liveblog`,
+        headline: seo.titlePrefix,
+        url: seo.url,
+        description: seo.description,
+        ...(hub?.season?.start_date ? { coverageStartTime: new Date(hub.season.start_date).toISOString() } : {}),
+        ...(!hub?.season?.is_active && hub?.season?.end_date ? { coverageEndTime: new Date(hub.season.end_date).toISOString() } : {}),
+        publisher: { "@type": "Organization", name: "Big Brother Junkies", logo: { "@type": "ImageObject", url: ORG_LOGO } },
+        liveBlogUpdate: recent.map((u) => ({
+          "@type": "BlogPosting",
+          headline: u.title,
+          url: `${seo.url}/${u.slug}`,
+          datePublished: u.date,
+          dateModified: u.modified || u.date,
+          articleBody: u.excerpt || undefined,
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+          { "@type": "ListItem", position: 2, name: "Live Feed Updates", item: seo.url },
+        ],
+      },
+    ],
+  };
 
   return (
-    <>
-      <SpoilerBarWrapper />
-      <main className="v2-primary-container">
-      <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">
-        {/* Main Content */}
-        <section id="main-left" className="flex-grow space-y-4">
-          <h1 className="section-header">Live Feed Updates</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Real-time updates from the Big Brother live feeds and show episodes. Vote on your
-            favorites and join the discussion.
-          </p>
-
-          <Suspense
-            fallback={
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 animate-pulse"
-                  >
-                    <div className="flex gap-3">
-                      <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            }
-          >
-            <FeedUpdatesArchive initialData={initialData} />
-          </Suspense>
-        </section>
-
-        {/* Right Sidebar */}
-        <Sidebar sticky={true} showAds={true}>
-          <Houseboard
-            houseboard={houseboardData.houseboard}
-            seasonName={houseboardData.season?.name}
-          />
-          <SocialFollow />
-          <WatchLiveFeeds />
-          <SubscribeWidget />
-        </Sidebar>
+    <main className={`fuh-page ${sourceSerif.variable} ${plexMono.variable}`}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div className="fuh-wrap">
+        <FeedHubHeader season={hub.season} counts={hub.counts} />
+        <FeedHubLiveBanner houseboard={houseboard} counts={hub.counts} />
+        <div className="fuh-grid">
+          <div className="fuh-main">
+            <FeedHubFeatured featured={hub.featured} />
+            <FeedHubThread initial={hub.thread} />
+          </div>
+          <FeedHubSidebar houseboard={houseboard} hotPosts={hub.hot_posts} />
+        </div>
       </div>
     </main>
-    </>
   );
 }
