@@ -5,8 +5,8 @@ const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
 /**
  * Fetch feed updates with optional filters
  * @param {Object} options - Query options
- * @param {number} options.page - Page number (default: 1)
  * @param {number} options.perPage - Items per page (default: 20)
+ * @param {number} options.offset - Number of items to skip
  * @param {string} options.sort - Sort order: newest, oldest, highest, lowest
  * @param {string} options.dateRange - Filter: all, today, yesterday, week, month, year
  * @param {string} options.search - Search query
@@ -16,8 +16,8 @@ const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
 export async function getFeedUpdates(options = {}) {
   const params = new URLSearchParams();
 
-  if (options.page) params.append("page", options.page);
   if (options.perPage) params.append("per_page", options.perPage);
+  if (options.offset != null) params.append("offset", options.offset);
   if (options.sort) params.append("sort", options.sort);
   if (options.dateRange) params.append("date_range", options.dateRange);
   if (options.search) params.append("search", options.search);
@@ -27,6 +27,18 @@ export async function getFeedUpdates(options = {}) {
   const endpoint = `/feed-updates${queryString ? "?" + queryString : ""}`;
 
   return bbjdFetch(endpoint, {
+    tags: ["feed-updates"],
+    revalidate: false, // Webhook-driven via feed-updates tag
+  });
+}
+
+/**
+ * Fetch the editorial Feed Hub payload (season meta + counts + featured +
+ * page-1 thread + hot posts) in one cached call.
+ * @returns {Promise<Object>} { season, counts, featured, thread, hot_posts }
+ */
+export async function getFeedHub() {
+  return bbjdFetch("/feed-updates/hub", {
     tags: ["feed-updates"],
     revalidate: false, // Webhook-driven via feed-updates tag
   });
