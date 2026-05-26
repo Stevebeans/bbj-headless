@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import PrimaryNav, { PrimaryNavFallback } from "./PrimaryNav";
 import { MobileMenuWrapper } from "./MobileMenu";
 import { SearchBar, MobileSearchButton } from "../search/SearchBar";
 import { MobileSearchModal } from "../search/MobileSearchModal";
@@ -18,11 +19,12 @@ const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
 
 const LOGO_URL = "https://bigbrotherjunkies.com/wp-content/themes/BBJ/images/bbjlogo2020.png";
 const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
+const DEFAULT_PARAMOUNT_URL = "https://paramountplus.qflm.net/c/161260/3116112/3065";
 
-export function Header({ liveThread = null }) {
+export function Header({ liveThread = null, feedsLive = true, paramountUrl = DEFAULT_PARAMOUNT_URL }) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const { user, isAuthenticated, isAdmin, loading } = useAuth();
-  const { openLogin, openRegister } = useAuthModal();
+  const { openLogin } = useAuthModal();
   const { hasPermission } = usePermissions();
 
   // Check if user has a supporter role
@@ -128,85 +130,58 @@ export function Header({ liveThread = null }) {
           </div>
         </div>
 
-        {/* Tier 2: Nav Bar */}
+        {/* Tier 2: Nav Bar — v2 layout: links left, Watch Live Feeds pill far right */}
         <div className="bg-primary-500">
-          <div className="max-w-screen-xl mx-auto px-2 py-1.5 flex items-center justify-between">
-            {/* Watch Feeds / Live Thread — flips to active thread when one is set */}
-            {liveThread ? (
-              <Link
-                href={`/${liveThread.slug}`}
-                className="inline-flex items-center gap-2 text-sm text-secondary-500 font-bold hover:text-secondary-400"
-              >
-                <span className="inline-flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded-full text-white text-xs font-semibold">
-                  <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                  LIVE
-                </span>
-                <span>{liveThread.title} →</span>
-              </Link>
-            ) : (
-              <a href="https://paramountplus.qflm.net/c/161260/3116112/3065" target="_blank" rel="noopener noreferrer" className="v2-highlight-text flex items-center gap-2 text-sm">
-                Watch Feeds
-                <span className="inline-flex items-center gap-1 bg-red-600 px-2 py-0.5 rounded-full text-white text-xs font-semibold">
-                  <span className="w-2 h-2 bg-white rounded-full" />
-                  LIVE
-                </span>
-              </a>
-            )}
+          <div className="max-w-screen-xl mx-auto px-2 flex items-stretch">
+            {/* Desktop Navigation — left-aligned. Suspense-bounded because
+                PrimaryNav reads ?tab= via useSearchParams; the boundary keeps
+                the rest of every page statically renderable. */}
+            <Suspense fallback={<PrimaryNavFallback />}>
+              <PrimaryNav />
+            </Suspense>
 
-            {/* Desktop Navigation */}
-            <ul className="hidden md:flex items-center gap-1 text-sm desktop-nav" role="menubar">
-              <li role="none">
-                <Link href="/" role="menuitem" className="px-2 py-1">
-                  Home
-                </Link>
-              </li>
-              <li role="none">
-                <Link href="/contact" role="menuitem" className="px-2 py-1">
-                  Contact
-                </Link>
-              </li>
-              <li role="none">
-                <Link href="/live-feed-updates" role="menuitem" className="px-2 py-1">
-                  Feed Updates
-                </Link>
-              </li>
-              <li role="none">
-                <Link href="/directory" role="menuitem" className="px-2 py-1">
-                  Directory
-                </Link>
-              </li>
-              {!isAuthenticated && !loading && (
-                <>
-                  <li role="none">
-                    <button onClick={() => openLogin()} role="menuitem" className="px-2 py-1 text-secondary-500 hover:text-white">
-                      Log In
-                    </button>
-                  </li>
-                  <li role="none">
-                    <button onClick={() => openRegister()} role="menuitem" className="px-2 py-1 text-secondary-500 hover:text-white">
-                      Register
-                    </button>
-                  </li>
-                </>
-              )}
-            </ul>
-
-            {/* Go Ad Free / Supporter */}
-            {loading && !isAuthenticated ? (
-              <div className="w-20 h-4 bg-primary-400/30 rounded" />
-            ) : isSupporter ? (
-              <div className="flex items-center gap-1 text-sm">
-                <Link href="/settings?tab=premium" className="v2-highlight-text">
+            {/* Right cluster — supporter CTA + Watch Live Feeds (pushed far right) */}
+            <div className="ml-auto flex items-stretch">
+              {/* Go Ad Free / Supporter */}
+              {loading && !isAuthenticated ? (
+                <span className="self-center w-20 h-4 bg-primary-400/30 rounded mr-3" />
+              ) : isSupporter ? (
+                <Link href="/settings?tab=premium" className="self-center flex items-center gap-1 px-3 text-sm text-secondary-500 hover:text-secondary-400 whitespace-nowrap">
                   <span className="hidden sm:inline">Thank you for your support!</span>
                   <span className="sm:hidden">Supporter</span>
+                  <span>&#11088;</span>
                 </Link>
-                <span>&#11088;</span>
-              </div>
-            ) : (
-              <Link href="/become-supporter" className="v2-highlight-text text-sm">
-                Go Ad Free
-              </Link>
-            )}
+              ) : (
+                <Link href="/become-supporter" className="self-center px-3 text-sm text-secondary-500 hover:text-secondary-400 whitespace-nowrap">
+                  Go Ad Free
+                </Link>
+              )}
+
+              {/* Watch Live Feeds — active live thread overrides; otherwise on/off by feedsLive */}
+              {liveThread ? (
+                <Link
+                  href={`/${liveThread.slug}`}
+                  className="inline-flex items-center gap-2 px-4 py-3 font-osw uppercase tracking-wider text-sm text-white bg-accent-red hover:bg-accent-red/90 transition-colors whitespace-nowrap"
+                  title={liveThread.title}
+                >
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  <span className="max-w-[180px] truncate normal-case tracking-normal font-sans font-semibold">{liveThread.title}</span>
+                </Link>
+              ) : (
+                <a
+                  href={paramountUrl}
+                  target="_blank"
+                  rel="noopener noreferrer sponsored"
+                  className={`inline-flex items-center gap-2 px-4 py-3 font-osw uppercase tracking-wider text-sm text-white transition-colors whitespace-nowrap ${
+                    feedsLive ? "bg-accent-red hover:bg-accent-red/90" : "bg-slate-500 hover:bg-slate-600"
+                  }`}
+                  title={feedsLive ? "Watch the Big Brother live feeds" : "Live feeds are off-season — subscribe for next season"}
+                >
+                  <span className={`w-2 h-2 rounded-full bg-white ${feedsLive ? "animate-pulse" : "opacity-60"}`} />
+                  Watch Live Feeds
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </nav>

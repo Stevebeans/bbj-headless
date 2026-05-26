@@ -111,6 +111,11 @@ export default async function RootLayout({ children }) {
   const initialShouldShowAds = adSettings.ads_enabled !== false;
   const supporterRoles = adSettings.supporter_roles || SUPPORTER_ROLES;
 
+  // Live-feeds header state — manual admin toggle + configurable Paramount+ link.
+  // Defaults keep the button "on" if the WP plugin hasn't shipped the fields yet.
+  const feedsLive = adSettings.feeds_live !== false;
+  const paramountUrl = adSettings.feeds_paramount_url || "https://paramountplus.qflm.net/c/161260/3116112/3065";
+
   return (
     <html
       lang="en"
@@ -127,15 +132,19 @@ export default async function RootLayout({ children }) {
           disabledPlacements={adSettings.disabled_placements || []}
           pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
         >
-          <Header liveThread={liveThread} />
+          <Header liveThread={liveThread} feedsLive={feedsLive} paramountUrl={paramountUrl} />
           <RoleSimulationBanner />
           <main id="main-content" className="flex-1">
             {children}
           </main>
           <Footer />
-          <FloatingUpdater />
+          {/* Content-creation FAB dock — bottom-left, stacked (Feed on top, New Post under).
+              Each child self-gates by role; flex-col gap collapses when only one renders. */}
+          <div className="fixed bottom-4 left-4 z-50 flex flex-col items-start gap-3">
+            <FloatingUpdater />
+            <NewPostFAB />
+          </div>
           <BackToTop />
-          <NewPostFAB />
           <FreestarSDKLoader />
         </Providers>
         {/* Global scripts - deferred to not block rendering (analytics, etc.) */}

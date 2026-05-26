@@ -238,6 +238,59 @@ export default function AdminAds() {
         </div>
       </section>
 
+      {/* Live Feeds — drives the header "Watch Live Feeds" button */}
+      <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
+        <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white mb-2">
+          Live Feeds
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+          Controls the &ldquo;Watch Live Feeds&rdquo; button in the site header. On = live (red, pulsing dot); off-season it greys out but still links to Paramount+.
+        </p>
+
+        {/* Season On/Off */}
+        <div className="flex items-center gap-3">
+          <span className="w-40 text-slate-700 dark:text-slate-300 font-medium">Season</span>
+          <button
+            onClick={() =>
+              setSettings((prev) => ({ ...prev, feeds_live: !(prev.feeds_live ?? true) }))
+            }
+            aria-pressed={settings?.feeds_live ?? true}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              (settings?.feeds_live ?? true) ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                (settings?.feeds_live ?? true) ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+          <span className="text-sm text-slate-600 dark:text-slate-400">
+            {(settings?.feeds_live ?? true) ? "On (feeds live)" : "Off (off-season)"}
+          </span>
+        </div>
+
+        {/* Paramount link */}
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <label
+            htmlFor="feeds-paramount-url"
+            className="w-40 text-slate-700 dark:text-slate-300 font-medium"
+          >
+            Link to Paramount
+          </label>
+          <input
+            id="feeds-paramount-url"
+            type="url"
+            value={settings?.feeds_paramount_url ?? ""}
+            onChange={(e) =>
+              setSettings((prev) => ({ ...prev, feeds_paramount_url: e.target.value }))
+            }
+            placeholder="https://paramountplus.qflm.net/..."
+            className="flex-1 sm:max-w-lg px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+        </div>
+      </section>
+
       {/* Placement Toggles */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
         <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white mb-2">

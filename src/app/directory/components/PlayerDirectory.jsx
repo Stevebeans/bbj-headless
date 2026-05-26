@@ -43,6 +43,12 @@ export function PlayerDirectory({ initialPlayers, seasons }) {
   const initialTab = searchParams.get("tab") || "players";
 
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Header nav links change only the ?tab= query, which doesn't remount this
+  // component — so mirror the URL into activeTab on every searchParams change.
+  useEffect(() => {
+    setActiveTab(searchParams.get("tab") || "players");
+  }, [searchParams]);
   const [players, setPlayers] = useState(initialPlayers.players || []);
   const [totalPlayers, setTotalPlayers] = useState(initialPlayers.total || 0);
   const [currentPage, setCurrentPage] = useState(1);
