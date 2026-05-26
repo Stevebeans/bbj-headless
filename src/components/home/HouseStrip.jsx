@@ -65,7 +65,7 @@ function HouseGroup({ players, label, bg }) {
               {p.image ? (
                 <Image
                   src={p.image}
-                  alt=""
+                  alt={p.name}
                   width={36}
                   height={36}
                   className="w-full h-full object-cover"

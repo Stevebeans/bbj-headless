@@ -255,7 +255,7 @@ function PlayerStatsRow({ player }) {
         {player.image && (
           <Image
             src={player.image}
-            alt=""
+            alt={player.name}
             width={16}
             height={16}
             className="rounded-full w-4 h-4 flex-shrink-0"
@@ -295,7 +295,7 @@ export function RecentComments({ comments = [] }) {
               {comment.avatar && (
                 <Image
                   src={comment.avatar}
-                  alt=""
+                  alt={comment.author}
                   width={24}
                   height={24}
                   className="rounded-full w-6 h-6"
