@@ -67,13 +67,19 @@ export function FeedHubThread({ initial }) {
     }
   };
 
-  // Group rows by date key, preserving order.
+  // Group rows by date key, preserving order. Same-day rows may be
+  // non-consecutive (highest/lowest sorts), so look up the group by key.
   const groups = [];
-  const indexByKey = new Map();
+  const groupByKey = new Map();
   for (const row of rows) {
     const key = dateKey(row.date);
-    if (!indexByKey.has(key)) { indexByKey.set(key, groups.length); groups.push({ key, iso: row.date, rows: [] }); }
-    groups[indexByKey.get(key)].rows.push(row);
+    let group = groupByKey.get(key);
+    if (!group) {
+      group = { key, iso: row.date, rows: [] };
+      groupByKey.set(key, group);
+      groups.push(group);
+    }
+    group.rows.push(row);
   }
 
   return (
