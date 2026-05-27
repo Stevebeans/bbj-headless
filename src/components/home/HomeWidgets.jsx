@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { toRelativeHref } from "@/lib/utils/url";
 
 /**
  * Social Follow Widget
@@ -107,7 +108,7 @@ function HouseboardCard({ title, players, bgColor, emptyText }) {
           players.map((player) => (
             <Link
               key={player.id}
-              href={player.permalink}
+              href={player.permalink ? toRelativeHref(player.permalink) : "#"}
               className="flex flex-col items-center hover:opacity-80"
             >
               {player.image ? (
@@ -262,7 +263,7 @@ function PlayerStatsRow({ player }) {
             unoptimized
           />
         )}
-        <Link href={player.permalink} className="truncate hover:underline py-0.5">
+        <Link href={player.permalink ? toRelativeHref(player.permalink) : "#"} className="truncate hover:underline py-0.5">
           {player.name}
         </Link>
       </div>
@@ -317,7 +318,7 @@ export function RecentComments({ comments = [] }) {
 
             {/* Post Link */}
             <Link
-              href={comment.post.permalink}
+              href={comment.post.permalink ? toRelativeHref(comment.post.permalink) : "#"}
               className="text-xs text-primary-500 dark:text-primary-400 hover:underline line-clamp-1"
             >
               on: {comment.post.title}

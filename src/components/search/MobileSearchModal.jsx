@@ -3,11 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toRelativeHref } from "@/lib/utils/url";
 
 const DEBOUNCE_MS = 250;
 const MIN_QUERY_LENGTH = 2;
 
 export function MobileSearchModal({ isOpen, onClose }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -111,7 +114,8 @@ export function MobileSearchModal({ isOpen, onClose }) {
       case "Enter":
         e.preventDefault();
         if (activeIndex >= 0 && flatResults[activeIndex]) {
-          window.location.href = flatResults[activeIndex].permalink;
+          onClose();
+          router.push(toRelativeHref(flatResults[activeIndex].permalink));
         }
         break;
     }
@@ -321,7 +325,7 @@ function ResultSection({ title, icon, count, children }) {
 function ResultItem({ item, isActive, onClose }) {
   return (
     <Link
-      href={item.permalink}
+      href={toRelativeHref(item.permalink)}
       onClick={onClose}
       className={`block px-4 py-3 transition-colors ${
         isActive
@@ -339,7 +343,7 @@ function PlayerResultItem({ item, isActive, onClose }) {
 
   return (
     <Link
-      href={item.permalink}
+      href={toRelativeHref(item.permalink)}
       onClick={onClose}
       className={`flex items-center gap-3 px-4 py-3 transition-colors ${
         isActive
@@ -376,7 +380,7 @@ function PlayerResultItem({ item, isActive, onClose }) {
 function FeedUpdateResultItem({ item, isActive, onClose }) {
   return (
     <Link
-      href={item.permalink}
+      href={toRelativeHref(item.permalink)}
       onClick={onClose}
       className={`block px-4 py-3 transition-colors ${
         isActive

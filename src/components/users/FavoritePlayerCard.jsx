@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaHeart } from "react-icons/fa";
+import { toRelativeHref } from "@/lib/utils/url";
 
 /**
  * FavoritePlayerCard - Displays user's favorite Big Brother player
@@ -53,7 +54,7 @@ export default function FavoritePlayerCard({ player }) {
 
   // Wrap in link if permalink exists
   if (permalink) {
-    return <Link href={permalink}>{content}</Link>;
+    return <Link href={toRelativeHref(permalink)}>{content}</Link>;
   }
 
   return content;

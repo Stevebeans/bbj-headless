@@ -3,11 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toRelativeHref } from "@/lib/utils/url";
 
 const DEBOUNCE_MS = 250;
 const MIN_QUERY_LENGTH = 2;
 
 export function SearchBar({ className = "" }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -119,7 +122,8 @@ export function SearchBar({ className = "" }) {
       case "Enter":
         e.preventDefault();
         if (activeIndex >= 0 && flatResults[activeIndex]) {
-          window.location.href = flatResults[activeIndex].permalink;
+          setIsOpen(false);
+          router.push(toRelativeHref(flatResults[activeIndex].permalink));
         }
         break;
       case "Escape":
@@ -332,7 +336,7 @@ function ResultSection({ title, icon, count, children }) {
 function ResultItem({ item, isActive, id, onClose }) {
   return (
     <Link
-      href={item.permalink}
+      href={toRelativeHref(item.permalink)}
       id={id}
       role="option"
       aria-selected={isActive}
@@ -353,7 +357,7 @@ function PlayerResultItem({ item, isActive, id, onClose }) {
 
   return (
     <Link
-      href={item.permalink}
+      href={toRelativeHref(item.permalink)}
       id={id}
       role="option"
       aria-selected={isActive}
@@ -393,7 +397,7 @@ function PlayerResultItem({ item, isActive, id, onClose }) {
 function FeedUpdateResultItem({ item, isActive, id, onClose }) {
   return (
     <Link
-      href={item.permalink}
+      href={toRelativeHref(item.permalink)}
       id={id}
       role="option"
       aria-selected={isActive}

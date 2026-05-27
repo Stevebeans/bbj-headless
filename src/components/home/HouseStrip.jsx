@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { toRelativeHref } from "@/lib/utils/url";
 
 const GROUPS = [
   { key: "hoh", label: "HOH", bg: "bg-emerald-600" },
@@ -58,7 +59,7 @@ function HouseGroup({ players, label, bg }) {
           players.map((p) => (
             <Link
               key={p.id}
-              href={p.permalink || "#"}
+              href={p.permalink ? toRelativeHref(p.permalink) : "#"}
               aria-label={p.name}
               className={`inline-flex items-center justify-center w-9 h-9 rounded-full text-white font-osw font-semibold text-sm border-2 border-white dark:border-gray-800 overflow-hidden no-underline ${bg}`}
             >

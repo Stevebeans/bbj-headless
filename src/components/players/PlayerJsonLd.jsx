@@ -1,3 +1,5 @@
+import { absoluteUrl } from "@/lib/seo";
+
 /**
  * JSON-LD structured data for player profile (Schema.org Person)
  */
@@ -20,7 +22,7 @@ export function PlayerJsonLd({ player, siteUrl }) {
     ...(nickname && { alternateName: nickname }),
     ...(photo?.url && { image: photo.url }),
     ...(occupation && { jobTitle: occupation }),
-    url: permalink || `${siteUrl}/bigbrother-players/${player.slug}`,
+    url: permalink ? absoluteUrl(permalink) : `${siteUrl}/bigbrother-players/${player.slug}`,
     ...(sameAs.length > 0 && { sameAs }),
   };
 
