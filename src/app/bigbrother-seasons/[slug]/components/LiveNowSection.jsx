@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { toRelativeHref } from "@/lib/utils/url";
 
 /**
  * Live Now section showing current HoH, PoV, and nominees
@@ -38,7 +39,7 @@ export function LiveNowSection({ hoh, pov, nominees, juryCount, evictedCount, se
             nominees.slice(0, 3).map((player) => (
               <Link
                 key={player.id}
-                href={player.permalink || "#"}
+                href={player.permalink ? toRelativeHref(player.permalink) : "#"}
                 className="flex flex-col items-center hover:opacity-80"
               >
                 {player.photo ? (
@@ -95,7 +96,7 @@ function StatusCard({ title, player, bgColor, emptyText }) {
       <div className="p-3 flex flex-col items-center justify-center min-h-[80px]">
         {player ? (
           <Link
-            href={player.permalink || "#"}
+            href={player.permalink ? toRelativeHref(player.permalink) : "#"}
             className="flex flex-col items-center hover:opacity-80"
           >
             {player.photo ? (

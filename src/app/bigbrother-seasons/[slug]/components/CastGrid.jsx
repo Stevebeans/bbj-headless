@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { displayName } from "./playerName";
+import { toRelativeHref } from "@/lib/utils/url";
 
 function initials(name = "") { return name.trim().slice(0, 2).toUpperCase() || "XX"; }
 function ordinal(n) {
@@ -48,7 +49,7 @@ export function CastGrid({ players, season }) {
           const [tagCls, tagText] = tagFor(p);
           const display = displayName(p);
           return (
-            <Link key={p.id} className="c" href={p.permalink || `/bigbrother-players/${p.slug || ""}`} title={p.name}>
+            <Link key={p.id} className="c" href={p.permalink ? toRelativeHref(p.permalink) : `/bigbrother-players/${p.slug || ""}`} title={p.name}>
               <div className="face" {...(!p.photo ? { "data-i": initials(display) } : {})}>
                 {p.photo ? <Image src={p.photo} alt={p.name} fill style={{ objectFit: "cover" }} sizes="120px" /> : null}
                 <span className={`tag ${tagCls}`}>{tagText}</span>

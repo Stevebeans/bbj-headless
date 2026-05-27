@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { toRelativeHref } from "@/lib/utils/url";
 
 /**
  * Winner, Runner-Up, and AFP spotlight cards
@@ -27,7 +28,7 @@ export function WinnerSpotlight({ season, players }) {
       {cards.map(({ player, label, gradient, icon }) => (
         <Link
           key={player.id}
-          href={player.permalink || `/bigbrother-players/${player.slug || ""}`}
+          href={player.permalink ? toRelativeHref(player.permalink) : `/bigbrother-players/${player.slug || ""}`}
           className={`bg-gradient-to-br ${gradient} rounded-lg p-4 text-center text-white hover:opacity-90 transition`}
         >
           <div className="text-[10px] uppercase tracking-wide opacity-80">{label}</div>

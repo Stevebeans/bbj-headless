@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { formalName } from "./playerName";
+import { toRelativeHref } from "@/lib/utils/url";
 
 /**
  * Eviction order table — shows houseguests in order of elimination
@@ -43,7 +44,7 @@ export function EvictionOrder({ players, season }) {
                 <tr key={player.id}>
                   <td className="wk">{idx + 1}</td>
                   <td>
-                    <a className="hg" href={player.permalink || "#"}>
+                    <a className="hg" href={player.permalink ? toRelativeHref(player.permalink) : "#"}>
                       <HgAvatar player={player} />{formalName(player)}
                     </a>
                   </td>
@@ -57,7 +58,7 @@ export function EvictionOrder({ players, season }) {
               <tr key={player.id}>
                 <td className="wk">—</td>
                 <td>
-                  <a className="hg" href={player.permalink || "#"}>
+                  <a className="hg" href={player.permalink ? toRelativeHref(player.permalink) : "#"}>
                     <HgAvatar player={player} />{formalName(player)}
                   </a>
                 </td>

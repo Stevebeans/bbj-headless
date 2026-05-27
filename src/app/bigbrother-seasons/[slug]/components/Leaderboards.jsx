@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { displayName } from "./playerName";
+import { toRelativeHref } from "@/lib/utils/url";
 
 /**
  * Season leaderboards — 2x2 grid of top-5 lists (HoH / PoV / Noms / Votes),
@@ -65,7 +66,7 @@ export function Leaderboards({ stats }) {
                       return (
                         <li key={player.id} className="flex items-center gap-2">
                           <Link
-                            href={player.permalink || "#"}
+                            href={player.permalink ? toRelativeHref(player.permalink) : "#"}
                             className="flex items-center gap-2 flex-shrink-0 w-[120px] hover:underline"
                           >
                             <LbAvatar player={player} />

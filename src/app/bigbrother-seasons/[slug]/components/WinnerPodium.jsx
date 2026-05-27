@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { toRelativeHref } from "@/lib/utils/url";
 
 function initials(name = "") { return name.trim().slice(0, 2).toUpperCase() || "XX"; }
 
@@ -8,7 +9,7 @@ function PodiumCard({ player, cls, label, role, prize }) {
   const s = player.stats || {};
   return (
     <div className={`p ${cls}`}>
-      <Link href={player.permalink || `/bigbrother-players/${player.slug || ""}`}>
+      <Link href={player.permalink ? toRelativeHref(player.permalink) : `/bigbrother-players/${player.slug || ""}`}>
         <div className="pc" {...(!player.photo ? { "data-i": initials(player.name) } : {})}>
           {player.photo ? (
             <Image src={player.photo} alt={player.name} fill style={{ objectFit: "cover" }} sizes="240px" />

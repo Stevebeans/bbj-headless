@@ -1,6 +1,7 @@
 import "./season-profile.css";
 import { getSeasonBySlug, getSeasonArticles, getSeasons } from "@/lib/api/seasons";
 import { bbjdFetch } from "@/lib/api/wordpress";
+import { toRelativeHref } from "@/lib/utils/url";
 import { notFound } from "next/navigation";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
@@ -176,7 +177,7 @@ function tallyComp(weeks, players, facesKey, statKey) {
           first_name: full.first_name,
           nickname: full.nickname,
           photo: f.photo || full.photo,
-          permalink: full.permalink || (f.slug ? `/bigbrother-players/${f.slug}` : "#"),
+          permalink: full.permalink ? toRelativeHref(full.permalink) : (f.slug ? `/bigbrother-players/${f.slug}` : "#"),
           stats: { [statKey]: 0 },
         };
         byId.set(f.id, entry);
