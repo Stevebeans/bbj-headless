@@ -19,6 +19,7 @@ import {
   RelatedPlayers,
   CompareButton,
 } from "@/components/players";
+import { ORG_LOGO } from "@/lib/seo";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
 export const revalidate = false; // Pure webhook-driven — rebuild only when WP fires /api/revalidate
@@ -60,13 +61,13 @@ export async function generateMetadata({ params }) {
               alt: `${player.name} profile picture`,
             },
           ]
-        : [],
+        : [{ url: ORG_LOGO }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: player.photo?.url ? [player.photo.url] : [],
+      images: player.photo?.url ? [player.photo.url] : [ORG_LOGO],
     },
     alternates: {
       canonical: `${SITE_URL}/bigbrother-players/${slug}`,

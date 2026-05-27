@@ -7,6 +7,7 @@ import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { FeedUpdateVoting } from "./FeedUpdateVoting";
 import { getFeedUpdateBySlug, getFeedUpdates } from "@/lib/api/feedUpdates";
+import { SITE_URL, ORG_LOGO } from "@/lib/seo";
 
 export const revalidate = false; // Pure webhook-driven — feed updates don't change after posting
 export const dynamicParams = true;
@@ -34,6 +35,9 @@ export async function generateMetadata({ params }) {
   return {
     title: update.title,
     description,
+    alternates: {
+      canonical: `${SITE_URL}/live-feed-updates/${slug}`,
+    },
     openGraph: {
       title: update.title,
       description,
@@ -41,7 +45,7 @@ export async function generateMetadata({ params }) {
       publishedTime: update.date,
       modifiedTime: update.modified,
       authors: [update.author?.name],
-      images: update.thumbnail ? [{ url: update.thumbnail }] : [],
+      images: update.thumbnail ? [{ url: update.thumbnail }] : [{ url: ORG_LOGO }],
     },
   };
 }
@@ -54,8 +58,30 @@ export default async function FeedUpdatePage({ params }) {
     notFound();
   }
 
+  const url = `${SITE_URL}/live-feed-updates/${update.slug}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: update.title,
+    datePublished: update.date,
+    dateModified: update.modified || update.date,
+    author: { "@type": "Person", name: update.author?.name || "Big Brother Junkies" },
+    ...(update.thumbnail ? { image: update.thumbnail } : { image: ORG_LOGO }),
+    mainEntityOfPage: url,
+    url,
+    publisher: {
+      "@type": "Organization",
+      name: "Big Brother Junkies",
+      logo: { "@type": "ImageObject", url: ORG_LOGO },
+    },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <SpoilerBarWrapper />
       <main className="v2-primary-container">
       <div className="flex w-full flex-col mb-4 lg:flex-row lg:gap-4 dark:text-gray-200">
@@ -170,7 +196,7 @@ export default async function FeedUpdatePage({ params }) {
                   <a
                     href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
                       update.title
-                    )}&url=${encodeURIComponent(update.permalink)}`}
+                    )}&url=${encodeURIComponent(`${SITE_URL}/live-feed-updates/${update.slug}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 text-gray-400 hover:text-[#1DA1F2] transition-colors"
@@ -182,7 +208,7 @@ export default async function FeedUpdatePage({ params }) {
                   </a>
                   <a
                     href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                      update.permalink
+                      `${SITE_URL}/live-feed-updates/${update.slug}`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"

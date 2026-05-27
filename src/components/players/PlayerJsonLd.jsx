@@ -15,15 +15,18 @@ export function PlayerJsonLd({ player, siteUrl }) {
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Person",
-    name: name,
-    givenName: first_name,
-    familyName: last_name,
-    ...(nickname && { alternateName: nickname }),
-    ...(photo?.url && { image: photo.url }),
-    ...(occupation && { jobTitle: occupation }),
-    url: permalink ? absoluteUrl(permalink) : `${siteUrl}/bigbrother-players/${player.slug}`,
-    ...(sameAs.length > 0 && { sameAs }),
+    "@type": "ProfilePage",
+    mainEntity: {
+      "@type": "Person",
+      name: name,
+      givenName: first_name,
+      familyName: last_name,
+      ...(nickname && { alternateName: nickname }),
+      ...(photo?.url && { image: photo.url }),
+      ...(occupation && { jobTitle: occupation }),
+      url: permalink ? absoluteUrl(permalink) : `${siteUrl}/bigbrother-players/${player.slug}`,
+      ...(sameAs.length > 0 && { sameAs }),
+    },
   };
 
   return (
