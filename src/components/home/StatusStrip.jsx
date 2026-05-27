@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { toRelativeHref } from "@/lib/utils/url";
 
 /**
  * Page-defining H1 + horizontal ticker of latest feed-update headlines.
@@ -33,7 +34,7 @@ export function StatusStrip({ season, tickerItems = [] }) {
               {doubled.map((item, idx) => (
                 <Link
                   key={`${item.id}-${idx}`}
-                  href={item.permalink}
+                  href={toRelativeHref(item.permalink)}
                   className="inline-flex items-center gap-2 px-4 no-underline text-gray-200 hover:text-secondary-500"
                   aria-hidden={idx >= tickerItems.length}
                   tabIndex={idx >= tickerItems.length ? -1 : 0}
