@@ -65,26 +65,27 @@ export async function generateMetadata({ params }) {
   const category = await getCategory(categorySlug);
 
   if (!category) {
-    return { title: "Category Not Found | Big Brother Junkies" };
+    return { title: "Category Not Found" };
   }
 
   const name = decodeHtml(category.name);
   const description =
     category.description ||
     `Browse all ${name} posts on Big Brother Junkies.`;
+  const fullTitle = `${name} Archives | Big Brother Junkies`;
 
   return {
-    title: `${name} Archives | Big Brother Junkies`,
+    title: `${name} Archives`,
     description,
     openGraph: {
-      title: `${name} Archives | Big Brother Junkies`,
+      title: fullTitle,
       description,
       url: `${SITE_URL}/category/${fullPath}`,
       type: "website",
     },
     twitter: {
       card: "summary",
-      title: `${name} Archives | Big Brother Junkies`,
+      title: fullTitle,
       description,
     },
     alternates: {

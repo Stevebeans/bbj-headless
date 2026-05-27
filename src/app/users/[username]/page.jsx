@@ -31,16 +31,17 @@ export async function generateMetadata({ params }) {
   }
 
   const { profile } = data;
-  const title = `${profile.name} (@${profile.username}) - Big Brother Junkies`;
+  const fullTitle = `${profile.name} (@${profile.username}) - Big Brother Junkies`;
+  const pageTitle = `${profile.name} (@${profile.username})`;
   const description = profile.bio
     ? `${profile.bio.substring(0, 150)}${profile.bio.length > 150 ? "..." : ""}`
     : `${profile.name} is a Big Brother Junkies community member with ${profile.stats.comments} comments and ${profile.stats.karma} karma.`;
 
   return {
-    title,
+    title: pageTitle,
     description,
     openGraph: {
-      title,
+      title: fullTitle,
       description,
       url: `${SITE_URL}/users/${profile.username}`,
       type: "profile",
@@ -57,7 +58,7 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       card: "summary",
-      title,
+      title: fullTitle,
       description,
     },
     alternates: {

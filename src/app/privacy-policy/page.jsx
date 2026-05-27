@@ -12,11 +12,11 @@ export async function generateMetadata() {
   const page = await getPage("privacy-policy");
 
   if (!page) {
-    return { title: "Privacy Policy | Big Brother Junkies" };
+    return { title: "Privacy Policy" };
   }
 
   return {
-    title: `${page.title} | Big Brother Junkies`,
+    title: page.title,
     description:
       "Privacy policy for Big Brother Junkies — how we handle your data.",
     alternates: {

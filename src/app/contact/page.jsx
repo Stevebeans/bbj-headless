@@ -5,7 +5,7 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
 export const metadata = {
-  title: "Contact Us - Big Brother Junkies",
+  title: "Contact Us",
   description:
     "Get in touch with Big Brother Junkies. Questions, feedback, bug reports, or business inquiries - we'd love to hear from you!",
   openGraph: {

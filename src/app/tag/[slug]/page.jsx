@@ -53,25 +53,26 @@ export async function generateMetadata({ params }) {
   const tag = await getTag(slug);
 
   if (!tag) {
-    return { title: "Tag Not Found | Big Brother Junkies" };
+    return { title: "Tag Not Found" };
   }
 
   const name = decodeHtml(tag.name);
   const description =
     tag.description || `Browse all posts tagged ${name} on Big Brother Junkies.`;
+  const fullTitle = `${name} Archives | Big Brother Junkies`;
 
   return {
-    title: `${name} Archives | Big Brother Junkies`,
+    title: `${name} Archives`,
     description,
     openGraph: {
-      title: `${name} Archives | Big Brother Junkies`,
+      title: fullTitle,
       description,
       url: `${SITE_URL}/tag/${slug}`,
       type: "website",
     },
     twitter: {
       card: "summary",
-      title: `${name} Archives | Big Brother Junkies`,
+      title: fullTitle,
       description,
     },
     alternates: {

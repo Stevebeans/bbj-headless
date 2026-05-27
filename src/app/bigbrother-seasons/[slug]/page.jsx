@@ -47,14 +47,15 @@ export async function generateMetadata({ params }) {
     return { title: "Season Not Found" };
   }
 
-  const title = `${season.name} - Cast, Spoilers, Eviction Order | Big Brother Junkies`;
+  const pageTitle = `${season.name} - Cast, Spoilers, Eviction Order`;
+  const fullTitle = `${pageTitle} | Big Brother Junkies`;
   const description = `Complete guide to ${season.name}: cast, spoilers, competition results, and live feed updates.`;
 
   return {
-    title,
+    title: pageTitle,
     description,
     openGraph: {
-      title,
+      title: fullTitle,
       description,
       url: `${SITE_URL}/bigbrother-seasons/${slug}`,
       type: "website",
@@ -71,7 +72,7 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: fullTitle,
       description,
       images: season.cover_image ? [season.cover_image] : [],
     },

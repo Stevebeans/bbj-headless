@@ -5,11 +5,15 @@ import { PlayerDirectory } from "./components/PlayerDirectory";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
+import { SITE_URL } from "@/lib/seo";
 
 export const metadata = {
-  title: "Big Brother Directory | Big Brother Junkies",
+  title: "Big Brother Directory",
   description:
     "Browse Big Brother houseguests and seasons. Search and filter players by season, gender, and more.",
+  alternates: {
+    canonical: `${SITE_URL}/directory`,
+  },
 };
 
 export const revalidate = false; // Pure webhook-driven via player/season tags
@@ -30,6 +34,13 @@ export default async function PlayersPage() {
   const { players, seasons } = await getInitialData();
 
   return (
+    <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+      "@context": "https://schema.org", "@type": "CollectionPage",
+      name: "Big Brother Directory", url: `${SITE_URL}/directory`,
+      description: "Browse every Big Brother houseguest and season.",
+      isPartOf: { "@type": "WebSite", name: "Big Brother Junkies", url: `${SITE_URL}/` },
+    }) }} />
     <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-6">
@@ -68,6 +79,7 @@ export default async function PlayersPage() {
         </Sidebar>
       </div>
     </div>
+    </>
   );
 }
 
