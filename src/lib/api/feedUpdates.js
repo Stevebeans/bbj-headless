@@ -45,30 +45,25 @@ export async function getFeedHub() {
 }
 
 /**
- * Fetch every feed-update slug + modified date for the sitemap. The list
- * endpoint maxes at per_page=500, so this pages through all ~14k updates via
- * offset until exhausted. `modified` already carries a Pacific offset from the
- * API. Cached (revalidate:false, feed-updates tag) so it only re-runs on
- * webhook invalidation or the sitemap's own revalidate window.
+ * Fetch every feed-update slug + modified date for the sitemap in ONE call.
+ * Backed by the dedicated `/feed-updates/sitemap` endpoint (lean $wpdb query,
+ * no per_page cap, ISO 8601 modified dates). The general list endpoint caps
+ * per_page at 30, which made it unusable for ~14k URLs. Cached (revalidate:false,
+ * feed-updates tag) so it only re-runs on webhook invalidation or the sitemap's
+ * own revalidate window.
  * @returns {Promise<Array<{slug: string, modified: string}>>}
  */
 export async function getAllFeedUpdateSitemapEntries() {
-  const out = [];
-  const pageSize = 500;
-  for (let offset = 0; offset < 100000; offset += pageSize) {
-    try {
-      const res = await getFeedUpdates({ perPage: pageSize, offset });
-      const updates = res?.updates || res?.feed_updates || [];
-      for (const u of updates) {
-        if (u?.slug) out.push({ slug: u.slug, modified: u.modified || u.date });
-      }
-      if (updates.length < pageSize || res?.has_more === false) break;
-    } catch (err) {
-      console.error("feed sitemap fetch error:", err);
-      break;
-    }
+  try {
+    const res = await bbjdFetch("/feed-updates/sitemap", {
+      tags: ["feed-updates"],
+      revalidate: false,
+    });
+    return (res?.updates || []).filter((u) => u?.slug);
+  } catch (err) {
+    console.error("feed sitemap fetch error:", err);
+    return [];
   }
-  return out;
 }
 
 /**
