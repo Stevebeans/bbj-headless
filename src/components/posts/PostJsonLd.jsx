@@ -1,4 +1,5 @@
 // JSON-LD structured data for blog posts (SEO)
+import { ORG_LOGO, toIsoTz } from "@/lib/seo";
 
 export function PostJsonLd({ post, siteUrl }) {
   if (!post) return null;
@@ -7,8 +8,9 @@ export function PostJsonLd({ post, siteUrl }) {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title?.replace(/<[^>]*>/g, "") || "",
-    datePublished: post.date,
-    dateModified: post.modified || post.date,
+    // ISO 8601 with timezone — WP `date` has no offset, so prefer `date_gmt`.
+    datePublished: toIsoTz(post.date, post.dateGmt),
+    dateModified: toIsoTz(post.modified || post.date, post.modifiedGmt || post.dateGmt),
     author: {
       "@type": "Person",
       name: post.author?.name || "Big Brother Junkies",
@@ -18,7 +20,7 @@ export function PostJsonLd({ post, siteUrl }) {
       name: "Big Brother Junkies",
       logo: {
         "@type": "ImageObject",
-        url: `${siteUrl}/logo.png`,
+        url: ORG_LOGO,
       },
     },
     description: post.excerpt?.replace(/<[^>]*>/g, "").slice(0, 160) || "",

@@ -13,6 +13,7 @@ import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
 import { getActiveLiveThread } from "@/lib/api/liveThread";
 import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 import { FreestarSDKLoader } from "@/components/ads/FreestarSDKLoader";
+import { SITE_URL, IS_PROD } from "@/lib/seo";
 
 // Default supporter roles — used as fallback if ad-settings doesn't provide a list.
 // AdContext and Header both do the client-side supporter check.
@@ -47,6 +48,8 @@ const caveat = Caveat({
 });
 
 export const metadata = {
+  // Resolves relative OG/canonical URLs and silences the Next.js build warning.
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Big Brother Junkies - Live Feed Spoilers & Updates",
     template: "%s | Big Brother Junkies",
@@ -64,17 +67,22 @@ export const metadata = {
     card: "summary_large_image",
   },
   manifest: "/manifest.json",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
+  // Staging/preview/localhost are publicly reachable AND emit self-referential
+  // canonicals — without this gate they get indexed and split ranking signals
+  // with prod. Only the canonical prod host is indexable.
+  robots: IS_PROD
+    ? {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-video-preview": -1,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+        },
+      }
+    : { index: false, follow: false, nocache: true },
   alternates: {
     types: {
       "application/rss+xml": "/feed",

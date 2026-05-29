@@ -66,6 +66,8 @@ function transformPost(wpPost) {
     content: wpPost.content?.rendered || "",
     date: wpPost.date,
     modified: wpPost.modified,
+    dateGmt: wpPost.date_gmt,
+    modifiedGmt: wpPost.modified_gmt,
     author: {
       id: author?.id || 0,
       name: author?.name || "Unknown",
@@ -110,20 +112,29 @@ export async function getPost(slug) {
 }
 
 /**
- * Get all post slugs for static generation
+ * Get every post's slug + modified date for the sitemap.
+ * Paginates through all pages (WP caps per_page at 100) — the old single-page
+ * fetch silently capped the sitemap at 100 of 3,000+ posts.
+ * @returns {Promise<Array<{slug: string, modified: string}>>}
  */
 export async function getAllPostSlugs() {
+  const all = [];
   try {
-    const posts = await wpRestFetch("/posts?per_page=100&_fields=slug", {
-      tags: ["posts"],
-      revalidate: false, // Webhook-driven via posts tag
-    });
-
-    return posts.map((post) => post.slug);
+    for (let page = 1; page <= 100; page++) {
+      const posts = await wpRestFetch(
+        `/posts?per_page=100&page=${page}&_fields=slug,modified,modified_gmt`,
+        { tags: ["posts"], revalidate: false } // Webhook-driven via posts tag
+      );
+      if (!Array.isArray(posts) || posts.length === 0) break;
+      for (const p of posts) {
+        all.push({ slug: p.slug, modified: p.modified_gmt ? `${p.modified_gmt}Z` : p.modified });
+      }
+      if (posts.length < 100) break; // last page
+    }
   } catch (error) {
     console.error("Failed to fetch post slugs:", error);
-    return [];
   }
+  return all;
 }
 
 /**
@@ -166,6 +177,8 @@ function transformPage(wpPage) {
     content: wpPage.content?.rendered || "",
     date: wpPage.date,
     modified: wpPage.modified,
+    dateGmt: wpPage.date_gmt,
+    modifiedGmt: wpPage.modified_gmt,
     author: {
       id: author?.id || 0,
       name: author?.name || "Unknown",
@@ -203,12 +216,15 @@ export async function getPage(slug) {
  */
 export async function getAllPageSlugs() {
   try {
-    const pages = await wpRestFetch("/pages?per_page=100&_fields=slug", {
+    const pages = await wpRestFetch("/pages?per_page=100&_fields=slug,modified,modified_gmt", {
       tags: ["pages"],
       revalidate: 3600, // 1 hour
     });
 
-    return pages.map((page) => page.slug);
+    return pages.map((page) => ({
+      slug: page.slug,
+      modified: page.modified_gmt ? `${page.modified_gmt}Z` : page.modified,
+    }));
   } catch (error) {
     console.error("Failed to fetch page slugs:", error);
     return [];

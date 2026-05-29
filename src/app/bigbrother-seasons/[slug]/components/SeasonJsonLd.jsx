@@ -8,7 +8,6 @@ export function SeasonJsonLd({ season, siteUrl }) {
     "@type": "TVSeason",
     name: season.name,
     seasonNumber: season.season_number,
-    numberOfEpisodes: season.total_days || undefined,
     startDate: season.start_date || undefined,
     endDate: season.end_date || undefined,
     url: `${siteUrl}/bigbrother-seasons/${season.slug}`,

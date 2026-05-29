@@ -17,6 +17,7 @@ import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { JumpToComments } from "@/components/posts/JumpToComments";
+import { breadcrumbJsonLd } from "@/lib/seo";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
@@ -107,9 +108,24 @@ export default async function ContentPage({ params }) {
   const seasonEntities = buildSeasonEntityMap(seasons);
   const linkedContent = autoLinkEntities(content.content, seasonEntities);
 
+  const cleanTitle = content.title?.replace(/<[^>]*>/g, "") || "";
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    ...breadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: cleanTitle, path: `/${slug}` },
+    ]),
+  };
+
   return (
     <>
       {!isPage && <PostJsonLd post={content} siteUrl={SITE_URL} />}
+      {!isPage && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+        />
+      )}
       {!isPage && <SpoilerBarWrapper />}
 
       <main className="v2-primary-container">

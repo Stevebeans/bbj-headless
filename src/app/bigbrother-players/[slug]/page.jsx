@@ -19,8 +19,33 @@ import {
   RelatedPlayers,
   CompareButton,
 } from "@/components/players";
-import { ORG_LOGO } from "@/lib/seo";
+import { ORG_LOGO, breadcrumbJsonLd } from "@/lib/seo";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
+
+/**
+ * Accurate career comp totals. The aggregate `stats.total_hoh/pov` are stale for
+ * hand-entered seasons (BB23–25), so prefer the per-season weekly junction
+ * (`weekly_timeline.cells`, the same source as the season page) and fall back to
+ * the per-season flat counts, then aggregate stats only if there's no season data.
+ */
+function derivePlayerTotals(player) {
+  const seasons = player.seasons || [];
+  if (seasons.length === 0) {
+    return {
+      hoh: player.stats?.total_hoh || 0,
+      pov: player.stats?.total_pov || 0,
+      seasons: player.stats?.total_seasons || 0,
+    };
+  }
+  let hoh = 0;
+  let pov = 0;
+  for (const s of seasons) {
+    const cells = s.weekly_timeline?.tracked ? s.weekly_timeline.cells : null;
+    hoh += cells ? cells.hoh?.length || 0 : Number(s.hoh) || 0;
+    pov += cells ? cells.pov?.length || 0 : Number(s.pov) || 0;
+  }
+  return { hoh, pov, seasons: player.stats?.total_seasons || seasons.length };
+}
 
 export const revalidate = false; // Pure webhook-driven — rebuild only when WP fires /api/revalidate
 export const dynamicParams = true;
@@ -41,8 +66,9 @@ export async function generateMetadata({ params }) {
   }
 
   const { player } = data;
+  const totals = derivePlayerTotals(player);
   const title = `${player.name} - Big Brother Player Profile`;
-  const description = `${player.name}${player.nickname ? ` "${player.nickname}"` : ""} - ${player.occupation || "Big Brother houseguest"}. Career stats: ${player.stats?.total_hoh || 0} HoH wins, ${player.stats?.total_pov || 0} PoV wins across ${player.stats?.total_seasons || 0} season(s).`;
+  const description = `${player.name}${player.nickname ? ` "${player.nickname}"` : ""} - ${player.occupation || "Big Brother houseguest"}. Career stats: ${totals.hoh} HoH wins, ${totals.pov} PoV wins across ${totals.seasons} season(s).`;
 
   return {
     title,
@@ -98,9 +124,22 @@ export default async function PlayerPage({ params }) {
     player.social?.facebook ||
     player.social?.tiktok;
 
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    ...breadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: "Players", path: "/directory" },
+      { name: player.name, path: `/bigbrother-players/${slug}` },
+    ]),
+  };
+
   return (
     <>
       <PlayerJsonLd player={player} siteUrl={SITE_URL} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+      />
       <SpoilerBarWrapper />
 
       <main className="v2-primary-container">

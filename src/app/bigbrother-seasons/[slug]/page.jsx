@@ -2,6 +2,7 @@ import "./season-profile.css";
 import { getSeasonBySlug, getSeasonArticles, getSeasons } from "@/lib/api/seasons";
 import { bbjdFetch } from "@/lib/api/wordpress";
 import { toRelativeHref } from "@/lib/utils/url";
+import { breadcrumbJsonLd } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
@@ -261,9 +262,22 @@ export default async function SeasonPage({ params }) {
     faqs.length > 0 && { id: "faq", label: "FAQ" },
   ].filter(Boolean);
 
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    ...breadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: "Seasons", path: "/directory?tab=seasons" },
+      { name: season.name, path: `/bigbrother-seasons/${slug}` },
+    ]),
+  };
+
   return (
     <>
       <SeasonJsonLd season={season} siteUrl={SITE_URL} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
+      />
       {faqs.length > 0 && <SeasonFAQSchema questions={faqs} />}
       <SpoilerBarWrapper />
 
@@ -272,7 +286,7 @@ export default async function SeasonPage({ params }) {
           {/* Breadcrumb */}
           <nav className="crumb" aria-label="Breadcrumb">
             <a href="/">Home</a><span className="sep">/</span>
-            <a href="/bigbrother-seasons/">Seasons</a><span className="sep">/</span>
+            <a href="/directory?tab=seasons">Seasons</a><span className="sep">/</span>
             <b>{season.name}</b>
           </nav>
 

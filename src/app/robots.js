@@ -1,4 +1,14 @@
+import { SITE_URL, IS_PROD } from "@/lib/seo";
+
 export default function robots() {
+  // Staging/preview/localhost: block everything so search engines never index
+  // a non-prod mirror that competes with the real site for the same content.
+  if (!IS_PROD) {
+    return {
+      rules: [{ userAgent: "*", disallow: "/" }],
+    };
+  }
+
   return {
     rules: [
       {
@@ -18,6 +28,6 @@ export default function robots() {
         ],
       },
     ],
-    sitemap: "https://bigbrotherjunkies.com/sitemap.xml",
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

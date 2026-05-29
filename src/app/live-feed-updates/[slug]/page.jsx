@@ -7,7 +7,7 @@ import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { FeedUpdateVoting } from "./FeedUpdateVoting";
 import { getFeedUpdateBySlug, getFeedUpdates } from "@/lib/api/feedUpdates";
-import { SITE_URL, ORG_LOGO } from "@/lib/seo";
+import { SITE_URL, ORG_LOGO, breadcrumbJsonLd } from "@/lib/seo";
 
 export const revalidate = false; // Pure webhook-driven — feed updates don't change after posting
 export const dynamicParams = true;
@@ -76,11 +76,24 @@ export default async function FeedUpdatePage({ params }) {
     },
   };
 
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    ...breadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: "Live Feed Updates", path: "/live-feed-updates" },
+      { name: update.title, path: `/live-feed-updates/${update.slug}` },
+    ]),
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }}
       />
       <SpoilerBarWrapper />
       <main className="v2-primary-container">
@@ -161,9 +174,10 @@ export default async function FeedUpdatePage({ params }) {
                 <div className="mb-6">
                   <Image
                     src={update.thumbnail}
-                    alt=""
+                    alt={update.title}
                     width={800}
                     height={450}
+                    priority
                     className="rounded-lg w-full h-auto object-cover"
                   />
                 </div>

@@ -45,6 +45,49 @@ export async function getFeedHub() {
 }
 
 /**
+ * Total number of feed updates (for sitemap sharding).
+ * @returns {Promise<number>}
+ */
+export async function getFeedUpdatesCount() {
+  try {
+    const res = await bbjdFetch("/feed-updates?per_page=1", {
+      tags: ["feed-updates"],
+      revalidate: false,
+    });
+    return res?.total || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Fetch a window of feed-update slugs + modified dates for the sitemap.
+ * The list endpoint maxes at per_page=500, so a 5,000-wide shard pages
+ * internally. `modified` already carries a Pacific offset from the API.
+ * @param {{ offset?: number, limit?: number }} opts
+ * @returns {Promise<Array<{slug: string, modified: string}>>}
+ */
+export async function getFeedUpdateSitemapEntries({ offset = 0, limit = 5000 } = {}) {
+  const out = [];
+  const pageSize = 500;
+  for (let fetched = 0; fetched < limit; fetched += pageSize) {
+    try {
+      const res = await getFeedUpdates({ perPage: pageSize, offset: offset + fetched });
+      const updates = res?.updates || res?.feed_updates || [];
+      if (updates.length === 0) break;
+      for (const u of updates) {
+        if (u?.slug) out.push({ slug: u.slug, modified: u.modified || u.date });
+      }
+      if (updates.length < pageSize) break; // ran out
+    } catch (err) {
+      console.error("feed sitemap window fetch error:", err);
+      break;
+    }
+  }
+  return out;
+}
+
+/**
  * Fetch a single feed update by slug
  * @param {string} slug - Update slug
  * @returns {Promise<Object>} Feed update data

@@ -55,6 +55,8 @@ export default async function FeedUpdatesPage() {
         headline: seo.titlePrefix,
         url: seo.url,
         description: seo.description,
+        ...(hub?.season?.start_date ? { datePublished: new Date(hub.season.start_date).toISOString() } : {}),
+        ...(recent[0]?.modified || recent[0]?.date ? { dateModified: recent[0].modified || recent[0].date } : {}),
         ...(hub?.season?.start_date ? { coverageStartTime: new Date(hub.season.start_date).toISOString() } : {}),
         ...(!hub?.season?.is_active && hub?.season?.end_date ? { coverageEndTime: new Date(hub.season.end_date).toISOString() } : {}),
         publisher: { "@type": "Organization", name: "Big Brother Junkies", logo: { "@type": "ImageObject", url: ORG_LOGO } },
