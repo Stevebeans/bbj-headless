@@ -118,7 +118,6 @@ function HouseboardCard({ title, players, bgColor, emptyText }) {
                   width={40}
                   height={40}
                   className="rounded-full"
-                  unoptimized
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600" />
@@ -260,7 +259,6 @@ function PlayerStatsRow({ player }) {
             width={16}
             height={16}
             className="rounded-full w-4 h-4 flex-shrink-0"
-            unoptimized
           />
         )}
         <Link href={player.permalink ? toRelativeHref(player.permalink) : "#"} className="truncate hover:underline py-0.5">

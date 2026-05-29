@@ -95,7 +95,11 @@ const nextConfig = {
     ];
   },
   images: {
-    unoptimized: true, // Images served directly from Cloudflare/origin CDNs — no Vercel transformations
+    // Vercel-optimized: raw WP PNGs are transformed to AVIF/WebP at display size and
+    // CDN-cached per (image+size+format) — billed once on cache miss, NOT per page/visit.
+    // Player-photo components drop their per-image `unoptimized` prop; avatars/giphy/
+    // utility images keep it (small/animated/low-value → cost control).
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",

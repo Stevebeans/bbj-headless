@@ -103,7 +103,7 @@ function PlayerCard({ player, afpId }) {
       <div className={`relative block w-full h-14 lg:h-[80px] font-display overflow-hidden border-l-2 border-r-2 ${statusClass}`}>
         {player.photo ? (
           <>
-            <Image src={player.photo} alt={player.name || "Houseguest"} fill className={`object-cover ${isEvicted ? "spoilerbar-evicted-img" : ""} ${isJury ? "spoilerbar-jury-img" : ""}`} sizes="(max-width: 1024px) 56px, 56px" unoptimized />
+            <Image src={player.photo} alt={player.name || "Houseguest"} fill className={`object-cover ${isEvicted ? "spoilerbar-evicted-img" : ""} ${isJury ? "spoilerbar-jury-img" : ""}`} sizes="(max-width: 1024px) 56px, 56px" />
             {isJury && <div className="spoilerbar-jury-overlay" />}
           </>
         ) : (

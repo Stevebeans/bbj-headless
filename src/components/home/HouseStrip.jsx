@@ -70,7 +70,6 @@ function HouseGroup({ players, label, bg }) {
                   width={36}
                   height={36}
                   className="w-full h-full object-cover"
-                  unoptimized
                 />
               ) : (
                 <span>{(p.name || "").charAt(0).toUpperCase()}</span>
