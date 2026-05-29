@@ -76,7 +76,7 @@ export function Header({ liveThread = null, feedsLive = true, paramountUrl = DEF
             {/* Logo */}
             <Link href="/" className="shrink-0 block" aria-label="Big Brother Junkies - Home">
               {/* Mobile logo - compact */}
-              <Image src={MOBILE_LOGO_URL} alt="Big Brother Junkies" width={40} height={40} className="md:hidden h-10 w-auto" priority unoptimized />
+              <Image src={MOBILE_LOGO_URL} alt="Big Brother Junkies" width={40} height={40} className="md:hidden h-10 w-auto" priority />
               {/* Desktop logo - full */}
               <Image src={LOGO_URL} alt="Big Brother Junkies" width={395} height={37} className="hidden md:block h-[37px] w-auto" priority />
             </Link>
