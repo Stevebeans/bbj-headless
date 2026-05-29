@@ -45,42 +45,26 @@ export async function getFeedHub() {
 }
 
 /**
- * Total number of feed updates (for sitemap sharding).
- * @returns {Promise<number>}
- */
-export async function getFeedUpdatesCount() {
-  try {
-    const res = await bbjdFetch("/feed-updates?per_page=1", {
-      tags: ["feed-updates"],
-      revalidate: false,
-    });
-    return res?.total || 0;
-  } catch {
-    return 0;
-  }
-}
-
-/**
- * Fetch a window of feed-update slugs + modified dates for the sitemap.
- * The list endpoint maxes at per_page=500, so a 5,000-wide shard pages
- * internally. `modified` already carries a Pacific offset from the API.
- * @param {{ offset?: number, limit?: number }} opts
+ * Fetch every feed-update slug + modified date for the sitemap. The list
+ * endpoint maxes at per_page=500, so this pages through all ~14k updates via
+ * offset until exhausted. `modified` already carries a Pacific offset from the
+ * API. Cached (revalidate:false, feed-updates tag) so it only re-runs on
+ * webhook invalidation or the sitemap's own revalidate window.
  * @returns {Promise<Array<{slug: string, modified: string}>>}
  */
-export async function getFeedUpdateSitemapEntries({ offset = 0, limit = 5000 } = {}) {
+export async function getAllFeedUpdateSitemapEntries() {
   const out = [];
   const pageSize = 500;
-  for (let fetched = 0; fetched < limit; fetched += pageSize) {
+  for (let offset = 0; offset < 100000; offset += pageSize) {
     try {
-      const res = await getFeedUpdates({ perPage: pageSize, offset: offset + fetched });
+      const res = await getFeedUpdates({ perPage: pageSize, offset });
       const updates = res?.updates || res?.feed_updates || [];
-      if (updates.length === 0) break;
       for (const u of updates) {
         if (u?.slug) out.push({ slug: u.slug, modified: u.modified || u.date });
       }
-      if (updates.length < pageSize) break; // ran out
+      if (updates.length < pageSize || res?.has_more === false) break;
     } catch (err) {
-      console.error("feed sitemap window fetch error:", err);
+      console.error("feed sitemap fetch error:", err);
       break;
     }
   }

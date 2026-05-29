@@ -1,19 +1,13 @@
 import { getAllContentSlugs } from "@/lib/api/posts";
 import { getAllPlayerSlugs } from "@/lib/api/players";
 import { getAllSeasonSlugs } from "@/lib/api/seasons";
-import {
-  getFeedUpdatesCount,
-  getFeedUpdateSitemapEntries,
-} from "@/lib/api/feedUpdates";
+import { getAllFeedUpdateSitemapEntries } from "@/lib/api/feedUpdates";
 import { SITE_URL } from "@/lib/seo";
 
-export const revalidate = 3600;
-
-// Feed updates are ~14k URLs — far past what belongs in one fetch. Shard them so
-// each /sitemap/N.xml fetches + caches its own slice (Next emits a sitemap index
-// at /sitemap.xml). Shard 0 = core content (static + posts + players + seasons);
-// shards 1..N = feed-update windows.
-const FEED_SHARD_SIZE = 5000;
+// Sitemap revalidates every 6h — content URLs don't need minute-fresh listing,
+// and this fetches ~17k URLs across posts/players/seasons/feed, so we avoid
+// re-running it hourly. Served ISR-cached; regeneration runs in the background.
+export const revalidate = 21600;
 
 async function safeList(fn) {
   try {
@@ -34,18 +28,12 @@ function withLastMod(base, modified) {
   return Number.isNaN(d.getTime()) ? base : { ...base, lastModified: d };
 }
 
-export async function generateSitemaps() {
-  const total = await getFeedUpdatesCount();
-  const feedShards = Math.max(1, Math.ceil(total / FEED_SHARD_SIZE));
-  // id 0 = core, ids 1..feedShards = feed windows
-  return Array.from({ length: feedShards + 1 }, (_, i) => ({ id: i }));
-}
-
-async function coreSitemap() {
-  const [contentSlugs, playerSlugs, seasonSlugs] = await Promise.all([
+export default async function sitemap() {
+  const [contentSlugs, playerSlugs, seasonSlugs, feedEntries] = await Promise.all([
     safeList(getAllContentSlugs), // [{ slug, modified }]
     safeList(getAllPlayerSlugs), // [slug]  (API has no per-item modified)
     safeList(getAllSeasonSlugs), // [slug]
+    safeList(getAllFeedUpdateSitemapEntries), // [{ slug, modified }]
   ]);
 
   const staticEntries = [
@@ -79,13 +67,7 @@ async function coreSitemap() {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...contentEntries, ...playerEntries, ...seasonEntries];
-}
-
-async function feedSitemap(shardIndex) {
-  const offset = (shardIndex - 1) * FEED_SHARD_SIZE;
-  const entries = await getFeedUpdateSitemapEntries({ offset, limit: FEED_SHARD_SIZE });
-  return entries.map((u) =>
+  const feedSitemapEntries = feedEntries.map((u) =>
     withLastMod(
       {
         url: `${SITE_URL}/live-feed-updates/${u.slug}`,
@@ -95,8 +77,12 @@ async function feedSitemap(shardIndex) {
       u.modified
     )
   );
-}
 
-export default async function sitemap({ id }) {
-  return id === 0 ? coreSitemap() : feedSitemap(id);
+  return [
+    ...staticEntries,
+    ...contentEntries,
+    ...playerEntries,
+    ...seasonEntries,
+    ...feedSitemapEntries,
+  ];
 }
