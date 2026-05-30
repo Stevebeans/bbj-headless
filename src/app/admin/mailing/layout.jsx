@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const SUBNAV = [
   { href: "/admin/mailing", label: "Stats", match: (p) => p === "/admin/mailing" },
   { href: "/admin/mailing/lists", label: "Lists", match: (p) => p.startsWith("/admin/mailing/lists") },
+  { href: "/admin/mailing/welcome-emails", label: "Welcome Emails", match: (p) => p.startsWith("/admin/mailing/welcome-emails") },
 ];
 
 export default function MailingLayout({ children }) {
