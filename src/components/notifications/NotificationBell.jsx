@@ -44,15 +44,50 @@ export default function NotificationBell() {
     }
   }, []);
 
-  // Poll for unread count (defer initial fetch so it doesn't compete with page load)
+  // Poll for unread count — visibility-gated to protect the WP origin.
+  // Every logged-in user's browser hits /notifications/unread-count (a full WP
+  // REST bootstrap on Cloudways). The old code polled every 60s forever, even in
+  // background/pinned tabs, which is most of the wasted load. Now we only poll
+  // while the tab is actually visible, at a calmer interval, and refresh once on
+  // refocus so the badge is fresh the moment the user looks. See CLAUDE.md
+  // "Caching Comes First". (Anonymous users never reach the server — no token.)
+  const POLL_INTERVAL_MS = 180000; // 3 min while visible
   useEffect(() => {
-    const initialTimeout = setTimeout(fetchUnreadCount, 2000);
+    let interval = null;
 
-    // Poll every 60 seconds
-    const interval = setInterval(fetchUnreadCount, 60000);
+    const startPolling = () => {
+      if (interval) return;
+      interval = setInterval(fetchUnreadCount, POLL_INTERVAL_MS);
+    };
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchUnreadCount(); // refresh immediately on refocus
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    // Defer initial fetch so it doesn't compete with page load.
+    const initialTimeout = setTimeout(() => {
+      if (document.visibilityState === "visible") {
+        fetchUnreadCount();
+        startPolling();
+      }
+    }, 2000);
+
+    document.addEventListener("visibilitychange", handleVisibility);
     return () => {
       clearTimeout(initialTimeout);
-      clearInterval(interval);
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [fetchUnreadCount]);
 

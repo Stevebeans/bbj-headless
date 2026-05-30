@@ -6,59 +6,109 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { getSubscription, capturePayPalOrder } from "@/lib/api/billing";
 
+// How long to wait for the activation webhook (Stripe checkout.session.completed /
+// PayPal BILLING.SUBSCRIPTION.ACTIVATED) to create the subscription row + assign
+// the supporter role. We poll because activation is webhook-driven and can lag a
+// few seconds behind the redirect back to this page.
+const ACTIVATION_POLL_ATTEMPTS = 6;
+const ACTIVATION_POLL_INTERVAL_MS = 2000;
+const REDIRECT_SECONDS = 10;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function SuccessContent() {
   const searchParams = useSearchParams();
   const { isAuthenticated, refreshUser } = useAuth();
   const [subscription, setSubscription] = useState(null);
+  const [activated, setActivated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [seconds, setSeconds] = useState(REDIRECT_SECONDS);
 
   const processor = searchParams.get("processor");
-  const paypalOrderId = searchParams.get("token"); // PayPal returns token param for orders
+  const token = searchParams.get("token"); // order id (lifetime) OR EC token (subscription)
+  const payerId = searchParams.get("PayerID"); // only present on one-time ORDER approvals
+  const subscriptionId = searchParams.get("subscription_id"); // only present on SUBSCRIPTION approvals
+
+  // A PayPal *order* (one-time lifetime) needs an explicit capture. A PayPal
+  // *subscription* (monthly/annual) must NOT be captured — it's activated by the
+  // BILLING.SUBSCRIPTION.ACTIVATED webhook. Calling capture on a subscription is
+  // what produced the "could not be performed" (PayPal 422 ORDER_NOT_APPROVED).
+  const isPayPalOrder =
+    processor === "paypal" && !!token && !!payerId && !subscriptionId;
 
   useEffect(() => {
-    const handleSuccess = async () => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const run = async () => {
       try {
-        // If PayPal order, capture it first
-        if (processor === "paypal" && paypalOrderId) {
-          await capturePayPalOrder(paypalOrderId);
+        // One-time lifetime order → capture (this activates immediately server-side).
+        if (isPayPalOrder) {
+          try {
+            await capturePayPalOrder(token);
+          } catch (err) {
+            // "already captured" just means the page was refreshed — not a real error.
+            if (!err.message?.toLowerCase().includes("already")) {
+              setError(
+                "We're finalizing your payment. If your premium status doesn't appear shortly, please contact us."
+              );
+            }
+          }
         }
 
-        // Refresh user to get updated role
+        // Poll for activation. Stripe + PayPal subscriptions activate via webhook,
+        // so the row may not exist on the first check.
+        for (let attempt = 0; attempt < ACTIVATION_POLL_ATTEMPTS; attempt++) {
+          if (cancelled) return;
+          try {
+            const result = await getSubscription();
+            if (result?.has_subscription) {
+              setSubscription(result.subscription);
+              setActivated(true);
+              break;
+            }
+          } catch {
+            // ignore and retry
+          }
+          if (attempt < ACTIVATION_POLL_ATTEMPTS - 1) {
+            await sleep(ACTIVATION_POLL_INTERVAL_MS);
+          }
+        }
+
+        // Pull fresh roles so ad-hiding/supporter badge reflect the new status.
         await refreshUser();
-
-        // Fetch subscription details
-        if (isAuthenticated) {
-          const result = await getSubscription();
-          if (result.has_subscription) {
-            setSubscription(result.subscription);
-          }
-        }
-      } catch (err) {
-        // Don't show error if it's already captured (user refreshing page)
-        if (!err.message?.includes("already")) {
-          setError(err.message);
-        }
-        // Still try to fetch subscription
-        try {
-          const result = await getSubscription();
-          if (result.has_subscription) {
-            setSubscription(result.subscription);
-          }
-        } catch {
-          // Ignore
-        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    if (isAuthenticated) {
-      handleSuccess();
-    } else {
-      setLoading(false);
+    run();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
+  // Once activation is CONFIRMED, count down then do a FULL document load to "/".
+  // The hard navigation re-fetches auth/ad state so the global sticky ad clears
+  // (a client-side route change would keep the stale ad mounted). We only redirect
+  // on confirmed success — on error or still-pending activation we leave the user
+  // here so they can read the message and act, instead of dumping them on a
+  // still-ad-filled homepage.
+  useEffect(() => {
+    if (loading || !activated) return;
+    if (seconds <= 0) {
+      window.location.href = "/";
+      return;
     }
-  }, [isAuthenticated, processor, paypalOrderId, refreshUser]);
+    const timer = setTimeout(() => setSeconds((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [loading, activated, seconds]);
 
   if (loading) {
     return (
@@ -88,12 +138,15 @@ function SuccessContent() {
           </h1>
 
           {error ? (
-            <p className="text-amber-600 dark:text-amber-400 mb-6">
-              {error}
+            <p className="text-amber-600 dark:text-amber-400 mb-6">{error}</p>
+          ) : activated ? (
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Thank you for becoming a BBJ Supporter! Your support helps us continue providing quality Big Brother coverage.
             </p>
           ) : (
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Thank you for becoming a BBJ Supporter! Your support helps us continue providing quality Big Brother coverage.
+              Thank you for your payment! Your premium status is being activated and should appear within a minute. If it
+              doesn&apos;t, refresh this page or contact us.
             </p>
           )}
 
@@ -140,40 +193,50 @@ function SuccessContent() {
           )}
 
           {/* What's Next */}
-          <div className="mb-8">
-            <h2 className="font-semibold text-gray-900 dark:text-white mb-3">
-              What's Next?
-            </h2>
-            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-              <li className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Ads are now hidden across the site
-              </li>
-              <li className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Your supporter badge is active
-              </li>
-              <li className="flex items-center justify-center gap-2">
-                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Enable priority push notifications in Settings
-              </li>
-            </ul>
-          </div>
+          {activated && (
+            <div className="mb-8">
+              <h2 className="font-semibold text-gray-900 dark:text-white mb-3">
+                What&apos;s Next?
+              </h2>
+              <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                <li className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Ads are now hidden across the site
+                </li>
+                <li className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Your supporter badge is active
+                </li>
+                <li className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Enable priority push notifications in Settings
+                </li>
+              </ul>
+            </div>
+          )}
+
+          {/* Auto-redirect notice — only when activation is confirmed; the hard
+              reload clears the sticky ad. */}
+          {activated && (
+            <p className="text-sm text-gray-400 dark:text-gray-500 mb-4" aria-live="polite">
+              Taking you to an ad-free site in {seconds} second{seconds === 1 ? "" : "s"}…
+            </p>
+          )}
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
+            <a
               href="/"
               className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
             >
               Start Browsing Ad-Free
-            </Link>
+            </a>
             <Link
               href="/settings?tab=premium"
               className="px-6 py-3 border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium rounded-lg transition-colors"

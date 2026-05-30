@@ -1,7 +1,13 @@
 import { bbjdFetch } from "./wordpress";
 
+// submitContactForm() runs in the browser, so it needs the NEXT_PUBLIC_ var
+// (the non-public WORDPRESS_API_URL is undefined client-side and was falling
+// back to the apex domain → 403). Server-side reads (reasons/recaptcha) go
+// through bbjdFetch and are unaffected.
 const WORDPRESS_API_URL =
-  process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+  process.env.NEXT_PUBLIC_WORDPRESS_API_URL ||
+  process.env.WORDPRESS_API_URL ||
+  "https://bigbrotherjunkies.com/wp-json";
 
 /**
  * Get contact form reasons for dropdown

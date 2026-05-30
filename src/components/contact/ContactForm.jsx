@@ -20,8 +20,8 @@ export function ContactForm({ reasons, recaptchaSiteKey }) {
     if (user) {
       setFormData((prev) => ({
         ...prev,
-        name: prev.name || user.user_display_name || "",
-        email: prev.email || user.user_email || "",
+        name: prev.name || user.user_display_name || user.display_name || "",
+        email: prev.email || user.user_email || user.email || "",
       }));
     }
   }, [user]);
