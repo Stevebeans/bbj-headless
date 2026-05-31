@@ -40,10 +40,24 @@ function Editor({ title, note, subject, body, onSubject, onBody, onInsert }) {
   );
 }
 
+function TestButton({ which, label, onTest, busy }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onTest(which)}
+      disabled={!!busy}
+      className="mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded border border-primary-500 text-primary-600 dark:text-primary-400 hover:bg-primary-500 hover:text-white disabled:opacity-50 transition-colors"
+    >
+      {busy === which ? "Saving & sending…" : `✉️ ${label}`}
+    </button>
+  );
+}
+
 export default function WelcomeEmailsPage() {
   const [tpl, setTpl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
+  const [testing, setTesting] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -74,13 +88,22 @@ export default function WelcomeEmailsPage() {
     }
   };
 
+  // Save the current edits first so the test reflects exactly what's in the boxes, then send.
   const test = async (which) => {
-    setMsg(`Sending ${which} test…`);
+    setTesting(which);
+    setMsg(`Saving & sending ${which} test…`);
     try {
+      const saved = await saveWelcomeEmails(tpl);
+      if (!saved.success) {
+        setMsg(saved.message || "Save failed — fix the template before testing");
+        return;
+      }
       const res = await sendWelcomeEmailTest(which);
-      setMsg(res.message || (res.success ? "Sent" : "Failed"));
+      setMsg(res.message || (res.success ? "Test sent ✓" : "Send failed"));
     } catch (e) {
       setMsg(e.message || "Failed");
+    } finally {
+      setTesting("");
     }
   };
 
@@ -103,7 +126,7 @@ export default function WelcomeEmailsPage() {
         onBody={(v) => setField("confirmation", "body_html", v)}
         onInsert={insert("confirmation", "body_html")}
       />
-      <button onClick={() => test("confirmation")} className="mb-6 text-sm text-primary-500 hover:underline">Send confirmation test to me</button>
+      <TestButton which="confirmation" label="Save & send confirmation test to me" onTest={test} busy={testing} />
 
       <Editor
         title="2. Welcome Email"
@@ -123,7 +146,7 @@ export default function WelcomeEmailsPage() {
         onBody={(v) => setTpl((p) => ({ ...p, welcome_newsletter_fragment: v }))}
         onInsert={(tag) => setTpl((p) => ({ ...p, welcome_newsletter_fragment: (p.welcome_newsletter_fragment || "") + " " + tag }))}
       />
-      <button onClick={() => test("welcome")} className="mb-6 text-sm text-primary-500 hover:underline">Send welcome test to me</button>
+      <TestButton which="welcome" label="Save & send welcome test to me" onTest={test} busy={testing} />
 
       <Editor
         title="3. Premium Signup Email"
@@ -134,7 +157,7 @@ export default function WelcomeEmailsPage() {
         onBody={(v) => setField("premium", "body_html", v)}
         onInsert={insert("premium", "body_html")}
       />
-      <button onClick={() => test("premium")} className="text-sm text-primary-500 hover:underline">Send premium test to me</button>
+      <TestButton which="premium" label="Save & send premium test to me" onTest={test} busy={testing} />
     </div>
   );
 }
