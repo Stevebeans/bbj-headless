@@ -18,11 +18,12 @@ function formatSource(m, i) {
  * @param {string} question  the fan's newest message
  * @param {Array<{type,title,url,date,text}>} matches  retrieved grounding (may be empty)
  * @param {Array<{role:'user'|'assistant',content:string}>} history  prior turns this session
+ * @param {string} [guide]  the persona Voice Guide (defaults to public Steve Beans)
  * @returns {{ system: Array, messages: Array }}
  */
-export function buildChatPrompt(question, matches = [], history = []) {
+export function buildChatPrompt(question, matches = [], history = [], guide = VOICE_GUIDE) {
   const system = [
-    { type: "text", text: VOICE_GUIDE, cache_control: { type: "ephemeral" } },
+    { type: "text", text: guide, cache_control: { type: "ephemeral" } },
   ];
 
   const context = matches.length
@@ -30,8 +31,8 @@ export function buildChatPrompt(question, matches = [], history = []) {
     : "(no matching context found in the archive)";
 
   const guidance = matches.length
-    ? "Use the CONTEXT above for any factual claims. If it doesn't cover the answer, hedge honestly in voice."
-    : "There is NO context from the archive for this one. Do not invent site facts — answer from general knowledge if you can, flag uncertainty in voice, or just say you don't have it.";
+    ? "The CONTEXT above is private background — the fan can't see it, so never mention it. Use it for factual claims, weave facts in as if you already knew them, and if it's irrelevant to what they said, ignore it and just talk."
+    : "No background notes for this one. Don't invent site facts — answer from general knowledge if you can, flag uncertainty in voice, or just say you don't have it. If they're only chatting, just chat.";
 
   const content =
     `CONTEXT:\n${context}\n\n` +
