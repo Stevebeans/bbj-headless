@@ -27,7 +27,13 @@
   --accent-soft: #e7edf3;
   --accent-ink: #233c52;
 
-  background: radial-gradient(80% 50% at 50% 0%, rgba(53, 84, 110, 0.06), transparent 60%), var(--paper);
+  /* Boxed panel: contained to the site content width, sitting on the site beige
+     like the home-page cards (rather than bleeding full-width). */
+  background: radial-gradient(90% 40% at 50% 0%, rgba(53, 84, 110, 0.05), transparent 62%), var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(20, 24, 30, 0.07), 0 8px 24px -18px rgba(20, 24, 30, 0.25);
+  padding-bottom: 4px;
 }
 
 /* ---- caption bar above the chat ---- */

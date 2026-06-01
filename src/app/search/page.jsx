@@ -8,5 +8,9 @@ export const metadata = {
 };
 
 export default function SearchPage() {
-  return <BeanChat />;
+  return (
+    <div className="v2-primary-container">
+      <BeanChat />
+    </div>
+  );
 }
