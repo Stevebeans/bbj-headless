@@ -16,10 +16,10 @@ export function dedupeBySource(matches) {
 /**
  * Retrieve the most relevant content for a question.
  * @param {string} query
- * @param {{topK?:number, max?:number}} [opts]
- * @returns {Promise<Array<{id,sourceId,type,title,url,date,score}>>}
+ * @param {{topK?:number, max?:number, withText?:boolean}} [opts]
+ * @returns {Promise<Array<{id,sourceId,type,title,url,date,score,text?}>>}
  */
-export async function retrieve(query, { topK = 12, max = 6 } = {}) {
-  const matches = await queryText(query, topK);
+export async function retrieve(query, { topK = 12, max = 6, withText = false } = {}) {
+  const matches = await queryText(query, topK, { includeData: withText });
   return dedupeBySource(matches).slice(0, max);
 }

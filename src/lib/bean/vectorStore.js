@@ -24,12 +24,20 @@ export async function upsertChunks(chunks) {
 
 /**
  * Semantic search by raw text. Returns matches flattened with their metadata.
+ * When opts.includeData is true, each match also carries `text` (the stored chunk),
+ * which the chat path needs to ground answers.
  * @param {string} text
  * @param {number} topK
+ * @param {{includeData?:boolean}} [opts]
  */
-export async function queryText(text, topK = 6) {
-  const res = await index().query({ data: text, topK, includeMetadata: true });
-  return (res || []).map((m) => ({ id: m.id, score: m.score, ...m.metadata }));
+export async function queryText(text, topK = 6, { includeData = false } = {}) {
+  const res = await index().query({ data: text, topK, includeMetadata: true, includeData });
+  return (res || []).map((m) => ({
+    id: m.id,
+    score: m.score,
+    ...m.metadata,
+    ...(includeData ? { text: m.data || "" } : {}),
+  }));
 }
 
 /** Delete all chunks for a source item (used on re-index/update). */
