@@ -30,4 +30,17 @@ describe("buildChatPrompt", () => {
     expect(messages[0].content).toMatch(/no .*context|nothing in the archive/i);
     expect(messages[0].content).toContain("who won bb99?");
   });
+
+  it("carries prior within-session turns before the new message", () => {
+    const history = [
+      { role: "user", content: "hey Steve" },
+      { role: "assistant", content: "Good evening, everyone!" },
+    ];
+    const { messages } = buildChatPrompt("who won bb14?", MATCHES, history);
+    expect(messages).toHaveLength(3);
+    expect(messages[0]).toEqual({ role: "user", content: "hey Steve" });
+    expect(messages[1]).toEqual({ role: "assistant", content: "Good evening, everyone!" });
+    expect(messages[2].role).toBe("user");
+    expect(messages[2].content).toContain("who won bb14?");
+  });
 });

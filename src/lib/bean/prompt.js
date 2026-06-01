@@ -12,12 +12,15 @@ function formatSource(m, i) {
 /**
  * Build the Anthropic Messages payload pieces for one chat turn.
  * The Voice Guide rides in a cached system block (static → cheap on repeat calls);
- * the per-query context goes in the user turn (dynamic → not cached).
- * @param {string} question  the fan's message
+ * the per-query context goes in the latest user turn (dynamic → not cached).
+ * Prior within-session turns ride along as plain history so the Bean can hold a
+ * conversation (this is NOT the premium cross-session memory — just the open chat).
+ * @param {string} question  the fan's newest message
  * @param {Array<{type,title,url,date,text}>} matches  retrieved grounding (may be empty)
+ * @param {Array<{role:'user'|'assistant',content:string}>} history  prior turns this session
  * @returns {{ system: Array, messages: Array }}
  */
-export function buildChatPrompt(question, matches = []) {
+export function buildChatPrompt(question, matches = [], history = []) {
   const system = [
     { type: "text", text: VOICE_GUIDE, cache_control: { type: "ephemeral" } },
   ];
@@ -35,5 +38,5 @@ export function buildChatPrompt(question, matches = []) {
     `${guidance}\n\n` +
     `FAN'S MESSAGE: ${question}`;
 
-  return { system, messages: [{ role: "user", content }] };
+  return { system, messages: [...history, { role: "user", content }] };
 }
