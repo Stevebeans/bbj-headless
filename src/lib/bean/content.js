@@ -1,14 +1,14 @@
+import { decodeHtml } from "../utils/decodeHtml.js";
+
 const WP = process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
 export function stripHtml(html) {
-  return (html || "")
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#0?39;|&rsquo;|&apos;/g, "'")
-    .replace(/&quot;|&ldquo;|&rdquo;/g, '"')
-    .replace(/\s+/g, " ").trim();
+  return decodeHtml(
+    (html || "")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+  ).replace(/\s+/g, " ").trim();
 }
 
 export function toRelative(link) {

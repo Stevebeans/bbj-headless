@@ -6,6 +6,12 @@ describe("content helpers", () => {
     expect(stripHtml("<p>Hello&amp; <b>world</b></p>")).toBe("Hello& world");
   });
 
+  it("stripHtml decodes numeric entities (en-dash, curly apostrophe)", () => {
+    expect(stripHtml("BB28 &#8211; Steve&#8217;s Picks")).toBe(
+      "BB28 – Steve’s Picks"
+    );
+  });
+
   it("normalizePost maps a WP REST post to the chunker shape", () => {
     const wp = {
       id: 73683, date: "2026-05-20T10:00:00",
