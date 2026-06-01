@@ -5,7 +5,7 @@ import { verifyAuth } from "@/lib/api/verifyAuth";
 import { resolvePersona } from "@/lib/bean/persona";
 import { retrieve } from "@/lib/bean/retrieve";
 import { buildChatPrompt } from "@/lib/bean/prompt";
-import { buildAnswerCard, cardFacts } from "@/lib/bean/cards";
+import { buildAnswerCard, buildPlayerCard, cardFacts } from "@/lib/bean/cards";
 import { sseEvent } from "@/lib/bean/sse";
 
 export const runtime = "nodejs"; // needs the SDK + env, not edge
@@ -40,10 +40,12 @@ export async function POST(request) {
 
   // 3. Persona (seam for a future private persona) + grounding + prompt.
   const { guide } = resolvePersona(user);
-  const [matches, card] = await Promise.all([
+  const [matches, seasonCard] = await Promise.all([
     retrieve(question, { withText: true }),
     buildAnswerCard(question), // structured card for explicit season/week questions
   ]);
+  // Season/week card wins; otherwise try a player card from the top player match.
+  const card = seasonCard || (await buildPlayerCard(question, matches));
   // If we have a structured card, inject its verified facts as top-priority grounding
   // so the prose answer matches the card (and never hedges on facts we actually have).
   const grounding = card

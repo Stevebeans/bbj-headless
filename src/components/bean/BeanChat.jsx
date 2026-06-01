@@ -25,6 +25,43 @@ const SUGGESTIONS = [
 
 function AnswerCard({ card }) {
   if (!card) return null;
+
+  if (card.kind === "player") {
+    return (
+      <div className="bcard">
+        <div className="bc-hg">
+          <div className="portrait">
+            {card.photo ? <img src={card.photo} alt="" /> : <span className="ini">{card.initial}</span>}
+          </div>
+          <div className="info">
+            <div className="nm">{card.name}</div>
+            {card.sub && <div className="sub">{card.sub}</div>}
+            {card.tags?.length > 0 && (
+              <div className="tags">
+                {card.tags.map((t, i) => (
+                  <span key={i} className={"t " + (t.cls || "")}>{t.label}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="bc-stats">
+          {card.stats.map((s, i) => (
+            <div key={i} className={"s " + (s.cls || "")}>
+              <div className="n">{s.n}</div>
+              <div className="k">{s.k}</div>
+            </div>
+          ))}
+        </div>
+        {card.url && (
+          <a className="bcard-link" href={card.url}>
+            Full profile →
+          </a>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="bcard">
       <div className="bc-h">

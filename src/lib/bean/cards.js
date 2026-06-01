@@ -87,9 +87,91 @@ export async function buildAnswerCard(question) {
   }
 }
 
+/* ============================================================
+   PLAYER CARDS — identified via the top retrieved player match
+   ============================================================ */
+
+/** Map a player status to a tag color class. */
+function statusCls(status) {
+  if (status === "winner") return "win";
+  if (status === "runner_up") return "ru";
+  if (status === "afp") return "afp";
+  if (status === "jury") return "jury";
+  return "";
+}
+
+/**
+ * Is this player clearly named in the question? Avoids spurious cards from
+ * short common first names ("Will", "Amy") — needs the full name or a token ≥5.
+ */
+export function playerNamedIn(name, question) {
+  const q = (question || "").toLowerCase();
+  const full = (name || "").toLowerCase();
+  if (full.length >= 5 && q.includes(full)) return true;
+  return (name || "")
+    .toLowerCase()
+    .split(/\s+/)
+    .some((tok) => tok.length >= 5 && new RegExp(`\\b${tok.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(q));
+}
+
+/** Shape a player detail record into a card (uses safe career aggregates). */
+export function shapePlayerCard(p) {
+  const s = p.stats || {};
+  const hoh = s.total_hoh ?? s.hoh ?? 0;
+  const pov = s.total_pov ?? s.pov ?? 0;
+  const nom = s.total_nom ?? s.nom ?? 0;
+  const days = s.total_days ?? 0;
+  const seasonsN = s.total_seasons ?? (Array.isArray(p.seasons) ? p.seasons.length : 0);
+  const tags = [];
+  if (seasonsN) tags.push({ label: `${seasonsN} season${seasonsN > 1 ? "s" : ""}`, cls: "" });
+  if (p.status_label) tags.push({ label: p.status_label, cls: statusCls(p.status) });
+  return {
+    kind: "player",
+    name: p.name,
+    sub: [p.occupation, p.hometown].filter(Boolean).join(" · "),
+    photo: p.photo || "",
+    initial: (p.name || "?").trim().charAt(0).toUpperCase(),
+    tags,
+    stats: [
+      { k: "HoH", n: hoh, cls: "hoh" },
+      { k: "Veto", n: pov, cls: "pov" },
+      { k: "Noms", n: nom, cls: "nom" },
+      { k: "Days", n: days, cls: "" },
+    ],
+    url: p.permalink ? new URL(p.permalink).pathname : "",
+  };
+}
+
+/**
+ * Build a player card from retrieved matches: take the top player match, confirm
+ * the player is actually named in the question, then fetch their full record.
+ * @param {string} question
+ * @param {Array} matches  retrieve() results (have type/title/url)
+ */
+export async function buildPlayerCard(question, matches = []) {
+  const hit = matches.find((m) => m.type === "player" && m.title && m.url);
+  if (!hit || !playerNamedIn(hit.title, question)) return null;
+  const slug = hit.url.split("/").filter(Boolean).pop();
+  if (!slug) return null;
+  try {
+    const p = await fetch(`${WP}/bbjd/v1/players/${slug}`).then((r) => (r.ok ? r.json() : null));
+    const player = p?.player || p;
+    if (!player?.name) return null;
+    return shapePlayerCard(player);
+  } catch {
+    return null;
+  }
+}
+
 /** Flatten a card into a plain facts string to ground the model's prose answer. */
 export function cardFacts(card) {
   if (!card) return "";
+  if (card.kind === "player") {
+    const parts = [`${card.name}${card.sub ? ` — ${card.sub}` : ""}.`];
+    if (card.tags?.length) parts.push(`${card.tags.map((t) => t.label).join(", ")}.`);
+    parts.push(`Competition stats: ${card.stats.map((s) => `${s.n} ${s.k}`).join(", ")}.`);
+    return parts.join(" ");
+  }
   const parts = [`${card.title}${card.sub ? ` (${card.sub})` : ""}.`];
   for (const r of card.rows) if (r.names.length) parts.push(`${r.lab}: ${r.names.join(", ")}.`);
   if (card.evicted?.length) parts.push(`Evicted: ${card.evicted.join(", ")}.`);
