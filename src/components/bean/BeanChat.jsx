@@ -23,6 +23,42 @@ const SUGGESTIONS = [
   { tag: "Hang", cls: "help", qt: "How was your day, Steve?", qs: "Just here to chat", q: "How was your day, Steve?" },
 ];
 
+function AnswerCard({ card }) {
+  if (!card) return null;
+  return (
+    <div className="bcard">
+      <div className="bc-h">
+        <span className="k">{card.kind === "week" ? "Result" : "Season"}</span>
+        <span className="title">{card.title}</span>
+        <span className="spacer" />
+        {card.sub && <span className="wk">{card.sub}</span>}
+      </div>
+      <div className="bc-week">
+        {card.rows.map((r, i) => {
+          const joined = r.names.join(", ");
+          const cls = !joined ? "name empty" : joined.length > 14 || r.names.length > 1 ? "name sm" : "name";
+          return (
+            <div key={i} className={"slot " + r.cls}>
+              <div className="lab">{r.lab}</div>
+              <div className={cls}>{joined || "—"}</div>
+            </div>
+          );
+        })}
+      </div>
+      {card.evicted?.length > 0 && (
+        <div className="bc-evicted">
+          Evicted<b>{card.evicted.join(", ")}</b>
+        </div>
+      )}
+      {card.url && (
+        <a className="bcard-link" href={card.url}>
+          Full season →
+        </a>
+      )}
+    </div>
+  );
+}
+
 function BeanRow({ m }) {
   return (
     <div className="bean-row">
@@ -38,6 +74,7 @@ function BeanRow({ m }) {
           {m.text}
           {m.streaming && <span className="bean-caret" />}
         </div>
+        {m.card && <AnswerCard card={m.card} />}
         {!m.streaming && m.sources?.length > 0 && (
           <div className="bean-sources">
             <span>Sources</span>
@@ -91,7 +128,7 @@ function ThinkingRow() {
 export default function BeanChat() {
   const { user } = useAuth();
   const { openLogin } = useAuthModal();
-  const [msgs, setMsgs] = useState([]); // {role:'user'|'bean', text, sources?, pose?, streaming?}
+  const [msgs, setMsgs] = useState([]); // {role:'user'|'bean', text, sources?, pose?, card?, streaming?}
   const [thinking, setThinking] = useState(false);
   const [val, setVal] = useState("");
   const taRef = useRef(null);
@@ -137,6 +174,10 @@ export default function BeanChat() {
         onSources: (sources) => {
           setThinking(false);
           ensureBean((b) => ({ sources }));
+        },
+        onCard: (card) => {
+          setThinking(false);
+          ensureBean((b) => ({ card }));
         },
         onDelta: (t) => {
           setThinking(false);

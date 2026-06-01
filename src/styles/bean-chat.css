@@ -331,6 +331,144 @@
   color: var(--accent-ink);
 }
 
+/* ---- rich answer cards ---- */
+.bean-app .bcard {
+  margin-top: 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.bean-app .bcard .bc-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--paper-2);
+  border-bottom: 1px solid var(--line);
+}
+.bean-app .bcard .bc-h .k {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.bean-app .bcard .bc-h .title {
+  font-family: var(--display);
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 600;
+}
+.bean-app .bcard .bc-h .spacer {
+  flex: 1;
+}
+.bean-app .bcard .bc-h .wk {
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.bean-app .bc-week {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.bean-app .bc-week .slot {
+  padding: 14px;
+  text-align: center;
+  border-right: 1px solid var(--line);
+  position: relative;
+}
+.bean-app .bc-week .slot:last-child {
+  border-right: 0;
+}
+.bean-app .bc-week .slot::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+.bean-app .bc-week .slot.hoh::before {
+  background: var(--bb-yellow);
+}
+.bean-app .bc-week .slot.pov::before {
+  background: var(--bb-green);
+}
+.bean-app .bc-week .slot.nom::before {
+  background: var(--bb-red);
+}
+.bean-app .bc-week .lab {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.bean-app .bc-week .name {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  line-height: 1.15;
+}
+.bean-app .bc-week .name.sm {
+  font-size: 13.5px;
+}
+.bean-app .bc-week .name.empty {
+  color: var(--muted);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  font-weight: 400;
+}
+.bean-app .bc-evicted {
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bean-app .bc-evicted b {
+  font-family: var(--display);
+  font-size: 13px;
+  color: var(--bb-red);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 5px;
+  font-weight: 600;
+}
+.bean-app a.bcard-link {
+  display: block;
+  padding: 9px 14px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.bean-app a.bcard-link:hover {
+  background: var(--accent-soft);
+}
+@media (max-width: 640px) {
+  .bean-app .bc-week .name {
+    font-size: 15px;
+  }
+}
+
 /* ---- composer ---- */
 .bean-app .bean-composer {
   display: flex;

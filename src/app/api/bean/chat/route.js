@@ -5,6 +5,7 @@ import { verifyAuth } from "@/lib/api/verifyAuth";
 import { resolvePersona } from "@/lib/bean/persona";
 import { retrieve } from "@/lib/bean/retrieve";
 import { buildChatPrompt } from "@/lib/bean/prompt";
+import { buildAnswerCard, cardFacts } from "@/lib/bean/cards";
 import { sseEvent } from "@/lib/bean/sse";
 
 export const runtime = "nodejs"; // needs the SDK + env, not edge
@@ -39,8 +40,16 @@ export async function POST(request) {
 
   // 3. Persona (seam for a future private persona) + grounding + prompt.
   const { guide } = resolvePersona(user);
-  const matches = await retrieve(question, { withText: true });
-  const { system, messages } = buildChatPrompt(question, matches, history, guide);
+  const [matches, card] = await Promise.all([
+    retrieve(question, { withText: true }),
+    buildAnswerCard(question), // structured card for explicit season/week questions
+  ]);
+  // If we have a structured card, inject its verified facts as top-priority grounding
+  // so the prose answer matches the card (and never hedges on facts we actually have).
+  const grounding = card
+    ? [{ type: "season", title: card.title, url: card.url, text: cardFacts(card) }, ...matches]
+    : matches;
+  const { system, messages } = buildChatPrompt(question, grounding, history, guide);
   const sources = matches.map((m) => ({ title: m.title, url: m.url, type: m.type }));
 
   // 4. Stream the answer as SSE.
@@ -51,6 +60,7 @@ export async function POST(request) {
       const send = (o) => controller.enqueue(encoder.encode(sseEvent(o)));
       try {
         send({ type: "sources", sources });
+        if (card) send({ type: "card", card });
         const ai = client.messages.stream({ model: MODEL, max_tokens: 1024, system, messages });
         ai.on("text", (t) => send({ type: "delta", text: t }));
         await ai.finalMessage();
