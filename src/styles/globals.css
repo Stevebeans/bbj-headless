@@ -272,6 +272,36 @@
     @apply text-emerald-600 border-emerald-600 dark:text-emerald-400 dark:border-emerald-400;
   }
 
+  /* Ask the Bean — chat */
+  .bean-rise {
+    animation: bean-rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes bean-rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .bean-dot {
+    animation: bean-dot 1.2s ease-in-out infinite;
+  }
+  @keyframes bean-dot {
+    0%,
+    60%,
+    100% {
+      opacity: 0.25;
+      transform: translateY(0);
+    }
+    30% {
+      opacity: 1;
+      transform: translateY(-3px);
+    }
+  }
+
   .bbj-status-strip {
     @apply bg-gray-900 dark:bg-black border-b border-gray-700 text-white;
   }
