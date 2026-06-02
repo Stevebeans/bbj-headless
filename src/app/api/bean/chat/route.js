@@ -52,7 +52,13 @@ export async function POST(request) {
     ? [{ type: "season", title: card.title, url: card.url, text: cardFacts(card) }, ...matches]
     : matches;
   const { system, messages } = buildChatPrompt(question, grounding, history, guide);
-  const sources = matches.map((m) => ({ title: m.title, url: m.url, type: m.type }));
+  // Only cite sources when retrieval is actually confident the content is on-point —
+  // keeps source pills off casual chit-chat ("how was your day").
+  const SOURCE_MIN_SCORE = 0.82;
+  const sources =
+    (matches[0]?.score ?? 0) >= SOURCE_MIN_SCORE
+      ? matches.map((m) => ({ title: m.title, url: m.url, type: m.type }))
+      : [];
 
   // 4. Stream the answer as SSE.
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

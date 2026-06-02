@@ -215,7 +215,8 @@ export default function BeanChat() {
         },
         onCard: (card) => {
           setThinking(false);
-          ensureBean((b) => ({ card }));
+          // Mood: when the Bean has the receipts (a data card), he's confident.
+          ensureBean((b) => ({ card, pose: BEAN.thumb }));
         },
         onDelta: (t) => {
           setThinking(false);
