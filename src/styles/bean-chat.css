@@ -26,9 +26,11 @@
   --on-accent: #ffffff;
   --accent-soft: #e7edf3;
   --accent-ink: #233c52;
+}
 
-  /* Boxed panel: contained to the site content width, sitting on the site beige
-     like the home-page cards (rather than bleeding full-width). */
+/* Page variant: boxed panel contained to site width, sitting on the site beige
+   like the home-page cards (rather than bleeding full-width). */
+.bean-app.is-page {
   background: radial-gradient(90% 40% at 50% 0%, rgba(53, 84, 110, 0.05), transparent 62%), var(--paper);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -871,5 +873,275 @@
   }
   .bean-app .bean-row {
     max-width: 100%;
+  }
+}
+
+/* ===========================================================
+   FLOATING LAUNCHER + DOCKED WIDGET (Phase 2)
+   The launcher wrapper carries .bean-app so the tokens cascade;
+   fixed children position to the viewport.
+   =========================================================== */
+.bean-app .bean-launcher {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 60;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--accent), var(--accent-dk));
+  box-shadow: 0 12px 26px -8px rgba(20, 24, 30, 0.5);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border: 0;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1.2), box-shadow 0.18s;
+}
+.bean-app .bean-launcher:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 30px -8px rgba(20, 24, 30, 0.55);
+}
+.bean-app .bean-launcher:active {
+  transform: translateY(0) scale(0.96);
+}
+.bean-app .bean-launcher img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+.bean-app .bean-launcher.hidden {
+  opacity: 0;
+  transform: scale(0.6) translateY(10px);
+  pointer-events: none;
+}
+
+/* teaser speech bubble above the button */
+.bean-app .bean-teaser {
+  position: fixed;
+  bottom: 100px;
+  right: 24px;
+  z-index: 60;
+  width: 248px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px 14px 4px 14px;
+  box-shadow: 0 14px 30px -12px rgba(20, 24, 30, 0.45);
+  padding: 13px 14px;
+  animation: bean-rowin 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.1) both;
+}
+.bean-app .bean-teaser b {
+  display: block;
+  font-family: var(--display);
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.bean-app .bean-teaser p {
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.bean-app .bean-teaser .dismiss {
+  display: block;
+  margin-top: 9px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.bean-app .bean-teaser .dismiss:hover {
+  color: var(--accent-ink);
+}
+.bean-app .bean-teaser .x {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1;
+}
+.bean-app .bean-teaser .x:hover {
+  color: var(--ink);
+}
+
+/* docked panel */
+.bean-app .bean-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 61;
+  width: 392px;
+  max-width: calc(100vw - 32px);
+  height: 600px;
+  max-height: calc(100vh - 48px);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 26px 60px -16px rgba(20, 24, 30, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform-origin: bottom right;
+  animation: bean-widgetin 0.26s cubic-bezier(0.2, 0.8, 0.3, 1.1);
+}
+@keyframes bean-widgetin {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.bean-app .bw-head {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dk));
+  color: var(--on-accent);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  position: relative;
+  overflow: hidden;
+  flex: none;
+}
+.bean-app .bw-head::before {
+  content: "";
+  position: absolute;
+  top: -30px;
+  right: 40px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+.bean-app .bw-head .av {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  display: grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+}
+.bean-app .bw-head .av img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.bean-app .bw-head .ttl {
+  line-height: 1.15;
+  position: relative;
+}
+.bean-app .bw-head .ttl b {
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-weight: 600;
+  display: block;
+}
+.bean-app .bw-head .ttl small {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  opacity: 0.85;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 1px;
+}
+.bean-app .bw-head .ttl small::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5be59a;
+}
+.bean-app .bw-head .x {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--on-accent);
+  display: grid;
+  place-items: center;
+  opacity: 0.85;
+  position: relative;
+}
+.bean-app .bw-head .x:hover {
+  background: rgba(255, 255, 255, 0.16);
+  opacity: 1;
+}
+.bean-app .bw-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 14px;
+  scrollbar-width: thin;
+}
+.bean-app .bw-body .bean-row {
+  max-width: 100%;
+  gap: 9px;
+}
+.bean-app .bw-body .bean-av {
+  width: 36px;
+  height: 36px;
+}
+.bean-app .bw-body .bubble {
+  font-size: 14.5px;
+  padding: 11px 13px;
+}
+.bean-app .bw-body .bean-hero {
+  padding: 10px 0 4px;
+}
+.bean-app .bw-body .bean-hero .mascot {
+  width: 96px;
+  height: 96px;
+}
+.bean-app .bw-body .bean-hero h1 {
+  font-size: 30px;
+}
+.bean-app .bw-body .bean-hero .dek {
+  font-size: 13px;
+  margin-top: 8px;
+}
+.bean-app .bw-body .suggest-grid {
+  grid-template-columns: 1fr;
+}
+.bean-app .bw-foot {
+  flex: none;
+  padding: 11px 12px;
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+.bean-app .bw-foot .bean-send {
+  width: 38px;
+  height: 38px;
+}
+.bean-app .bw-foot .composer-note {
+  margin-top: 7px;
+}
+
+@media (max-width: 480px) {
+  .bean-app .bean-widget {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    bottom: 0;
+    right: 0;
+    border-radius: 0;
+  }
+  .bean-app .bean-teaser {
+    right: 16px;
+    bottom: 96px;
   }
 }

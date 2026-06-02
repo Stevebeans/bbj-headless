@@ -8,6 +8,7 @@ import { ThemeScript } from "@/components/layout/ThemeScript";
 import { Providers } from "@/components/Providers";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
 import { BackToTop } from "@/components/layout/BackToTop";
+import BeanLauncher from "@/components/bean/BeanLauncher";
 import NewPostFAB from "@/components/editor/NewPostFAB";
 import { getAdScripts } from "@/lib/api/ads";
 import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
@@ -177,6 +178,7 @@ export default async function RootLayout({ children }) {
             <NewPostFAB />
           </div>
           <BackToTop />
+          <BeanLauncher />
           <FreestarSDKLoader />
         </Providers>
         {/* Global scripts - deferred to not block rendering (analytics, etc.) */}

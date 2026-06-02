@@ -163,20 +163,27 @@ function ThinkingRow() {
   );
 }
 
-export default function BeanChat() {
+export default function BeanChat({ variant = "page", onClose }) {
   const { user } = useAuth();
   const { openLogin } = useAuthModal();
   const [msgs, setMsgs] = useState([]); // {role:'user'|'bean', text, sources?, pose?, card?, streaming?}
   const [thinking, setThinking] = useState(false);
   const [val, setVal] = useState("");
   const taRef = useRef(null);
+  const bodyRef = useRef(null); // widget scroll container
   const answerCount = useRef(0);
   const started = msgs.length > 0;
   const busy = thinking || msgs[msgs.length - 1]?.streaming;
 
   useEffect(() => {
-    requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
-  }, [msgs, thinking]);
+    requestAnimationFrame(() => {
+      if (variant === "widget" && bodyRef.current) {
+        bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+      } else if (variant === "page") {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      }
+    });
+  }, [msgs, thinking, variant]);
 
   const ask = useCallback(
     async (text) => {
@@ -256,7 +263,7 @@ export default function BeanChat() {
     answerCount.current = 0;
   }
 
-  const Composer = (
+  const composer = (
     <div>
       {user ? (
         <div className="bean-composer">
@@ -283,13 +290,77 @@ export default function BeanChat() {
         </button>
       )}
       <div className="composer-note">
-        The Bean can be wrong — he&rsquo;s a very confident legume. <b>Double-check the big stuff.</b>
+        The Bean can be wrong, he&rsquo;s a very confident legume. <b>Double-check the big stuff.</b>
       </div>
     </div>
   );
 
+  const welcome = (
+    <div className="bean-hero">
+      <div className="mascot">
+        <img src={BEAN.wave} alt="Ask the Bean mascot" />
+      </div>
+      {variant === "page" && <span className="eyebrow">An AI version of Steve</span>}
+      <h1>
+        Ask the <span className="b">Bean</span>
+      </h1>
+      <p className="dek">
+        Chat Big Brother with an AI version of me. Spicy takes, deep house history, real player stats. Opinions are mine,
+        facts come from the archive, never made up. Pull up a chair.
+      </p>
+      <div className="suggest">
+        <div className="sh">Try asking</div>
+        <div className="suggest-grid">
+          {SUGGESTIONS.map((s, i) => (
+            <button key={i} className="qcard" onClick={() => ask(s.q)}>
+              <span className={"tag " + s.cls}>{s.tag}</span>
+              <span>
+                <span className="qt">{s.qt}</span>
+                <span className="qs">{s.qs}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const thread = (
+    <div className="bean-thread">
+      {msgs.map((m, i) => (m.role === "user" ? <UserRow key={i} m={m} /> : <BeanRow key={i} m={m} />))}
+      {thinking && <ThinkingRow />}
+    </div>
+  );
+
+  // ---- Docked widget (floating launcher) ----
+  if (variant === "widget") {
+    return (
+      <>
+        <div className="bw-head">
+          <span className="av">
+            <img src={BEAN.wave} alt="" />
+          </span>
+          <div className="ttl">
+            <b>Steve Beans</b>
+            <small>Online · AI</small>
+          </div>
+          <button className="x" onClick={onClose} aria-label="Close chat">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+        <div className="bw-body" ref={bodyRef}>
+          {!started ? welcome : thread}
+        </div>
+        <div className="bw-foot">{composer}</div>
+      </>
+    );
+  }
+
+  // ---- Full page ----
   return (
-    <div className="bean-app" data-accent="blue">
+    <div className="bean-app is-page" data-accent="blue">
       <div className="bean-cap">
         <span className="badge">
           <span className="d" />
@@ -302,33 +373,7 @@ export default function BeanChat() {
 
       <div className="bean-page">
         {!started ? (
-          <div className="bean-hero">
-            <div className="mascot">
-              <img src={BEAN.wave} alt="Ask the Bean mascot" />
-            </div>
-            <span className="eyebrow">An AI version of Steve</span>
-            <h1>
-              Ask the <span className="b">Bean</span>
-            </h1>
-            <p className="dek">
-              Chat Big Brother with an AI version of me — spicy takes, deep house history, real player stats. Opinions are
-              mine; facts come from the archive, never made up. Pull up a chair.
-            </p>
-            <div className="suggest">
-              <div className="sh">Try asking</div>
-              <div className="suggest-grid">
-                {SUGGESTIONS.map((s, i) => (
-                  <button key={i} className="qcard" onClick={() => ask(s.q)}>
-                    <span className={"tag " + s.cls}>{s.tag}</span>
-                    <span>
-                      <span className="qt">{s.qt}</span>
-                      <span className="qs">{s.qs}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          welcome
         ) : (
           <div className="bean-convo">
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
@@ -336,14 +381,11 @@ export default function BeanChat() {
                 ↺ New chat
               </button>
             </div>
-            <div className="bean-thread">
-              {msgs.map((m, i) => (m.role === "user" ? <UserRow key={i} m={m} /> : <BeanRow key={i} m={m} />))}
-              {thinking && <ThinkingRow />}
-            </div>
+            {thread}
           </div>
         )}
 
-        <div className="bean-composer-dock">{Composer}</div>
+        <div className="bean-composer-dock">{composer}</div>
       </div>
     </div>
   );
