@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { streamBeanChat } from "@/lib/api/bean";
+import { humanize } from "@/lib/bean/humanize";
 
 const BEAN = {
   wave: "/bean/bean-wave.png",
@@ -108,7 +109,7 @@ function BeanRow({ m }) {
           <span className="verified">✦ AI</span>
         </div>
         <div className="bubble">
-          {m.text}
+          {humanize(m.text)}
           {m.streaming && <span className="bean-caret" />}
         </div>
         {m.card && <AnswerCard card={m.card} />}
