@@ -132,10 +132,12 @@ function BeanRow({ m }) {
   );
 }
 
-function UserRow({ m }) {
+function UserRow({ m, avatar, initial }) {
   return (
     <div className="bean-row from-user">
-      <span className="bean-av user">You</span>
+      <span className="bean-av user">
+        {avatar ? <img src={avatar} alt="You" /> : initial || "You"}
+      </span>
       <div className="bean-stack">
         <div className="bubble">{m.text}</div>
       </div>
@@ -174,6 +176,11 @@ export default function BeanChat({ variant = "page", onClose }) {
   const answerCount = useRef(0);
   const started = msgs.length > 0;
   const busy = thinking || msgs[msgs.length - 1]?.streaming;
+  const userAvatar = user?.avatar || user?.user_avatar || "";
+  const userInitial = (user?.user_display_name || user?.display_name || user?.name || "")
+    .trim()
+    .charAt(0)
+    .toUpperCase();
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -327,7 +334,13 @@ export default function BeanChat({ variant = "page", onClose }) {
 
   const thread = (
     <div className="bean-thread">
-      {msgs.map((m, i) => (m.role === "user" ? <UserRow key={i} m={m} /> : <BeanRow key={i} m={m} />))}
+      {msgs.map((m, i) =>
+        m.role === "user" ? (
+          <UserRow key={i} m={m} avatar={userAvatar} initial={userInitial} />
+        ) : (
+          <BeanRow key={i} m={m} />
+        )
+      )}
       {thinking && <ThinkingRow />}
     </div>
   );
