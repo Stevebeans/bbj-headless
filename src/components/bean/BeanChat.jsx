@@ -5,6 +5,49 @@ import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { streamBeanChat } from "@/lib/api/bean";
 import { humanize } from "@/lib/bean/humanize";
+import { UPGRADE_URL } from "@/lib/bean/tiers";
+
+const UPSELL_OFFERS = {
+  full_bean: {
+    name: "Full Bean",
+    price: "$14.99/mo",
+    blurb: "The smarter me (no limits), and I actually remember our conversations.",
+    cta: "Go Full Bean",
+    primary: true,
+  },
+  supporter: {
+    name: "Supporter",
+    price: "$6.95/mo",
+    blurb: "Ad-free, plus way more daily chats with me.",
+    cta: "Become a Supporter",
+  },
+};
+
+function UpsellCard({ tier }) {
+  const offers = tier === "supporter" ? ["full_bean"] : ["full_bean", "supporter"];
+  return (
+    <div className="bean-upsell">
+      <div className="uh">Keep it going 🫘</div>
+      {offers.map((k) => {
+        const o = UPSELL_OFFERS[k];
+        return (
+          <div className="opt" key={k}>
+            <div className="info">
+              <b>
+                {o.name} · {o.price}
+              </b>
+              <small>{o.blurb}</small>
+            </div>
+            <a className={"cta" + (o.primary ? " primary" : "")} href={UPGRADE_URL}>
+              {o.cta}
+            </a>
+          </div>
+        );
+      })}
+      <div className="note">A friendly exchange. I promise not to nominate you if I win HoH. 🤝</div>
+    </div>
+  );
+}
 
 const BEAN = {
   wave: "/bean/bean-wave.png",
@@ -113,6 +156,7 @@ function BeanRow({ m }) {
           {m.streaming && <span className="bean-caret" />}
         </div>
         {m.card && <AnswerCard card={m.card} />}
+        {m.upsell && <UpsellCard tier={m.upsell.tier} />}
         {!m.streaming && m.sources?.length > 0 && (
           <div className="bean-sources">
             <span>Sources</span>
@@ -171,6 +215,7 @@ export default function BeanChat({ variant = "page", onClose }) {
   const [msgs, setMsgs] = useState([]); // {role:'user'|'bean', text, sources?, pose?, card?, streaming?}
   const [thinking, setThinking] = useState(false);
   const [val, setVal] = useState("");
+  const [quota, setQuota] = useState(null); // { remaining, cap, tier } once metering is live
   const taRef = useRef(null);
   const scrollRef = useRef(null); // internal scroll container (page + widget)
   const answerCount = useRef(0);
@@ -229,6 +274,11 @@ export default function BeanChat({ variant = "page", onClose }) {
           // Mood: when the Bean has the receipts (a data card), he's confident.
           ensureBean((b) => ({ card, pose: BEAN.thumb }));
         },
+        onCapped: (e) => {
+          setThinking(false);
+          ensureBean((b) => ({ upsell: { tier: e.tier } }));
+        },
+        onQuota: (e) => setQuota({ remaining: e.remaining, cap: e.cap, tier: e.tier }),
         onDelta: (t) => {
           setThinking(false);
           ensureBean((b) => ({ text: b.text + t }));
@@ -292,6 +342,17 @@ export default function BeanChat({ variant = "page", onClose }) {
         <button className="bean-gate" onClick={openLogin}>
           Log in to chat with Steve
         </button>
+      )}
+      {quota?.remaining != null && (
+        <div className="bean-quota">
+          <b>{quota.remaining}</b> message{quota.remaining === 1 ? "" : "s"} left today
+          {quota.remaining <= 2 && quota.tier !== "full_bean" && (
+            <>
+              {" · "}
+              <a href={UPGRADE_URL}>want more?</a>
+            </>
+          )}
+        </div>
       )}
       <div className="composer-note">
         The Bean can be wrong, he&rsquo;s a very confident legume. <b>Double-check the big stuff.</b>

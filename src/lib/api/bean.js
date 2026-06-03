@@ -55,6 +55,8 @@ export async function streamBeanChat(question, history, cb = {}, signal) {
     for (const e of events) {
       if (e.type === "sources") cb.onSources?.(e.sources);
       else if (e.type === "card") cb.onCard?.(e.card);
+      else if (e.type === "capped") cb.onCapped?.(e);
+      else if (e.type === "quota") cb.onQuota?.(e);
       else if (e.type === "delta") cb.onDelta?.(e.text);
       else if (e.type === "done") cb.onDone?.();
       else if (e.type === "error") cb.onError?.(e.message);

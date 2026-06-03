@@ -1,19 +1,79 @@
 // src/app/api/bean/chat/route.js
-// Ask the Bean — login-gated streaming chat endpoint (MVP, stateless).
+// Ask the Bean — login-gated streaming chat endpoint with tier-based metering.
 import Anthropic from "@anthropic-ai/sdk";
+import { cookies } from "next/headers";
 import { verifyAuth } from "@/lib/api/verifyAuth";
 import { resolvePersona } from "@/lib/bean/persona";
 import { retrieve } from "@/lib/bean/retrieve";
 import { buildChatPrompt } from "@/lib/bean/prompt";
 import { buildAnswerCard, buildPlayerCard, cardFacts } from "@/lib/bean/cards";
 import { pacificNowLabel } from "@/lib/bean/time";
+import { modelForTier, cappedMessage } from "@/lib/bean/tiers";
 import { sseEvent } from "@/lib/bean/sse";
 
 export const runtime = "nodejs"; // needs the SDK + env, not edge
-export const dynamic = "force-dynamic"; // per-user, auth-gated — never cached (Bean is always dynamic)
+export const dynamic = "force-dynamic"; // per-user, auth-gated — never cached
 
-const MODEL = "claude-haiku-4-5-20251001"; // MVP = free tier (Haiku); tiering is Phase 2
+const WP = process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 const MAX_HISTORY = 20; // trust at most this many prior turns from the client
+const SSE_HEADERS = {
+  "Content-Type": "text/event-stream; charset=utf-8",
+  "Cache-Control": "no-cache, no-transform",
+  Connection: "keep-alive",
+};
+
+async function getToken(request) {
+  const header = request.headers.get("Authorization");
+  if (header?.startsWith("Bearer ")) return header.slice(7);
+  try {
+    return (await cookies()).get("bbj_token")?.value || null;
+  } catch {
+    return null;
+  }
+}
+
+// Tier + remaining quota from the plugin. Degrades to free/allowed if the endpoint
+// isn't deployed yet, so the chat keeps working before the plugin ships.
+async function beanCheck(token) {
+  if (!token) return { tier: "free", allowed: true, remaining: null, cap: null };
+  try {
+    const res = await fetch(`${WP}/bbjd/v1/bean/check`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return { tier: "free", allowed: true, remaining: null, cap: null, _nometer: true };
+    return await res.json();
+  } catch {
+    return { tier: "free", allowed: true, remaining: null, cap: null, _nometer: true };
+  }
+}
+
+async function beanConsume(token) {
+  if (!token) return null;
+  try {
+    const res = await fetch(`${WP}/bbjd/v1/bean/consume`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+function sseStream(run) {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    async start(controller) {
+      const send = (o) => controller.enqueue(encoder.encode(sseEvent(o)));
+      try {
+        await run(send);
+      } catch (err) {
+        send({ type: "error", message: "Steve's taking a nap, try again 🫘" });
+        console.error("bean chat error:", err);
+      } finally {
+        controller.close();
+      }
+    },
+  });
+}
 
 export async function POST(request) {
   // 1. Login gate — no anonymous chat.
@@ -39,55 +99,56 @@ export async function POST(request) {
         .slice(-MAX_HISTORY)
     : [];
 
-  // 3. Persona (seam for a future private persona) + grounding + prompt.
+  // 3. Tier + quota check.
+  const token = await getToken(request);
+  const snap = await beanCheck(token);
+
+  // 3a. Capped — don't spend a model call; stream an in-voice nudge + upsell signal.
+  if (!snap.allowed) {
+    return new Response(
+      sseStream(async (send) => {
+        send({ type: "capped", tier: snap.tier, cap: snap.cap });
+        send({ type: "delta", text: cappedMessage(snap.tier) });
+        send({ type: "done" });
+      }),
+      { headers: SSE_HEADERS }
+    );
+  }
+
+  // 4. Persona + grounding + prompt (model tiered by plan).
   const { guide } = resolvePersona(user);
   const [matches, seasonCard] = await Promise.all([
     retrieve(question, { withText: true }),
-    buildAnswerCard(question), // structured card for explicit season/week questions
+    buildAnswerCard(question),
   ]);
-  // Season/week card wins; otherwise try a player card from the top player match.
   const card = seasonCard || (await buildPlayerCard(question, matches));
-  // If we have a structured card, inject its verified facts as top-priority grounding
-  // so the prose answer matches the card (and never hedges on facts we actually have).
   const grounding = card
     ? [{ type: "season", title: card.title, url: card.url, text: cardFacts(card) }, ...matches]
     : matches;
   const { system, messages } = buildChatPrompt(question, grounding, history, guide, pacificNowLabel());
-  // Only cite sources when retrieval is actually confident the content is on-point —
-  // keeps source pills off casual chit-chat ("how was your day").
   const SOURCE_MIN_SCORE = 0.82;
   const sources =
     (matches[0]?.score ?? 0) >= SOURCE_MIN_SCORE
       ? matches.map((m) => ({ title: m.title, url: m.url, type: m.type }))
       : [];
+  const model = modelForTier(snap.tier);
 
-  // 4. Stream the answer as SSE.
+  // 5. Stream the answer, then meter usage.
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (o) => controller.enqueue(encoder.encode(sseEvent(o)));
-      try {
-        send({ type: "sources", sources });
-        if (card) send({ type: "card", card });
-        const ai = client.messages.stream({ model: MODEL, max_tokens: 1024, system, messages });
-        ai.on("text", (t) => send({ type: "delta", text: t }));
-        await ai.finalMessage();
-        send({ type: "done" });
-      } catch (err) {
-        send({ type: "error", message: "Steve's taking a nap, try again 🫘" });
-        console.error("bean chat error:", err);
-      } finally {
-        controller.close();
+  return new Response(
+    sseStream(async (send) => {
+      send({ type: "sources", sources });
+      if (card) send({ type: "card", card });
+      const ai = client.messages.stream({ model, max_tokens: 1024, system, messages });
+      ai.on("text", (t) => send({ type: "delta", text: t }));
+      await ai.finalMessage();
+      // Record the message (only when metering is live) and report remaining quota.
+      if (!snap._nometer) {
+        const updated = await beanConsume(token);
+        if (updated) send({ type: "quota", tier: updated.tier, remaining: updated.remaining, cap: updated.cap });
       }
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-    },
-  });
+      send({ type: "done" });
+    }),
+    { headers: SSE_HEADERS }
+  );
 }
