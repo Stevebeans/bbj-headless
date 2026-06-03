@@ -228,6 +228,7 @@ export default function BeanChat({ variant = "page", onClose }) {
     .toUpperCase();
 
   useEffect(() => {
+    if (msgs.length === 0) return; // don't scroll the welcome screen out of view
     requestAnimationFrame(() => {
       const el = scrollRef.current;
       if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
