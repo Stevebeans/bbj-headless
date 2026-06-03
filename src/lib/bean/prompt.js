@@ -19,9 +19,10 @@ function formatSource(m, i) {
  * @param {Array<{type,title,url,date,text}>} matches  retrieved grounding (may be empty)
  * @param {Array<{role:'user'|'assistant',content:string}>} history  prior turns this session
  * @param {string} [guide]  the persona Voice Guide (defaults to public Steve Beans)
+ * @param {string} [now]  human label for the current time, e.g. "morning (Wednesday, 9:25 AM Pacific)"
  * @returns {{ system: Array, messages: Array }}
  */
-export function buildChatPrompt(question, matches = [], history = [], guide = VOICE_GUIDE) {
+export function buildChatPrompt(question, matches = [], history = [], guide = VOICE_GUIDE, now = null) {
   const system = [
     { type: "text", text: guide, cache_control: { type: "ephemeral" } },
   ];
@@ -34,7 +35,10 @@ export function buildChatPrompt(question, matches = [], history = [], guide = VO
     ? "The CONTEXT above is private background — the fan can't see it, so never mention it. Use it for factual claims, weave facts in as if you already knew them, and if it's irrelevant to what they said, ignore it and just talk."
     : "No background notes for this one. Don't invent site facts — answer from general knowledge if you can, flag uncertainty in voice, or just say you don't have it. If they're only chatting, just chat.";
 
+  const timeLine = now ? `RIGHT NOW it's ${now}. If you greet with a time of day, match this. Don't say evening when it's morning.\n\n` : "";
+
   const content =
+    timeLine +
     `CONTEXT:\n${context}\n\n` +
     `${guidance}\n\n` +
     `FAN'S MESSAGE: ${question}`;

@@ -6,6 +6,7 @@ import { resolvePersona } from "@/lib/bean/persona";
 import { retrieve } from "@/lib/bean/retrieve";
 import { buildChatPrompt } from "@/lib/bean/prompt";
 import { buildAnswerCard, buildPlayerCard, cardFacts } from "@/lib/bean/cards";
+import { pacificNowLabel } from "@/lib/bean/time";
 import { sseEvent } from "@/lib/bean/sse";
 
 export const runtime = "nodejs"; // needs the SDK + env, not edge
@@ -51,7 +52,7 @@ export async function POST(request) {
   const grounding = card
     ? [{ type: "season", title: card.title, url: card.url, text: cardFacts(card) }, ...matches]
     : matches;
-  const { system, messages } = buildChatPrompt(question, grounding, history, guide);
+  const { system, messages } = buildChatPrompt(question, grounding, history, guide, pacificNowLabel());
   // Only cite sources when retrieval is actually confident the content is on-point —
   // keeps source pills off casual chit-chat ("how was your day").
   const SOURCE_MIN_SCORE = 0.82;
