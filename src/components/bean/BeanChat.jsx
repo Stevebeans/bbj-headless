@@ -172,7 +172,7 @@ export default function BeanChat({ variant = "page", onClose }) {
   const [thinking, setThinking] = useState(false);
   const [val, setVal] = useState("");
   const taRef = useRef(null);
-  const bodyRef = useRef(null); // widget scroll container
+  const scrollRef = useRef(null); // internal scroll container (page + widget)
   const answerCount = useRef(0);
   const started = msgs.length > 0;
   const busy = thinking || msgs[msgs.length - 1]?.streaming;
@@ -184,13 +184,10 @@ export default function BeanChat({ variant = "page", onClose }) {
 
   useEffect(() => {
     requestAnimationFrame(() => {
-      if (variant === "widget" && bodyRef.current) {
-        bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
-      } else if (variant === "page") {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-      }
+      const el = scrollRef.current;
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     });
-  }, [msgs, thinking, variant]);
+  }, [msgs, thinking]);
 
   const ask = useCallback(
     async (text) => {
@@ -363,7 +360,7 @@ export default function BeanChat({ variant = "page", onClose }) {
             </svg>
           </button>
         </div>
-        <div className="bw-body" ref={bodyRef}>
+        <div className="bw-body" ref={scrollRef}>
           {!started ? welcome : thread}
         </div>
         <div className="bw-foot">{composer}</div>
@@ -384,21 +381,25 @@ export default function BeanChat({ variant = "page", onClose }) {
         <span className="hidden sm:inline">Beta</span>
       </div>
 
-      <div className="bean-page">
-        {!started ? (
-          welcome
-        ) : (
-          <div className="bean-convo">
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
-              <button className="bean-reset" onClick={reset} disabled={busy}>
-                ↺ New chat
-              </button>
+      <div className="bean-scroll" ref={scrollRef}>
+        <div className="bean-page">
+          {!started ? (
+            welcome
+          ) : (
+            <div className="bean-convo">
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
+                <button className="bean-reset" onClick={reset} disabled={busy}>
+                  ↺ New chat
+                </button>
+              </div>
+              {thread}
             </div>
-            {thread}
-          </div>
-        )}
+          )}
+        </div>
+      </div>
 
-        <div className="bean-composer-dock">{composer}</div>
+      <div className="bean-composer-dock">
+        <div className="bean-page">{composer}</div>
       </div>
     </div>
   );

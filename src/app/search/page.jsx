@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function SearchPage() {
   return (
-    <div className="v2-primary-container">
+    <div className="bean-search-wrap">
       <BeanChat />
     </div>
   );

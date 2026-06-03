@@ -28,14 +28,35 @@
   --accent-ink: #233c52;
 }
 
-/* Page variant: boxed panel contained to site width, sitting on the site beige
-   like the home-page cards (rather than bleeding full-width). */
+/* Page variant: a fixed-height app (Claude.ai-style). Fills the available height,
+   the thread scrolls internally, the composer is pinned at the bottom. Boxed and
+   contained to site width via .bean-search-wrap. */
+.bean-search-wrap {
+  /* Fixed height tied to the viewport (the site header is ~156px). The chat fills
+     this, scrolls internally, and pins its composer — the footer sits just below. */
+  height: calc(100dvh - 156px);
+  min-height: 460px;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 10px 8px 14px;
+}
 .bean-app.is-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
   background: radial-gradient(90% 40% at 50% 0%, rgba(53, 84, 110, 0.05), transparent 62%), var(--paper);
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(20, 24, 30, 0.07), 0 8px 24px -18px rgba(20, 24, 30, 0.25);
-  padding-bottom: 4px;
+}
+.bean-app.is-page .bean-cap {
+  flex: none;
+}
+.bean-app .bean-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* ---- caption bar above the chat ---- */
@@ -84,11 +105,10 @@
   padding: 20px 0 8px;
 }
 .bean-app .bean-composer-dock {
-  position: sticky;
-  bottom: 0;
-  background: linear-gradient(to top, var(--paper) 62%, rgba(251, 250, 246, 0));
-  padding: 14px 0 18px;
-  margin-top: 8px;
+  flex: none;
+  border-top: 1px solid var(--line);
+  background: #fff;
+  padding: 12px 0;
 }
 .bean-app .bean-reset {
   display: inline-flex;
