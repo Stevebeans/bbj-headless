@@ -20,7 +20,7 @@ async function getTag(slug) {
   try {
     const tags = await wpRestFetch(`/tags?slug=${encodeURIComponent(slug)}`, {
       tags: ["tags", `tag-${slug}`],
-      revalidate: 3600,
+      revalidate: false, // Webhook-driven; tag metadata rarely changes (manual purge on rename)
     });
 
     if (!tags.length) return null;
@@ -37,7 +37,7 @@ async function getTagPosts(tagId, page = 1, perPage = 20) {
       `/posts?tag=${tagId}&per_page=${perPage}&page=${page}`,
       {
         tags: ["posts", `tag-posts-${tagId}`],
-        revalidate: 3600,
+        revalidate: false, // Webhook-driven via `posts` tag (fires on any publish)
       }
     );
 

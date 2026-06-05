@@ -98,7 +98,7 @@ export default async function ContentPage({ params }) {
     const firstCategoryId = content.categoryIds?.[0];
     const [related, adSettings] = await Promise.all([
       getRelatedPosts(content.id, firstCategoryId, 4),
-      wpFetch("/bbjd/v1/ad-settings", { revalidate: 3600 }).catch(() => ({})),
+      wpFetch("/bbjd/v1/ad-settings", { tags: ["ad-settings"], revalidate: false }).catch(() => ({})),
     ]);
     relatedPosts = related;
     adInterval = adSettings.incontent_interval || 5;

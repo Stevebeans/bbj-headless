@@ -239,7 +239,7 @@ export async function getPlayersForMap(options = {}) {
     const qs = params.toString();
     const url = `${apiUrl}/bbjd/v1/players/map${qs ? `?${qs}` : ""}`;
 
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const res = await fetch(url, { next: { tags: ["players"], revalidate: false } });
     const data = await res.json();
 
     if (!data.success) return { players: [], count: 0 };

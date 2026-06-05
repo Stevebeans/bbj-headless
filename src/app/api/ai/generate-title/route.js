@@ -4,6 +4,10 @@ import { verifyAuth } from "@/lib/api/verifyAuth";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// Cap function duration — a hung/slow LLM call can't run away and rack up
+// Fluid Provisioned Memory. These generations finish in a few seconds.
+export const maxDuration = 30;
+
 export async function POST(request) {
   try {
     const user = await verifyAuth(request);
