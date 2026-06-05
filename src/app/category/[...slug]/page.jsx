@@ -25,7 +25,7 @@ async function getCategory(slug) {
       `/categories?slug=${encodeURIComponent(slug)}`,
       {
         tags: ["categories", `category-${slug}`],
-        revalidate: 3600,
+        revalidate: false, // Webhook-driven; category metadata rarely changes (manual purge on rename)
       }
     );
 
@@ -46,7 +46,7 @@ async function getCategoryPosts(categoryId, page = 1, perPage = 20) {
       `/posts?category=${categoryId}&per_page=${perPage}&page=${page}`,
       {
         tags: ["posts", `category-posts-${categoryId}`],
-        revalidate: 3600,
+        revalidate: false, // Webhook-driven via `posts` tag (fires on any publish)
       }
     );
 

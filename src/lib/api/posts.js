@@ -150,8 +150,8 @@ export async function getRelatedPosts(postId, categoryId, limit = 4) {
     const posts = await wpRestFetch(
       `/posts?_embed&per_page=${limit}&categories=${catId}&exclude=${pId}`,
       {
-        tags: [`related-posts-${catId}`], // Category-scoped — won't invalidate every post page on each new post
-        revalidate: 3600,
+        tags: ["posts", `related-posts-${catId}`], // Webhook-driven: `posts` fires on any publish; category tag for targeted busts
+        revalidate: false,
       }
     );
 
