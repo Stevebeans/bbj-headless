@@ -23,12 +23,50 @@ export default function BecomeSupporterPage() {
 
   const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState("annual");
+  const [beanInterval, setBeanInterval] = useState("year"); // Full Bean toggle: 'month' | 'year'
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [hasSubscription, setHasSubscription] = useState(false);
   const [paypalReady, setPaypalReady] = useState(false);
   const [paypalClientId, setPaypalClientId] = useState(null);
+
+  // Deep-link: /become-supporter?plan=full_bean_annual pre-selects a plan
+  // (e.g. from the Ask the Bean upsell card). Read from window to avoid
+  // useSearchParams forcing this page into dynamic rendering.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const wanted = params.get("plan");
+    if (wanted === "full_bean_monthly" || wanted === "full_bean_annual") {
+      setSelectedPlan(wanted);
+      setBeanInterval(wanted === "full_bean_monthly" ? "month" : "year");
+      // Scroll the Full Bean section into view once mounted
+      requestAnimationFrame(() => {
+        document.getElementById("full-bean")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    }
+  }, []);
+
+  // Split plans by product tier for the two-section layout.
+  // Lifetime is retired from the storefront (existing lifetime members are
+  // grandfathered via their role) — hide it from new purchases while leaving
+  // all backend lifetime handling intact.
+  const supporterPlans = plans.filter(
+    (p) => (p.tier ?? "supporter") !== "full_bean" && p.id !== "lifetime"
+  );
+  const fullBeanPlans = plans.filter((p) => p.tier === "full_bean");
+  const beanPlan = fullBeanPlans.find((p) => p.interval === beanInterval) || fullBeanPlans[0];
+  const beanMonthly = fullBeanPlans.find((p) => p.interval === "month");
+  const beanAnnual = fullBeanPlans.find((p) => p.interval === "year");
+
+  // Select a Full Bean plan and bring the shared payment section into view
+  const chooseFullBean = () => {
+    if (!beanPlan) return;
+    setSelectedPlan(beanPlan.id);
+    requestAnimationFrame(() => {
+      document.getElementById("complete-purchase")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   // Load plans and check subscription status
   useEffect(() => {
@@ -251,8 +289,8 @@ export default function BecomeSupporterPage() {
           )}
 
           {/* Plan Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-10">
-          {plans.map((plan) => (
+          <div className="grid sm:grid-cols-2 gap-6 mb-10 max-w-2xl mx-auto">
+          {supporterPlans.map((plan) => (
             <button
               key={plan.id}
               onClick={() => setSelectedPlan(plan.id)}
@@ -318,6 +356,108 @@ export default function BecomeSupporterPage() {
             </button>
           ))}
         </div>
+
+          {/* Full Bean — premium AI tier (distinct product section) */}
+          {fullBeanPlans.length > 0 && (
+            <div
+              id="full-bean"
+              className={`relative mb-10 overflow-hidden rounded-2xl border-2 p-6 md:p-8 transition-all ${
+                selectedPlan?.startsWith("full_bean")
+                  ? "border-primary-500 ring-2 ring-primary-500/20"
+                  : "border-primary-200 dark:border-primary-900/50"
+              } bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-primary-950/40 dark:via-slate-900 dark:to-slate-900`}
+            >
+              <div className="flex flex-col md:flex-row md:items-center gap-6">
+                {/* Mascot + pitch */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-500 text-2xl shadow-md ring-2 ring-primary-500">
+                      <span role="img" aria-label="Bean">&#129752;</span>
+                    </span>
+                    <div>
+                      <span className="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-primary-500 text-white uppercase tracking-wide">
+                        New
+                      </span>
+                      <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-white leading-tight">
+                        Meet the Full Bean
+                      </h2>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Everything in Supporter, plus the smartest version of the Bean &mdash; unlimited
+                    chats, a longer memory, and our most capable AI. Ad-free, of course.
+                  </p>
+                  <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                    {[
+                      "Unlimited Bean chats",
+                      "Smartest AI model",
+                      "Longer conversation memory",
+                      "Everything in Supporter + ad-free",
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <svg className="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Price + toggle + CTA */}
+                <div className="md:w-64 flex-shrink-0">
+                  {/* Monthly / Annual toggle */}
+                  <div className="flex rounded-lg bg-slate-100 dark:bg-slate-800 p-1 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => { setBeanInterval("month"); if (beanMonthly) setSelectedPlan(beanMonthly.id); }}
+                      className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        beanInterval === "month"
+                          ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm"
+                          : "text-gray-500 dark:text-gray-400"
+                      }`}
+                    >
+                      Monthly
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setBeanInterval("year"); if (beanAnnual) setSelectedPlan(beanAnnual.id); }}
+                      className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        beanInterval === "year"
+                          ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm"
+                          : "text-gray-500 dark:text-gray-400"
+                      }`}
+                    >
+                      Annual
+                    </button>
+                  </div>
+
+                  <div className="text-center mb-4">
+                    <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                      {beanPlan?.price}
+                    </span>
+                    <span className="text-gray-500 dark:text-gray-400 ml-1">
+                      /{beanInterval === "month" ? "mo" : "yr"}
+                    </span>
+                    {beanInterval === "year" && (
+                      <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1">
+                        Save over 30% vs monthly
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={chooseFullBean}
+                    disabled={processing}
+                    className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Get Full Bean
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Premium Features Showcase */}
           <div className="mb-10">
@@ -409,7 +549,7 @@ export default function BecomeSupporterPage() {
           </div>
 
           {/* Payment Section */}
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 mb-10">
+          <div id="complete-purchase" className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 mb-10 scroll-mt-24">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
             Complete Your Purchase
           </h2>

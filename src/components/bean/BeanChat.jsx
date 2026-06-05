@@ -14,12 +14,14 @@ const UPSELL_OFFERS = {
     blurb: "The smarter me (no limits), and I actually remember our conversations.",
     cta: "Go Full Bean",
     primary: true,
+    url: `${UPGRADE_URL}?plan=full_bean_annual`,
   },
   supporter: {
     name: "Supporter",
     price: "$6.95/mo",
     blurb: "Ad-free, plus way more daily chats with me.",
     cta: "Become a Supporter",
+    url: UPGRADE_URL,
   },
 };
 
@@ -38,7 +40,7 @@ function UpsellCard({ tier }) {
               </b>
               <small>{o.blurb}</small>
             </div>
-            <a className={"cta" + (o.primary ? " primary" : "")} href={UPGRADE_URL}>
+            <a className={"cta" + (o.primary ? " primary" : "")} href={o.url || UPGRADE_URL}>
               {o.cta}
             </a>
           </div>
