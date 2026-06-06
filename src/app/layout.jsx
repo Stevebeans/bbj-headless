@@ -91,7 +91,11 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
   },
-  manifest: "/manifest.json",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
   // Staging/preview/localhost are publicly reachable AND emit self-referential
   // canonicals — without this gate they get indexed and split ranking signals
   // with prod. Only the canonical prod host is indexable.
