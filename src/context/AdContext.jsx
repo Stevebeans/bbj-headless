@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Cookies from "js-cookie";
 import { useAuth } from "@/context/AuthContext";
+import { isStandalone } from "@/lib/pwa";
 
 const PREVIEW_COOKIE_NAME = "bbj_ad_preview";
 const PREVIEW_ADMIN_ROLES = ["administrator", "editor"];
@@ -19,14 +20,8 @@ const AdContext = createContext({
 
 const SDK_TIMEOUT_MS = 5000;
 
-function detectPWA() {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.matchMedia("(display-mode: window-controls-overlay)").matches ||
-    window.navigator.standalone === true
-  );
-}
+// Single source of truth lives in lib/pwa.js (also used by InstallBanner).
+const detectPWA = isStandalone;
 
 export function AdProvider({
   children,
