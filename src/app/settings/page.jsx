@@ -19,7 +19,8 @@ import PlayerSearchDropdown from "@/components/settings/PlayerSearchDropdown";
 import EmailChangeModal from "@/components/settings/EmailChangeModal";
 import HelpTab from "@/components/settings/HelpTab";
 import RankBadge from "@/components/comments/RankBadge";
-import PushToggle from "@/components/notifications/PushToggle";
+// Push toggle parked 2026-06-07 with the PWA (native-app path TBD). Code kept.
+// import PushToggle from "@/components/notifications/PushToggle";
 
 const TABS = [
   { id: "profile", label: "User Settings", icon: UserIcon },
@@ -764,7 +765,7 @@ function NotificationsTab({ settings, loading, onUpdate, showToast }) {
         </p>
 
         <div className="space-y-4 mt-4">
-          <PushToggle />
+          {/* <PushToggle /> parked with the PWA (see import note above) */}
           {notificationOptions.map((notification) => {
             const isLocked = notification.premium && !isSupporter;
 

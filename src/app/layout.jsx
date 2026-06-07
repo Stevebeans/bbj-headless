@@ -9,7 +9,9 @@ import { Providers } from "@/components/Providers";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
 import { BackToTop } from "@/components/layout/BackToTop";
 import BeanLauncher from "@/components/bean/BeanLauncher";
-import InstallBanner from "@/components/pwa/InstallBanner";
+// PWA install banner parked 2026-06-07 (pursuing a real native app instead of A2HS).
+// Code kept for the future native-app wrap. See memory/project_push_notifications_spec.md
+// import InstallBanner from "@/components/pwa/InstallBanner";
 import NewPostFAB from "@/components/editor/NewPostFAB";
 import { getAdScripts } from "@/lib/api/ads";
 import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
@@ -184,7 +186,7 @@ export default async function RootLayout({ children }) {
           </div>
           <BackToTop />
           <BeanLauncher />
-          <InstallBanner />
+          {/* <InstallBanner /> parked — PWA on hold (see import note above) */}
           <FreestarSDKLoader />
         </Providers>
         {/* Global scripts - deferred to not block rendering (analytics, etc.) */}
