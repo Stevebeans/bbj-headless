@@ -117,11 +117,14 @@ export async function POST(request) {
 
   // 4. Persona + grounding + prompt (model tiered by plan).
   const { guide } = resolvePersona(user);
+  // Grounding is best-effort: if the vector store or card lookups fail (e.g. Upstash
+  // misconfigured/unreachable), Bean still answers — just without site context —
+  // instead of dying with the "nap" error. Logged so the degradation is visible.
   const [matches, seasonCard] = await Promise.all([
-    retrieve(question, { withText: true }),
-    buildAnswerCard(question),
+    retrieve(question, { withText: true }).catch((e) => { console.error("bean grounding (retrieve) failed:", e); return []; }),
+    buildAnswerCard(question).catch(() => null),
   ]);
-  const card = seasonCard || (await buildPlayerCard(question, matches));
+  const card = seasonCard || (await buildPlayerCard(question, matches).catch(() => null));
   const grounding = card
     ? [{ type: "season", title: card.title, url: card.url, text: cardFacts(card) }, ...matches]
     : matches;

@@ -9,7 +9,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 // (PlayerDirectory reads ?tab=); "Players" is the Directory's default tab.
 export const NAV_ITEMS = [
   { href: "/", label: "Home" },
-  { href: "/contact", label: "Contact" },
+  // Contact intentionally omitted — it already lives in the top utility header.
   { href: "/live-feed-updates", label: "Feed Updates" },
   { href: "/directory?tab=seasons", label: "Seasons" },
   { href: "/directory?tab=stats", label: "Stats" },

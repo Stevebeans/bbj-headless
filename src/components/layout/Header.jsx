@@ -106,7 +106,7 @@ export function Header({ liveThread = null, feedsLive = true, paramountUrl = DEF
                     </Link>
                   )}
                   <NotificationBell />
-                  <Link href="/settings" className="flex items-center" aria-label="Account Settings">
+                  <Link href="/settings" className="flex items-center gap-2" aria-label="Account">
                     {user?.avatar ? (
                       <Image src={user.avatar} alt={user?.user_display_name || user?.display_name || "User"} width={28} height={28} className="w-7 h-7 rounded-full object-cover ring-2 ring-transparent hover:ring-primary-300 transition-all" unoptimized />
                     ) : (
@@ -114,6 +114,7 @@ export function Header({ liveThread = null, feedsLive = true, paramountUrl = DEF
                         <span className="text-primary-600 dark:text-primary-400 font-bold text-xs">{user?.user_display_name?.charAt(0) || user?.display_name?.charAt(0) || "?"}</span>
                       </div>
                     )}
+                    <span className="hidden md:inline text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500 transition-colors">Account</span>
                   </Link>
                 </div>
               ) : (
