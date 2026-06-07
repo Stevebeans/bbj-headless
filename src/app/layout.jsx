@@ -1,12 +1,17 @@
-import { Roboto, Oswald, Yanone_Kaffeesatz, Caveat } from "next/font/google";
+import { Roboto, Oswald, Yanone_Kaffeesatz, Caveat, Source_Serif_4, Inter_Tight, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import "@/styles/globals.css";
+import "@/styles/bean-chat.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ThemeScript } from "@/components/layout/ThemeScript";
 import { Providers } from "@/components/Providers";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
 import { BackToTop } from "@/components/layout/BackToTop";
+import BeanLauncher from "@/components/bean/BeanLauncher";
+// PWA install banner parked 2026-06-07 (pursuing a real native app instead of A2HS).
+// Code kept for the future native-app wrap. See memory/project_push_notifications_spec.md
+// import InstallBanner from "@/components/pwa/InstallBanner";
 import NewPostFAB from "@/components/editor/NewPostFAB";
 import { getAdScripts } from "@/lib/api/ads";
 import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
@@ -47,6 +52,29 @@ const caveat = Caveat({
   display: "swap",
 });
 
+// Ask the Bean chat type system (editorial: serif answers, mono labels)
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  weight: ["400", "600", "700"],
+  variable: "--font-source-serif",
+  display: "swap",
+});
+
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-inter-tight",
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-plex-mono",
+  display: "swap",
+});
+
 export const metadata = {
   // Resolves relative OG/canonical URLs and silences the Next.js build warning.
   metadataBase: new URL(SITE_URL),
@@ -66,7 +94,11 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
   },
-  manifest: "/manifest.json",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
   // Staging/preview/localhost are publicly reachable AND emit self-referential
   // canonicals — without this gate they get indexed and split ranking signals
   // with prod. Only the canonical prod host is indexable.
@@ -127,7 +159,7 @@ export default async function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${roboto.variable} ${oswald.variable} ${yanone.variable} ${caveat.variable}`}
+      className={`${roboto.variable} ${oswald.variable} ${yanone.variable} ${caveat.variable} ${sourceSerif.variable} ${interTight.variable} ${plexMono.variable}`}
       suppressHydrationWarning
     >
       <head>
@@ -153,6 +185,8 @@ export default async function RootLayout({ children }) {
             <NewPostFAB />
           </div>
           <BackToTop />
+          <BeanLauncher />
+          {/* <InstallBanner /> parked — PWA on hold (see import note above) */}
           <FreestarSDKLoader />
         </Providers>
         {/* Global scripts - deferred to not block rendering (analytics, etc.) */}

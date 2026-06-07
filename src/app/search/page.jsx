@@ -1,19 +1,16 @@
-// Placeholder route reserved for a future on-site AI helper ("Ask the Bean")
-// that answers questions from site content. noindex while it's a stub.
+// Ask the Bean — the on-site AI persona of Steve. Full-page chat.
+// noindex: authenticated app surface, not SEO content.
+import BeanChat from "@/components/bean/BeanChat";
+
 export const metadata = {
-  title: "Search",
+  title: "Ask the Bean",
   robots: { index: false, follow: false },
 };
 
 export default function SearchPage() {
   return (
-    <main className="v2-primary-container">
-      <div className="card text-center py-16">
-        <h1 className="section-header">Search</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Site search is coming soon — we&rsquo;re building something special here.
-        </p>
-      </div>
-    </main>
+    <div className="bean-search-wrap">
+      <BeanChat />
+    </div>
   );
 }
