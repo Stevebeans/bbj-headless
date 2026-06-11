@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { usePremium } from "@/hooks/usePremium";
@@ -16,14 +17,64 @@ import {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
+// Feature rows for the compare table. Values are per-tier: free / supporter / full_bean.
+const COMPARE_ROWS = [
+  { label: "Ads", sub: null, free: "Yes", supporter: "Ad-free", full_bean: "Ad-free", bold: true },
+  { label: "Interactive Player Map", sub: "heatmaps · state stats · timeline", free: false, supporter: true, full_bean: true },
+  { label: "Player Comparisons", sub: "head-to-head · HoH/PoV charts", free: false, supporter: true, full_bean: true },
+  { label: "Supporter badge", sub: null, free: false, supporter: true, full_bean: true },
+  { label: "Ask the Bean", sub: "chats per day", free: "5", supporter: "30", full_bean: "Unlimited", bold: true },
+  { label: "Bean AI model", sub: null, free: "Standard", supporter: "Standard", full_bean: "Smartest", bold: true },
+  { label: "Longer conversation memory", sub: null, free: false, supporter: false, full_bean: true },
+];
+
+const FAQ_ITEMS = [
+  {
+    q: "Can I cancel anytime?",
+    a: "Yep. Monthly plans cancel instantly; annual plans run through the period you paid for and simply don't renew. No phone calls, no guilt trips.",
+  },
+  {
+    q: "Can I switch plans later?",
+    a: "Anytime. Upgrade from Supporter to Full Bean and we prorate the difference. Downgrades take effect at your next renewal.",
+  },
+  {
+    q: "I had a Season Pass — what happened to it?",
+    a: "The Season Pass grew up and became the annual Supporter plan. Same idea, but now it covers a full year instead of one season.",
+  },
+  {
+    q: "Where does the money go?",
+    a: "Straight into keeping BBJ independent: servers, live-feed coverage through the long August nights, and feeding the Bean. No corporate owners, no sponsored spin.",
+  },
+];
+
+function CheckIcon({ className = "w-4 h-4 text-emerald-500" }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 20 20">
+      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+// A single check-marked bullet in a plan card. Children may be plain text or a
+// <span> with a <small> sub-label.
+function Feature({ children }) {
+  return (
+    <li className="flex gap-2.5">
+      <CheckIcon className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+      {children}
+    </li>
+  );
+}
+
 export default function BecomeSupporterPage() {
   const { isAuthenticated, loading: authLoading, refreshUser } = useAuth();
   const { openModal } = useAuthModal();
   const { isPremium: isSupporter } = usePremium();
 
   const [plans, setPlans] = useState([]);
+  // One billing toggle drives both cards (annual default, SaaS-style)
+  const [billing, setBilling] = useState("year"); // 'month' | 'year'
   const [selectedPlan, setSelectedPlan] = useState("annual");
-  const [beanInterval, setBeanInterval] = useState("year"); // Full Bean toggle: 'month' | 'year'
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
@@ -39,30 +90,54 @@ export default function BecomeSupporterPage() {
     const wanted = params.get("plan");
     if (wanted === "full_bean_monthly" || wanted === "full_bean_annual") {
       setSelectedPlan(wanted);
-      setBeanInterval(wanted === "full_bean_monthly" ? "month" : "year");
-      // Scroll the Full Bean section into view once mounted
+      setBilling(wanted === "full_bean_monthly" ? "month" : "year");
       requestAnimationFrame(() => {
         document.getElementById("full-bean")?.scrollIntoView({ behavior: "smooth", block: "center" });
       });
     }
   }, []);
 
-  // Split plans by product tier for the two-section layout.
-  // Lifetime is retired from the storefront (existing lifetime members are
-  // grandfathered via their role) — hide it from new purchases while leaving
-  // all backend lifetime handling intact.
-  const supporterPlans = plans.filter(
-    (p) => (p.tier ?? "supporter") !== "full_bean" && p.id !== "lifetime"
-  );
-  const fullBeanPlans = plans.filter((p) => p.tier === "full_bean");
-  const beanPlan = fullBeanPlans.find((p) => p.interval === beanInterval) || fullBeanPlans[0];
-  const beanMonthly = fullBeanPlans.find((p) => p.interval === "month");
-  const beanAnnual = fullBeanPlans.find((p) => p.interval === "year");
+  // Split plans by tier + interval. Lifetime is retired from the storefront
+  // (existing lifetime members are grandfathered via their role).
+  const supporterMonthly = plans.find((p) => (p.tier ?? "supporter") === "supporter" && p.interval === "month");
+  const supporterAnnual = plans.find((p) => (p.tier ?? "supporter") === "supporter" && p.interval === "year");
+  const beanMonthly = plans.find((p) => p.tier === "full_bean" && p.interval === "month");
+  const beanAnnual = plans.find((p) => p.tier === "full_bean" && p.interval === "year");
 
-  // Select a Full Bean plan and bring the shared payment section into view
-  const chooseFullBean = () => {
-    if (!beanPlan) return;
-    setSelectedPlan(beanPlan.id);
+  // All display pricing is computed from price_cents so price changes in the
+  // plugin/processors flow through with no frontend edits.
+  const perMonthDisplay = (monthly, annual) => {
+    const plan = billing === "year" ? annual : monthly;
+    if (!plan) return null;
+    const cents = billing === "year" ? plan.price_cents / 12 : plan.price_cents;
+    return `$${(cents / 100).toFixed(2)}`;
+  };
+  const savingsPct = (monthly, annual) => {
+    if (!monthly?.price_cents || !annual?.price_cents) return 0;
+    return Math.round((1 - annual.price_cents / (monthly.price_cents * 12)) * 100);
+  };
+
+  const supporterSavings = savingsPct(supporterMonthly, supporterAnnual);
+  const beanSavings = savingsPct(beanMonthly, beanAnnual);
+  const maxSavings = Math.max(supporterSavings, beanSavings);
+
+  // Switching the toggle remaps the current selection to the same tier's other interval
+  const switchBilling = (period) => {
+    setBilling(period);
+    const isBean = selectedPlan.startsWith("full_bean");
+    const next = isBean
+      ? (period === "year" ? beanAnnual : beanMonthly)
+      : (period === "year" ? supporterAnnual : supporterMonthly);
+    if (next) setSelectedPlan(next.id);
+  };
+
+  // Card CTA: select the plan for the active billing period + scroll to payment
+  const choosePlan = (tier) => {
+    const plan = tier === "full_bean"
+      ? (billing === "year" ? beanAnnual : beanMonthly)
+      : (billing === "year" ? supporterAnnual : supporterMonthly);
+    if (!plan) return;
+    setSelectedPlan(plan.id);
     requestAnimationFrame(() => {
       document.getElementById("complete-purchase")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -77,7 +152,6 @@ export default function BecomeSupporterPage() {
         setPaypalClientId(plansResult.paypal_client_id);
 
         if (isAuthenticated) {
-          // Check if user has an active subscription
           try {
             const subResult = await getSubscription();
             setHasSubscription(subResult.has_subscription);
@@ -130,59 +204,59 @@ export default function BecomeSupporterPage() {
       // Clear previous buttons
       container.innerHTML = "";
 
-    const successUrl = `${SITE_URL}/checkout/success?processor=paypal`;
-    const cancelUrl = `${SITE_URL}/checkout/cancel`;
+      const successUrl = `${SITE_URL}/checkout/success?processor=paypal`;
+      const cancelUrl = `${SITE_URL}/checkout/cancel`;
 
-    window.paypal
-      .Buttons({
-        style: {
-          layout: "horizontal",
-          color: "blue",
-          shape: "rect",
-          label: "pay",
-          height: 45,
-        },
-        createOrder: async () => {
-          setProcessing(true);
-          setError(null);
-          try {
-            if (selectedPlan === "lifetime") {
-              const result = await createPayPalOrder(successUrl, cancelUrl);
-              return result.order_id;
-            } else {
-              // For subscriptions, create subscription and return approval URL
-              const result = await createPayPalSubscription(selectedPlan, successUrl, cancelUrl);
-              // PayPal SDK handles redirect for subscriptions
-              window.location.href = result.approve_url;
-              return null;
+      window.paypal
+        .Buttons({
+          style: {
+            layout: "horizontal",
+            color: "blue",
+            shape: "rect",
+            label: "pay",
+            height: 45,
+          },
+          createOrder: async () => {
+            setProcessing(true);
+            setError(null);
+            try {
+              if (selectedPlan === "lifetime") {
+                const result = await createPayPalOrder(successUrl, cancelUrl);
+                return result.order_id;
+              } else {
+                // For subscriptions, create subscription and return approval URL
+                const result = await createPayPalSubscription(selectedPlan, successUrl, cancelUrl);
+                // PayPal SDK handles redirect for subscriptions
+                window.location.href = result.approve_url;
+                return null;
+              }
+            } catch (err) {
+              setError(err.message);
+              setProcessing(false);
+              throw err;
             }
-          } catch (err) {
-            setError(err.message);
-            setProcessing(false);
-            throw err;
-          }
-        },
-        onApprove: async (data) => {
-          try {
-            if (selectedPlan === "lifetime") {
-              await capturePayPalOrder(data.orderID);
-              await refreshUser();
-              window.location.href = `${SITE_URL}/checkout/success?processor=paypal`;
+          },
+          onApprove: async (data) => {
+            try {
+              if (selectedPlan === "lifetime") {
+                await capturePayPalOrder(data.orderID);
+                await refreshUser();
+                window.location.href = `${SITE_URL}/checkout/success?processor=paypal`;
+              }
+            } catch (err) {
+              setError(err.message);
+              setProcessing(false);
             }
-          } catch (err) {
-            setError(err.message);
+          },
+          onCancel: () => {
             setProcessing(false);
-          }
-        },
-        onCancel: () => {
-          setProcessing(false);
-        },
-        onError: (err) => {
-          setError("PayPal payment failed. Please try again.");
-          setProcessing(false);
-        },
-      })
-      .render("#paypal-button-container");
+          },
+          onError: () => {
+            setError("PayPal payment failed. Please try again.");
+            setProcessing(false);
+          },
+        })
+        .render("#paypal-button-container");
     }, 50);
 
     return () => clearTimeout(timer);
@@ -216,9 +290,9 @@ export default function BecomeSupporterPage() {
           <div className="animate-pulse space-y-8 max-w-4xl mx-auto">
             <div className="h-12 bg-slate-200 dark:bg-slate-800 rounded w-2/3 mx-auto" />
             <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded w-1/2 mx-auto" />
-            <div className="grid md:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+            <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-96 bg-slate-200 dark:bg-slate-800 rounded-xl" />
               ))}
             </div>
           </div>
@@ -232,52 +306,61 @@ export default function BecomeSupporterPage() {
     return (
       <main className="v2-primary-container">
         <div className="rounded-xl bg-white p-8 shadow dark:bg-gray-900 dark:border dark:border-slate-800 max-w-2xl mx-auto text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-secondary-400 to-secondary-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <span className="text-4xl">&#11088;</span>
-            </div>
-            <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white mb-3">
-              Thank You for Being a Supporter!
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
-              Your support helps keep Big Brother Junkies running. Enjoy your ad-free experience!
-            </p>
+          <div className="w-20 h-20 bg-gradient-to-br from-secondary-400 to-secondary-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <span className="text-4xl">&#11088;</span>
+          </div>
+          <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white mb-3">
+            Thank You for Being a Supporter!
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
+            Your support helps keep Big Brother Junkies running. Enjoy your ad-free experience!
+          </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/settings?tab=premium"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Manage Subscription
-              </Link>
-              <Link
-                href="/"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium rounded-lg transition-colors"
-              >
-                Browse Ad-Free
-              </Link>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/settings?tab=premium"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Manage Subscription
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium rounded-lg transition-colors"
+            >
+              Browse Ad-Free
+            </Link>
+          </div>
         </div>
       </main>
     );
   }
 
   const selectedPlanData = plans.find((p) => p.id === selectedPlan);
+  const supporterSelected = !selectedPlan.startsWith("full_bean");
+
+  // Per-card derived display values
+  const supporterAmt = perMonthDisplay(supporterMonthly, supporterAnnual);
+  const beanAmt = perMonthDisplay(beanMonthly, beanAnnual);
 
   return (
     <main className="v2-primary-container">
       <div className="rounded-xl bg-white p-6 md:p-8 shadow dark:bg-gray-900 dark:border dark:border-slate-800">
         <div className="max-w-4xl mx-auto">
-          {/* Hero Section */}
-          <div className="text-center mb-10">
+
+          {/* Hero */}
+          <div className="text-center mb-8 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400 mb-3">
+              Support independent Big Brother coverage
+            </p>
             <h1 className="text-4xl md:text-5xl font-display font-bold text-gray-900 dark:text-white mb-4">
-              Become a BBJ Supporter
+              Go ad-free. <span className="text-primary-500">Get the good stuff.</span>
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Enjoy an ad-free experience and help keep independent Big Brother coverage alive
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
+              Every supporter keeps BBJ running without corporate strings, and unlocks the stats tools and the Bean while they&apos;re at it.
             </p>
           </div>
 
@@ -288,425 +371,347 @@ export default function BecomeSupporterPage() {
             </div>
           )}
 
-          {/* Plan Cards */}
-          <div className="grid sm:grid-cols-2 gap-6 mb-10 max-w-2xl mx-auto">
-          {supporterPlans.map((plan) => (
-            <button
-              key={plan.id}
-              onClick={() => setSelectedPlan(plan.id)}
-              disabled={processing}
-              className={`relative p-6 rounded-xl border-2 text-left transition-all ${
-                selectedPlan === plan.id
-                  ? "border-primary-500 bg-slate-50 dark:bg-slate-800 shadow-lg ring-2 ring-primary-500/20"
-                  : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600"
-              } ${processing ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              {/* Popular Badge */}
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="px-3 py-1 bg-secondary-500 text-white text-xs font-bold rounded-full uppercase tracking-wide">
-                    Most Popular
-                  </span>
-                </div>
-              )}
-
-              {/* Plan Header */}
-              <div className="mb-4">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  {plan.name}
-                </h3>
-                <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${
-                  plan.badge === "Lifetime"
-                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-                    : "bg-secondary-100 text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-400"
-                }`}>
-                  {plan.badge}
-                </span>
-              </div>
-
-              {/* Price */}
-              <div className="mb-4">
-                <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {plan.price}
-                </span>
-                {plan.interval && (
-                  <span className="text-gray-500 dark:text-gray-400 ml-1">
-                    /{plan.interval === "month" ? "mo" : "yr"}
-                  </span>
-                )}
-              </div>
-
-              {/* Description */}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {plan.description}
-              </p>
-
-              {/* Selection Indicator */}
-              <div className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                selectedPlan === plan.id
-                  ? "border-primary-500 bg-primary-500"
-                  : "border-slate-300 dark:border-slate-600"
-              }`}>
-                {selectedPlan === plan.id && (
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
-            </button>
-          ))}
-        </div>
-
-          {/* Full Bean — premium AI tier (distinct product section) */}
-          {fullBeanPlans.length > 0 && (
-            <div
-              id="full-bean"
-              className={`relative mb-10 overflow-hidden rounded-2xl border-2 p-6 md:p-8 transition-all ${
-                selectedPlan?.startsWith("full_bean")
-                  ? "border-primary-500 ring-2 ring-primary-500/20"
-                  : "border-primary-200 dark:border-primary-900/50"
-              } bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-primary-950/40 dark:via-slate-900 dark:to-slate-900`}
-            >
-              <div className="flex flex-col md:flex-row md:items-center gap-6">
-                {/* Mascot + pitch */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-500 text-2xl shadow-md ring-2 ring-primary-500">
-                      <span role="img" aria-label="Bean">&#129752;</span>
-                    </span>
-                    <div>
-                      <span className="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-primary-500 text-white uppercase tracking-wide">
-                        New
-                      </span>
-                      <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-white leading-tight">
-                        Meet the Full Bean
-                      </h2>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Everything in Supporter, plus the smartest version of the Bean &mdash; unlimited
-                    chats, a longer memory, and our most capable AI. Ad-free, of course.
-                  </p>
-                  <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-gray-700 dark:text-gray-300">
-                    {[
-                      "Unlimited Bean chats",
-                      "Smartest AI model",
-                      "Longer conversation memory",
-                      "Everything in Supporter + ad-free",
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <svg className="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Price + toggle + CTA */}
-                <div className="md:w-64 flex-shrink-0">
-                  {/* Monthly / Annual toggle */}
-                  <div className="flex rounded-lg bg-slate-100 dark:bg-slate-800 p-1 mb-4">
-                    <button
-                      type="button"
-                      onClick={() => { setBeanInterval("month"); if (beanMonthly) setSelectedPlan(beanMonthly.id); }}
-                      className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                        beanInterval === "month"
-                          ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm"
-                          : "text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
-                      Monthly
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setBeanInterval("year"); if (beanAnnual) setSelectedPlan(beanAnnual.id); }}
-                      className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                        beanInterval === "year"
-                          ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm"
-                          : "text-gray-500 dark:text-gray-400"
-                      }`}
-                    >
-                      Annual
-                    </button>
-                  </div>
-
-                  <div className="text-center mb-4">
-                    <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                      {beanPlan?.price}
-                    </span>
-                    <span className="text-gray-500 dark:text-gray-400 ml-1">
-                      /{beanInterval === "month" ? "mo" : "yr"}
-                    </span>
-                    {beanInterval === "year" && (
-                      <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1">
-                        Save over 30% vs monthly
-                      </p>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={chooseFullBean}
-                    disabled={processing}
-                    className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Get Full Bean
-                  </button>
-                </div>
-              </div>
+          {/* Billing toggle */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <div className="inline-flex rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1" role="tablist" aria-label="Billing period">
+              {[
+                { id: "month", label: "Monthly" },
+                { id: "year", label: "Annual" },
+              ].map((period) => (
+                <button
+                  key={period.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={billing === period.id}
+                  onClick={() => switchBilling(period.id)}
+                  className={`px-6 py-2 text-sm font-semibold uppercase tracking-wide rounded-full transition-colors ${
+                    billing === period.id
+                      ? "bg-primary-500 text-white shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  }`}
+                >
+                  {period.label}
+                </button>
+              ))}
             </div>
-          )}
-
-          {/* Premium Features Showcase */}
-          <div className="mb-10">
-            <h2 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-2 text-center">
-              Premium Features
-            </h2>
-            <p className="text-gray-500 dark:text-gray-400 text-center mb-6">
-              Exclusive tools for the ultimate Big Brother fan
-            </p>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Interactive Player Map */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <div className="h-40 bg-gradient-to-br from-primary-400 via-primary-500 to-secondary-500 flex items-center justify-center">
-                  <svg className="w-16 h-16 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                  </svg>
-                </div>
-                <div className="p-5">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                    Interactive Player Map
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    Explore where every Big Brother player calls home with our fully interactive map
-                  </p>
-                  <ul className="space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
-                    {[
-                      "Color-coded markers by status (Winner, AFP, Runner-up)",
-                      "Heatmap view showing player density",
-                      "Click any state for player stats",
-                      "Find the nearest player to you",
-                      "Timeline to watch player locations evolve by season",
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <svg className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href="/directory?tab=map"
-                    className="inline-flex items-center gap-1 mt-4 text-sm font-medium text-primary-500 hover:text-primary-600"
-                  >
-                    Preview Map &rarr;
-                  </Link>
-                </div>
-              </div>
-
-              {/* Player Comparisons */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <div className="h-40 bg-gradient-to-br from-secondary-500 via-secondary-600 to-accent-red flex items-center justify-center">
-                  <svg className="w-16 h-16 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                </div>
-                <div className="p-5">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                    Player Comparisons
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    Go head-to-head with detailed stat breakdowns between any two players
-                  </p>
-                  <ul className="space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
-                    {[
-                      "HoH & PoV win comparisons",
-                      "Season-by-season performance breakdown",
-                      "Visual stat charts and graphs",
-                      "Share comparisons with friends",
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <svg className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href="/directory?tab=compare"
-                    className="inline-flex items-center gap-1 mt-4 text-sm font-medium text-primary-500 hover:text-primary-600"
-                  >
-                    Try Comparing &rarr;
-                  </Link>
-                </div>
-              </div>
-            </div>
+            {billing === "year" && maxSavings > 0 && (
+              <span className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide bg-secondary-500/15 text-secondary-600 dark:bg-secondary-500/20 dark:text-secondary-400 rounded">
+                Save up to {maxSavings}%
+              </span>
+            )}
           </div>
+
+          {/* Plan cards */}
+          <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto mb-14 items-stretch">
+
+            {/* Supporter */}
+            {(supporterMonthly || supporterAnnual) && (
+              <article
+                className={`relative flex flex-col rounded-xl border-2 bg-white dark:bg-slate-800 p-7 order-2 sm:order-1 transition-all ${
+                  supporterSelected
+                    ? "border-primary-500/50 dark:border-primary-400/50"
+                    : "border-slate-200 dark:border-slate-700"
+                }`}
+              >
+                <h3 className="text-xl font-display font-bold uppercase tracking-wide text-gray-900 dark:text-white">
+                  Supporter
+                </h3>
+                <p className="text-sm italic text-gray-500 dark:text-gray-400 mt-0.5 mb-5">
+                  The ad-free site, plus every premium stats tool.
+                </p>
+                <div className="flex items-baseline gap-1.5">
+                  {billing === "year" && supporterMonthly && (
+                    <span className="text-sm text-gray-400 line-through">{supporterMonthly.price}</span>
+                  )}
+                  <span className="text-5xl font-display font-bold text-gray-900 dark:text-white">{supporterAmt}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">/mo</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 min-h-[17px]">
+                  {billing === "year" && supporterAnnual ? (
+                    <>
+                      <b className="text-gray-800 dark:text-gray-200">{supporterAnnual.price} billed annually</b> ·{" "}
+                      <b className="text-emerald-600 dark:text-emerald-400">save {supporterSavings}%</b>
+                    </>
+                  ) : (
+                    "Billed monthly · cancel anytime"
+                  )}
+                </p>
+                <ul className="flex-1 space-y-2.5 my-6 text-sm text-gray-600 dark:text-gray-300">
+                  <Feature>Ad-free everything: no banners, no interruptions</Feature>
+                  <Feature>
+                    <span>Interactive Player Map<small className="block text-xs text-gray-400 dark:text-gray-500">heatmaps, state stats, season timeline</small></span>
+                  </Feature>
+                  <Feature>
+                    <span>Player Comparisons<small className="block text-xs text-gray-400 dark:text-gray-500">head-to-head stats, HoH &amp; PoV charts</small></span>
+                  </Feature>
+                  <Feature>Supporter badge next to your name</Feature>
+                  <Feature>Ask the Bean: 30 chats a day</Feature>
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => choosePlan("supporter")}
+                  disabled={processing}
+                  className="w-full py-3 border-2 border-gray-900 dark:border-white text-gray-900 dark:text-white hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-gray-900 font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Become a Supporter
+                </button>
+                <p className="text-[10px] uppercase tracking-wide text-gray-400 text-center mt-2.5">Cancel anytime</p>
+              </article>
+            )}
+
+            {/* Full Bean (featured) */}
+            {(beanMonthly || beanAnnual) && (
+              <article
+                id="full-bean"
+                className={`relative flex flex-col rounded-xl border-2 bg-white dark:bg-slate-800 p-7 order-1 sm:order-2 shadow-lg transition-all ${
+                  !supporterSelected
+                    ? "border-primary-500 ring-2 ring-primary-500/20"
+                    : "border-primary-500"
+                }`}
+              >
+                <span className="absolute -top-3 left-7 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-secondary-500 text-white rounded">
+                  Most popular
+                </span>
+                <Image
+                  src="/bean/bean-wave.png"
+                  alt="The Bean waving"
+                  width={72}
+                  height={72}
+                  className="absolute -top-9 right-4 w-[72px] h-auto drop-shadow-md pointer-events-none select-none"
+                />
+                <h3 className="text-xl font-display font-bold uppercase tracking-wide text-gray-900 dark:text-white">
+                  Full Bean
+                </h3>
+                <p className="text-sm italic text-gray-500 dark:text-gray-400 mt-0.5 mb-5">
+                  Everything in Supporter, plus the smartest Bean there is.
+                </p>
+                <div className="flex items-baseline gap-1.5">
+                  {billing === "year" && beanMonthly && (
+                    <span className="text-sm text-gray-400 line-through">{beanMonthly.price}</span>
+                  )}
+                  <span className="text-5xl font-display font-bold text-gray-900 dark:text-white">{beanAmt}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">/mo</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 min-h-[17px]">
+                  {billing === "year" && beanAnnual ? (
+                    <>
+                      <b className="text-gray-800 dark:text-gray-200">{beanAnnual.price} billed annually</b> ·{" "}
+                      <b className="text-emerald-600 dark:text-emerald-400">save {beanSavings}%</b>
+                    </>
+                  ) : (
+                    "Billed monthly · cancel anytime"
+                  )}
+                </p>
+                <ul className="flex-1 space-y-2.5 my-6 text-sm text-gray-600 dark:text-gray-300">
+                  <li className="flex gap-2.5 font-semibold text-gray-900 dark:text-white">
+                    <span className="text-primary-500 font-bold flex-shrink-0">+</span>Everything in Supporter, and:
+                  </li>
+                  <Feature>Unlimited Bean chats, no daily cap</Feature>
+                  <Feature>
+                    <span>Our smartest AI model<small className="block text-xs text-gray-400 dark:text-gray-500">sharper takes, better recall of the season</small></span>
+                  </Feature>
+                  <Feature>
+                    <span>Longer conversation memory<small className="block text-xs text-gray-400 dark:text-gray-500">pick up where you left off</small></span>
+                  </Feature>
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => choosePlan("full_bean")}
+                  disabled={processing}
+                  className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Get the Full Bean
+                </button>
+                <p className="text-[10px] uppercase tracking-wide text-gray-400 text-center mt-2.5">Cancel anytime</p>
+              </article>
+            )}
+          </div>
+
+          {/* Compare table */}
+          <section className="mb-14">
+            <h2 className="text-2xl font-display font-bold uppercase tracking-wide text-gray-900 dark:text-white text-center mb-1">
+              Compare plans
+            </h2>
+            <p className="text-sm italic text-gray-500 dark:text-gray-400 text-center mb-5">
+              Everyone gets the spoilers. Here&apos;s what supporting adds.
+            </p>
+            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+              <table className="w-full text-sm bg-white dark:bg-slate-800 border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/80">
+                    <th className="p-3.5" />
+                    <th className="p-3.5 text-center font-display font-semibold uppercase tracking-wide text-gray-900 dark:text-white">
+                      Free
+                      <small className="block text-[10px] font-normal normal-case tracking-normal text-gray-400">just visiting</small>
+                    </th>
+                    <th className="p-3.5 text-center font-display font-semibold uppercase tracking-wide text-gray-900 dark:text-white">
+                      Supporter
+                      <small className="block text-[10px] font-normal normal-case tracking-normal text-gray-400">
+                        {billing === "year" ? `${supporterAmt}/mo billed annually` : `${supporterAmt}/mo`}
+                      </small>
+                    </th>
+                    <th className="p-3.5 text-center font-display font-semibold uppercase tracking-wide bg-primary-500 text-white">
+                      Full Bean
+                      <small className="block text-[10px] font-normal normal-case tracking-normal text-white/70">
+                        {billing === "year" ? `${beanAmt}/mo billed annually` : `${beanAmt}/mo`}
+                      </small>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARE_ROWS.map((row, i) => (
+                    <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
+                      <td className="p-3.5 text-left font-medium text-gray-700 dark:text-gray-300">
+                        {row.label}
+                        {row.sub && <small className="block text-xs font-normal text-gray-400 dark:text-gray-500">{row.sub}</small>}
+                      </td>
+                      {["free", "supporter", "full_bean"].map((tier) => {
+                        const val = row[tier];
+                        const hl = tier === "full_bean" ? "bg-primary-500/5 dark:bg-primary-500/15" : "";
+                        return (
+                          <td key={tier} className={`p-3.5 text-center ${hl}`}>
+                            {val === true ? (
+                              <CheckIcon className="w-4 h-4 text-emerald-500 inline-block" />
+                            ) : val === false ? (
+                              <span className="text-slate-300 dark:text-slate-600">&mdash;</span>
+                            ) : (
+                              <b className="text-gray-900 dark:text-white text-[13px]">{val}</b>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* A word from the Bean */}
+          <section className="mb-14 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-7 grid sm:grid-cols-[auto_1fr] gap-6 items-center text-center sm:text-left">
+            <Image
+              src="/bean/bean-point.png"
+              alt="The Bean pointing at you"
+              width={110}
+              height={110}
+              className="w-[110px] h-auto mx-auto sm:mx-0"
+            />
+            <div>
+              <h2 className="text-lg font-display font-bold uppercase tracking-wide text-gray-900 dark:text-white mb-1.5">
+                A word from the Bean
+              </h2>
+              <blockquote className="italic text-[15px] leading-relaxed text-gray-600 dark:text-gray-300">
+                &ldquo;Look, the spoilers stay free, that&apos;s the deal. But if you want me at full power? Unlimited questions, my sharpest takes, and I actually remember our last conversation. Full Bean is the move. No pressure. Some pressure.&rdquo;
+              </blockquote>
+              <Link
+                href="/search"
+                className="inline-block mt-3 text-[11px] font-bold uppercase tracking-wider text-primary-500 hover:underline"
+              >
+                Not sure? Chat with the Bean free, 5 messages a day &rarr;
+              </Link>
+            </div>
+          </section>
 
           {/* Payment Section */}
-          <div id="complete-purchase" className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 mb-10 scroll-mt-24">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            Complete Your Purchase
-          </h2>
+          <div id="complete-purchase" className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 mb-14 scroll-mt-24">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+              Complete Your Purchase
+            </h2>
 
-          {!isAuthenticated ? (
-            <div className="text-center">
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Please log in or create an account to continue
-              </p>
-              <button
-                onClick={() => openModal("login")}
-                className="px-8 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
-              >
-                Log In / Sign Up
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4 max-w-md mx-auto">
-              {/* Selected Plan Summary */}
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg mb-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Selected Plan:</span>
-                  <span className="font-bold text-gray-900 dark:text-white">
-                    {selectedPlanData?.name} - {selectedPlanData?.price}
-                    {selectedPlanData?.interval && `/${selectedPlanData.interval === "month" ? "mo" : "yr"}`}
-                  </span>
-                </div>
+            {!isAuthenticated ? (
+              <div className="text-center">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Please log in or create an account to continue
+                </p>
+                <button
+                  onClick={() => openModal("login")}
+                  className="px-8 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  Log In / Sign Up
+                </button>
               </div>
-
-              {/* Stripe Button */}
-              <button
-                onClick={handleStripeCheckout}
-                disabled={processing}
-                className="w-full py-3 bg-[#635BFF] hover:bg-[#5851DB] text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {processing ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z" />
-                    </svg>
-                    Pay with Card
-                  </>
-                )}
-              </button>
-
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+            ) : (
+              <div className="space-y-4 max-w-md mx-auto">
+                {/* Selected Plan Summary */}
+                <div className="p-4 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg mb-6">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">Selected Plan:</span>
+                    <span className="font-bold text-gray-900 dark:text-white">
+                      {selectedPlanData?.name} - {selectedPlanData?.price}
+                      {selectedPlanData?.interval && `/${selectedPlanData.interval === "month" ? "mo" : "yr"}`}
+                    </span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-slate-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400">or</span>
+
+                {/* Stripe Button */}
+                <button
+                  onClick={handleStripeCheckout}
+                  disabled={processing}
+                  className="w-full py-3 bg-[#635BFF] hover:bg-[#5851DB] text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {processing ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z" />
+                      </svg>
+                      Pay with Card
+                    </>
+                  )}
+                </button>
+
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-slate-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400">or</span>
+                  </div>
                 </div>
+
+                {/* PayPal Button Container */}
+                <div id="paypal-button-container" className={processing ? "opacity-50 pointer-events-none" : ""} />
               </div>
-
-              {/* PayPal Button Container */}
-              <div id="paypal-button-container" className={processing ? "opacity-50 pointer-events-none" : ""} />
-            </div>
-          )}
-        </div>
-
-          {/* Benefits Section */}
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-            What You Get as a Supporter
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                  </svg>
-                ),
-                title: "Ad-Free Experience",
-                description: "Browse the entire site without any ads interrupting your reading",
-              },
-              {
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                  </svg>
-                ),
-                title: "Interactive Player Map",
-                description: "Heatmaps, state stats, nearest player finder, and season timeline",
-              },
-              {
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                ),
-                title: "Player Comparisons",
-                description: "Head-to-head stat breakdowns, HoH/PoV charts, and performance analysis",
-              },
-              {
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                ),
-                title: "Priority Push Notifications",
-                description: "Get breaking feed update alerts before anyone else",
-              },
-              {
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                  </svg>
-                ),
-                title: "Exclusive Supporter Badge",
-                description: "Show your support with a special badge next to your name",
-              },
-              {
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                ),
-                title: "Support Independent Coverage",
-                description: "Help us continue providing quality BB content without corporate influence",
-              },
-            ].map((benefit, i) => (
-              <div key={i} className="flex gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-primary-500/10 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg flex items-center justify-center">
-                  {benefit.icon}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {benefit.description}
-                  </p>
-                </div>
-              </div>
-            ))}
+            )}
           </div>
-        </div>
 
-          {/* FAQ Link */}
-          <p className="text-center text-gray-500 dark:text-gray-400 mt-8">
-            Questions?{" "}
-            <Link href="/settings?tab=help" className="text-primary-500 hover:underline">
-              Check our FAQ
-            </Link>{" "}
-            or{" "}
-            <Link href="/contact" className="text-primary-500 hover:underline">
-              contact us
+          {/* FAQ */}
+          <section className="max-w-2xl mx-auto mb-10">
+            <h2 className="text-2xl font-display font-bold uppercase tracking-wide text-gray-900 dark:text-white text-center mb-4">
+              Quick questions
+            </h2>
+            {FAQ_ITEMS.map((item, i) => (
+              <details
+                key={i}
+                className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg mb-2 px-5"
+              >
+                <summary className="cursor-pointer list-none flex justify-between items-center py-3.5 font-semibold text-sm text-gray-900 dark:text-white">
+                  {item.q}
+                  <span className="text-gray-400 text-base group-open:hidden">+</span>
+                  <span className="text-gray-400 text-base hidden group-open:inline">&ndash;</span>
+                </summary>
+                <p className="text-sm text-gray-600 dark:text-gray-400 pb-4 leading-relaxed">{item.a}</p>
+              </details>
+            ))}
+          </section>
+
+          {/* Signoff */}
+          <p className="text-center text-xs text-gray-500 dark:text-gray-400 mb-2">
+            Already a supporter?{" "}
+            <button onClick={() => openModal("login")} className="text-primary-500 font-semibold hover:underline">
+              Log in
+            </button>{" "}
+            · Questions?{" "}
+            <Link href="/settings?tab=help" className="text-primary-500 font-semibold hover:underline">
+              Contact us
             </Link>
           </p>
         </div>

@@ -14,6 +14,7 @@ export const NAV_ITEMS = [
   { href: "/directory?tab=seasons", label: "Seasons" },
   { href: "/directory?tab=stats", label: "Stats" },
   { href: "/directory", label: "Players" },
+  { href: "/search", label: "Ask the Bean" },
   { href: "/directory?tab=map", label: "Map" },
 ];
 

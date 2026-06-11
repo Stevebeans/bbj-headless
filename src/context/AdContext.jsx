@@ -9,6 +9,11 @@ import { isStandalone } from "@/lib/pwa";
 const PREVIEW_COOKIE_NAME = "bbj_ad_preview";
 const PREVIEW_ADMIN_ROLES = ["administrator", "editor"];
 
+// Routes that never show ads. The supporter sales page sells ad removal —
+// Freestar's auto-managed dynamic in-content was injecting units inside the
+// pricing cards there (bigbrotherjunkies_articles_dynamic_incontent).
+const AD_FREE_ROUTES = ["/become-supporter", "/checkout/success", "/checkout/cancel"];
+
 const AdContext = createContext({
   shouldShowAds: true,
   isPWA: false,
@@ -48,7 +53,7 @@ export function AdProvider({
     supporterRoles.length > 0 &&
     user.user_roles.some((role) => supporterRoles.includes(role));
 
-  const shouldShowAds = initialShouldShowAds && !isSupporter;
+  const shouldShowAds = initialShouldShowAds && !isSupporter && !AD_FREE_ROUTES.includes(pathname);
 
   // Preview mode: cookie present AND user is admin/editor.
   // Always false for logged-out, non-admin, or cookie-absent users.
