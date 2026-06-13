@@ -11,10 +11,11 @@ export default function EditorSidebar({
   featuredImageId, setFeaturedImageId,
   featuredImageUrl, setFeaturedImageUrl,
   cropData, onCropSave,
+  onFeaturedImageUpload,
   title, slug, setSlug,
   metaDescription, setMetaDescription,
   checklist, reviewNote,
-  editor, onSave, onSaveNow, onTitleChange, isEditMode,
+  onSave, onTitleChange, isEditMode,
   liveUpdates, liveStart, liveEnd, onLiveUpdatesChange,
 }) {
   return (
@@ -45,11 +46,7 @@ export default function EditorSidebar({
             imageId={featuredImageId}
             imageUrl={featuredImageUrl}
             cropData={cropData}
-            onUpload={(id, url, altText) => {
-              setFeaturedImageId(id);
-              setFeaturedImageUrl(url);
-              setTimeout(() => onSaveNow?.(), 0);
-            }}
+            onUpload={(id, url) => onFeaturedImageUpload(id, url)}
             onRemove={() => {
               setFeaturedImageId(null);
               setFeaturedImageUrl(null);
@@ -66,8 +63,6 @@ export default function EditorSidebar({
         slug={slug}
         setSlug={setSlug}
         onSave={onSave}
-        onTitleChange={onTitleChange}
-        editor={editor}
       />
 
       <PublishChecklist checklist={checklist} />

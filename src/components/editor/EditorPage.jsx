@@ -201,6 +201,17 @@ export default function EditorPage({ postId = null }) {
     await doSave();
   }
 
+  // Featured image upload. The immediate save reads from stateRef, which a
+  // passive effect syncs from state — so write the new id into stateRef here
+  // too. Otherwise the first (create) save can outrun the sync and persist
+  // featured_image_id: null, then the post-create reload wipes the preview.
+  function handleFeaturedImageUpload(id, url) {
+    setFeaturedImageId(id);
+    setFeaturedImageUrl(url);
+    stateRef.current = { ...stateRef.current, featuredImageId: id };
+    saveNow();
+  }
+
   // Publish / Submit for review
   async function handlePublish() {
     await handleManualSave();
@@ -366,9 +377,8 @@ export default function EditorPage({ postId = null }) {
     checklist,
     saveStatus: null, // displayed as toast now
     reviewNote,
-    editor,
     onSave: scheduleSave,
-    onSaveNow: saveNow,
+    onFeaturedImageUpload: handleFeaturedImageUpload,
     onTitleChange: handleTitleSet,
     isEditMode: !!postId,
     liveUpdates,

@@ -96,16 +96,6 @@ export async function reviewPost(postId, action, note = "") {
 
 // --- AI ---
 
-export async function generateTitle(content, categoryName) {
-  const res = await fetch("/api/ai/generate-title", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content, categoryName }),
-  });
-  if (!res.ok) throw new Error("Failed to generate title");
-  return res.json();
-}
-
 export async function generateMeta(content) {
   const res = await fetch("/api/ai/generate-meta", {
     method: "POST",
