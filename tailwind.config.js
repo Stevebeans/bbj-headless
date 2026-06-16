@@ -9,11 +9,15 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Roboto", "sans-serif"],
-        osw: ["Oswald", "sans-serif"],
-        display: ["Yanone Kaffeesatz", "sans-serif"],
-        mainHead: ["Yanone Kaffeesatz", "sans-serif"],
-        hand: ["Caveat", "cursive"],
+        // Use the next/font CSS variables (not raw family names) so the
+        // metric-matched fallback Next generates is actually applied. This is
+        // what cancels the font-swap layout shift (CLS). Each var resolves to
+        // e.g. "'Yanone Kaffeesatz', 'Yanone Kaffeesatz Fallback'".
+        sans: ["var(--font-roboto)", "sans-serif"],
+        osw: ["var(--font-oswald)", "sans-serif"],
+        display: ["var(--font-yanone)", "sans-serif"],
+        mainHead: ["var(--font-yanone)", "sans-serif"],
+        hand: ["var(--font-caveat)", "cursive"],
       },
       colors: {
         primary: {

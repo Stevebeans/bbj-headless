@@ -63,7 +63,7 @@ export default function BeanLauncher() {
             </div>
           )}
           <button className="bean-launcher" onClick={openChat} aria-label="Open Ask the Bean">
-            <img src={BEAN_WAVE} alt="" />
+            <img src={BEAN_WAVE} alt="" width={48} height={48} />
           </button>
         </>
       )}
