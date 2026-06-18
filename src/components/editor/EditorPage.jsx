@@ -13,6 +13,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
+import TextAlign from "@tiptap/extension-text-align";
 import EditorToolbar from "./EditorToolbar";
 import EditorSidebar from "./EditorSidebar";
 import MobileSettingsSheet from "./MobileSettingsSheet";
@@ -79,6 +80,7 @@ export default function EditorPage({ postId = null }) {
       Link.configure({ openOnClick: false }),
       Image.configure({ inline: false }),
       Placeholder.configure({ placeholder: "Start writing your post..." }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
     ],
     content: "",
     editorProps: {
@@ -433,6 +435,23 @@ export default function EditorPage({ postId = null }) {
 
         {/* Desktop sidebar */}
         <div className="hidden md:block w-72 lg:w-80 shrink-0 sticky top-[48px] self-start bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+          {/* Action bar — moved here from a floating bottom-right pill so it no longer
+              collides with the Ask-the-Bean launcher anchored at bottom-right. */}
+          <div className="flex items-center gap-2 p-3 border-b border-slate-200 dark:border-slate-800">
+            <button onClick={handleManualSave} className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              Save
+            </button>
+            <button onClick={handlePreview} className="px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
+              Preview
+            </button>
+            <button
+              onClick={handlePublish}
+              disabled={!canSubmit}
+              className="flex-1 px-4 py-1.5 bg-secondary-500 text-primary-600 text-sm font-bold rounded-lg hover:bg-secondary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {canPublish ? "Publish" : "Submit"}
+            </button>
+          </div>
           <EditorSidebar {...sidebarProps} />
         </div>
         </div>
@@ -445,8 +464,9 @@ export default function EditorPage({ postId = null }) {
         {...sidebarProps}
       />
 
-      {/* Floating action buttons */}
-      <div className="fixed bottom-6 right-6 z-40 flex gap-2 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-700 rounded-full shadow-lg px-2 py-1.5">
+      {/* Floating action buttons — mobile only (desktop uses the sidebar action bar).
+          Anchored bottom-left so it clears the Ask-the-Bean launcher at bottom-right. */}
+      <div className="md:hidden fixed bottom-6 left-6 z-40 flex gap-2 bg-white dark:bg-gray-900 border border-slate-200 dark:border-slate-700 rounded-full shadow-lg px-2 py-1.5">
         <button onClick={handleManualSave} className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
           Save
         </button>
