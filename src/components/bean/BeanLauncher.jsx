@@ -20,13 +20,33 @@ export default function BeanLauncher() {
 
   useEffect(() => {
     setMounted(true);
-    const isDismissed = Cookies.get(TEASER_COOKIE) === "1";
-    setDismissed(isDismissed);
-    if (!isDismissed) {
-      const t = setTimeout(() => setShowTeaser(true), 2500);
-      return () => clearTimeout(t);
-    }
+    setDismissed(Cookies.get(TEASER_COOKIE) === "1");
   }, []);
+
+  // Reveal the teaser only once the reader has engaged (scrolled past the fold)
+  // so it never covers above-the-fold content on load. Falls back to a delayed
+  // reveal on short pages, then auto-collapses so it stays a nudge, not a
+  // persistent overlay camped over the article.
+  useEffect(() => {
+    if (!mounted || dismissed || open) return;
+    let hideTimer;
+    function reveal() {
+      setShowTeaser(true);
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(fallbackTimer);
+      hideTimer = setTimeout(() => setShowTeaser(false), 9000);
+    }
+    function onScroll() {
+      if (window.scrollY > 500) reveal();
+    }
+    const fallbackTimer = setTimeout(reveal, 12000);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(hideTimer);
+      clearTimeout(fallbackTimer);
+    };
+  }, [mounted, dismissed, open]);
 
   // Skip on the dedicated /search page (full chat already lives there).
   if (!mounted || pathname === "/search") return null;
@@ -34,7 +54,7 @@ export default function BeanLauncher() {
   function dismissTeaser() {
     setDismissed(true);
     setShowTeaser(false);
-    Cookies.set(TEASER_COOKIE, "1", { expires: 7 });
+    Cookies.set(TEASER_COOKIE, "1", { expires: 30 });
   }
 
   function openChat() {
