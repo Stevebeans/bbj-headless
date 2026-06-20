@@ -1265,4 +1265,13 @@
     right: 16px;
     bottom: 96px;
   }
+  /* Non-premium mobile: lift the launcher + teaser above the sticky bottom
+     anchor ad so the Bean isn't buried behind it. Premium users see no ad, so
+     `.ads-on` is absent and the launcher keeps its default bottom:24px. */
+  .bean-app.ads-on .bean-launcher {
+    bottom: 92px;
+  }
+  .bean-app.ads-on .bean-teaser {
+    bottom: 164px;
+  }
 }

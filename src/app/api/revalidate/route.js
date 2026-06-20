@@ -86,6 +86,10 @@ export async function POST(request) {
           revalidateTag(`post-${slug}`);
           cfPurgePaths.push(`/${slug}`);
         }
+        // Comment counts are server-rendered onto the homepage (hero count +
+        // "Recent Comments" widget), so it must refresh too — not just the post.
+        revalidatePath("/");
+        cfPurgePaths.push("/");
         break;
 
       case "player":

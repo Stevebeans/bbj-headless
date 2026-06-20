@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Cookies from "js-cookie";
+import { useAds } from "@/context/AdContext";
 import BeanChat from "./BeanChat";
 
 const TEASER_COOKIE = "bean_teaser_dismissed";
@@ -13,6 +14,7 @@ const BEAN_WAVE = "/bean/bean-wave.png";
 // logged-in permanent account-setting is a Phase 2 follow-up).
 export default function BeanLauncher() {
   const pathname = usePathname();
+  const { shouldShowAds } = useAds();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(true);
@@ -63,7 +65,7 @@ export default function BeanLauncher() {
   }
 
   return (
-    <div className="bean-app" data-accent="blue">
+    <div className={`bean-app${shouldShowAds ? " ads-on" : ""}`} data-accent="blue">
       {open ? (
         <div className="bean-widget" role="dialog" aria-label="Ask the Bean">
           <BeanChat variant="widget" onClose={() => setOpen(false)} />
