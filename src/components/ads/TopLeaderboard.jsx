@@ -24,7 +24,7 @@ export function TopLeaderboard() {
       <FreestarSlot
         key={pathname}
         placementName="bigbrotherjunkies_leaderboard_atf"
-        className="w-full max-w-3xl px-2 py-2"
+        className="bbj-top-leaderboard w-full max-w-3xl px-2 py-2"
       />
     </div>
   );
