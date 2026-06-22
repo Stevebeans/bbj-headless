@@ -13,7 +13,6 @@ import { QuickLinks } from "@/components/posts/QuickLinks";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
 import { LiveUpdateTimeline } from "@/components/posts/LiveUpdateTimeline";
 import { ContentWithAds } from "@/components/posts/ContentWithAds";
-import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { JumpToComments } from "@/components/posts/JumpToComments";
@@ -167,11 +166,6 @@ export default async function ContentPage({ params }) {
               <div className="mt-6">
                 {/* Quick Links (Social Follow) - only for posts */}
                 {!isPage && <QuickLinks />}
-
-                {/* Before Content Ad - only for posts without hideAds */}
-                {showAds && (
-                  <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" className="mb-4" />
-                )}
 
                 {/* Article Body with In-Content Ads (posts) or plain content (pages) */}
                 {isPage ? (

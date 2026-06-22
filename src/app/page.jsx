@@ -125,8 +125,6 @@ export default async function HomePage() {
               <Hero post={data.hero.post} season={seo.season} />
             )}
 
-            <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" />
-
             <HouseStrip
               houseboard={data.houseboard.houseboard}
               season={data.houseboard.season}

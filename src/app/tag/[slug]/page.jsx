@@ -110,8 +110,6 @@ export default async function TagArchivePage({ params }) {
             </p>
           </div>
 
-          <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" />
-
           <div className="v2-primary-container-inner p-4">
             {posts.length > 0 ? (
               <div>

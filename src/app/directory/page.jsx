@@ -52,11 +52,6 @@ export default async function PlayersPage() {
         </p>
       </div>
 
-      {/* Top Ad */}
-      <div className="mb-6">
-        <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" />
-      </div>
-
       {/* Two Column Layout */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main Content */}

@@ -18,6 +18,7 @@ import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
 import { getActiveLiveThread } from "@/lib/api/liveThread";
 import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 import { FreestarSDKLoader } from "@/components/ads/FreestarSDKLoader";
+import { TopLeaderboard } from "@/components/ads/TopLeaderboard";
 import { SITE_URL, IS_PROD } from "@/lib/seo";
 
 // Default supporter roles — used as fallback if ad-settings doesn't provide a list.
@@ -172,6 +173,9 @@ export default async function RootLayout({ children }) {
           disabledPlacements={adSettings.disabled_placements || []}
           pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
         >
+          {/* Above-header leaderboard — replaces the removed Freestar pushdown.
+              Global (like the sticky footer); self-gates for ad-free users. */}
+          <TopLeaderboard />
           <Header liveThread={liveThread} feedsLive={feedsLive} paramountUrl={paramountUrl} />
           <RoleSimulationBanner />
           <main id="main-content" className="flex-1">

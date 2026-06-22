@@ -4,7 +4,6 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
-import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
 import { PlayerEditButton } from "@/components/admin";
 import {
@@ -162,9 +161,6 @@ export default async function PlayerPage({ params }) {
 
                 {/* Award Badges */}
                 {hasAwards && <PlayerBadges awards={player.awards} />}
-
-                {/* Before Content Ad */}
-                <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" />
 
                 {/* Career Statistics */}
                 <section>

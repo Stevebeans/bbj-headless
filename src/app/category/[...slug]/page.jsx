@@ -127,9 +127,6 @@ export default async function CategoryArchivePage({ params }) {
             </p>
           </div>
 
-          {/* Top Ad */}
-          <FreestarSlot placementName="bigbrotherjunkies_leaderboard_atf" />
-
           {/* Posts List */}
           <div className="v2-primary-container-inner p-4">
             {posts.length > 0 ? (
