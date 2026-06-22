@@ -131,12 +131,12 @@
      leaderboard creative doesn't sit inside the tall box Freestar reserves
      for larger sizes. Scoped to the top banner so taller in-content /
      siderail slots are unaffected. overflow:hidden clips the empty reserve. */
-  .bbj-top-leaderboard .freestar-slot {
+  .freestar-slot.bbj-top-leaderboard {
     max-height: 100px; /* mobile 320x100 */
     overflow: hidden;
   }
   @media (min-width: 768px) {
-    .bbj-top-leaderboard .freestar-slot {
+    .freestar-slot.bbj-top-leaderboard {
       max-height: 90px; /* desktop 728x90 */
     }
   }
