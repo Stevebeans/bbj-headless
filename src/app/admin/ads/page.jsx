@@ -8,6 +8,7 @@ const PREVIEW_COOKIE_NAME = "bbj_ad_preview";
 const PREVIEW_COOKIE_DAYS = 7;
 
 const MANUAL_PLACEMENTS = [
+  { key: "bigbrotherjunkies_leaderboard_top", label: "Leaderboard Top (above header)" },
   { key: "bigbrotherjunkies_leaderboard_atf", label: "Leaderboard ATF" },
   { key: "bigbrotherjunkies_incontent_reusable", label: "In-Content Reusable" },
   { key: "bigbrotherjunkies_incontent_reusable_Homepage2", label: "In-Content Homepage 2" },

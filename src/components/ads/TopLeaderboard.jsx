@@ -4,13 +4,14 @@ import { usePathname } from "next/navigation";
 import { useAds } from "@/context/AdContext";
 import { FreestarSlot } from "./FreestarSlot";
 
-const PLACEMENT = "bigbrotherjunkies_leaderboard_atf";
+const PLACEMENT = "bigbrotherjunkies_leaderboard_top";
 
 /**
  * Site-wide leaderboard above the global header — replaces the removed
- * Freestar pushdown. Reuses the existing `leaderboard_atf` placement
- * (728×90 desktop / 320×100 mobile), height-capped in globals.css
- * (.freestar-slot.bbj-top-leaderboard).
+ * Freestar pushdown. Uses the dedicated `leaderboard_top` placement Freestar
+ * built for this slot (pure leaderboard: 728×90 desktop / 320×100 mobile),
+ * replacing the earlier `leaderboard_atf` reuse. Still height-capped in
+ * globals.css (.freestar-slot.bbj-top-leaderboard) as a safety net.
  *
  * Rendered chrome-less: no bordered card or "Go Ad-Free" footer (those read as
  * bulky at the very top of the page). We use FreestarSlot with
@@ -43,7 +44,7 @@ export function TopLeaderboard() {
         key={pathname}
         placementName={PLACEMENT}
         showBranding={false}
-        className="bbj-top-leaderboard w-full max-w-3xl"
+        className="bbj-top-leaderboard w-full max-w-5xl"
       />
     </div>
   );

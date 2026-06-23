@@ -23,6 +23,13 @@ export const DEFAULT_PWA_SUPPRESSED = [
 
 // Manual placement slot definitions with CLS prevention heights
 export const adSlots = {
+  bigbrotherjunkies_leaderboard_top: {
+    // Dedicated top slot — pure leaderboard. Largest sizes: 970×90 desktop,
+    // 320×100 mobile (confirmed in pubOS). Height drives CLS reservation.
+    desktop: { width: 970, height: 90 },
+    mobile: { width: 320, height: 100 },
+    label: "Leaderboard Top",
+  },
   bigbrotherjunkies_leaderboard_atf: {
     desktop: { width: 728, height: 90 },
     mobile: { width: 320, height: 100 },
