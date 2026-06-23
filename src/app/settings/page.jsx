@@ -18,6 +18,7 @@ import {
 import PlayerSearchDropdown from "@/components/settings/PlayerSearchDropdown";
 import EmailChangeModal from "@/components/settings/EmailChangeModal";
 import HelpTab from "@/components/settings/HelpTab";
+import BeanMemorySection from "@/components/settings/BeanMemorySection";
 import RankBadge from "@/components/comments/RankBadge";
 // Push toggle parked 2026-06-07 with the PWA (native-app path TBD). Code kept.
 // import PushToggle from "@/components/notifications/PushToggle";
@@ -1560,6 +1561,8 @@ function PremiumTab({ settings, loading, showToast }) {
           ))}
         </ul>
       </div>
+
+      <BeanMemorySection showToast={showToast} />
     </div>
   );
 }
