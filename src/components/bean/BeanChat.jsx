@@ -6,6 +6,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import { streamBeanChat } from "@/lib/api/bean";
 import { humanize } from "@/lib/bean/humanize";
 import { UPGRADE_URL } from "@/lib/bean/tiers";
+import { decodeHtml } from "@/lib/utils/decodeHtml";
 
 const UPSELL_OFFERS = {
   full_bean: {
@@ -112,13 +113,13 @@ function AnswerCard({ card }) {
     <div className="bcard">
       <div className="bc-h">
         <span className="k">{card.kind === "week" ? "Result" : "Season"}</span>
-        <span className="title">{card.title}</span>
+        <span className="title">{decodeHtml(card.title)}</span>
         <span className="spacer" />
-        {card.sub && <span className="wk">{card.sub}</span>}
+        {card.sub && <span className="wk">{decodeHtml(card.sub)}</span>}
       </div>
       <div className="bc-week">
         {card.rows.map((r, i) => {
-          const joined = r.names.join(", ");
+          const joined = decodeHtml(r.names.join(", "));
           const cls = !joined ? "name empty" : joined.length > 14 || r.names.length > 1 ? "name sm" : "name";
           return (
             <div key={i} className={"slot " + r.cls}>
@@ -164,11 +165,11 @@ function BeanRow({ m }) {
             <span>Sources</span>
             {m.sources.slice(0, 3).map((s, i) =>
               s.url ? (
-                <a key={i} href={s.url} className="pill" title={s.title}>
-                  {s.title}
+                <a key={i} href={s.url} className="pill" title={decodeHtml(s.title)}>
+                  {decodeHtml(s.title)}
                 </a>
               ) : (
-                <span key={i} className="pill">{s.title}</span>
+                <span key={i} className="pill">{decodeHtml(s.title)}</span>
               )
             )}
           </div>
