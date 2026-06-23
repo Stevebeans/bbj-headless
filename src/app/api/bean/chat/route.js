@@ -10,6 +10,7 @@ import { buildAnswerCard, buildPlayerCard, cardFacts } from "@/lib/bean/cards";
 import { pacificNowLabel } from "@/lib/bean/time";
 import { modelForTier, cappedMessage } from "@/lib/bean/tiers";
 import { sseEvent } from "@/lib/bean/sse";
+import { updateMemory } from "@/lib/bean/memory";
 
 export const runtime = "nodejs"; // needs the SDK + env, not edge
 export const dynamic = "force-dynamic"; // per-user, auth-gated — never cached
@@ -58,6 +59,31 @@ async function beanConsume(token) {
   }
 }
 
+async function beanMemoryGet(token) {
+  if (!token) return "";
+  try {
+    const res = await fetch(`${WP}/bbjd/v1/bean/memory`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return typeof data.summary === "string" ? data.summary : "";
+  } catch {
+    return "";
+  }
+}
+
+async function beanMemorySet(token, summary) {
+  if (!token || !summary) return;
+  try {
+    await fetch(`${WP}/bbjd/v1/bean/memory`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ summary }),
+    });
+  } catch {
+    /* best-effort */
+  }
+}
+
 function sseStream(run) {
   const encoder = new TextEncoder();
   return new ReadableStream({
@@ -98,6 +124,7 @@ export async function POST(request) {
         .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
         .slice(-MAX_HISTORY)
     : [];
+  const userName = typeof body.userName === "string" ? body.userName.slice(0, 80) : "";
 
   // 3. Tier + quota check.
   const token = await getToken(request);
@@ -128,7 +155,8 @@ export async function POST(request) {
   const grounding = card
     ? [{ type: "season", title: card.title, url: card.url, text: cardFacts(card) }, ...matches]
     : matches;
-  const { system, messages } = buildChatPrompt(question, grounding, history, guide, pacificNowLabel());
+  const memorySummary = snap.memory ? await beanMemoryGet(token) : "";
+  const { system, messages } = buildChatPrompt(question, grounding, history, guide, pacificNowLabel(), { userName, memorySummary });
   const SOURCE_MIN_SCORE = 0.82;
   const sources =
     (matches[0]?.score ?? 0) >= SOURCE_MIN_SCORE
@@ -142,8 +170,9 @@ export async function POST(request) {
     sseStream(async (send) => {
       send({ type: "sources", sources });
       if (card) send({ type: "card", card });
+      let answerText = "";
       const ai = client.messages.stream({ model, max_tokens: 1024, system, messages });
-      ai.on("text", (t) => send({ type: "delta", text: t }));
+      ai.on("text", (t) => { answerText += t; send({ type: "delta", text: t }); });
       await ai.finalMessage();
       // Record the message (only when metering is live) and report remaining quota.
       if (!snap._nometer) {
@@ -151,6 +180,16 @@ export async function POST(request) {
         if (updated) send({ type: "quota", tier: updated.tier, remaining: updated.remaining, cap: updated.cap });
       }
       send({ type: "done" });
+      // Cross-session memory (Full Bean): update the evolving note. Best-effort —
+      // the answer already streamed, so a failure here never affects the reply.
+      if (snap.memory) {
+        try {
+          const newSummary = await updateMemory({ priorSummary: memorySummary, userMessage: question, beanReply: answerText, userName });
+          await beanMemorySet(token, newSummary);
+        } catch (err) {
+          console.error("bean memory update failed:", err);
+        }
+      }
     }),
     { headers: SSE_HEADERS }
   );
