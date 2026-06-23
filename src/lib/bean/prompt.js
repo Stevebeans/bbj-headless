@@ -22,7 +22,10 @@ function formatSource(m, i) {
  * @param {string} [now]  human label for the current time, e.g. "morning (Wednesday, 9:25 AM Pacific)"
  * @returns {{ system: Array, messages: Array }}
  */
-export function buildChatPrompt(question, matches = [], history = [], guide = VOICE_GUIDE, now = null) {
+export function buildChatPrompt(question, matches = [], history = [], guide = VOICE_GUIDE, now = null, opts = {}) {
+  const { userName = "", memorySummary = "" } = opts;
+  const firstName = (userName || "").trim().split(/\s+/)[0] || "";
+
   const system = [
     { type: "text", text: guide, cache_control: { type: "ephemeral" } },
   ];
@@ -37,8 +40,18 @@ export function buildChatPrompt(question, matches = [], history = [], guide = VO
 
   const timeLine = now ? `RIGHT NOW it's ${now}. If you greet with a time of day, match this. Don't say evening when it's morning.\n\n` : "";
 
+  const identityLine = firstName
+    ? `You're talking to ${firstName}, a logged-in BBJ member. Greet them naturally by name when it fits; never ask who they are.\n\n`
+    : "";
+
+  const memoryBlock = memorySummary
+    ? `WHAT YOU REMEMBER ABOUT ${firstName || "them"} (private notes from past chats — never recite verbatim, just let it inform how you talk):\n${memorySummary}\n\n`
+    : "";
+
   const content =
     timeLine +
+    identityLine +
+    memoryBlock +
     `CONTEXT:\n${context}\n\n` +
     `${guidance}\n\n` +
     `FAN'S MESSAGE: ${question}`;
