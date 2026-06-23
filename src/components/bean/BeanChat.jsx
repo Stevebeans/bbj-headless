@@ -251,6 +251,7 @@ export default function BeanChat({ variant = "page", onClose }) {
         role: m.role === "user" ? "user" : "assistant",
         content: m.text,
       }));
+      const userName = user?.user_display_name || "";
 
       setVal("");
       if (taRef.current) taRef.current.style.height = "auto";
@@ -291,7 +292,7 @@ export default function BeanChat({ variant = "page", onClose }) {
           setThinking(false);
           ensureBean((b) => ({ text: message, streaming: false }));
         },
-      });
+      }, undefined, userName);
 
       setMsgs((m) => {
         const c = [...m];
