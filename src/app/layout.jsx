@@ -19,6 +19,7 @@ import { getActiveLiveThread } from "@/lib/api/liveThread";
 import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 import { FreestarSDKLoader } from "@/components/ads/FreestarSDKLoader";
 import { TopLeaderboard } from "@/components/ads/TopLeaderboard";
+import CountdownBanner from "@/components/CountdownBanner";
 import { SITE_URL, IS_PROD } from "@/lib/seo";
 
 // Default supporter roles — used as fallback if ad-settings doesn't provide a list.
@@ -157,6 +158,11 @@ export default async function RootLayout({ children }) {
   const feedsLive = adSettings.feeds_live !== false;
   const paramountUrl = adSettings.feeds_paramount_url || "https://paramountplus.qflm.net/c/161260/3116112/3065";
 
+  // Countdown banner — site-wide event timer above the header. Off unless enabled.
+  const countdownEnabled = adSettings.countdown_enabled === true;
+  const countdownLabel = adSettings.countdown_label || "";
+  const countdownTarget = adSettings.countdown_target || "";
+
   return (
     <html
       lang="en"
@@ -173,6 +179,8 @@ export default async function RootLayout({ children }) {
           disabledPlacements={adSettings.disabled_placements || []}
           pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
         >
+          {/* Event countdown — above everything; self-hides when target passes. */}
+          <CountdownBanner enabled={countdownEnabled} label={countdownLabel} target={countdownTarget} />
           {/* Above-header leaderboard — replaces the removed Freestar pushdown.
               Global (like the sticky footer); self-gates for ad-free users. */}
           <TopLeaderboard />
