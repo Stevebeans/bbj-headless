@@ -179,12 +179,12 @@ export default async function RootLayout({ children }) {
           disabledPlacements={adSettings.disabled_placements || []}
           pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
         >
-          {/* Event countdown — above everything; self-hides when target passes. */}
-          <CountdownBanner enabled={countdownEnabled} label={countdownLabel} target={countdownTarget} />
           {/* Above-header leaderboard — replaces the removed Freestar pushdown.
               Global (like the sticky footer); self-gates for ad-free users. */}
           <TopLeaderboard />
           <Header liveThread={liveThread} feedsLive={feedsLive} paramountUrl={paramountUrl} />
+          {/* Event countdown — under the nav, above the page's spoiler bar; self-hides when target passes. */}
+          <CountdownBanner enabled={countdownEnabled} label={countdownLabel} target={countdownTarget} />
           <RoleSimulationBanner />
           <main id="main-content" className="flex-1">
             {children}
