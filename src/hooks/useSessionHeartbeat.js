@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { sendHeartbeat } from "@/lib/api/comments";
+import { maybeRefreshToken } from "@/lib/auth/refresh";
 
 /**
  * Hook to send periodic heartbeats to keep the session alive
@@ -33,12 +34,14 @@ export function useSessionHeartbeat(intervalMs = 2 * 60 * 1000) {
     // Set up interval for periodic heartbeats
     intervalRef.current = setInterval(() => {
       sendHeartbeat();
+      maybeRefreshToken();
     }, intervalMs);
 
     // Also send heartbeat on visibility change (when tab becomes visible)
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         sendHeartbeat();
+        maybeRefreshToken();
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);

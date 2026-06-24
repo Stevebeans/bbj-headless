@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isTokenExpired } from "@/lib/auth/token";
 
 // Apex-domain probe paths from WP attack scanners. Bail with 404 before
 // the request hits any page handler so we don't pay function/ISR cost.
@@ -10,28 +11,6 @@ function isProbePath(pathname) {
   return PROBE_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
-/**
- * Decode JWT payload to check expiration.
- * Runs at the edge — no Node.js Buffer, so use atob.
- */
-function isTokenExpired(token) {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return true;
-
-    // Edge-compatible base64url decode
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const payload = JSON.parse(atob(base64));
-
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-      return true;
-    }
-
-    return false;
-  } catch {
-    return true;
-  }
-}
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;

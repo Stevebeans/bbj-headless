@@ -9,6 +9,8 @@ import {
   setUserCache,
   getUserCache,
 } from "@/lib/auth/cookies";
+import { isTokenExpired } from "@/lib/auth/token";
+import { maybeRefreshToken } from "@/lib/auth/refresh";
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
@@ -127,7 +129,7 @@ export function AuthProvider({ children }) {
       const payload = JSON.parse(atob(token.split(".")[1]));
       // Check expiration — middleware no longer cleans expired tokens on
       // content pages (narrowed to admin routes only for ISR caching)
-      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      if (isTokenExpired(token)) {
         clearToken();
         setUser(null);
         setLoading(false);
@@ -163,6 +165,10 @@ export function AuthProvider({ children }) {
 
     setUserAndCache(jwtData);
     setLoading(false);
+
+    // Sliding refresh: if the token is past ~half its life, re-mint it now
+    // (and re-arm the cookie / reset Safari's ITP clock). Non-blocking.
+    maybeRefreshToken();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch current user data from WordPress (used after login and for refresh)
