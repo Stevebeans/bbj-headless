@@ -4,6 +4,7 @@
  */
 
 import { getToken, clearToken } from "@/lib/auth/cookies";
+import { forceRefreshToken } from "@/lib/auth/refresh";
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
@@ -26,8 +27,16 @@ export async function adminFetch(endpoint, options = {}) {
     },
   });
 
+  if (response.status === 401 && !options._retried) {
+    // Could be a transient/expired token — try one sliding refresh, then retry.
+    const fresh = await forceRefreshToken();
+    if (fresh) {
+      return adminFetch(endpoint, { ...options, _retried: true });
+    }
+  }
+
   if (response.status === 401) {
-    // Token expired or invalid
+    // Refresh failed — genuinely unauthenticated.
     clearToken();
     if (typeof window !== "undefined") {
       window.location.href = "/login?redirect=/admin";

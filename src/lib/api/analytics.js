@@ -4,12 +4,13 @@
  */
 
 import { getToken, clearToken } from "@/lib/auth/cookies";
+import { forceRefreshToken } from "@/lib/auth/refresh";
 
 const API_URL =
   process.env.NEXT_PUBLIC_WORDPRESS_API_URL ||
   "https://bigbrotherjunkies.com/wp-json";
 
-async function analyticsFetch(endpoint, params = {}) {
+async function analyticsFetch(endpoint, params = {}, _retried = false) {
   const token = getToken();
   if (!token) throw new Error("Not authenticated");
 
@@ -21,6 +22,13 @@ async function analyticsFetch(endpoint, params = {}) {
       Authorization: `Bearer ${token}`,
     },
   });
+
+  if (response.status === 401 && !_retried) {
+    const fresh = await forceRefreshToken();
+    if (fresh) {
+      return analyticsFetch(endpoint, params, true);
+    }
+  }
 
   if (response.status === 401) {
     clearToken();
