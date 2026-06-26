@@ -133,7 +133,7 @@ export default function AdminPlayers() {
                     </td>
                     <td className="py-2 px-3 text-gray-900 dark:text-gray-200 font-medium">{p.name}</td>
                     <td className="py-2 px-3 text-gray-500 dark:text-gray-400">
-                      {p.seasons.map((s) => s.abbreviation).join(", ") || "—"}
+                      {(p.seasons || []).map((s) => s.abbreviation).join(", ") || "—"}
                     </td>
                     <td className="py-2 px-3 text-right space-x-3 whitespace-nowrap">
                       <Link href={`/bigbrother-players/${p.slug}/edit`} className="text-primary-500 hover:text-primary-600 text-xs font-medium">Edit</Link>

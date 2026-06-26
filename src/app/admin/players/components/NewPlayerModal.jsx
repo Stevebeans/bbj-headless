@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { createPlayer } from "@/lib/api/adminContent";
 
@@ -12,6 +12,7 @@ export default function NewPlayerModal({ seasons = [], onClose, onCreated }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [lastCreated, setLastCreated] = useState(null);
+  const firstNameRef = useRef(null);
 
   const reset = () => {
     setFirstName("");
@@ -19,12 +20,14 @@ export default function NewPlayerModal({ seasons = [], onClose, onCreated }) {
     setGender("");
     // keep seasonId so the next houseguest defaults to the same season
     setError(null);
+    firstNameRef.current?.focus();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || saving) return;
+    if (!firstName.trim() || !lastName.trim()) return;
     setSaving(true);
+    setLastCreated(null);
     setError(null);
     try {
       const res = await createPlayer({
@@ -69,16 +72,19 @@ export default function NewPlayerModal({ seasons = [], onClose, onCreated }) {
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input
+              ref={firstNameRef}
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="First name"
               autoFocus
+              aria-label="First name"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               placeholder="Last name"
+              aria-label="Last name"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
@@ -86,6 +92,7 @@ export default function NewPlayerModal({ seasons = [], onClose, onCreated }) {
           <select
             value={gender}
             onChange={(e) => setGender(e.target.value)}
+            aria-label="Gender"
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="">Gender (optional)</option>
@@ -97,6 +104,7 @@ export default function NewPlayerModal({ seasons = [], onClose, onCreated }) {
           <select
             value={seasonId}
             onChange={(e) => setSeasonId(e.target.value)}
+            aria-label="Season"
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="">No season (add later)</option>

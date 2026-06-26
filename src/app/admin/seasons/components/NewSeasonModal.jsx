@@ -16,7 +16,7 @@ export default function NewSeasonModal({ onClose, onCreated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!fullName.trim() || !seasonNumber.trim() || saving) return;
+    if (!fullName.trim() || !seasonNumber.trim()) return;
     setSaving(true);
     setError(null);
     try {
@@ -62,12 +62,12 @@ export default function NewSeasonModal({ onClose, onCreated }) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
-            <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name (e.g. Big Brother 28)" autoFocus
+            <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name (e.g. Big Brother 28)" autoFocus aria-label="Full name"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
             <div className="grid grid-cols-2 gap-3">
-              <input value={seasonNumber} onChange={(e) => setSeasonNumber(e.target.value)} placeholder="Number (e.g. 28)"
+              <input value={seasonNumber} onChange={(e) => setSeasonNumber(e.target.value)} placeholder="Number (e.g. 28)" aria-label="Season number"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
-              <input value={abbreviation} onChange={(e) => setAbbreviation(e.target.value)} placeholder="Abbr (e.g. BB28)"
+              <input value={abbreviation} onChange={(e) => setAbbreviation(e.target.value)} placeholder="Abbr (e.g. BB28)" aria-label="Abbreviation"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
             </div>
             <div className="grid grid-cols-2 gap-3">
