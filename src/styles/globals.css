@@ -513,3 +513,40 @@ div.max-w-screen-xl.py-1.flex.items-center.justify-center:has(> :only-child:empt
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+
+/* Bean bullets — Ask the Bean mascot as the list marker in post bodies.
+   Scoped to .bean-list (the post article body) so nav/sidebars are untouched.
+   Unordered lists get the bean; ordered lists keep their numbers. */
+.bean-list ul {
+  list-style: none;
+  padding-left: 0;
+}
+.bean-list ul > li {
+  position: relative;
+  padding-left: 2em;
+  margin: 0.3em 0;
+}
+/* The editor wraps each item's text in <p>; flatten its margins so the
+   bean lines up with the text and items stay compact. */
+.bean-list ul > li > p {
+  margin: 0;
+}
+.bean-list ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  width: 1.5em;
+  height: 1.5em;
+  background: url("/bean/bean-neutral.png") no-repeat center / contain;
+}
+/* Nested lists: same bean, a touch smaller. */
+.bean-list ul ul > li::before {
+  width: 1.25em;
+  height: 1.25em;
+}
+/* Keep ordered lists numbered. */
+.bean-list ol {
+  list-style: decimal;
+  list-style-position: inside;
+}

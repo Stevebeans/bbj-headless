@@ -188,7 +188,7 @@ export default async function ContentPage({ params }) {
                     content={linkedContent}
                     showAds={showAds}
                     adInterval={adInterval}
-                    className="prose-base prose-slate
+                    className="bean-list prose-base prose-slate
                       max-w-none dark:prose-invert
                       break-words selection:bg-yellow-200 selection:text-black
                       prose-headings:font-display prose-h2:scroll-mt-24 prose-h3:scroll-mt-24
