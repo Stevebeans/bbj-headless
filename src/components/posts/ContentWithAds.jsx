@@ -1,4 +1,5 @@
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
+import { splitContentBlocks } from "./splitContentBlocks";
 
 const MIN_LENGTH = 1500;
 const MIN_PARAGRAPH = 3;
@@ -21,7 +22,7 @@ export function ContentWithAds({ content, className = "", showAds = true, adInte
     );
   }
 
-  const paragraphs = splitParagraphs(content);
+  const paragraphs = splitContentBlocks(content);
 
   if (paragraphs.length < MIN_PARAGRAPH + 1) {
     return (
@@ -64,28 +65,4 @@ export function ContentWithAds({ content, className = "", showAds = true, adInte
   }
 
   return <div className={className}>{chunks}</div>;
-}
-
-/**
- * Split HTML content into paragraphs at </p> boundaries.
- * Keeps the closing tag with each paragraph chunk.
- */
-function splitParagraphs(html) {
-  const parts = html.split(/(<\/p>)/i);
-  const paragraphs = [];
-  let current = "";
-
-  for (let i = 0; i < parts.length; i++) {
-    current += parts[i];
-    if (parts[i].toLowerCase() === "</p>") {
-      const trimmed = current.trim();
-      if (trimmed) paragraphs.push(trimmed);
-      current = "";
-    }
-  }
-
-  const remaining = current.trim();
-  if (remaining) paragraphs.push(remaining);
-
-  return paragraphs;
 }
