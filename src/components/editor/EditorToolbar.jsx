@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import EmbedModal from "./EmbedModal";
+import LinkModal from "./LinkModal";
 
 const COLORS = [
   "#000000", "#E55C41", "#35546e", "#FFBF0F", "#059669",
@@ -11,6 +12,7 @@ const COLORS = [
 export default function EditorToolbar({ editor, onImageUpload, inlineUpload }) {
   const [showColors, setShowColors] = useState(false);
   const [showEmbed, setShowEmbed] = useState(false);
+  const [showLink, setShowLink] = useState(false);
   const [isFixed, setIsFixed] = useState(false);
   const [fixedStyle, setFixedStyle] = useState({});
   const observerRef = useRef(null);
@@ -198,12 +200,7 @@ export default function EditorToolbar({ editor, onImageUpload, inlineUpload }) {
 
       {/* Link */}
       <ToolButton
-        onClick={() => {
-          const url = window.prompt("Enter URL:");
-          if (url) {
-            editor.chain().focus().setLink({ href: url, target: "_blank" }).run();
-          }
-        }}
+        onClick={() => setShowLink(true)}
         active={editor.isActive("link")}
         title="Link"
       >
@@ -290,6 +287,10 @@ export default function EditorToolbar({ editor, onImageUpload, inlineUpload }) {
       )}
 
       {/* Embed modal */}
+      {showLink && (
+        <LinkModal editor={editor} onClose={() => setShowLink(false)} />
+      )}
+
       {showEmbed && (
         <EmbedModal editor={editor} onClose={() => setShowEmbed(false)} />
       )}
