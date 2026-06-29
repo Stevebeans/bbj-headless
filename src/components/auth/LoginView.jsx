@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FaGoogle } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
@@ -16,6 +16,8 @@ export default function LoginView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleFailed, setGoogleFailed] = useState(false);
+  const googleReadyRef = useRef(false);
   const [rememberMe, setRememberMe] = useState(() => getRememberPreference());
 
   // Close modal if user becomes authenticated
@@ -28,7 +30,7 @@ export default function LoginView() {
     }
   }, [isAuthenticated, authLoading, closeModal, redirectPath, router]);
 
-  // Initialize Google Sign-In
+  // Initialize Google Sign-In (with visible-failure detection for blocked networks)
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     console.log("[Google Auth] Client ID exists:", !!clientId);
@@ -38,30 +40,36 @@ export default function LoginView() {
       return;
     }
 
+    let failTimer;
+    const markFailed = () => setGoogleFailed(true);
+
     const initGoogle = () => {
       console.log("[Google Auth] initGoogle called, google object:", !!window.google?.accounts?.id);
 
-      if (window.google?.accounts?.id) {
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: handleGoogleResponse,
-          auto_select: false,
-        });
+      if (!window.google?.accounts?.id) return;
 
-        const btnContainer = document.getElementById("google-signin-btn");
-        console.log("[Google Auth] Button container found:", !!btnContainer);
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleResponse,
+        auto_select: false,
+      });
 
-        window.google.accounts.id.renderButton(
-          btnContainer,
-          {
-            theme: "outline",
-            size: "large",
-            width: 320,
-            text: "continue_with",
-          }
-        );
-        console.log("[Google Auth] Button rendered");
-      }
+      const btnContainer = document.getElementById("google-signin-btn");
+      console.log("[Google Auth] Button container found:", !!btnContainer);
+      if (!btnContainer) return;
+
+      window.google.accounts.id.renderButton(btnContainer, {
+        theme: "outline",
+        size: "large",
+        width: 320,
+        text: "continue_with",
+      });
+      console.log("[Google Auth] Button rendered");
+
+      // Success — cancel the failure fallback.
+      googleReadyRef.current = true;
+      setGoogleFailed(false);
+      if (failTimer) clearTimeout(failTimer);
     };
 
     if (window.google?.accounts?.id) {
@@ -71,17 +79,32 @@ export default function LoginView() {
       const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
       if (existingScript) {
         existingScript.addEventListener("load", initGoogle);
-        return;
+        existingScript.addEventListener("error", markFailed);
+      } else {
+        // Load Google Identity Services script
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        script.onload = initGoogle;
+        // Fires when the script is blocked / fails to load (firewall, ad-blocker, offline).
+        script.onerror = markFailed;
+        document.body.appendChild(script);
       }
-
-      // Load Google Identity Services script
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      script.onload = initGoogle;
-      document.body.appendChild(script);
     }
+
+    // Backstop: if the button still hasn't rendered after 6s (slow or silently blocked),
+    // surface the note so the user isn't staring at a phantom "or".
+    failTimer = setTimeout(() => {
+      if (!googleReadyRef.current) {
+        console.log("[Google Auth] Button did not render within timeout — showing fallback note");
+        setGoogleFailed(true);
+      }
+    }, 6000);
+
+    return () => {
+      if (failTimer) clearTimeout(failTimer);
+    };
   }, []);
 
   const handleGoogleResponse = async (response) => {
@@ -144,6 +167,20 @@ export default function LoginView() {
           <div className="mt-2 flex items-center justify-center gap-2 text-sm text-slate-500">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500" />
             Signing in with Google...
+          </div>
+        )}
+        {googleFailed && !googleLoading && (
+          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-300">
+            <p className="font-semibold">Google sign-in didn’t load.</p>
+            <p className="mt-1">
+              This is almost always your network or browser blocking Google — not your account. You can
+              still log in with your username &amp; password below, or try another network (like your phone).
+            </p>
+            <p className="mt-1 text-amber-700 dark:text-amber-400">
+              On a work computer? Ask your IT/admin to allow{" "}
+              <span className="font-mono">accounts.google.com</span> — error code{" "}
+              <span className="font-mono font-semibold">GSI-BLOCKED</span>.
+            </p>
           </div>
         )}
       </div>
