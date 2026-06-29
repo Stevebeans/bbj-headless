@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getPosts } from "@/lib/api/posts";
 import { toRelativeHref } from "@/lib/utils/url";
 
 const API_URL =
@@ -17,7 +16,8 @@ function looksLikeUrl(s) {
 // Normalize a search/post result down to { title, href }. Drops anything unlinkable.
 function normalize(item) {
   if (!item) return null;
-  const title = item.title || item.name || item.full_name || "";
+  const rawTitle = typeof item.title === "string" ? item.title : item.title?.rendered;
+  const title = rawTitle || item.name || item.full_name || "";
   const href =
     item.permalink || item.url || (item.slug ? `/${item.slug}` : "");
   if (!href) return null;
@@ -32,12 +32,14 @@ export default function LinkModal({ editor, onClose }) {
   const inputRef = useRef(null);
   const abortRef = useRef(null);
 
-  // Load the 10 most recent posts once (the default list).
+  // Load the 10 most recent posts once (the default list). Direct fetch — the
+  // server-side getPosts() helper doesn't work from this client modal.
   useEffect(() => {
     let alive = true;
-    getPosts({ limit: 10 })
-      .then((posts) => {
-        if (alive) setRecent((posts || []).map(normalize).filter(Boolean));
+    fetch(`${API_URL}/bbjd/v1/posts?per_page=10`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (alive) setRecent((d.posts || []).map(normalize).filter(Boolean));
       })
       .catch(() => {});
     inputRef.current?.focus();

@@ -174,7 +174,7 @@ export default async function ContentPage({ params }) {
                       max-w-none dark:prose-invert
                       break-words selection:bg-yellow-200 selection:text-black
                       prose-headings:font-display prose-h2:scroll-mt-24 prose-h3:scroll-mt-24
-                      prose-a:no-underline hover:prose-a:underline prose-a:text-primary-500 hover:prose-a:text-primary-600
+                      prose-a:underline prose-a:text-primary-500 hover:prose-a:text-primary-600
                       prose-img:rounded-lg prose-img:mx-auto
                       prose-figcaption:text-sm prose-figcaption:text-slate-500
                       list-disc list-inside prose-li:marker:text-primary-500
@@ -192,7 +192,7 @@ export default async function ContentPage({ params }) {
                       max-w-none dark:prose-invert
                       break-words selection:bg-yellow-200 selection:text-black
                       prose-headings:font-display prose-h2:scroll-mt-24 prose-h3:scroll-mt-24
-                      prose-a:no-underline hover:prose-a:underline prose-a:text-primary-500 hover:prose-a:text-primary-600
+                      prose-a:underline prose-a:text-primary-500 hover:prose-a:text-primary-600
                       prose-img:rounded-lg prose-img:mx-auto
                       prose-figcaption:text-sm prose-figcaption:text-slate-500
                       list-disc list-inside prose-li:marker:text-primary-500
