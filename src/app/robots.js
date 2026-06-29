@@ -27,7 +27,20 @@ export default function robots() {
           "/bigbrother-players/*/edit",
         ],
       },
+      // Block SEO/backlink scrapers that deep-crawl the whole 17.5K-page archive and
+      // run up Vercel render cost for zero value to us. (These honor robots.txt.)
+      ...BLOCKED_BOTS.map((bot) => ({ userAgent: bot, disallow: "/" })),
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
+
+// Non-search crawlers we don't want walking the site (backlink/SEO data scrapers).
+const BLOCKED_BOTS = [
+  "AhrefsBot",
+  "SemrushBot",
+  "MJ12bot",
+  "DotBot",
+  "DataForSeoBot",
+  "BLEXBot",
+];
