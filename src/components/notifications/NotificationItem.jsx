@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaReply, FaAt, FaBell, FaBullhorn } from "react-icons/fa";
+import { toRelativeHref } from "@/lib/utils/url";
 
 export default function NotificationItem({ notification, onClick, compact = false }) {
   const { type, actor, post, comment, time_ago, is_read, message } = notification;
@@ -23,15 +24,14 @@ export default function NotificationItem({ notification, onClick, compact = fals
     }
   };
 
-  // Build the link URL
+  // WordPress returns post.url with the wp.* API host (e.g. wp.bigbrotherjunkies.com).
+  // Reduce it to a domain-relative path (via the shared helper) so the link always
+  // stays on the frontend domain the user is browsing, not the wp subdomain.
   const getLink = () => {
-    if (post?.url && comment?.id) {
-      return `${post.url}?comment=${comment.id}#comment-${comment.id}`;
-    }
-    if (post?.url) {
-      return post.url;
-    }
-    return "#";
+    if (!post?.url) return "#";
+    const path = toRelativeHref(post.url);
+    if (path === "#") return "#";
+    return comment?.id ? `${path}?comment=${comment.id}#comment-${comment.id}` : path;
   };
 
   // Get icon for notification type
