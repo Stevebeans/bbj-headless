@@ -2,7 +2,12 @@
  * WordPress API client
  */
 
-const API_URL = process.env.WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
+// NEXT_PUBLIC_ first: it's the only env var that exists in client bundles.
+// (The old apex fallback is 403-blocked in prod — never fall back to it.)
+const API_URL =
+  process.env.NEXT_PUBLIC_WORDPRESS_API_URL ||
+  process.env.WORDPRESS_API_URL ||
+  "https://wp.bigbrotherjunkies.com/wp-json";
 
 /**
  * Fetch from WordPress API with caching
