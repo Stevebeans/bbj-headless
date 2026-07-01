@@ -4,6 +4,9 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { getFeedUpdates } from "@/lib/api/feedUpdates";
 import { FeedHubUpdateCard } from "./FeedHubUpdateCard";
 import { dateKey, dayLabel, shortDate } from "./feedHubName";
+import { LiveIndicatorToggle } from "@/components/feed-updates/LiveIndicatorToggle";
+import { useLiveFeedUpdates } from "@/hooks/useLiveFeedUpdates";
+import { mergeUpdates } from "@/lib/feedUpdatesLive";
 
 const PER_PAGE = 20;
 const TABS = [
@@ -28,6 +31,20 @@ export function FeedHubThread({ initial }) {
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(false);
   const reqId = useRef(0);
+
+  // Live polling only makes sense at the default view — prepending into a
+  // filtered/sorted/searched result set would corrupt it. Off the default
+  // view, both the poll AND optimistic inserts are ignored; returning to
+  // default re-fetches anyway (the filter effect fires).
+  const isDefaultView = mode === "" && sort === "newest" && search === "";
+
+  const { isPremium, live, setLive } = useLiveFeedUpdates({
+    enabled: isDefaultView,
+    onNewUpdates: (incoming) => {
+      if (!isDefaultView) return;
+      setRows((current) => mergeUpdates(current, incoming));
+    },
+  });
 
   // Re-fetch from server when a filter (mode/sort/search) changes.
   const fetchFiltered = useCallback(async (next) => {
@@ -84,6 +101,7 @@ export function FeedHubThread({ initial }) {
 
   return (
     <>
+      <LiveIndicatorToggle isPremium={isPremium} live={live} onToggle={setLive} />
       <div className="fuh-toolbar">
         <div className="fuh-tabs" role="tablist">
           {TABS.map((t) => (
