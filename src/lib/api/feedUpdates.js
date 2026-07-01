@@ -228,3 +228,23 @@ export async function getSocialConfig(token) {
 
   return res.json();
 }
+
+/**
+ * Latest ~20 updates for the premium live poller — canonical and
+ * param-less, served by WP from a 20s transient micro-cache.
+ *
+ * MUST stay unauthenticated (no Authorization header): the payload is a
+ * single shared anonymous blob; auth would fragment the cache AND leak a
+ * user's vote state into it. Client-side only — polls go straight to the
+ * WP host (never through Vercel; that's the cost invariant).
+ */
+export async function fetchRecentFeedUpdates() {
+  const apiUrl =
+    process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://wp.bigbrotherjunkies.com/wp-json";
+  const res = await fetch(`${apiUrl}/bbjd/v1/feed-updates/recent`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`feed-updates/recent failed: HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return Array.isArray(data?.updates) ? data.updates : [];
+}
