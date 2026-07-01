@@ -2,7 +2,8 @@
 
 import { useAuth } from "@/context/AuthContext";
 
-const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
+// full_bean = the Ask-the-Bean AI tier; it includes all Supporter perks.
+const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime", "full_bean"];
 
 /**
  * Centralized premium access check
