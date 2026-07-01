@@ -144,9 +144,17 @@ export function FloatingUpdater() {
 
       // Let live feed lists (homepage + hub) prepend this instantly — the
       // poster sees their own update without a refresh, on ANY tier.
+      // The create response has raw_content but no rendered `content` key,
+      // which the homepage card renders — normalize so the optimistic card
+      // isn't body-less (dedupe means a later poll can't repair it).
       if (result.update?.id) {
         window.dispatchEvent(
-          new CustomEvent("bbjd:feed-update-created", { detail: result.update })
+          new CustomEvent("bbjd:feed-update-created", {
+            detail: {
+              ...result.update,
+              content: result.update.content ?? result.update.raw_content ?? "",
+            },
+          })
         );
       }
 
