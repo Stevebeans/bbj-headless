@@ -5,7 +5,7 @@ import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { getHomepageData } from "@/lib/api/home";
 import {
   Hero,
-  FeedUpdatesSection,
+  LiveFeedUpdates,
   MoreStories,
   SeasonStats,
   RecentComments,
@@ -134,7 +134,7 @@ export default async function HomePage() {
 
             <FreestarSlot placementName="bigbrotherjunkies_incontent_reusable" />
 
-            <FeedUpdatesSection updates={data.feedUpdates.updates} />
+            <LiveFeedUpdates updates={data.feedUpdates.updates} />
 
             <FreestarSlot placementName="bigbrotherjunkies_incontent_reusable_Homepage2" />
 
