@@ -8,13 +8,15 @@ import Link from "next/link";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated, loading: authLoading, error: authError, getRememberPreference } = useAuth();
+  const { login, isAuthenticated, loading: authLoading, error: authError } = useAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [rememberMe, setRememberMe] = useState(() => getRememberPreference());
+  // Always default CHECKED — see LoginView.jsx: seeding from the stored
+  // pref silently kept the box unchecked for previously-branded users.
+  const [rememberMe, setRememberMe] = useState(true);
 
   const redirect = searchParams.get("redirect") || "/";
 

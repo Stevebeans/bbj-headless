@@ -7,15 +7,16 @@ import { useAuthModal } from "@/context/AuthModalContext";
 
 export default function LinkAccountView() {
   const router = useRouter();
-  const { linkGoogleAccount, createFromGoogle, getRememberPreference } = useAuth();
+  const { linkGoogleAccount, createFromGoogle } = useAuth();
   const { closeModal, googleData, redirectPath } = useAuthModal();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  // Use rememberMe preference from Google login flow, or fall back to stored preference
-  const [rememberMe, setRememberMe] = useState(() => googleData?.rememberMe ?? getRememberPreference());
+  // Carry the checkbox state from the Google login flow; otherwise default
+  // CHECKED (never seed from the stored pref — see LoginView.jsx).
+  const [rememberMe, setRememberMe] = useState(() => googleData?.rememberMe ?? true);
 
   const handleLink = async (e) => {
     e.preventDefault();

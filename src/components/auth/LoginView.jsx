@@ -8,7 +8,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 
 export default function LoginView() {
   const router = useRouter();
-  const { login, loginWithGoogle, isAuthenticated, loading: authLoading, getRememberPreference } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, loading: authLoading } = useAuth();
   const { closeModal, switchToRegister, switchToForgotPassword, switchToLinkAccount, redirectPath } = useAuthModal();
 
   const [username, setUsername] = useState("");
@@ -18,7 +18,11 @@ export default function LoginView() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleFailed, setGoogleFailed] = useState(false);
   const googleReadyRef = useRef(false);
-  const [rememberMe, setRememberMe] = useState(() => getRememberPreference());
+  // Always default CHECKED. Seeding this from the stored bbj_remember pref
+  // created a trap: one unchecked login (or the old sessionStorage migration)
+  // branded the pref "0", every future form silently came up unchecked, and
+  // re-logging re-branded it — "logged out every browser restart" forever.
+  const [rememberMe, setRememberMe] = useState(true);
 
   // Close modal if user becomes authenticated
   useEffect(() => {

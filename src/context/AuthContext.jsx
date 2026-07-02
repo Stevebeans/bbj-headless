@@ -62,8 +62,10 @@ function migrateFromStorage() {
     localStorage.getItem("bbj_token") || sessionStorage.getItem("bbj_token");
 
   if (token) {
-    const wasRemembered = localStorage.getItem("bbj_token") !== null;
-    setToken(token, wasRemembered);
+    // Always migrate as remembered. Migrating sessionStorage-era tokens as
+    // "not remembered" branded those users bbj_remember=0 — a sticky opt-out
+    // they never chose (see the always-checked default in LoginView.jsx).
+    setToken(token, true);
 
     // Clean up old storage
     localStorage.removeItem("bbj_token");
