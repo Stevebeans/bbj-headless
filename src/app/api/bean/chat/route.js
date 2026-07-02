@@ -2,6 +2,7 @@
 // Ask the Bean — login-gated streaming chat endpoint with tier-based metering.
 import Anthropic from "@anthropic-ai/sdk";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { verifyAuth } from "@/lib/api/verifyAuth";
 import { resolvePersona } from "@/lib/bean/persona";
 import { retrieve } from "@/lib/bean/retrieve";
@@ -39,9 +40,15 @@ async function beanCheck(token) {
   if (!token) return { tier: "free", allowed: true, remaining: null, cap: null };
   try {
     const res = await fetch(`${WP}/bbjd/v1/bean/check`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return { tier: "free", allowed: true, remaining: null, cap: null, _nometer: true };
+    if (!res.ok) {
+      // Visible degradation: this silently drops the user to free tier AND
+      // disables memory for the turn — log it so it can't hide.
+      console.error(`bean check degraded to free/no-memory: HTTP ${res.status}`);
+      return { tier: "free", allowed: true, remaining: null, cap: null, _nometer: true };
+    }
     return await res.json();
-  } catch {
+  } catch (err) {
+    console.error("bean check degraded to free/no-memory:", err?.message || err);
     return { tier: "free", allowed: true, remaining: null, cap: null, _nometer: true };
   }
 }
@@ -63,10 +70,14 @@ async function beanMemoryGet(token) {
   if (!token) return "";
   try {
     const res = await fetch(`${WP}/bbjd/v1/bean/memory`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return "";
+    if (!res.ok) {
+      console.error(`bean memory read failed: HTTP ${res.status}`);
+      return "";
+    }
     const data = await res.json();
     return typeof data.summary === "string" ? data.summary : "";
-  } catch {
+  } catch (err) {
+    console.error("bean memory read failed:", err?.message || err);
     return "";
   }
 }
@@ -180,15 +191,21 @@ export async function POST(request) {
         if (updated) send({ type: "quota", tier: updated.tier, remaining: updated.remaining, cap: updated.cap });
       }
       send({ type: "done" });
-      // Cross-session memory (Full Bean): update the evolving note. Best-effort —
-      // the answer already streamed, so a failure here never affects the reply.
+      // Cross-session memory (Full Bean): update the evolving note. Runs via
+      // after() so the function stays alive to finish even if the user closes
+      // the tab the moment "done" arrives — without it, that race silently ate
+      // the FINAL exchange of every session (the most memorable one: parting
+      // facts like "Chelsie is my favorite player" landed exactly there).
       if (snap.memory) {
-        try {
-          const newSummary = await updateMemory({ priorSummary: memorySummary, userMessage: question, beanReply: answerText, userName });
-          await beanMemorySet(token, newSummary);
-        } catch (err) {
-          console.error("bean memory update failed:", err);
-        }
+        const memoryInput = { priorSummary: memorySummary, userMessage: question, beanReply: answerText, userName };
+        after(async () => {
+          try {
+            const newSummary = await updateMemory(memoryInput);
+            await beanMemorySet(token, newSummary);
+          } catch (err) {
+            console.error("bean memory update failed:", err);
+          }
+        });
       }
     }),
     { headers: SSE_HEADERS }
