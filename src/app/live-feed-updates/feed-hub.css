@@ -106,6 +106,8 @@
   .fuh-upd .fuh-head .fuh-by{color:#15181E;font-weight:600;text-transform:none;font-family:var(--font-roboto),system-ui,sans-serif;font-size:12px;letter-spacing:0}
   .fuh-upd .fuh-head .fuh-t{margin-left:auto}
   .fuh-upd .fuh-head .fuh-t b{color:#15181E;font-weight:600}
+  /* <4h-old updates get a red timestamp (old-theme parity) */
+  .fuh-upd .fuh-head .fuh-t.fuh-fresh b{color:#EF4444}
   .fuh-upd .fuh-cat{display:inline-block;font-family:var(--font-ibm-plex-mono),monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:2px;font-weight:600;background:#F3F1EA;color:#3A404B}
   .fuh-upd[data-cat="drama"] .fuh-cat{background:#FDE8E6;color:#9B2315}
   .fuh-upd[data-cat="ceremony"] .fuh-cat,

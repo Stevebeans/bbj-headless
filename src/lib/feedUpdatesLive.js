@@ -10,6 +10,21 @@
  * - Returns the SAME array reference when nothing new arrived so React
  *   state setters can skip the re-render entirely.
  */
+// Parity with the old theme's my_post_time_ago_function(): timestamps on
+// updates modified within the last 4 hours render red.
+const FRESH_HOURS = 4;
+
+/**
+ * True when an update's modified time is inside the "hot" window. Slightly
+ * future timestamps count as fresh (server/client clock skew); missing or
+ * unparseable dates never do.
+ */
+export function isFreshUpdate(modifiedIso, nowMs = Date.now(), hours = FRESH_HOURS) {
+  const t = Date.parse(modifiedIso || "");
+  if (Number.isNaN(t)) return false;
+  return nowMs - t < hours * 3_600_000;
+}
+
 export function mergeUpdates(current, incoming, cap = 0) {
   const seen = new Set(current.map((item) => item.id));
   const fresh = (incoming || []).filter((item) => item?.id && !seen.has(item.id));

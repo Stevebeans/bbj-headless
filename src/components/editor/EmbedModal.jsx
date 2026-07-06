@@ -9,41 +9,71 @@ export default function EmbedModal({ editor, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  async function fetchEmbedHtml() {
+    const apiBase = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://wp.bigbrotherjunkies.com/wp-json";
+    const token = getToken();
+    const res = await fetch(
+      `${apiBase}/oembed/1.0/proxy?url=${encodeURIComponent(url.trim())}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error("Could not fetch embed");
+    const data = await res.json();
+    if (!data.html) throw new Error("Provider returned no embed HTML");
+    return data.html;
+  }
+
   async function handlePreview() {
     if (!url.trim()) return;
     setLoading(true);
     setError("");
-
     try {
-      const apiBase = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
-      const token = getToken();
-      const res = await fetch(
-        `${apiBase}/oembed/1.0/proxy?url=${encodeURIComponent(url)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (!res.ok) throw new Error("Could not fetch embed");
-      const data = await res.json();
-      setPreview(data.html);
+      setPreview(await fetchEmbedHtml());
     } catch {
-      setError("Could not load embed preview. Check the URL.");
+      setPreview(null);
+      setError("Couldn't load an embed for that URL — check it, or insert it as a plain link below.");
     } finally {
       setLoading(false);
     }
   }
 
-  function handleInsert() {
+  function insertHtml(html) {
+    editor.chain().focus().insertContent(html).run();
+    onClose();
+  }
+
+  // Escape URL for safe HTML attribute insertion
+  const safeUrl = url
+    .trim()
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  async function handleInsert() {
     if (!url.trim()) return;
 
-    // Escape URL for safe HTML attribute insertion
-    const safeUrl = url.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    // No preview yet? Fetch it now instead of silently degrading to a link —
+    // that silent fallback is how embeds shipped as bare links for months.
+    let html = preview;
+    if (!html) {
+      setLoading(true);
+      setError("");
+      try {
+        html = await fetchEmbedHtml();
+      } catch {
+        setError("Couldn't load an embed for that URL — check it, or insert it as a plain link below.");
+        return;
+      } finally {
+        setLoading(false);
+      }
+    }
 
-    const embedHtml = preview
-      ? `<figure class="embed-container" data-embed-url="${safeUrl}">${preview}</figure>`
-      : `<figure class="embed-container"><a href="${safeUrl}" target="_blank">${safeUrl}</a></figure>`;
+    insertHtml(`<figure class="embed-container" data-embed-url="${safeUrl}">${html}</figure>`);
+  }
 
-    editor.chain().focus().insertContent(embedHtml).run();
-    onClose();
+  function handleInsertAsLink() {
+    if (!url.trim()) return;
+    insertHtml(`<figure class="embed-container"><a href="${safeUrl}" target="_blank">${safeUrl}</a></figure>`);
   }
 
   return (
@@ -71,7 +101,17 @@ export default function EmbedModal({ editor, onClose }) {
           </button>
         </div>
 
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+        {error && (
+          <div className="mb-3">
+            <p className="text-red-500 text-sm">{error}</p>
+            <button
+              onClick={handleInsertAsLink}
+              className="mt-1 text-sm text-primary-500 underline hover:text-primary-600"
+            >
+              Insert as plain link instead
+            </button>
+          </div>
+        )}
 
         {preview && (
           <div className="border border-gray-200 rounded p-3 mb-4 max-h-60 overflow-y-auto">

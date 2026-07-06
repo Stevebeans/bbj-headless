@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { postComment } from "@/lib/api/comments";
+import { isFreshUpdate } from "@/lib/feedUpdatesLive";
 
 const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
 
@@ -51,6 +52,8 @@ export function FeedUpdateCard({ update }) {
   const permalink = `/live-feed-updates/${update.slug}`;
   const time12h = formatBbTime(update.modified);
   const authorSlug = slugify(update.author?.name);
+  // Old-theme parity: timestamps go red while the update is <4h old.
+  const isFresh = isFreshUpdate(update.modified);
 
   const handleQuickReply = async (e) => {
     e.preventDefault();
@@ -96,11 +99,11 @@ export function FeedUpdateCard({ update }) {
     <article id={update.slug} className="group flex gap-4 py-4">
       {/* Left rail: time + relative (desktop only) */}
       <div className="hidden sm:block w-20 shrink-0 text-right">
-        <div className="font-osw text-sm text-gray-900 dark:text-gray-200">
+        <div className={`font-osw text-sm ${isFresh ? "text-red-500" : "text-gray-900 dark:text-gray-200"}`}>
           {time12h}
         </div>
         <div
-          className="text-[11px] text-gray-500 dark:text-gray-400"
+          className={`text-[11px] ${isFresh ? "text-red-500" : "text-gray-500 dark:text-gray-400"}`}
           data-nosnippet
         >
           {update.time_ago}

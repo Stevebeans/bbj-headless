@@ -13,6 +13,7 @@ import { QuickLinks } from "@/components/posts/QuickLinks";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
 import { LiveUpdateTimeline } from "@/components/posts/LiveUpdateTimeline";
 import { ContentWithAds } from "@/components/posts/ContentWithAds";
+import { EmbedHydrator } from "@/components/posts/EmbedHydrator";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { JumpToComments } from "@/components/posts/JumpToComments";
@@ -201,6 +202,9 @@ export default async function ContentPage({ params }) {
                       prose-table:w-full prose-th:text-left prose-td:p-2"
                   />
                 )}
+
+                {/* Wakes up inert oEmbed markup (tweets/IG) in the content HTML */}
+                <EmbedHydrator />
 
                 {/* Live Update Timeline - only for posts with live thread enabled */}
                 {content.liveUpdates && (

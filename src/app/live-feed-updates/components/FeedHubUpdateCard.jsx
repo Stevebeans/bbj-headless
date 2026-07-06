@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { voteFeedUpdate } from "@/lib/api/feedUpdates";
+import { isFreshUpdate } from "@/lib/feedUpdatesLive";
 
 // One update row in the editorial thread. Client component (real voting).
 export function FeedHubUpdateCard({ update }) {
@@ -40,7 +41,7 @@ export function FeedHubUpdateCard({ update }) {
           <span className="fuh-av">{init}</span>
           <span className="fuh-by">{update.author?.name}</span>
           {update.mode && <span className="fuh-cat">{update.mode === "show" ? "Show" : "Feed"}</span>}
-          <span className="fuh-t" data-nosnippet><b>{update.time_ago}</b></span>
+          <span className={`fuh-t${isFreshUpdate(update.modified) ? " fuh-fresh" : ""}`} data-nosnippet><b>{update.time_ago}</b></span>
         </div>
         <h3><Link href={href}>{update.title}</Link></h3>
         {update.excerpt && <p>{update.excerpt}</p>}

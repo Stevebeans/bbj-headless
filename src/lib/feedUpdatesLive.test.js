@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeUpdates } from "./feedUpdatesLive";
+import { isFreshUpdate, mergeUpdates } from "./feedUpdatesLive";
 
 const u = (id) => ({ id, title: `Update ${id}` });
 
@@ -32,5 +32,29 @@ describe("mergeUpdates", () => {
   it("ignores malformed incoming entries", () => {
     const current = [u(1)];
     expect(mergeUpdates(current, [null, {}, u(1)])).toBe(current);
+  });
+});
+
+describe("isFreshUpdate", () => {
+  const now = Date.parse("2026-07-06T12:00:00Z");
+
+  it("is fresh within the 4-hour window (old theme parity)", () => {
+    expect(isFreshUpdate("2026-07-06T09:00:00Z", now)).toBe(true); // 3h ago
+    expect(isFreshUpdate("2026-07-06T11:59:00Z", now)).toBe(true); // 1min ago
+  });
+
+  it("is stale at or past 4 hours", () => {
+    expect(isFreshUpdate("2026-07-06T08:00:00Z", now)).toBe(false); // exactly 4h
+    expect(isFreshUpdate("2026-07-05T12:00:00Z", now)).toBe(false); // a day ago
+  });
+
+  it("treats slightly-future timestamps as fresh (clock skew)", () => {
+    expect(isFreshUpdate("2026-07-06T12:00:30Z", now)).toBe(true);
+  });
+
+  it("is never fresh for missing or unparseable dates", () => {
+    expect(isFreshUpdate(null, now)).toBe(false);
+    expect(isFreshUpdate("", now)).toBe(false);
+    expect(isFreshUpdate("not-a-date", now)).toBe(false);
   });
 });
