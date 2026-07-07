@@ -479,7 +479,9 @@ export default function EditorPage({ postId = null }) {
         </div>
 
         {/* Desktop sidebar */}
-        <div className="hidden md:block w-72 lg:w-80 shrink-0 sticky top-[48px] self-start bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+        {/* top offset clears the sticky site header + nav (+ countdown banner
+            when active) so the Save/Preview/Publish bar stays visible */}
+        <div className="hidden md:block w-72 lg:w-80 shrink-0 sticky top-[170px] self-start bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
           {/* Action bar — moved here from a floating bottom-right pill so it no longer
               collides with the Ask-the-Bean launcher anchored at bottom-right. */}
           <div className="flex items-center gap-2 p-3 border-b border-slate-200 dark:border-slate-800">
