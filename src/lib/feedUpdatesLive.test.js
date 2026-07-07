@@ -33,6 +33,37 @@ describe("mergeUpdates", () => {
     const current = [u(1)];
     expect(mergeUpdates(current, [null, {}, u(1)])).toBe(current);
   });
+
+  // Prod regression 2026-07-07: the poll returns ~20 items while the SSR list
+  // shows ~12, so the poll's TAIL contains items OLDER than anything rendered.
+  // Blind prepending stacked last-season updates on top of (and, with the cap,
+  // evicted) same-day updates 30s after every page load.
+  it("keeps today's updates on top when the poll returns an older tail", () => {
+    const d = (id, date) => ({ id, date });
+    const current = [
+      d(73740, "2026-07-07T08:44:32-07:00"),
+      d(73739, "2026-07-06T16:45:30-07:00"),
+      d(73738, "2026-07-01T09:07:00-07:00"),
+      d(900, "2025-09-28T18:46:00-07:00"),
+      d(899, "2025-09-28T18:44:00-07:00"),
+    ];
+    const incoming = [
+      ...current.map((x) => ({ ...x })),
+      d(898, "2025-09-28T18:43:00-07:00"),
+      d(897, "2025-09-28T18:42:00-07:00"),
+    ];
+    const merged = mergeUpdates(current, incoming, 5);
+    expect(merged.map((x) => x.id)).toEqual([73740, 73739, 73738, 900, 899]);
+  });
+
+  it("sorts undated optimistic inserts to the top of dated lists", () => {
+    const current = [
+      { id: 2, date: "2026-07-07T08:00:00-07:00" },
+      { id: 1, date: "2026-07-01T08:00:00-07:00" },
+    ];
+    const merged = mergeUpdates(current, [{ id: 9 }]); // composer event detail may lack a date
+    expect(merged.map((x) => x.id)).toEqual([9, 2, 1]);
+  });
 });
 
 describe("isFreshUpdate", () => {
