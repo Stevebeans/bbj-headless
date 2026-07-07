@@ -68,7 +68,7 @@ function Feature({ children }) {
 
 export default function BecomeSupporterPage() {
   const { isAuthenticated, loading: authLoading, refreshUser } = useAuth();
-  const { openModal } = useAuthModal();
+  const { openLogin } = useAuthModal();
   const { isPremium: isSupporter } = usePremium();
 
   const [plans, setPlans] = useState([]);
@@ -265,7 +265,7 @@ export default function BecomeSupporterPage() {
   // Handle Stripe checkout
   const handleStripeCheckout = async () => {
     if (!isAuthenticated) {
-      openModal("login");
+      openLogin();
       return;
     }
 
@@ -624,7 +624,7 @@ export default function BecomeSupporterPage() {
                   Please log in or create an account to continue
                 </p>
                 <button
-                  onClick={() => openModal("login")}
+                  onClick={() => openLogin()}
                   className="px-8 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
                 >
                   Log In / Sign Up
@@ -706,7 +706,7 @@ export default function BecomeSupporterPage() {
           {/* Signoff */}
           <p className="text-center text-xs text-gray-500 dark:text-gray-400 mb-2">
             Already a supporter?{" "}
-            <button onClick={() => openModal("login")} className="text-primary-500 font-semibold hover:underline">
+            <button onClick={() => openLogin()} className="text-primary-500 font-semibold hover:underline">
               Log in
             </button>{" "}
             · Questions?{" "}

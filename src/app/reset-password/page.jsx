@@ -8,7 +8,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
-  const { openModal } = useAuthModal();
+  const { openLogin } = useAuthModal();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -62,7 +62,7 @@ function ResetPasswordForm() {
   };
 
   const handleLoginClick = () => {
-    openModal("login");
+    openLogin();
   };
 
   // Missing required params
