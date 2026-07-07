@@ -3,7 +3,11 @@
  * event) into the currently-rendered, newest-first list.
  *
  * - Dedupes by `id` — the poll and the optimistic insert can overlap.
- * - New items are PREPENDED (both sources are newer than what's shown).
+ * - The merged list is ordered by `date` (newest first). The poll returns
+ *   more items than the SSR list shows, so its TAIL can be OLDER than
+ *   what's already rendered — blind prepending buried same-day updates
+ *   under last-season ones. Undated items (optimistic composer inserts)
+ *   sort as newest.
  * - `cap` (optional) keeps the homepage list at its SSR length so the
  *   ad-slot batching in FeedUpdatesSection (slice(0,4)/slice(4,12)) never
  *   drifts during a long session.
@@ -29,6 +33,10 @@ export function mergeUpdates(current, incoming, cap = 0) {
   const seen = new Set(current.map((item) => item.id));
   const fresh = (incoming || []).filter((item) => item?.id && !seen.has(item.id));
   if (fresh.length === 0) return current;
-  const merged = [...fresh, ...current];
+  const ts = (item) => {
+    const t = Date.parse(item.date || "");
+    return Number.isNaN(t) ? Number.MAX_SAFE_INTEGER : t;
+  };
+  const merged = [...fresh, ...current].sort((a, b) => ts(b) - ts(a));
   return cap > 0 ? merged.slice(0, cap) : merged;
 }
