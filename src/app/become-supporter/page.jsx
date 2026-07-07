@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
@@ -10,8 +10,6 @@ import {
   getPlans,
   getSubscription,
   createStripeCheckout,
-  createPayPalOrder,
-  capturePayPalOrder,
   createPayPalSubscription,
 } from "@/lib/api/billing";
 
@@ -79,8 +77,6 @@ export default function BecomeSupporterPage() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [hasSubscription, setHasSubscription] = useState(false);
-  const [paypalReady, setPaypalReady] = useState(false);
-  const [paypalClientId, setPaypalClientId] = useState(null);
 
   // Deep-link: /become-supporter?plan=full_bean_annual pre-selects a plan
   // (e.g. from the Ask the Bean upsell card). Read from window to avoid
@@ -149,7 +145,6 @@ export default function BecomeSupporterPage() {
       try {
         const plansResult = await getPlans();
         setPlans(plansResult.plans || []);
-        setPaypalClientId(plansResult.paypal_client_id);
 
         if (isAuthenticated) {
           try {
@@ -171,97 +166,6 @@ export default function BecomeSupporterPage() {
     }
   }, [authLoading, isAuthenticated]);
 
-  // Load PayPal SDK when needed
-  const loadPayPalSDK = useCallback(() => {
-    if (!paypalClientId || window.paypal) {
-      setPaypalReady(!!window.paypal);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=${paypalClientId}&currency=USD&intent=capture&vault=true&disable-funding=credit`;
-    script.async = true;
-    script.onload = () => setPaypalReady(true);
-    script.onerror = () => setError("Failed to load PayPal");
-    document.body.appendChild(script);
-  }, [paypalClientId]);
-
-  useEffect(() => {
-    if (paypalClientId && isAuthenticated && !hasSubscription) {
-      loadPayPalSDK();
-    }
-  }, [paypalClientId, isAuthenticated, hasSubscription, loadPayPalSDK]);
-
-  // Render PayPal buttons when SDK is ready
-  useEffect(() => {
-    if (!paypalReady || !window.paypal || hasSubscription || !isAuthenticated) return;
-
-    // Small delay to ensure DOM container is rendered after auth state change
-    const timer = setTimeout(() => {
-      const container = document.getElementById("paypal-button-container");
-      if (!container) return;
-
-      // Clear previous buttons
-      container.innerHTML = "";
-
-      const successUrl = `${SITE_URL}/checkout/success?processor=paypal`;
-      const cancelUrl = `${SITE_URL}/checkout/cancel`;
-
-      window.paypal
-        .Buttons({
-          style: {
-            layout: "horizontal",
-            color: "blue",
-            shape: "rect",
-            label: "pay",
-            height: 45,
-          },
-          createOrder: async () => {
-            setProcessing(true);
-            setError(null);
-            try {
-              if (selectedPlan === "lifetime") {
-                const result = await createPayPalOrder(successUrl, cancelUrl);
-                return result.order_id;
-              } else {
-                // For subscriptions, create subscription and return approval URL
-                const result = await createPayPalSubscription(selectedPlan, successUrl, cancelUrl);
-                // PayPal SDK handles redirect for subscriptions
-                window.location.href = result.approve_url;
-                return null;
-              }
-            } catch (err) {
-              setError(err.message);
-              setProcessing(false);
-              throw err;
-            }
-          },
-          onApprove: async (data) => {
-            try {
-              if (selectedPlan === "lifetime") {
-                await capturePayPalOrder(data.orderID);
-                await refreshUser();
-                window.location.href = `${SITE_URL}/checkout/success?processor=paypal`;
-              }
-            } catch (err) {
-              setError(err.message);
-              setProcessing(false);
-            }
-          },
-          onCancel: () => {
-            setProcessing(false);
-          },
-          onError: () => {
-            setError("PayPal payment failed. Please try again.");
-            setProcessing(false);
-          },
-        })
-        .render("#paypal-button-container");
-    }, 50);
-
-    return () => clearTimeout(timer);
-  }, [paypalReady, selectedPlan, hasSubscription, isAuthenticated, refreshUser]);
-
   // Handle Stripe checkout
   const handleStripeCheckout = async () => {
     if (!isAuthenticated) {
@@ -277,6 +181,30 @@ export default function BecomeSupporterPage() {
       const cancelUrl = `${SITE_URL}/checkout/cancel`;
       const result = await createStripeCheckout(selectedPlan, successUrl, cancelUrl);
       window.location.href = result.checkout_url;
+    } catch (err) {
+      setError(err.message);
+      setProcessing(false);
+    }
+  };
+
+  // PayPal checkout: no JS SDK. Create the subscription server-side, then do a
+  // clean full-page redirect to PayPal's approval page. PayPal returns the user
+  // to /checkout/success?processor=paypal&subscription_id=..., where activation
+  // is confirmed by polling (webhook-driven).
+  const handlePayPalCheckout = async () => {
+    if (!isAuthenticated) {
+      openLogin();
+      return;
+    }
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const successUrl = `${SITE_URL}/checkout/success?processor=paypal`;
+      const cancelUrl = `${SITE_URL}/checkout/cancel`;
+      const result = await createPayPalSubscription(selectedPlan, successUrl, cancelUrl);
+      window.location.href = result.approve_url;
     } catch (err) {
       setError(err.message);
       setProcessing(false);
@@ -677,8 +605,17 @@ export default function BecomeSupporterPage() {
                   </div>
                 </div>
 
-                {/* PayPal Button Container */}
-                <div id="paypal-button-container" className={processing ? "opacity-50 pointer-events-none" : ""} />
+                {/* PayPal Button (no SDK: server-created subscription + redirect) */}
+                <button
+                  onClick={handlePayPalCheckout}
+                  disabled={processing}
+                  className="w-full py-3 bg-[#0070BA] hover:bg-[#005c99] text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M7.076 21.337H2.47a.641.641 0 01-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 00-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 00-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 00.554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.816-5.09a.932.932 0 01.923-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.847.174-3.388-.777-4.471z" />
+                  </svg>
+                  Pay with PayPal
+                </button>
               </div>
             )}
           </div>
