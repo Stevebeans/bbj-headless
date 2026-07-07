@@ -137,13 +137,13 @@ export function FeedUpdateCard({ update }) {
         )}
 
         {update.thumbnail && (
-          <div className="mb-3 w-full md:max-w-[50%] mx-auto">
+          <div className="mb-3 w-[90%] md:max-w-[75%] mx-auto">
             <Image
               src={update.thumbnail}
               alt={update.title || "Big Brother feed update"}
               width={800}
               height={533}
-              sizes="(min-width: 768px) 50vw, 100vw"
+              sizes="(min-width: 768px) 45vw, 90vw"
               className="rounded-lg w-full h-auto"
             />
           </div>
