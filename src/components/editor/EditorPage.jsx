@@ -64,6 +64,11 @@ export default function EditorPage({ postId = null }) {
 
   const canPublish = hasPermission("blog_publishing") || hasPermission("blog_review");
 
+  // editorProps callbacks are captured once at editor creation — route paste/
+  // drop images through refs so they always hit the latest handler/editor.
+  const handleImageUploadRef = useRef(null);
+  const editorRef = useRef(null);
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -90,6 +95,35 @@ export default function EditorPage({ postId = null }) {
       transformPastedText(text) {
         return text;
       },
+      // Paste an image (e.g. a screenshot) straight into the post — uploads
+      // through the same compress → media-library → alt-text pipeline as the
+      // toolbar image button, then inserts at the cursor.
+      handlePaste: (view, event) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        const imageItem = items.find((item) => item.type?.startsWith("image/"));
+        if (!imageItem) return false;
+        const file = imageItem.getAsFile();
+        if (!file) return false;
+        event.preventDefault();
+        handleImageUploadRef.current?.(file);
+        return true;
+      },
+      // Drag-and-drop an image file into the editor: place the cursor at the
+      // drop point, then run the same upload pipeline.
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved) return false;
+        const file = Array.from(event.dataTransfer?.files || []).find((f) =>
+          f.type?.startsWith("image/")
+        );
+        if (!file) return false;
+        event.preventDefault();
+        const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+        if (coords?.pos != null) {
+          editorRef.current?.commands.setTextSelection(coords.pos);
+        }
+        handleImageUploadRef.current?.(file);
+        return true;
+      },
     },
     onUpdate: () => {
       scheduleSave();
@@ -103,6 +137,12 @@ export default function EditorPage({ postId = null }) {
       setPendingContent(null);
     }
   }, [editor, pendingContent]);
+
+  // Keep the paste/drop refs pointed at the live editor + upload handler
+  useEffect(() => {
+    editorRef.current = editor;
+    handleImageUploadRef.current = handleImageUpload;
+  });
 
   // Load existing post
   useEffect(() => {
@@ -181,7 +221,12 @@ export default function EditorPage({ postId = null }) {
         setCurrentPostId(result.id);
         setSlug(result.slug);
         isFirstSaveRef.current = false;
-        router.replace(`/editor/${result.id}`, { scroll: false });
+        // Native replaceState instead of router.replace: updates the URL to
+        // the draft's id WITHOUT remounting the editor (router.replace
+        // re-rendered the route — the "flash" a few seconds into a new post —
+        // and could drop focus mid-sentence). Next 14.1+ syncs native
+        // history.replaceState with the app router.
+        window.history.replaceState(window.history.state, "", `/editor/${result.id}`);
       } else {
         const result = await updatePost(pid, postData);
         if (result.slug) setSlug(result.slug);
