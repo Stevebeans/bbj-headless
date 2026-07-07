@@ -65,18 +65,24 @@ export function PlayerHero({ player }) {
     <div className="relative">
       {/* Banner/Background */}
       <div className="relative h-44 md:h-60 overflow-hidden">
-        {/* Background layer - always blurred */}
+        {/* Background layer: a real uploaded banner renders sharp with a light
+            tint; the photo-as-backdrop fallback keeps the heavy blur treatment. */}
         {backgroundImage ? (
           <>
             <Image
               src={backgroundImage}
               alt=""
               fill
-              className="object-cover scale-110 blur-xl"
+              className={hasBanner ? "object-cover" : "object-cover scale-110 blur-xl"}
               priority
             />
-            {/* Color overlay to tint the blur */}
-            <div className="absolute inset-0 bg-primary-700/60 mix-blend-multiply" />
+            <div
+              className={
+                hasBanner
+                  ? "absolute inset-0 bg-primary-900/20"
+                  : "absolute inset-0 bg-primary-700/60 mix-blend-multiply"
+              }
+            />
           </>
         ) : (
           /* Fallback gradient */
@@ -84,7 +90,13 @@ export function PlayerHero({ player }) {
         )}
 
         {/* Dark gradient overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+        <div
+          className={
+            hasBanner
+              ? "absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent"
+              : "absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20"
+          }
+        />
 
         {/* Subtle pattern overlay */}
         <div
