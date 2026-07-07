@@ -1031,6 +1031,29 @@ function PremiumTab({ settings, loading, showToast }) {
     setSubscription(subResult.has_subscription ? subResult.subscription : null);
   };
 
+  // Label/price/blurb for every plan key change-plan accepts. Keys mirror the
+  // plugin's StripeService::PLANS checkout keys.
+  const PLAN_OPTIONS = {
+    monthly: { label: "Monthly Supporter", price: "$6.95/mo", blurb: "Flexible monthly billing" },
+    annual: { label: "Season Pass", price: "$35/yr", blurb: "Save over 58% vs monthly" },
+    full_bean_monthly: { label: "Full Bean Monthly", price: "$14.99/mo", blurb: "Unlimited Bean, smartest model, memory" },
+    full_bean_annual: { label: "Full Bean Annual", price: "$119/yr", blurb: "A full year of the smartest Bean" },
+  };
+
+  // Which switches to offer for the member's current (tier, plan_type).
+  const switchTargetsFor = (sub) => {
+    if (!sub) return [];
+    const tier = sub.tier || "supporter";
+    if (tier === "full_bean") {
+      return sub.plan_type === "monthly"
+        ? ["full_bean_annual", "monthly"]
+        : ["full_bean_monthly", "annual"];
+    }
+    return sub.plan_type === "monthly"
+      ? ["annual", "full_bean_monthly", "full_bean_annual"]
+      : ["monthly", "full_bean_annual"];
+  };
+
   const handleChangePlan = async (planType) => {
     setChangingPlan(true);
     try {
@@ -1231,43 +1254,35 @@ function PremiumTab({ settings, loading, showToast }) {
             Change Plan
           </h3>
           <div className="space-y-3">
-            {subscription.plan_type === "monthly" && (
-              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">Switch to Season Pass</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">$35/yr — Save over 58% vs monthly</p>
-                </div>
-                <button
-                  onClick={() => setShowChangePlanConfirm("annual")}
-                  className="px-4 py-2 bg-secondary-500 hover:bg-secondary-600 text-white font-medium rounded-lg transition-colors text-sm"
+            {switchTargetsFor(subscription).map((key) => {
+              const opt = PLAN_OPTIONS[key];
+              const isBean = key.startsWith("full_bean");
+              return (
+                <div
+                  key={key}
+                  className={`flex items-center justify-between p-4 rounded-lg border ${
+                    isBean
+                      ? "bg-gradient-to-r from-secondary-50 to-secondary-100 dark:from-secondary-900/20 dark:to-secondary-800/20 border-secondary-200 dark:border-secondary-800"
+                      : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700"
+                  }`}
                 >
-                  Switch
-                </button>
-              </div>
-            )}
-            {subscription.plan_type === "annual" && (
-              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">Switch to Monthly</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">$6.95/mo — Flexible monthly billing</p>
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">Switch to {opt.label}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{opt.price} · {opt.blurb}</p>
+                  </div>
+                  <button
+                    onClick={() => setShowChangePlanConfirm(key)}
+                    className={`px-4 py-2 font-medium rounded-lg transition-colors text-sm ${
+                      isBean
+                        ? "bg-secondary-500 hover:bg-secondary-600 text-white"
+                        : "border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    Switch
+                  </button>
                 </div>
-                <button
-                  onClick={() => setShowChangePlanConfirm("monthly")}
-                  className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium rounded-lg transition-colors text-sm"
-                >
-                  Switch
-                </button>
-              </div>
-            )}
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-secondary-50 to-secondary-100 dark:from-secondary-900/20 dark:to-secondary-800/20 rounded-lg border border-secondary-200 dark:border-secondary-800">
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Upgrade to Lifetime</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">$99 one-time — Never pay again</p>
-              </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400 italic max-w-[160px] text-right">
-                Cancel current sub first, then purchase Lifetime
-              </span>
-            </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -1416,17 +1431,16 @@ function PremiumTab({ settings, loading, showToast }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
-              {showChangePlanConfirm === "annual" ? "Switch to Season Pass?" : "Switch to Monthly?"}
+              Switch to {PLAN_OPTIONS[showChangePlanConfirm]?.label}?
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-2">
-              {showChangePlanConfirm === "annual"
-                ? "You'll be switched to the Season Pass ($35/yr). The change will be prorated, and you'll only pay the difference for the remaining time."
-                : "You'll be switched to Monthly billing ($6.95/mo). The change will take effect at the start of your next billing cycle."}
+              You&apos;ll be switched to {PLAN_OPTIONS[showChangePlanConfirm]?.label} ({PLAN_OPTIONS[showChangePlanConfirm]?.price}) immediately.
+              The change is prorated, so you only pay the difference for the remaining time.
             </p>
             {subscription?.processor === "paypal" && (
               <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg mb-4">
                 <p className="text-sm text-amber-700 dark:text-amber-400">
-                  PayPal subscriptions cannot be changed mid-cycle. Please cancel your current subscription and resubscribe with the new plan.
+                  PayPal subscriptions can&apos;t switch plans here. Cancel your current plan, then resubscribe with the new plan after your period ends.
                 </p>
               </div>
             )}
