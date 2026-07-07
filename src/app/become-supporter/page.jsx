@@ -6,6 +6,8 @@ import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { usePremium } from "@/hooks/usePremium";
+import { resolveSupporterView } from "@/lib/billing/memberState";
+import UpgradeToFullBean from "@/components/premium/UpgradeToFullBean";
 import {
   getPlans,
   getSubscription,
@@ -33,7 +35,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Can I switch plans later?",
-    a: "Anytime. Upgrade from Supporter to Full Bean and we prorate the difference. Downgrades take effect at your next renewal.",
+    a: "Anytime. Switches are prorated both ways, so upgrades and downgrades apply immediately and you only ever pay for what you use.",
   },
   {
     q: "I had a Season Pass — what happened to it?",
@@ -67,7 +69,7 @@ function Feature({ children }) {
 export default function BecomeSupporterPage() {
   const { isAuthenticated, loading: authLoading, refreshUser } = useAuth();
   const { openLogin } = useAuthModal();
-  const { isPremium: isSupporter } = usePremium();
+  const { roles } = usePremium();
 
   const [plans, setPlans] = useState([]);
   // One billing toggle drives both cards (annual default, SaaS-style)
@@ -76,7 +78,8 @@ export default function BecomeSupporterPage() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
-  const [hasSubscription, setHasSubscription] = useState(false);
+  const [subscription, setSubscription] = useState(null);
+  const hasSubscription = !!subscription;
 
   // Deep-link: /become-supporter?plan=full_bean_annual pre-selects a plan
   // (e.g. from the Ask the Bean upsell card). Read from window to avoid
@@ -149,7 +152,7 @@ export default function BecomeSupporterPage() {
         if (isAuthenticated) {
           try {
             const subResult = await getSubscription();
-            setHasSubscription(subResult.has_subscription);
+            setSubscription(subResult.has_subscription ? subResult.subscription : null);
           } catch (subErr) {
             console.warn("Subscription check failed:", subErr.message);
           }
@@ -229,39 +232,78 @@ export default function BecomeSupporterPage() {
     );
   }
 
-  // Already a supporter (check actual role, not just DB subscription record)
-  if (isSupporter) {
+  const view = resolveSupporterView({ isAuthenticated, roles, subscription });
+
+  if (view !== "checkout") {
     return (
       <main className="v2-primary-container">
-        <div className="rounded-xl bg-white p-8 shadow dark:bg-gray-900 dark:border dark:border-slate-800 max-w-2xl mx-auto text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-secondary-400 to-secondary-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <span className="text-4xl">&#11088;</span>
-          </div>
-          <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white mb-3">
-            Thank You for Being a Supporter!
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
-            Your support helps keep Big Brother Junkies running. Enjoy your ad-free experience!
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/settings?tab=premium"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Manage Subscription
-            </Link>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium rounded-lg transition-colors"
-            >
-              Browse Ad-Free
-            </Link>
-          </div>
+        <div className="rounded-xl bg-white p-8 shadow dark:bg-gray-900 dark:border dark:border-slate-800 max-w-2xl mx-auto">
+          {view === "upgrade" ? (
+            <div className="pt-6">
+              <p className="text-center text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400 mb-6">
+                You&apos;re a Supporter. There&apos;s one level up.
+              </p>
+              <UpgradeToFullBean
+                beanMonthly={beanMonthly}
+                beanAnnual={beanAnnual}
+                initialInterval={billing}
+                onUpgraded={() => refreshUser()}
+              />
+              <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
+                Happy where you are? You&apos;re all set — manage your plan in{" "}
+                <Link href="/settings?tab=premium" className="text-primary-500 font-semibold hover:underline">Settings</Link>.
+              </p>
+            </div>
+          ) : view === "paypal_guidance" ? (
+            <div className="text-center">
+              <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white mb-3 pt-4">Want the Full Bean?</h1>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Your Supporter plan is billed through PayPal, which doesn&apos;t allow switching plans mid-cycle.
+                To upgrade: cancel your current plan in Settings (you keep access until your period ends), then
+                come back here and subscribe to Full Bean.
+              </p>
+              <Link
+                href="/settings?tab=premium"
+                className="inline-block px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
+              >
+                Manage Subscription
+              </Link>
+            </div>
+          ) : (
+            <div className="text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-secondary-400 to-secondary-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <span className="text-4xl">&#11088;</span>
+              </div>
+              <h1 className="text-3xl font-display font-bold text-gray-900 dark:text-white mb-3">
+                {view === "full_bean" ? "You're a Full Bean!" : "Thank You for Being a Supporter!"}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mb-4 text-lg">
+                {view === "full_bean"
+                  ? "Top tier. Unlimited Bean, no ads, our eternal gratitude."
+                  : "Your support helps keep Big Brother Junkies running. Enjoy your ad-free experience!"}
+              </p>
+              {view === "lifetime" && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  Lifetime member interested in Full Bean?{" "}
+                  <Link href="/settings?tab=help" className="text-primary-500 font-semibold hover:underline">Contact us</Link> and we&apos;ll sort you out.
+                </p>
+              )}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
+                <Link
+                  href="/settings?tab=premium"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  Manage Subscription
+                </Link>
+                <Link
+                  href="/"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium rounded-lg transition-colors"
+                >
+                  Browse Ad-Free
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     );
