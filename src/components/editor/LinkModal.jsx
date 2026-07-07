@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { toRelativeHref } from "@/lib/utils/url";
 
 const API_URL =
@@ -118,7 +119,10 @@ export default function LinkModal({ editor, onClose }) {
 
   const list = results !== null ? results : recent;
 
-  return (
+  // Portal to <body> (like CropModal): rendered in place, an ancestor's
+  // stacking context trapped this under the fixed editor toolbar (z-45),
+  // clipping the top of the modal.
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-start justify-center pt-24 px-4">
       <div className="fixed inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
@@ -185,6 +189,7 @@ export default function LinkModal({ editor, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
