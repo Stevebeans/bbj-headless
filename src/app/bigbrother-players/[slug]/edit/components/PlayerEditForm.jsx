@@ -34,8 +34,8 @@ export function PlayerEditForm({ player, slug }) {
     administrative_area_level_1: player.state || "",
     lat: "",
     lng: "",
-    profile_picture: player.photo?.url ? getAttachmentId(player.photo.url) : "",
-    player_banner: player.banner?.url ? getAttachmentId(player.banner.url) : "",
+    profile_picture: player.photo?.id || "",
+    player_banner: player.banner?.id || "",
     twitter: player.social?.twitter || "",
     instagram: player.social?.instagram || "",
     facebook: player.social?.facebook || "",
@@ -53,14 +53,21 @@ export function PlayerEditForm({ player, slug }) {
 
   // Submit handler
   const handleFormSubmit = useCallback(async (values) => {
-    const result = await updatePlayer(player.id, values, user?.token);
+    // Never send an empty image field for a player who HAS that image —
+    // the endpoint treats empty as "clear it". Covers deploy skew where the
+    // API response lacks photo/banner ids.
+    const payload = { ...values };
+    if (!payload.profile_picture && player.photo?.url) delete payload.profile_picture;
+    if (!payload.player_banner && player.banner?.url) delete payload.player_banner;
+
+    const result = await updatePlayer(player.id, payload, user?.token);
     if (result.success) {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       router.refresh();
     }
     return result;
-  }, [player.id, user?.token, router]);
+  }, [player.id, player.photo?.url, player.banner?.url, user?.token, router]);
 
   const {
     values,
@@ -161,11 +168,6 @@ export function PlayerEditForm({ player, slug }) {
 /**
  * Extract attachment ID from URL (placeholder - images stored as attachment IDs)
  */
-function getAttachmentId(url) {
-  // For now, return empty - the ImageUpload component handles URLs
-  return "";
-}
-
 /**
  * Strip HTML tags for plain text bio editing
  */

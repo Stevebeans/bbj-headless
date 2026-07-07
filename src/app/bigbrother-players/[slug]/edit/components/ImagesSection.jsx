@@ -1,19 +1,15 @@
 "use client";
 
 import { FormSection } from "@/components/forms";
-import { ImageUpload } from "@/components/forms";
+import { PlayerImageUpload } from "./PlayerImageUpload";
 
 /**
- * Images section: Profile picture and banner
+ * Images section: profile picture (cropped square) and banner.
+ * Uploads land in the WP media library; the form stores the attachment ID,
+ * which is what the update endpoint's profile_picture/player_banner expect.
  */
-export function ImagesSection({ values, errors, setValue, player }) {
-  const handleImageChange = (name, url, error) => {
-    if (error) {
-      console.error(`Image error for ${name}:`, error);
-      return;
-    }
-    setValue(name, url || "");
-  };
+export function ImagesSection({ setValue, player }) {
+  const playerName = [player.first_name, player.last_name].filter(Boolean).join(" ");
 
   return (
     <FormSection
@@ -21,29 +17,23 @@ export function ImagesSection({ values, errors, setValue, player }) {
       description="Profile picture and banner image."
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Profile Picture
-          </label>
-          <ImageUpload
-            value={player.photo?.url || ""}
-            onChange={(url, error) => handleImageChange("profile_picture", url, error)}
-            aspectRatio="1:1"
-            helpText="375×375px recommended"
-          />
-        </div>
+        <PlayerImageUpload
+          label="Profile Picture"
+          initialUrl={player.photo?.url || ""}
+          aspect={1}
+          helpText="Crop tight to the face. 375×375px or larger."
+          altText={playerName}
+          onUploaded={({ id }) => setValue("profile_picture", id)}
+        />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Banner Image
-          </label>
-          <ImageUpload
-            value={player.banner?.url || ""}
-            onChange={(url, error) => handleImageChange("player_banner", url, error)}
-            aspectRatio="3.4:1"
-            helpText="1200×350px recommended"
-          />
-        </div>
+        <PlayerImageUpload
+          label="Banner Image"
+          initialUrl={player.banner?.url || ""}
+          aspect={1200 / 350}
+          helpText="1200×350px recommended."
+          altText={`${playerName} banner`}
+          onUploaded={({ id }) => setValue("player_banner", id)}
+        />
       </div>
     </FormSection>
   );

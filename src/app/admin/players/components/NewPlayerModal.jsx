@@ -95,10 +95,12 @@ export default function NewPlayerModal({ seasons = [], onClose, onCreated }) {
             aria-label="Gender"
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
+            {/* Full-word values match the wp_bbj_players.player_gender convention
+                (and the edit page's dropdown) — codes like "F" render blank there. */}
             <option value="">Gender (optional)</option>
-            <option value="M">Male</option>
-            <option value="F">Female</option>
-            <option value="NB">Non-binary</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Non-binary">Non-binary</option>
           </select>
 
           <select
