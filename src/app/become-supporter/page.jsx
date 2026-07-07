@@ -250,7 +250,7 @@ export default function BecomeSupporterPage() {
                 onUpgraded={() => refreshUser()}
               />
               <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
-                Happy where you are? You&apos;re all set — manage your plan in{" "}
+                Happy where you are? You&apos;re all set. Manage your plan in{" "}
                 <Link href="/settings?tab=premium" className="text-primary-500 font-semibold hover:underline">Settings</Link>.
               </p>
             </div>
