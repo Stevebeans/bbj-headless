@@ -105,6 +105,26 @@ export function getUserCache() {
 }
 
 /**
+ * True when the browser actually persists cookies for this site.
+ * Security suites (ESET etc.), per-site Chrome settings, and synced
+ * "block cookies" entries silently discard writes — logins then survive
+ * only until the next page load. Detecting it lets the UI tell the member
+ * exactly what's wrong instead of them "mysteriously" logging out.
+ */
+export function cookiesWritable() {
+  if (typeof document === "undefined") return true;
+  try {
+    const probe = "bbj_cookie_probe";
+    document.cookie = `${probe}=1; path=/; SameSite=Lax; max-age=60`;
+    const ok = document.cookie.indexOf(`${probe}=1`) !== -1;
+    document.cookie = `${probe}=; path=/; max-age=0; SameSite=Lax`;
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Get the "remember me" preference
  * @returns {boolean} true if user chose to stay logged in
  */

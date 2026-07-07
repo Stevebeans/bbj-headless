@@ -8,6 +8,7 @@ import {
   getRememberPreference,
   setUserCache,
   getUserCache,
+  cookiesWritable,
 } from "@/lib/auth/cookies";
 import { isTokenExpired } from "@/lib/auth/token";
 import { maybeRefreshToken } from "@/lib/auth/refresh";
@@ -83,7 +84,16 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // True when a login succeeded but the browser refused to store the cookie
+  // (security suites, per-site blocks). The session works in-memory but dies
+  // on the next page load — surface a banner so members can fix their side.
+  const [cookiesBlocked, setCookiesBlocked] = useState(false);
   const didHydrate = useRef(false);
+
+  // After any setToken(), confirm the cookie actually persisted.
+  const checkCookiePersistence = useCallback(() => {
+    setCookiesBlocked(!getToken() || !cookiesWritable());
+  }, []);
 
   // Update user state and cache profile (cache is read back on next mount)
   const setUserAndCache = useCallback((userData) => {
@@ -231,6 +241,7 @@ export function AuthProvider({ children }) {
       }
 
       setToken(data.token, rememberMe);
+      checkCookiePersistence();
 
       const userData = await fetchCurrentUser(data.token);
 
@@ -281,6 +292,7 @@ export function AuthProvider({ children }) {
       }
 
       setToken(data.token, rememberMe);
+      checkCookiePersistence();
 
       setUserAndCache({
         ...data.user,
@@ -322,6 +334,7 @@ export function AuthProvider({ children }) {
       }
 
       setToken(data.token, rememberMe);
+      checkCookiePersistence();
 
       setUserAndCache({
         ...data.user,
@@ -363,6 +376,7 @@ export function AuthProvider({ children }) {
       }
 
       setToken(data.token, rememberMe);
+      checkCookiePersistence();
 
       setUserAndCache({
         ...data.user,
@@ -418,6 +432,7 @@ export function AuthProvider({ children }) {
   const setUserFromResponse = useCallback((data, rememberMe = true) => {
     if (data.token) {
       setToken(data.token, rememberMe);
+      checkCookiePersistence();
     }
     setUserAndCache({
       ...data.user,
@@ -475,6 +490,7 @@ export function AuthProvider({ children }) {
     isAdmin,
     isAuthenticated: !!user,
     getRememberPreference,
+    cookiesBlocked,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
