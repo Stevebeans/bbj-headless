@@ -91,6 +91,9 @@ export default function EditorPage({ postId = null }) {
     editorProps: {
       attributes: {
         class: "prose prose-lg max-w-none focus:outline-none min-h-[300px] p-4",
+        // Chrome won't spell-check rich contenteditable regions unless it's
+        // explicitly enabled on the element.
+        spellcheck: "true",
       },
       transformPastedText(text) {
         return text;
