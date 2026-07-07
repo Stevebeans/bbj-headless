@@ -33,7 +33,13 @@ export function getToken() {
 export function setToken(token, remember) {
   if (typeof document === "undefined") return;
 
-  let cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; path=/; SameSite=Lax`;
+  // Priority=High (Chromium-only, ignored elsewhere): the ad stack churns
+  // dozens of first-party cookies per session; when the ~180-cookie/domain
+  // jar overflows, Chromium evicts Low/Medium-priority cookies first. Without
+  // this, auth cookies sit in the same eviction bucket as ad-sync cookies —
+  // the likely cause of members' "logged out every visit despite keep-me-
+  // logged-in" reports (2026-07-07).
+  let cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; path=/; SameSite=Lax; Priority=High`;
 
   if (remember) {
     cookie += "; max-age=2592000"; // 30 days
@@ -46,7 +52,7 @@ export function setToken(token, remember) {
   document.cookie = cookie;
 
   // Store remember preference
-  let rememberCookie = `${REMEMBER_COOKIE}=${remember ? "1" : "0"}; path=/; SameSite=Lax; max-age=2592000`;
+  let rememberCookie = `${REMEMBER_COOKIE}=${remember ? "1" : "0"}; path=/; SameSite=Lax; Priority=High; max-age=2592000`;
   if (isSecure) {
     rememberCookie += "; Secure";
   }
@@ -76,7 +82,7 @@ export function setUserCache(data) {
     a: data.avatar || "",
     r: data.roles || [],
   });
-  let cookie = `${USER_CACHE_COOKIE}=${encodeURIComponent(json)}; path=/; SameSite=Lax; max-age=2592000`;
+  let cookie = `${USER_CACHE_COOKIE}=${encodeURIComponent(json)}; path=/; SameSite=Lax; Priority=High; max-age=2592000`;
   if (isSecure) {
     cookie += "; Secure";
   }
