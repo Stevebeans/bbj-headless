@@ -40,7 +40,6 @@ export function FloatingUpdater() {
 
   // Social posting
   const [postToBluesky, setPostToBluesky] = useState(true);
-  const [postToFacebook, setPostToFacebook] = useState(false);
   const [socialConfig, setSocialConfig] = useState(null);
 
   // Refs
@@ -63,9 +62,8 @@ export function FloatingUpdater() {
       getSocialConfig(user.token)
         .then((data) => {
           setSocialConfig(data);
-          // Set defaults based on config
+          // Default on when configured
           setPostToBluesky(data.bluesky?.configured || false);
-          setPostToFacebook(false); // Always default off for Facebook
         })
         .catch(() => {});
     }
@@ -108,14 +106,6 @@ export function FloatingUpdater() {
     e.preventDefault();
     if (!content.trim() || isSubmitting) return;
 
-    // Warn if Facebook is checked but no image
-    if (postToFacebook && !imageFile) {
-      const proceed = window.confirm(
-        "Facebook posts perform better with an image. Continue without one?"
-      );
-      if (!proceed) return;
-    }
-
     setIsSubmitting(true);
     setError(null);
     setSuccess(null);
@@ -127,18 +117,14 @@ export function FloatingUpdater() {
           mode,
           image: imageFile,
           postToBluesky,
-          postToFacebook,
         },
         user.token
       );
 
       // Show success message
       let successMsg = "Update posted!";
-      const socialPosts = [];
-      if (result.social_results?.bluesky?.posted) socialPosts.push("Bluesky");
-      if (result.social_results?.facebook?.posted) socialPosts.push("Facebook");
-      if (socialPosts.length > 0) {
-        successMsg += ` Also posted to ${socialPosts.join(" & ")}.`;
+      if (result.social_results?.bluesky?.posted) {
+        successMsg += " Also posted to Bluesky.";
       }
       setSuccess(successMsg);
 
@@ -330,31 +316,6 @@ export function FloatingUpdater() {
                   <span className={socialConfig?.bluesky?.configured ? "text-blue-500" : "text-gray-400"}>
                     <svg className="w-4 h-4" viewBox="0 0 568 501" fill="currentColor">
                       <path d="M123.121 33.664C188.241 82.553 258.281 181.68 284 234.873c25.719-53.192 95.759-152.32 160.879-201.21C491.866-1.611 568-28.906 568 57.947c0 17.346-9.945 145.713-15.778 166.555-20.275 72.453-94.155 90.933-159.875 79.748C507.222 323.8 536.444 388.56 473.333 453.32c-119.86 122.992-172.272-30.859-185.702-70.281-2.462-7.227-3.614-10.608-3.631-7.733-.017-2.875-1.169.506-3.631 7.733-13.43 39.422-65.842 193.273-185.702 70.281-63.111-64.76-33.89-129.52 80.986-149.071-65.72 11.185-139.6-7.295-159.875-79.748C9.945 203.659 0 75.291 0 57.946 0-28.906 76.135-1.612 123.121 33.664Z" />
-                    </svg>
-                  </span>
-                </label>
-                <label
-                  className={`flex items-center gap-1 ${
-                    socialConfig?.facebook?.configured
-                      ? "cursor-pointer"
-                      : "cursor-not-allowed opacity-50"
-                  }`}
-                  title={
-                    socialConfig?.facebook?.configured
-                      ? "Post to Facebook"
-                      : "Facebook not configured"
-                  }
-                >
-                  <input
-                    type="checkbox"
-                    checked={postToFacebook && socialConfig?.facebook?.configured}
-                    onChange={(e) => setPostToFacebook(e.target.checked)}
-                    disabled={!socialConfig?.facebook?.configured}
-                    className="w-4 h-4 text-blue-600 rounded disabled:opacity-50"
-                  />
-                  <span className={socialConfig?.facebook?.configured ? "text-blue-600" : "text-gray-400"}>
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                     </svg>
                   </span>
                 </label>

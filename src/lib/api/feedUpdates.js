@@ -93,7 +93,6 @@ export async function getFeedUpdateBySlug(slug) {
  * @param {File} data.image - Optional image file
  * @param {string} data.mode - Update mode: feed or show
  * @param {boolean} data.postToBluesky - Post to Bluesky
- * @param {boolean} data.postToFacebook - Post to Facebook
  * @param {string} token - JWT auth token
  * @returns {Promise<Object>} Created update
  */
@@ -110,9 +109,6 @@ export async function createFeedUpdate(data, token) {
     formData.append("post_to_bluesky", data.postToBluesky ? "1" : "0");
   }
 
-  if (data.postToFacebook !== undefined) {
-    formData.append("post_to_facebook", data.postToFacebook ? "1" : "0");
-  }
 
   const res = await fetch(`${API_URL}/bbjd/v1/feed-updates/create`, {
     method: "POST",
