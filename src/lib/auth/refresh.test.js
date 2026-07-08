@@ -56,4 +56,25 @@ describe("forceRefreshToken anchor-only recovery", () => {
   it("maybeRefreshToken still returns null with no token (unchanged)", async () => {
     expect(await maybeRefreshToken()).toBeNull();
   });
+
+  it("treats an expired token as tokenless and still recovers via anchor cookie", async () => {
+    const { setToken } = await import("./cookies");
+    // exp far in the past so isTokenExpired() is true
+    const payload = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) - 999999 })).toString("base64");
+    const expiredToken = `h.${payload}.s`;
+    setToken(expiredToken, true);
+
+    let captured = null;
+    vi.stubGlobal("fetch", async (url, options) => {
+      captured = { url, options };
+      return { ok: true, json: async () => ({ token: "fresh-jwt" }) };
+    });
+
+    const token = await forceRefreshToken();
+
+    expect(token).toBe("fresh-jwt");
+    expect(captured.options.headers.Authorization).toBeUndefined();
+    expect(captured.options.credentials).toBe("include");
+    expect(getToken()).toBe("fresh-jwt");
+  });
 });
