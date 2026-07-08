@@ -20,21 +20,27 @@ export async function maybeRefreshToken() {
   return forceRefreshToken();
 }
 
-/** Attempt a refresh regardless of threshold (only if a non-expired token exists). */
+/**
+ * Refresh regardless of threshold. Two modes:
+ *  - live JS token → classic Bearer refresh (as before)
+ *  - no readable token → anchor recovery: the HttpOnly bbj_token_s cookie
+ *    rides along via credentials:'include' and authenticates the mint.
+ */
 export async function forceRefreshToken() {
-  const token = getToken();
-  if (!token || isTokenExpired(token)) return null;
+  let token = getToken();
+  if (token && isTokenExpired(token)) token = null;
   if (inflight) return inflight;
 
   const remember = getRememberPreference();
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   inflight = (async () => {
     try {
       const res = await fetch(`${API_URL}/bbjd/v1/auth/refresh`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
+        credentials: "include",
         body: JSON.stringify({ remember_me: remember }),
       });
       if (!res.ok) return null;
