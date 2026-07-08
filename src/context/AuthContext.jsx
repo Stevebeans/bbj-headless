@@ -118,6 +118,12 @@ export function AuthProvider({ children }) {
     if (didHydrate.current) return;
     didHydrate.current = true;
 
+    // True when hydration had the bbj_user profile-cache cookie available.
+    // Cookie cleaners (ESET etc.) wipe it together with the JS token; after an
+    // anchor recovery the member is logged in but has no avatar until the next
+    // real login — unless we re-fetch the profile (see refreshUser calls below).
+    let hadProfileCache = false;
+
     // Decode a token into user state (+ cache enrichment). False = unusable.
     const applyToken = (token) => {
       if (isTokenExpired(token)) return false;
@@ -126,6 +132,7 @@ export function AuthProvider({ children }) {
 
       // Enrich with cached profile data (avatar, possibly more recent name/roles)
       const cache = getUserCache();
+      hadProfileCache = !!cache;
       if (cache) {
         if (cache.avatar) jwtData.avatar = cache.avatar;
         if (cache.name) jwtData.user_display_name = cache.name;
@@ -149,6 +156,8 @@ export function AuthProvider({ children }) {
         // Sliding refresh: if the token is past ~half its life, re-mint it now
         // (and re-arm the cookie / reset Safari's ITP clock). Non-blocking.
         maybeRefreshToken();
+        // Cache cookie wiped but token survived: repaint avatar + rebuild cache.
+        if (!hadProfileCache) refreshUser();
       }
       setLoading(false);
       return;
@@ -160,6 +169,11 @@ export function AuthProvider({ children }) {
     if (getSessionHint()) {
       forceRefreshToken().then((result) => {
         const recovered = typeof result === "string" && applyToken(result);
+        if (recovered && !hadProfileCache) {
+          // Recovered session has no avatar (JWT carries none, cache was wiped
+          // with the JS token) — one background /auth/me repaints it.
+          refreshUser();
+        }
         if (!recovered) {
           // Definitive rejection (or a token that won't decode) = the anchor
           // is dead: drop the hint so we don't retry every pageview. A network
