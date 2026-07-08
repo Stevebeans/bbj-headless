@@ -16,11 +16,6 @@
   .fuh-page-h h1 em{font-style:normal;color:#35546e;border-bottom:3px solid #FFBF0F;padding-bottom:2px}
   .fuh-page-h .fuh-meta{font-family:var(--font-ibm-plex-mono),monospace;font-size:11px;color:#6B7280;letter-spacing:.04em;text-transform:uppercase;margin-top:8px;display:flex;gap:12px;flex-wrap:wrap}
   .fuh-page-h .fuh-meta span b{color:#15181E;font-weight:600;margin-right:4px}
-  .fuh-page-h .fuh-actions{display:flex;gap:8px}
-  .fuh-btn-prim{padding:10px 16px;background:#35546e;color:#fff;font-family:var(--font-oswald),sans-serif;text-transform:uppercase;font-weight:600;font-size:13px;letter-spacing:.05em;border-radius:3px;display:inline-flex;align-items:center;gap:6px}
-  .fuh-btn-prim:hover{background:#233C52}
-  .fuh-btn-ghost{padding:10px 14px;border:1px solid #D6DADF;background:#fff;font-family:var(--font-ibm-plex-mono),monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#3A404B;border-radius:3px;font-weight:600;display:inline-flex;gap:6px;align-items:center;cursor:pointer}
-  .fuh-btn-ghost:hover{border-color:#35546e;color:#35546e}
 
   /* Live status banner */
   .fuh-livebar{background:#15181E;color:#fff;border-radius:6px;padding:14px 18px;margin-bottom:22px;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;position:relative;overflow:hidden}
@@ -51,6 +46,8 @@
   .fuh-featured .fuh-bd p{font-family:var(--font-source-serif-4),Georgia,serif;font-size:15px;color:#3A404B;line-height:1.55;max-width:58ch;text-wrap:pretty}
   .fuh-featured .fuh-bd .fuh-foot{display:flex;align-items:center;gap:14px;margin-top:14px;font-family:var(--font-ibm-plex-mono),monospace;font-size:11px;color:#6B7280;letter-spacing:.04em;text-transform:uppercase;flex-wrap:wrap}
   .fuh-featured .fuh-bd .fuh-foot .fuh-by{color:#15181E;font-weight:600}
+  .fuh-featured .fuh-bd .fuh-foot .fuh-author{display:inline-flex;align-items:center;gap:8px}
+  .fuh-featured .fuh-bd .fuh-foot .fuh-foot-av{width:22px;height:22px;border-radius:50%;object-fit:cover;background:#F3F1EA}
   .fuh-featured .fuh-bd .fuh-foot .fuh-read{color:#35546e;font-weight:600;margin-left:auto}
 
   /* Toolbar */
@@ -103,6 +100,7 @@
   .fuh-upd .fuh-body{min-width:0}
   .fuh-upd .fuh-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--font-ibm-plex-mono),monospace;font-size:10px;color:#6B7280;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
   .fuh-upd .fuh-head .fuh-av{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#35546e,#1E3448);color:#fff;display:grid;place-items:center;font-family:var(--font-oswald),sans-serif;font-size:10px;font-weight:600;text-transform:uppercase}
+  .fuh-upd .fuh-head .fuh-av.fuh-av-img{object-fit:cover;background:#F3F1EA}
   .fuh-upd .fuh-head .fuh-by{color:#15181E;font-weight:600;text-transform:none;font-family:var(--font-roboto),system-ui,sans-serif;font-size:12px;letter-spacing:0}
   .fuh-upd .fuh-head .fuh-t{margin-left:auto}
   .fuh-upd .fuh-head .fuh-t b{color:#15181E;font-weight:600}
@@ -128,41 +126,17 @@
   .fuh-upd .fuh-thumb{margin-top:10px;max-width:520px;border-radius:4px;overflow:hidden;background:#F3F1EA}
   .fuh-upd .fuh-thumb img{display:block;width:100%;height:auto}
 
+  .fuh-empty{font-family:var(--font-ibm-plex-mono),monospace;font-size:12px;color:#6B7280;text-align:center;padding:40px 0;text-transform:uppercase;letter-spacing:.06em}
+
   .fuh-loadmore{text-align:center;margin-top:18px}
   .fuh-loadmore a{display:inline-block;padding:12px 26px;background:#fff;border:1px solid #D6DADF;border-radius:4px;font-family:var(--font-oswald),sans-serif;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#3A404B}
   .fuh-loadmore a:hover{border-color:#35546e;color:#35546e}
   .fuh-loadmore .fuh-hint{display:block;margin-top:6px;font-family:var(--font-ibm-plex-mono),monospace;font-size:10px;color:#6B7280;letter-spacing:.06em;text-transform:uppercase}
 
-  /* Sidebar */
+  /* Sidebar (shared <Sidebar>; only the injected Hot This Week card is hub-styled) */
   .fuh-grid aside{min-width:0}
-  .fuh-stick{position:sticky;top:16px;display:grid;gap:16px}
   .fuh-card{background:#fff;border:1px solid #E5E7EB;border-radius:6px;padding:16px 18px}
   .fuh-card h4{font-family:var(--font-oswald),sans-serif;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:#15181E;font-weight:600;margin:0 0 12px;padding-bottom:10px;border-bottom:2px solid #15181E}
-  .fuh-card.fuh-live-mini{background:linear-gradient(135deg,#35546e,#233C52);color:#fff;border:0}
-  .fuh-card.fuh-live-mini h4{color:#fff;border-color:rgba(255,255,255,.2);display:flex;align-items:center;gap:8px}
-  .fuh-card.fuh-live-mini h4::before{content:"";width:7px;height:7px;background:#D23B2B;border-radius:50%;animation:fuh-blink 1.2s infinite}
-  .fuh-card.fuh-live-mini .fuh-row{display:grid;grid-template-columns:58px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);font-family:var(--font-ibm-plex-mono),monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;align-items:center}
-  .fuh-card.fuh-live-mini .fuh-row:last-child{border-bottom:0}
-  .fuh-card.fuh-live-mini .fuh-row .fuh-k{color:rgba(255,255,255,.65);font-weight:600}
-  .fuh-card.fuh-live-mini .fuh-row .fuh-v{color:#fff;font-family:var(--font-oswald),sans-serif;font-size:15px;letter-spacing:.02em;font-weight:600}
-  .fuh-card.fuh-live-mini .fuh-cta{margin-top:12px;display:inline-flex;align-items:center;gap:6px;background:#FFBF0F;color:#15181E;padding:9px 14px;border-radius:3px;font-family:var(--font-oswald),sans-serif;text-transform:uppercase;font-weight:600;font-size:12px;letter-spacing:.04em}
-  .fuh-card.fuh-live-mini .fuh-cta:hover{background:#fff}
-  .fuh-card.fuh-fcard h4{display:flex;justify-content:space-between;align-items:center}
-  .fuh-card.fuh-fcard h4 small{font-family:var(--font-ibm-plex-mono),monospace;font-size:9px;color:#6B7280;letter-spacing:.06em;font-weight:500;text-transform:uppercase}
-  .fuh-card.fuh-fcard label{display:flex;align-items:center;gap:10px;padding:6px 0;font-family:var(--font-source-serif-4),Georgia,serif;font-size:14px;color:#3A404B;cursor:pointer}
-  .fuh-card.fuh-fcard label input{accent-color:#35546e;width:14px;height:14px}
-  .fuh-card.fuh-fcard label .fuh-ct{font-family:var(--font-ibm-plex-mono),monospace;font-size:10px;color:#6B7280;letter-spacing:.04em;margin-left:auto}
-  .fuh-card.fuh-fcard label .fuh-dot{width:8px;height:8px;border-radius:50%;margin-left:6px}
-  .fuh-card.fuh-fcard .fuh-glab{font-family:var(--font-ibm-plex-mono),monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#6B7280;font-weight:600;margin-bottom:4px}
-  .fuh-card.fuh-follow .fuh-socials{display:flex;gap:8px}
-  .fuh-card.fuh-follow .fuh-socials a{flex:1;display:grid;place-items:center;height:44px;border:1px solid #D6DADF;border-radius:4px;color:#3A404B;font-family:var(--font-oswald),sans-serif;font-weight:600;letter-spacing:.04em;font-size:13px}
-  .fuh-card.fuh-follow .fuh-socials a:hover{background:#35546e;color:#fff;border-color:#35546e}
-  .fuh-card.fuh-nl p{font-family:var(--font-source-serif-4),Georgia,serif;font-size:13px;color:#3A404B;line-height:1.45;margin-bottom:10px}
-  .fuh-card.fuh-nl input{width:100%;padding:10px 12px;border:1px solid #D6DADF;border-radius:3px;font:inherit;background:#fff;margin-bottom:8px}
-  .fuh-card.fuh-nl input:focus{outline:2px solid #35546e;outline-offset:1px}
-  .fuh-card.fuh-nl button{width:100%;padding:10px;background:#FFBF0F;color:#15181E;font-family:var(--font-oswald),sans-serif;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:3px;font-size:13px;border:0;cursor:pointer}
-  .fuh-card.fuh-nl button:hover{background:#E6A800}
-  .fuh-card.fuh-nl small{display:block;margin-top:8px;font-family:var(--font-ibm-plex-mono),monospace;font-size:10px;color:#6B7280;letter-spacing:.02em;line-height:1.4}
   .fuh-card.fuh-hotposts ol{list-style:none;padding:0;margin:0;counter-reset:fuh-hp;display:grid;gap:10px}
   .fuh-card.fuh-hotposts li{counter-increment:fuh-hp;display:grid;grid-template-columns:22px 1fr;gap:10px;padding-bottom:10px;border-bottom:1px dashed #D6DADF}
   .fuh-card.fuh-hotposts li:last-child{border-bottom:0;padding-bottom:0}
@@ -170,18 +144,10 @@
   .fuh-card.fuh-hotposts h5{font-family:var(--font-source-serif-4),Georgia,serif;font-size:14px;font-weight:600;line-height:1.3;color:#15181E;text-wrap:pretty;margin:0}
   .fuh-card.fuh-hotposts h5:hover{color:#35546e}
   .fuh-card.fuh-hotposts .fuh-m{font-family:var(--font-ibm-plex-mono),monospace;font-size:10px;color:#6B7280;letter-spacing:.04em;text-transform:uppercase;margin-top:3px}
-  .fuh-ad{position:relative;background:#F3F1EA;border:1px solid #E5E7EB;border-radius:4px;padding:18px;text-align:center;font-family:var(--font-ibm-plex-mono),monospace;font-size:10px;color:#6B7280;letter-spacing:.08em;text-transform:uppercase;min-height:260px;display:flex;flex-direction:column;justify-content:center}
-  .fuh-ad::before{content:"Advertisement";position:absolute;top:-9px;left:12px;background:#FBFAF6;padding:0 6px;color:#6B7280;font-size:9px;letter-spacing:.1em}
-  .fuh-ad .fuh-mock{font-family:var(--font-oswald),sans-serif;font-size:22px;color:#3A404B;letter-spacing:.04em;font-weight:500}
-
-  /* Premium-only refresh button — surfaced as disabled-looking until paywall lands */
-  .fuh-refresh-locked{opacity:.55;cursor:not-allowed;position:relative}
-  .fuh-refresh-locked::after{content:"★";margin-left:6px;color:#FFBF0F}
 
   @media (max-width:1000px){
     .fuh-grid{grid-template-columns:1fr;gap:22px}
     .fuh-featured{grid-template-columns:1fr}
     .fuh-featured .fuh-ph{aspect-ratio:16/9}
-    .fuh-stick{position:static}
     .fuh-page-h h1{font-size:32px}
   }

@@ -16,13 +16,14 @@ export function FeedHubLiveBanner({ houseboard, counts }) {
         {hasLive ? (
           <>HoH <b>{hoh}</b> · Veto holder <b>{veto}</b>{blockNames && <> · On the block <b>{block}</b></>}</>
         ) : (
-          <>Feeds rolling — {counts.today} updates posted today.</>
+          <>Feeds are rolling — live updates below.</>
         )}
       </div>
       <div className="fuh-stats">
         <span><b>{counts.today}</b>today</span>
         <span><b>{counts.week}</b>this week</span>
-        <span><b>{counts.season}</b>season</span>
+        {/* Season total only once it means something beyond this week (hidden premiere week) */}
+        {counts.season > counts.week && <span><b>{counts.season}</b>season</span>}
       </div>
     </div>
   );

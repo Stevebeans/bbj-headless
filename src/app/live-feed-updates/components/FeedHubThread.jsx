@@ -126,7 +126,7 @@ export function FeedHubThread({ initial }) {
       </div>
 
       {groups.length === 0 ? (
-        <p style={{ fontFamily: "var(--font-ibm-plex-mono),monospace", fontSize: 12, color: "#6B7280", textAlign: "center", padding: "40px 0", textTransform: "uppercase", letterSpacing: ".06em" }}>
+        <p className="fuh-empty">
           {search ? `No updates match "${search}".` : "No updates yet."}
         </p>
       ) : (

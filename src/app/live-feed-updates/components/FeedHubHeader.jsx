@@ -1,11 +1,11 @@
-// Editorial page header: kicker, BBNN title, season/week/day/today meta,
-// locked Premium auto-refresh teaser. Server component.
+// Editorial page header: kicker, BBNN title, season/week/day/today meta.
+// Server component.
 export function FeedHubHeader({ season, counts }) {
   const { abbr, name, day, week } = season;
   return (
     <div className="fuh-page-h">
       <div className="fuh-ttl">
-        <span className="fuh-kk">Live thread · auto-refresh coming to Premium</span>
+        <span className="fuh-kk">Live thread</span>
         <h1>{abbr} <em>Live Feed Updates</em></h1>
         <div className="fuh-meta">
           <span><b>Season</b>{name || "Big Brother"}</span>
@@ -14,16 +14,6 @@ export function FeedHubHeader({ season, counts }) {
           <span>·</span>
           <span><b>Updates today</b>{counts.today}</span>
         </div>
-      </div>
-      <div className="fuh-actions">
-        <button
-          className="fuh-btn-ghost fuh-refresh-locked"
-          type="button"
-          title="Coming soon to Premium"
-          aria-disabled="true"
-        >
-          ⟳ Auto-refresh
-        </button>
       </div>
     </div>
   );

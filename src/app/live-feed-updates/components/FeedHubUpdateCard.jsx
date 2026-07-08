@@ -38,7 +38,11 @@ export function FeedHubUpdateCard({ update }) {
       </div>
       <div className="fuh-body">
         <div className="fuh-head">
-          <span className="fuh-av">{init}</span>
+          {update.author?.avatar ? (
+            <Image className="fuh-av fuh-av-img" src={update.author.avatar} alt="" width={22} height={22} unoptimized />
+          ) : (
+            <span className="fuh-av">{init}</span>
+          )}
           <span className="fuh-by">{update.author?.name}</span>
           {update.mode && <span className="fuh-cat">{update.mode === "show" ? "Show" : "Feed"}</span>}
           <span className={`fuh-t${isFreshUpdate(update.modified) ? " fuh-fresh" : ""}`} data-nosnippet><b>{update.time_ago}</b></span>

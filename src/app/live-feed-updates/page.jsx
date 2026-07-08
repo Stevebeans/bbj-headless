@@ -5,7 +5,9 @@ import { FeedHubHeader } from "./components/FeedHubHeader";
 import { FeedHubLiveBanner } from "./components/FeedHubLiveBanner";
 import { FeedHubFeatured } from "./components/FeedHubFeatured";
 import { FeedHubThread } from "./components/FeedHubThread";
-import { FeedHubSidebar } from "./components/FeedHubSidebar";
+import { FeedHubHotPosts } from "./components/FeedHubHotPosts";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { seasonNumber } from "./components/feedHubName";
 import "./feed-hub.css";
 
@@ -90,7 +92,11 @@ export default async function FeedUpdatesPage() {
             <FeedHubFeatured featured={hub.featured} />
             <FeedHubThread initial={hub.thread} />
           </div>
-          <FeedHubSidebar houseboard={houseboard} hotPosts={hub.hot_posts} />
+          {/* Shared site sidebar (same as homepage + feed detail pages) with hub extras injected */}
+          <Sidebar sticky={false}>
+            <FeedHubHotPosts hotPosts={hub.hot_posts} />
+            <SubscribeWidget />
+          </Sidebar>
         </div>
       </div>
     </main>

@@ -22,13 +22,16 @@ export function FeedHubFeatured({ featured }) {
         <span className="fuh-name">{mode} Update</span>
       </div>
       <div className="fuh-bd">
-        <span className="fuh-kk"><b>Newest</b>{featured.time_ago}</span>
+        <span className="fuh-kk" data-nosnippet><b>Newest</b>{featured.time_ago}</span>
         <h2><Link href={href}>{featured.title}</Link></h2>
         {featured.excerpt && <p>{featured.excerpt}</p>}
         <div className="fuh-foot">
-          <span>By <span className="fuh-by">{featured.author?.name}</span></span>
-          <span>·</span>
-          <span data-nosnippet>{featured.time_ago}</span>
+          <span className="fuh-author">
+            {featured.author?.avatar && (
+              <Image className="fuh-foot-av" src={featured.author.avatar} alt="" width={22} height={22} unoptimized />
+            )}
+            By <span className="fuh-by">{featured.author?.name}</span>
+          </span>
           {featured.comment_count > 0 && (<><span>·</span><span>{featured.comment_count} comments</span></>)}
           <Link className="fuh-read" href={href}>Read full update →</Link>
         </div>
