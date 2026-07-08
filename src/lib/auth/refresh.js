@@ -25,6 +25,13 @@ export async function maybeRefreshToken() {
  *  - live JS token → classic Bearer refresh (as before)
  *  - no readable token → anchor recovery: the HttpOnly bbj_token_s cookie
  *    rides along via credentials:'include' and authenticates the mint.
+ *
+ * Three-value return contract (callers must branch on all three):
+ *  - `string` — the fresh token, on success
+ *  - `false`  — definitive rejection: the server responded but refused
+ *               (`!res.ok`), or an ok response came back without a token
+ *  - `null`   — thrown fetch/network error (also returned by inflight
+ *               de-dupe pass-through); treat as "unknown," not "rejected"
  */
 export async function forceRefreshToken() {
   let token = getToken();
@@ -43,13 +50,13 @@ export async function forceRefreshToken() {
         credentials: "include",
         body: JSON.stringify({ remember_me: remember }),
       });
-      if (!res.ok) return null;
+      if (!res.ok) return false;
       const data = await res.json();
       if (data && data.token) {
         setToken(data.token, remember);
         return data.token;
       }
-      return null;
+      return false;
     } catch {
       return null; // network blip — keep the existing token, try again next tick
     } finally {

@@ -109,6 +109,22 @@ describe("decodeUserFromToken", () => {
     expect(u.user_email).toBeNull();
     expect(u.user_roles).toEqual([]);
   });
+
+  it("decodes base64url payloads (raw atob would break on these chars)", () => {
+    // Craft a display name whose JSON, when base64url-encoded, differs from
+    // plain base64 (contains - or _ instead of + or /).
+    const payload = {
+      data: { user: { id: 99, display_name: "???>>>???" } },
+    };
+    const json = JSON.stringify(payload);
+    const b64url = Buffer.from(json).toString("base64url");
+    expect(b64url).toMatch(/[-_]/); // sanity: this payload actually exercises url-safe chars
+    const token = `header.${b64url}.sig`;
+    const u = decodeUserFromToken(token);
+    expect(u).not.toBeNull();
+    expect(u.id).toBe(99);
+    expect(u.user_display_name).toBe("???>>>???");
+  });
 });
 
 describe("normalizeRoles", () => {

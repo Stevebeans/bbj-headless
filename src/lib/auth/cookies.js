@@ -168,7 +168,7 @@ export function getSessionHint() {
  * this can't touch the HttpOnly anchor itself.
  */
 export function clearSessionHint() {
-  if (typeof document === "undefined") return;
+  if (typeof document === "undefined" || typeof window === "undefined") return;
   document.cookie = `${HINT_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
   if (window.location.hostname.endsWith("bigbrotherjunkies.com")) {
     document.cookie = `${HINT_COOKIE}=; path=/; max-age=0; SameSite=Lax; domain=.bigbrotherjunkies.com`;

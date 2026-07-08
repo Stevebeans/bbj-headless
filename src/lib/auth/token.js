@@ -72,19 +72,16 @@ export function normalizeRoles(roles) {
  */
 export function decodeUserFromToken(token) {
   if (!token) return null;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const userData = payload.data?.user;
-    if (!userData?.id) return null;
-    return {
-      id: userData.id,
-      user_id: userData.id,
-      user_email: userData.email || null,
-      user_display_name: userData.display_name || "User",
-      user_roles: normalizeRoles(userData.roles),
-      token,
-    };
-  } catch {
-    return null;
-  }
+  const payload = decodeJwtPayload(token);
+  if (!payload) return null;
+  const userData = payload.data?.user;
+  if (!userData?.id) return null;
+  return {
+    id: userData.id,
+    user_id: userData.id,
+    user_email: userData.email || null,
+    user_display_name: userData.display_name || "User",
+    user_roles: normalizeRoles(userData.roles),
+    token,
+  };
 }

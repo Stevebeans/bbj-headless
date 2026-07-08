@@ -29,8 +29,16 @@ describe("forceRefreshToken anchor-only recovery", () => {
     expect(getToken()).toBe("fresh-jwt");
   });
 
-  it("returns null when the server rejects (no anchor)", async () => {
+  it("returns false when the server definitively rejects (no anchor)", async () => {
     vi.stubGlobal("fetch", async () => ({ ok: false, status: 401, json: async () => ({}) }));
+    expect(await forceRefreshToken()).toBe(false);
+    expect(getToken()).toBeNull();
+  });
+
+  it("returns null on a network error (thrown fetch)", async () => {
+    vi.stubGlobal("fetch", async () => {
+      throw new Error("network down");
+    });
     expect(await forceRefreshToken()).toBeNull();
     expect(getToken()).toBeNull();
   });

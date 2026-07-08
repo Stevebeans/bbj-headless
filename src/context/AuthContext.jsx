@@ -158,9 +158,13 @@ export function AuthProvider({ children }) {
     // (bbj_session_hint), recover silently: one credentialed refresh re-mints
     // the working token. Anonymous visitors have no hint → zero extra calls.
     if (getSessionHint()) {
-      forceRefreshToken().then((newToken) => {
-        if (!newToken || !applyToken(newToken)) {
-          clearSessionHint(); // don't retry on every pageview
+      forceRefreshToken().then((result) => {
+        const recovered = typeof result === "string" && applyToken(result);
+        if (!recovered) {
+          // Definitive rejection (or a token that won't decode) = the anchor
+          // is dead: drop the hint so we don't retry every pageview. A network
+          // blip (null) keeps the hint — recovery stays armed for next load.
+          if (result !== null) clearSessionHint();
           setUser(null);
         }
         setLoading(false);
@@ -398,6 +402,7 @@ export function AuthProvider({ children }) {
     fetch(`${API_URL}/bbjd/v1/auth/logout`, {
       method: "POST",
       credentials: "include",
+      keepalive: true,
     }).catch(() => {});
     clearToken();
     setUser(null);
