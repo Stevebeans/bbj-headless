@@ -6,6 +6,13 @@
 const TOKEN_COOKIE = "bbj_token";
 const REMEMBER_COOKIE = "bbj_remember";
 const USER_CACHE_COOKIE = "bbj_user";
+const HINT_COOKIE = "bbj_session_hint";
+
+// In-memory fallback: when the browser refuses to persist cookies (per-site
+// blocks, security suites), the re-minted token lives here so the session
+// still works within this tab. Page loads re-fill it from the HttpOnly
+// anchor via the recovery path in AuthContext.
+let memoryToken = null;
 
 const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
 
@@ -22,7 +29,7 @@ function readCookie(name) {
  * Get the JWT token from cookie
  */
 export function getToken() {
-  return readCookie(TOKEN_COOKIE);
+  return readCookie(TOKEN_COOKIE) ?? memoryToken;
 }
 
 /**
@@ -31,6 +38,7 @@ export function getToken() {
  * @param {boolean} remember - If true, persist for 30 days; if false, session cookie
  */
 export function setToken(token, remember) {
+  memoryToken = token;
   if (typeof document === "undefined") return;
 
   // Priority=High (Chromium-only, ignored elsewhere): the ad stack churns
@@ -63,10 +71,12 @@ export function setToken(token, remember) {
  * Clear all auth cookies
  */
 export function clearToken() {
+  memoryToken = null;
   if (typeof document === "undefined") return;
   document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
   document.cookie = `${REMEMBER_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
   document.cookie = `${USER_CACHE_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+  clearSessionHint();
 }
 
 /**
@@ -141,4 +151,26 @@ export function getRememberPreference() {
 export function getAuthHeader() {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * True when the server-set bbj_session_hint cookie says an HttpOnly anchor
+ * may exist — gates the silent-recovery refresh so anonymous visitors never
+ * fire speculative auth calls.
+ */
+export function getSessionHint() {
+  return readCookie(HINT_COOKIE) === "1";
+}
+
+/**
+ * Best-effort local expiry of the hint (e.g. after a failed recovery so we
+ * don't retry every pageview). The server's /auth/logout is authoritative —
+ * this can't touch the HttpOnly anchor itself.
+ */
+export function clearSessionHint() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${HINT_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+  if (window.location.hostname.endsWith("bigbrotherjunkies.com")) {
+    document.cookie = `${HINT_COOKIE}=; path=/; max-age=0; SameSite=Lax; domain=.bigbrotherjunkies.com`;
+  }
 }
