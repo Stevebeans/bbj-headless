@@ -42,6 +42,7 @@ async function authFetch(endpoint, options) {
 export async function register({ username, email, password, displayName, subscribeNewsletter, recaptchaToken }) {
   return authFetch("/bbjd/v1/auth/register", {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       username,

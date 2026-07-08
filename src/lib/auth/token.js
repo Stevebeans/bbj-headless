@@ -53,3 +53,38 @@ export function shouldRefresh(
   const lifetime = exp - iat;
   return elapsed / lifetime >= threshold;
 }
+
+/**
+ * Normalize user_roles from any format into a proper array.
+ * PHP json_encode turns non-sequential arrays into objects,
+ * so roles like {0:"administrator",2:"beta_tester"} need conversion.
+ */
+export function normalizeRoles(roles) {
+  if (Array.isArray(roles)) return roles;
+  if (roles && typeof roles === "object") return Object.values(roles);
+  return [];
+}
+
+/**
+ * Decode the JWT payload into the AuthContext user shape.
+ * Pure decode — expiry is the caller's problem (isTokenExpired).
+ * Returns null on malformed tokens or missing user id.
+ */
+export function decodeUserFromToken(token) {
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const userData = payload.data?.user;
+    if (!userData?.id) return null;
+    return {
+      id: userData.id,
+      user_id: userData.id,
+      user_email: userData.email || null,
+      user_display_name: userData.display_name || "User",
+      user_roles: normalizeRoles(userData.roles),
+      token,
+    };
+  } catch {
+    return null;
+  }
+}

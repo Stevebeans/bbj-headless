@@ -9,9 +9,11 @@ import {
   setUserCache,
   getUserCache,
   cookiesWritable,
+  getSessionHint,
+  clearSessionHint,
 } from "@/lib/auth/cookies";
-import { isTokenExpired } from "@/lib/auth/token";
-import { maybeRefreshToken } from "@/lib/auth/refresh";
+import { isTokenExpired, decodeUserFromToken, normalizeRoles } from "@/lib/auth/token";
+import { maybeRefreshToken, forceRefreshToken } from "@/lib/auth/refresh";
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
@@ -39,17 +41,6 @@ function describeError(err, endpoint) {
 }
 
 const AuthContext = createContext(null);
-
-/**
- * Normalize user_roles from any format into a proper array.
- * PHP json_encode turns non-sequential arrays into objects,
- * so roles like {0:"administrator",2:"beta_tester"} need conversion.
- */
-function normalizeRoles(roles) {
-  if (Array.isArray(roles)) return roles;
-  if (roles && typeof roles === "object") return Object.values(roles);
-  return [];
-}
 
 /**
  * One-time migration from localStorage/sessionStorage to cookies.
@@ -127,60 +118,58 @@ export function AuthProvider({ children }) {
     if (didHydrate.current) return;
     didHydrate.current = true;
 
+    // Decode a token into user state (+ cache enrichment). False = unusable.
+    const applyToken = (token) => {
+      if (isTokenExpired(token)) return false;
+      const jwtData = decodeUserFromToken(token);
+      if (!jwtData) return false;
+
+      // Enrich with cached profile data (avatar, possibly more recent name/roles)
+      const cache = getUserCache();
+      if (cache) {
+        if (cache.avatar) jwtData.avatar = cache.avatar;
+        if (cache.name) jwtData.user_display_name = cache.name;
+        if (Array.isArray(cache.roles) && cache.roles.length > 0) {
+          jwtData.user_roles = normalizeRoles(cache.roles);
+        }
+      }
+
+      setUserAndCache(jwtData);
+      return true;
+    };
+
     const token = getToken();
 
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
-    // Decode JWT for authoritative id/email/roles
-    let jwtData = null;
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      // Check expiration — middleware no longer cleans expired tokens on
-      // content pages (narrowed to admin routes only for ISR caching)
-      if (isTokenExpired(token)) {
+    if (token) {
+      if (!applyToken(token)) {
+        // JWT is malformed or expired — clear and bail out
         clearToken();
         setUser(null);
-        setLoading(false);
-        return;
+      } else {
+        // Sliding refresh: if the token is past ~half its life, re-mint it now
+        // (and re-arm the cookie / reset Safari's ITP clock). Non-blocking.
+        maybeRefreshToken();
       }
-      const userData = payload.data?.user;
-      if (!userData?.id) throw new Error("Malformed JWT: missing user id");
-      jwtData = {
-        id: userData.id,
-        user_id: userData.id,
-        user_email: userData.email || null,
-        user_display_name: userData.display_name || "User",
-        user_roles: normalizeRoles(userData.roles),
-        token,
-      };
-    } catch {
-      // JWT is malformed or expired — clear and bail out
-      clearToken();
-      setUser(null);
       setLoading(false);
       return;
     }
 
-    // Enrich with cached profile data (avatar, possibly more recent name/roles)
-    const cache = getUserCache();
-    if (cache) {
-      if (cache.avatar) jwtData.avatar = cache.avatar;
-      if (cache.name) jwtData.user_display_name = cache.name;
-      if (Array.isArray(cache.roles) && cache.roles.length > 0) {
-        jwtData.user_roles = normalizeRoles(cache.roles);
-      }
+    // No JS token. If the server hinted that an HttpOnly anchor exists
+    // (bbj_session_hint), recover silently: one credentialed refresh re-mints
+    // the working token. Anonymous visitors have no hint → zero extra calls.
+    if (getSessionHint()) {
+      forceRefreshToken().then((newToken) => {
+        if (!newToken || !applyToken(newToken)) {
+          clearSessionHint(); // don't retry on every pageview
+          setUser(null);
+        }
+        setLoading(false);
+      });
+      return;
     }
 
-    setUserAndCache(jwtData);
+    setUser(null);
     setLoading(false);
-
-    // Sliding refresh: if the token is past ~half its life, re-mint it now
-    // (and re-arm the cookie / reset Safari's ITP clock). Non-blocking.
-    maybeRefreshToken();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch current user data from WordPress (used after login and for refresh)
@@ -191,6 +180,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await fetch(`${API_URL}/bbjd/v1/auth/me`, {
         method: "GET",
+        credentials: "include",
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -228,6 +218,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await fetch(`${API_URL}/jwt-auth/v1/token`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -269,6 +260,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await fetch(`${API_URL}/bbjd/v1/auth/google`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -321,6 +313,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await fetch(`${API_URL}/bbjd/v1/auth/link-google`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -363,6 +356,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await fetch(`${API_URL}/bbjd/v1/auth/create-from-google`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -399,6 +393,12 @@ export function AuthProvider({ children }) {
 
   // Logout
   const logout = useCallback(() => {
+    // Clear the server-set HttpOnly anchor (JS can't). Fire-and-forget:
+    // local logout must not wait on the network.
+    fetch(`${API_URL}/bbjd/v1/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
     clearToken();
     setUser(null);
     setError(null);

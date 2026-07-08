@@ -5,6 +5,8 @@ import {
   getTokenIat,
   isTokenExpired,
   shouldRefresh,
+  decodeUserFromToken,
+  normalizeRoles,
 } from "./token.js";
 
 // Build a fake unsigned JWT (header.payload.signature) for pure-decode tests.
@@ -63,5 +65,56 @@ describe("shouldRefresh", () => {
   it("is false for malformed tokens", () => {
     expect(shouldRefresh("bad", 0, 0.5)).toBe(false);
     expect(shouldRefresh(makeToken({ exp: 100 }), 60, 0.5)).toBe(false); // no iat
+  });
+});
+
+function fakeJwt(payload) {
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64");
+  return `header.${body}.sig`;
+}
+
+describe("decodeUserFromToken", () => {
+  it("extracts user fields from payload.data.user", () => {
+    const token = fakeJwt({
+      exp: 9999999999,
+      data: { user: { id: 42, email: "a@b.c", display_name: "Steve", roles: ["administrator"] } },
+    });
+    expect(decodeUserFromToken(token)).toEqual({
+      id: 42,
+      user_id: 42,
+      user_email: "a@b.c",
+      user_display_name: "Steve",
+      user_roles: ["administrator"],
+      token,
+    });
+  });
+
+  it("normalizes PHP object-shaped roles", () => {
+    const token = fakeJwt({
+      data: { user: { id: 7, roles: { 0: "subscriber", 2: "beta_tester" } } },
+    });
+    expect(decodeUserFromToken(token).user_roles).toEqual(["subscriber", "beta_tester"]);
+  });
+
+  it("returns null for malformed tokens and missing user id", () => {
+    expect(decodeUserFromToken("garbage")).toBeNull();
+    expect(decodeUserFromToken(fakeJwt({ data: { user: {} } }))).toBeNull();
+    expect(decodeUserFromToken(null)).toBeNull();
+  });
+
+  it("defaults display name and email", () => {
+    const token = fakeJwt({ data: { user: { id: 1 } } });
+    const u = decodeUserFromToken(token);
+    expect(u.user_display_name).toBe("User");
+    expect(u.user_email).toBeNull();
+    expect(u.user_roles).toEqual([]);
+  });
+});
+
+describe("normalizeRoles", () => {
+  it("passes arrays through, converts objects, defaults to []", () => {
+    expect(normalizeRoles(["a"])).toEqual(["a"]);
+    expect(normalizeRoles({ 0: "a", 2: "b" })).toEqual(["a", "b"]);
+    expect(normalizeRoles(null)).toEqual([]);
   });
 });
