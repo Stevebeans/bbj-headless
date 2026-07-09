@@ -59,6 +59,13 @@ export function PlayerEditForm({ player, slug }) {
     const payload = { ...values };
     if (!payload.profile_picture && player.photo?.url) delete payload.profile_picture;
     if (!payload.player_banner && player.banner?.url) delete payload.player_banner;
+    // Same trap for coordinates: the API doesn't return lat/lng, so the form
+    // initializes them empty. Sending "" wipes previously saved coordinates —
+    // only send them when the Places picker actually set fresh values.
+    if (!payload.lat || !payload.lng) {
+      delete payload.lat;
+      delete payload.lng;
+    }
 
     const result = await updatePlayer(player.id, payload, user?.token);
     if (result.success) {
