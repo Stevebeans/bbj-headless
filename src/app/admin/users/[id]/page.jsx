@@ -228,7 +228,8 @@ export default function AdminUserDetail() {
           <p className="text-sm text-slate-500 dark:text-slate-400">No subscription.</p>
         ) : (
           <div className="space-y-1 text-sm text-slate-700 dark:text-slate-300">
-            <p><span className="text-slate-500 dark:text-slate-400">Plan:</span> {detail.subscription.plan || "—"}</p>
+            {/* Backend exposes plan_name/tier/plan_type (BillingRoutes convention), not a single `plan` key */}
+            <p><span className="text-slate-500 dark:text-slate-400">Plan:</span> {detail.subscription.plan_name || [detail.subscription.tier, detail.subscription.plan_type].filter(Boolean).join(" ") || "—"}</p>
             <p><span className="text-slate-500 dark:text-slate-400">Status:</span> {detail.subscription.status || "—"}</p>
             <p><span className="text-slate-500 dark:text-slate-400">Processor:</span> {detail.subscription.processor || "—"}</p>
             <p>
