@@ -62,7 +62,7 @@ export function JumpToComments({ commentCount = 0 }) {
   return (
     <button
       onClick={scrollToComments}
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-2
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2
         bg-primary-500 hover:bg-primary-600 text-white
         px-4 py-3 rounded-full shadow-lg
         transition-all duration-300 hover:scale-105
