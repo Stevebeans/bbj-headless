@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Cookies from "js-cookie";
 import { getAdSettings, updateAdSettings } from "@/lib/api/ad-settings";
+import { getRoles } from "@/lib/api/admin";
 
 const PREVIEW_COOKIE_NAME = "bbj_ad_preview";
 const PREVIEW_COOKIE_DAYS = 7;
@@ -36,11 +37,13 @@ const HOUSE_AD_OPTIONS = [
   { value: "newsletter", label: "Newsletter Signup" },
 ];
 
-const SUPPORTER_ROLES = [
-  { key: "administrator", label: "Administrator" },
-  { key: "editor", label: "Editor" },
-  { key: "supporter", label: "Supporter" },
-  { key: "lifetime", label: "Lifetime" },
+// Fallback list if /admin/roles can't be fetched; the live UI shows ALL
+// WordPress roles pulled dynamically (see roles state below).
+const SUPPORTER_ROLES_FALLBACK = [
+  { key: "administrator", name: "Administrator" },
+  { key: "editor", name: "Editor" },
+  { key: "supporter", name: "Supporter" },
+  { key: "lifetime", name: "Lifetime" },
 ];
 
 // stored UTC ISO -> value for <input type="datetime-local"> (admin's local wall clock)
@@ -66,6 +69,7 @@ export default function AdminAds() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const [roles, setRoles] = useState(SUPPORTER_ROLES_FALLBACK);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -81,6 +85,15 @@ export default function AdminAds() {
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
+
+  // All WordPress roles, so any existing role can be granted ad-free.
+  useEffect(() => {
+    getRoles()
+      .then((data) => {
+        if (Array.isArray(data) && data.length) setRoles(data);
+      })
+      .catch(() => {}); // keep the fallback list
+  }, []);
 
   useEffect(() => {
     setPreviewMode(Cookies.get(PREVIEW_COOKIE_NAME) === "1");
@@ -501,7 +514,7 @@ export default function AdminAds() {
           Users with these roles will not see ads (ad-free experience).
         </p>
         <div className="space-y-3">
-          {SUPPORTER_ROLES.map((role) => (
+          {roles.map((role) => (
             <label key={role.key} className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -509,7 +522,7 @@ export default function AdminAds() {
                 onChange={() => toggleSupporterRole(role.key)}
                 className="w-4 h-4 text-primary-500 border-slate-300 rounded focus:ring-primary-500"
               />
-              <span className="text-slate-700 dark:text-slate-300">{role.label}</span>
+              <span className="text-slate-700 dark:text-slate-300">{role.name || role.label}</span>
             </label>
           ))}
         </div>
