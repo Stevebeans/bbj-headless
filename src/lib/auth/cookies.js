@@ -91,6 +91,7 @@ export function setUserCache(data) {
     n: data.name || "",
     a: data.avatar || "",
     r: data.roles || [],
+    t: Date.now(), // written-at — lets AuthContext refresh stale profiles (avatar changes from other devices)
   });
   let cookie = `${USER_CACHE_COOKIE}=${encodeURIComponent(json)}; path=/; SameSite=Lax; Priority=High; max-age=2592000`;
   if (isSecure) {
@@ -108,7 +109,7 @@ export function getUserCache() {
   if (!raw) return null;
   try {
     const data = JSON.parse(raw);
-    return { name: data.n || "", avatar: data.a || "", roles: data.r || [] };
+    return { name: data.n || "", avatar: data.a || "", roles: data.r || [], cachedAt: data.t || 0 };
   } catch {
     return null;
   }

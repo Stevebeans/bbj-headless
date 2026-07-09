@@ -123,6 +123,11 @@ export function AuthProvider({ children }) {
     // anchor recovery the member is logged in but has no avatar until the next
     // real login — unless we re-fetch the profile (see refreshUser calls below).
     let hadProfileCache = false;
+    // True when that cache is older than the TTL. Without this, a profile
+    // change made on another device (new avatar, name, role grant) never
+    // reaches this one — the cache was only rebuilt when missing entirely.
+    let profileCacheStale = false;
+    const PROFILE_CACHE_TTL_MS = 15 * 60 * 1000;
 
     // Decode a token into user state (+ cache enrichment). False = unusable.
     const applyToken = (token) => {
@@ -134,6 +139,7 @@ export function AuthProvider({ children }) {
       const cache = getUserCache();
       hadProfileCache = !!cache;
       if (cache) {
+        profileCacheStale = Date.now() - (cache.cachedAt || 0) > PROFILE_CACHE_TTL_MS;
         if (cache.avatar) jwtData.avatar = cache.avatar;
         if (cache.name) jwtData.user_display_name = cache.name;
         if (Array.isArray(cache.roles) && cache.roles.length > 0) {
@@ -157,7 +163,9 @@ export function AuthProvider({ children }) {
         // (and re-arm the cookie / reset Safari's ITP clock). Non-blocking.
         maybeRefreshToken();
         // Cache cookie wiped but token survived: repaint avatar + rebuild cache.
-        if (!hadProfileCache) refreshUser();
+        // Also refresh when the cache is stale so avatar/name/role changes made
+        // on another device propagate here within the TTL (non-blocking).
+        if (!hadProfileCache || profileCacheStale) refreshUser();
       }
       setLoading(false);
       return;
@@ -169,7 +177,7 @@ export function AuthProvider({ children }) {
     if (getSessionHint()) {
       forceRefreshToken().then((result) => {
         const recovered = typeof result === "string" && applyToken(result);
-        if (recovered && !hadProfileCache) {
+        if (recovered && (!hadProfileCache || profileCacheStale)) {
           // Recovered session has no avatar (JWT carries none, cache was wiped
           // with the JS token) — one background /auth/me repaints it.
           refreshUser();
