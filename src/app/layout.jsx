@@ -24,10 +24,6 @@ import { TopLeaderboard } from "@/components/ads/TopLeaderboard";
 import CountdownBanner from "@/components/CountdownBanner";
 import { SITE_URL, IS_PROD } from "@/lib/seo";
 
-// Default supporter roles — used as fallback if ad-settings doesn't provide a list.
-// AdContext and Header both do the client-side supporter check.
-const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
-
 const roboto = Roboto({
   subsets: ["latin"],
   weight: ["400", "500", "700"],
@@ -153,7 +149,9 @@ export default async function RootLayout({ children }) {
   // Anonymous-baseline: do we show ads at all on this site?
   // If a user is a supporter, AdContext will override this to false client-side.
   const initialShouldShowAds = adSettings.ads_enabled !== false;
-  const supporterRoles = adSettings.supporter_roles || SUPPORTER_ROLES;
+  // Baseline supporter roles live in lib/supporterRoles.js; AdContext unions
+  // them with this admin-configured list, so no fallback needed here.
+  const supporterRoles = adSettings.supporter_roles || [];
 
   // Live-feeds header state — manual admin toggle + configurable Paramount+ link.
   // Defaults keep the button "on" if the WP plugin hasn't shipped the fields yet.

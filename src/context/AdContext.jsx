@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Cookies from "js-cookie";
 import { useAuth } from "@/context/AuthContext";
 import { isStandalone } from "@/lib/pwa";
+import { isSupporterUser } from "@/lib/supporterRoles";
 
 const PREVIEW_COOKIE_NAME = "bbj_ad_preview";
 const PREVIEW_ADMIN_ROLES = ["administrator", "editor"];
@@ -21,6 +22,7 @@ const AdContext = createContext({
   disabledPlacements: [],
   pwaSuppressed: [],
   previewMode: false,
+  isSupporter: false,
 });
 
 const SDK_TIMEOUT_MS = 5000;
@@ -47,11 +49,8 @@ export function AdProvider({
   // During the brief window before hydration, `user` is null so isSupporter=false
   // and ads are shown by default (matching anonymous behavior). After AuthContext
   // hydrates (~20-80ms), supporters will see ad slots unmount.
-  const isSupporter =
-    user &&
-    Array.isArray(user.user_roles) &&
-    supporterRoles.length > 0 &&
-    user.user_roles.some((role) => supporterRoles.includes(role));
+  // Baseline roles union the admin-configured list — see lib/supporterRoles.js.
+  const isSupporter = isSupporterUser(user, supporterRoles);
 
   const shouldShowAds = initialShouldShowAds && !isSupporter && !AD_FREE_ROUTES.includes(pathname);
 
@@ -120,6 +119,7 @@ export function AdProvider({
         disabledPlacements,
         pwaSuppressed,
         previewMode,
+        isSupporter,
       }}
     >
       {children}

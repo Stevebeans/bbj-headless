@@ -8,14 +8,12 @@ import { MobileMenuWrapper } from "./MobileMenu";
 import { SearchBar, MobileSearchButton } from "../search/SearchBar";
 import { MobileSearchModal } from "../search/MobileSearchModal";
 import { useAuth } from "@/context/AuthContext";
+import { useAds } from "@/context/AdContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import NotificationBell from "../notifications/NotificationBell";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBbTime } from "@/hooks/useBbTime";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
-
-// Roles that get supporter benefits (should match WordPress settings)
-const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
 
 const LOGO_URL = "https://bigbrotherjunkies.com/wp-content/themes/BBJ/images/bbjlogo2020.png";
 const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
@@ -27,8 +25,8 @@ export function Header({ liveThread = null, feedsLive = true, paramountUrl = DEF
   const { openLogin } = useAuthModal();
   const { hasPermission } = usePermissions();
 
-  // Check if user has a supporter role
-  const isSupporter = isAuthenticated && Array.isArray(user?.user_roles) && user.user_roles.some(role => SUPPORTER_ROLES.includes(role));
+  // Supporter status from AdContext — baseline roles + the admin-configured list
+  const { isSupporter } = useAds();
 
   const bbTime = useBbTime();
 

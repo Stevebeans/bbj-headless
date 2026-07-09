@@ -4,11 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useAds } from "@/context/AdContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { postComment } from "@/lib/api/comments";
 import { isFreshUpdate } from "@/lib/feedUpdatesLive";
-
-const SUPPORTER_ROLES = ["administrator", "editor", "supporter", "lifetime"];
 
 function slugify(s) {
   return (s || "")
@@ -44,10 +43,9 @@ export function FeedUpdateCard({ update }) {
     [...(update.recent_comments || [])].reverse()
   );
 
-  const isPremium =
-    isAuthenticated &&
-    Array.isArray(user?.user_roles) &&
-    user.user_roles.some((role) => SUPPORTER_ROLES.includes(role));
+  // Supporter status from AdContext — baseline roles + the admin-configured list
+  const { isSupporter } = useAds();
+  const isPremium = isAuthenticated && isSupporter;
 
   const permalink = `/live-feed-updates/${update.slug}`;
   const time12h = formatBbTime(update.modified);

@@ -2,12 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useAds } from "@/context/AdContext";
 import { fetchUpdatesSince } from "@/lib/api/liveThread";
 
 const POLL_INTERVAL_MS = 30_000;
-
-// Roles that qualify as supporters (mirrors AdContext + layout.jsx SUPPORTER_ROLES)
-const SUPPORTER_ROLES = ["supporter", "lifetime", "administrator", "editor"];
 
 /**
  * Client-only: when the user is a supporter AND the thread is live, polls for
@@ -24,11 +22,9 @@ export function LiveUpdatePoller({ postId, initialLastSeen }) {
   const lastSeen = useRef(initialLastSeen || 0);
   const intervalRef = useRef(null);
 
-  // Mirror AdContext's supporter detection pattern (src/context/AdContext.jsx:50-54)
-  const isSupporter =
-    isAuthenticated &&
-    Array.isArray(user?.user_roles) &&
-    user.user_roles.some((role) => SUPPORTER_ROLES.includes(role));
+  // Supporter status from AdContext — baseline roles + the admin-configured list
+  const { isSupporter: supporterRole } = useAds();
+  const isSupporter = isAuthenticated && supporterRole;
 
   // Token lives on user.token (set by AuthContext setUserAndCache)
   const token = user?.token || null;
