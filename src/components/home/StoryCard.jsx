@@ -27,9 +27,13 @@ export function StoryCard({ post }) {
         </h3>
 
         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1" data-nosnippet>
-          {post.date
-            ? formatDistanceToNow(new Date(post.date), { addSuffix: true })
-            : ""}
+          {post.date ? (
+            <time dateTime={post.modified || post.date}>
+              {formatDistanceToNow(new Date(post.date), { addSuffix: true })}
+            </time>
+          ) : (
+            ""
+          )}
         </div>
 
         <div

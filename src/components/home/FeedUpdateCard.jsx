@@ -99,9 +99,12 @@ export function FeedUpdateCard({ update }) {
     <article id={update.slug} className="group flex gap-4 py-4">
       {/* Left rail: time + relative (desktop only) */}
       <div className="hidden sm:block w-20 shrink-0 text-right">
-        <div className={`font-osw text-sm ${isFresh ? "text-red-500" : "text-gray-900 dark:text-gray-200"}`}>
+        <time
+          dateTime={update.modified || update.date}
+          className={`block font-osw text-sm ${isFresh ? "text-red-500" : "text-gray-900 dark:text-gray-200"}`}
+        >
           {time12h}
-        </div>
+        </time>
         <div
           className={`text-[11px] ${isFresh ? "text-red-500" : "text-gray-500 dark:text-gray-400"}`}
           data-nosnippet

@@ -45,6 +45,17 @@ function buildHomeSeo(data) {
   return { season, titlePrefix, fullTitle, description, ogImage, url: `${SITE_URL}/` };
 }
 
+// Latest/earliest ISO date among a list, ignoring falsy entries; null if none.
+function maxIsoDate(isos) {
+  const valid = isos.filter(Boolean);
+  return valid.length ? valid.reduce((a, b) => (new Date(a) > new Date(b) ? a : b)) : null;
+}
+
+function minIsoDate(isos) {
+  const valid = isos.filter(Boolean);
+  return valid.length ? valid.reduce((a, b) => (new Date(a) < new Date(b) ? a : b)) : null;
+}
+
 export async function generateMetadata() {
   const { titlePrefix, fullTitle, description, ogImage, url } = buildHomeSeo(await getHomepageData());
   return {
@@ -62,6 +73,19 @@ export default async function HomePage() {
 
   const heroPostId = data.hero.post?.id;
   const posts = data.posts.posts || [];
+  const feedUpdates = data.feedUpdates.updates || [];
+
+  // Freshest timestamp on the page — feed update OR blog post, whichever is
+  // newer — so Google's snippet date reflects live-feed activity, not just
+  // the last article (old-theme parity).
+  const lastUpdatedIso = maxIsoDate([
+    data.hero.post?.modified,
+    data.hero.post?.date,
+    ...feedUpdates.flatMap((u) => [u.modified, u.date]),
+    ...posts.flatMap((p) => [p.modified, p.date]),
+  ]);
+  const oldestFeedIso = minIsoDate(feedUpdates.map((u) => u.date));
+  const newestFeedIso = maxIsoDate(feedUpdates.flatMap((u) => [u.modified, u.date]));
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -93,7 +117,35 @@ export default async function HomePage() {
         isPartOf: { "@id": `${SITE_URL}/#website` },
         description: seo.description,
         breadcrumb: { "@id": `${SITE_URL}/#breadcrumb` },
+        ...(lastUpdatedIso && { dateModified: lastUpdatedIso }),
       },
+      ...(feedUpdates.length
+        ? [
+            {
+              "@type": "LiveBlogPosting",
+              "@id": `${SITE_URL}/#liveblog`,
+              headline: `${seo.season.number > 0 ? `Big Brother ${seo.season.number}` : "Big Brother"} Live Feed Updates`,
+              url: `${SITE_URL}/live-feed-updates`,
+              mainEntityOfPage: { "@id": `${SITE_URL}/#webpage` },
+              publisher: { "@id": `${SITE_URL}/#organization` },
+              ...(oldestFeedIso && {
+                datePublished: oldestFeedIso,
+                coverageStartTime: oldestFeedIso,
+              }),
+              ...(newestFeedIso && { dateModified: newestFeedIso }),
+              liveBlogUpdate: feedUpdates.map((u) => ({
+                "@type": "BlogPosting",
+                headline: u.title,
+                url: `${SITE_URL}/live-feed-updates/${u.slug}`,
+                ...(u.date && { datePublished: u.date }),
+                ...(u.modified && { dateModified: u.modified }),
+                ...(u.author?.name && {
+                  author: { "@type": "Person", name: u.author.name },
+                }),
+              })),
+            },
+          ]
+        : []),
       {
         "@type": "BreadcrumbList",
         "@id": `${SITE_URL}/#breadcrumb`,

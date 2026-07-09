@@ -2,6 +2,22 @@ import Image from "next/image";
 import Link from "next/link";
 import { SectionHeader } from "./SectionHeader";
 
+// Show "Updated" only when modified is meaningfully after publish (old-theme
+// parity: 5-minute threshold in bbj_time_tags).
+function formatUpdatedDate(post) {
+  if (!post?.modified || !post?.date) return null;
+  const published = new Date(post.date).getTime();
+  const modified = new Date(post.modified).getTime();
+  if (!Number.isFinite(published) || !Number.isFinite(modified)) return null;
+  if (modified - published <= 5 * 60 * 1000) return null;
+  return new Date(post.modified).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "America/New_York",
+  });
+}
+
 export function Hero({ post, season }) {
   if (!post) return null;
 
@@ -21,6 +37,7 @@ export function Hero({ post, season }) {
   const badgeText = seasonName;
 
   const commentCount = post.comment_count ?? 0;
+  const updatedDate = formatUpdatedDate(post);
 
   return (
     <article
@@ -83,10 +100,9 @@ export function Hero({ post, season }) {
             </p>
           )}
 
-          <div
-            className="mt-auto pt-4 flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-osw"
-            data-nosnippet
-          >
+          {/* No data-nosnippet on this row: the <time> tags are how Google
+              picks the snippet date, so they must stay snippet-eligible. */}
+          <div className="mt-auto pt-4 flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-osw">
             {post.author?.avatar && (
               <span className="inline-block w-6 h-6 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 shrink-0">
                 <Image
@@ -107,6 +123,12 @@ export function Hero({ post, season }) {
               </>
             )}
             <time dateTime={post.date}>{post.date_formatted}</time>
+            {updatedDate && (
+              <>
+                <span>·</span>
+                <time dateTime={post.modified}>Updated {updatedDate}</time>
+              </>
+            )}
             <span>·</span>
             <span className="inline-flex items-center gap-1">
               <svg

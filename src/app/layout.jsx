@@ -5,6 +5,8 @@ import "@/styles/bean-chat.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ThemeScript } from "@/components/layout/ThemeScript";
+import { SelfHealScript } from "@/components/layout/SelfHealScript";
+import { SelfHealBeacon } from "@/components/layout/SelfHealBeacon";
 import { Providers } from "@/components/Providers";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
 import { BackToTop } from "@/components/layout/BackToTop";
@@ -171,6 +173,7 @@ export default async function RootLayout({ children }) {
     >
       <head>
         <ThemeScript />
+        <SelfHealScript />
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-paper dark:bg-gray-900">
         <Providers
@@ -179,6 +182,7 @@ export default async function RootLayout({ children }) {
           disabledPlacements={adSettings.disabled_placements || []}
           pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
         >
+          <SelfHealBeacon />
           {/* Above-header leaderboard — replaces the removed Freestar pushdown.
               Global (like the sticky footer); self-gates for ad-free users. */}
           <TopLeaderboard />
