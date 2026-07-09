@@ -18,8 +18,7 @@ import {
   RelatedPlayers,
   CompareButton,
 } from "@/components/players";
-import { ORG_LOGO, breadcrumbJsonLd } from "@/lib/seo";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
+import { SITE_URL, ORG_LOGO, breadcrumbJsonLd } from "@/lib/seo";
 
 /**
  * Accurate career comp totals. The aggregate `stats.total_hoh/pov` are stale for
@@ -67,13 +66,16 @@ export async function generateMetadata({ params }) {
   const { player } = data;
   const totals = derivePlayerTotals(player);
   const title = `${player.name} - Big Brother Player Profile`;
+  // OG/Twitter titles bypass the layout's "%s | Big Brother Junkies" template,
+  // so add the brand explicitly here (matches homepage/season pattern).
+  const fullTitle = `${title} | Big Brother Junkies`;
   const description = `${player.name}${player.nickname ? ` "${player.nickname}"` : ""} - ${player.occupation || "Big Brother houseguest"}. Career stats: ${totals.hoh} HoH wins, ${totals.pov} PoV wins across ${totals.seasons} season(s).`;
 
   return {
     title,
     description,
     openGraph: {
-      title,
+      title: fullTitle,
       description,
       url: `${SITE_URL}/bigbrother-players/${slug}`,
       type: "profile",
@@ -90,7 +92,7 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: fullTitle,
       description,
       images: player.photo?.url ? [player.photo.url] : [ORG_LOGO],
     },

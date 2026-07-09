@@ -2,7 +2,7 @@ import "./season-profile.css";
 import { getSeasonBySlug, getSeasonArticles, getSeasons } from "@/lib/api/seasons";
 import { bbjdFetch } from "@/lib/api/wordpress";
 import { toRelativeHref } from "@/lib/utils/url";
-import { breadcrumbJsonLd } from "@/lib/seo";
+import { SITE_URL, breadcrumbJsonLd } from "@/lib/seo";
 import { notFound } from "next/navigation";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
@@ -29,9 +29,6 @@ import {
   QuickFacts,
   MoreSeasons,
 } from "./components";
-
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
 
 export const revalidate = false; // Pure webhook-driven — rebuild only when WP fires /api/revalidate
 export const dynamicParams = true;

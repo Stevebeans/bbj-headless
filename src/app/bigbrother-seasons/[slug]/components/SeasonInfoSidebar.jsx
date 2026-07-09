@@ -1,6 +1,17 @@
 import { Leaderboards } from "./Leaderboards";
 
 /**
+ * Era-aware season slug: pre-BB22 lives at /bigbrother-seasons/bbNN,
+ * BB22+ at /bigbrother-seasons/big-brother-NN (see season-slug split).
+ * Computing by number is still approximate for celebrity/OTT seasons, but
+ * this fixes the concrete pre-BB22 404s the old `big-brother-N`-always did.
+ */
+function seasonHref(n) {
+  const slug = n < 22 ? `bb${n}` : `big-brother-${n}`;
+  return `/bigbrother-seasons/${slug}`;
+}
+
+/**
  * Season-specific sidebar with season info, live status, and leaderboards
  * This is the middle column in the 3-column layout
  */
@@ -114,13 +125,13 @@ export function SeasonInfoSidebar({ season, juryCount, evictedCount, leaderboard
         <h2 className="v2-ad-subheader">More Seasons</h2>
         <div className="flex items-center justify-between mt-3">
           {Number(season.season_number) > 1 && (
-            <a href={`/bigbrother-seasons/big-brother-${Number(season.season_number) - 1}`}
+            <a href={seasonHref(Number(season.season_number) - 1)}
               className="text-sm text-primary-500 hover:text-primary-600 transition">
               ← BB{Number(season.season_number) - 1}
             </a>
           )}
           <span className="flex-1" />
-          <a href={`/bigbrother-seasons/big-brother-${Number(season.season_number) + 1}`}
+          <a href={seasonHref(Number(season.season_number) + 1)}
             className="text-sm text-primary-500 hover:text-primary-600 transition">
             BB{Number(season.season_number) + 1} →
           </a>
