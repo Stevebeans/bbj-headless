@@ -98,8 +98,12 @@ export async function POST(request) {
         revalidateTag("houseboard");
         if (slug) {
           revalidatePath(`/bigbrother-players/${slug}`);
+          revalidatePath(`/bigbrother-players/${slug}/edit`);
           revalidateTag(`player-${slug}`);
           cfPurgePaths.push(`/bigbrother-players/${slug}`);
+          // Edit page renders from the same cached player payload — without
+          // its own CF purge it keeps serving pre-save form data.
+          cfPurgePaths.push(`/bigbrother-players/${slug}/edit`);
         }
         revalidatePath("/bigbrother-players");
         cfPurgePaths.push("/bigbrother-players");
@@ -112,6 +116,7 @@ export async function POST(request) {
           revalidatePath(`/bigbrother-seasons/${slug}/edit`);
           revalidateTag(`season-${slug}`);
           cfPurgePaths.push(`/bigbrother-seasons/${slug}`);
+          cfPurgePaths.push(`/bigbrother-seasons/${slug}/edit`);
         }
         revalidatePath("/bigbrother-seasons");
         revalidateTag("spoiler-bar");
