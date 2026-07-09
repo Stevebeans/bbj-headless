@@ -1,7 +1,8 @@
 import { bbjdFetch, wpRestFetch } from "./wordpress";
 
-// Always use production WordPress for admin features (auth tokens are from production)
-const API_URL = "https://bigbrotherjunkies.com/wp-json";
+// Pre-DNS-flip this hardcoded the apex, but the apex is Vercel now and its
+// firewall denies /wp-json — admin calls must hit the WP origin directly.
+const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://wp.bigbrotherjunkies.com/wp-json";
 const getAdminApiUrl = () => API_URL;
 
 /**
