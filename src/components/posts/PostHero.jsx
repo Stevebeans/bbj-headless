@@ -1,12 +1,13 @@
 import Image from "next/image";
+import { HeroJumpToComments } from "./JumpToComments";
 
-export function PostHero({ title, featuredImage }) {
+export function PostHero({ title, featuredImage, commentCount }) {
   if (!featuredImage) {
     return null;
   }
 
   return (
-    <figure className="mt-6">
+    <figure className="relative mt-6">
       <Image
         src={featuredImage}
         alt={title?.replace(/<[^>]*>/g, "") || "Featured image"}
@@ -17,6 +18,9 @@ export function PostHero({ title, featuredImage }) {
         priority
         fetchPriority="high"
       />
+      {commentCount !== undefined && (
+        <HeroJumpToComments commentCount={commentCount} />
+      )}
     </figure>
   );
 }

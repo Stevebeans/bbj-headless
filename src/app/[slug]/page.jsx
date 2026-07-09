@@ -160,6 +160,7 @@ export default async function ContentPage({ params }) {
                   <PostHero
                     title={content.title}
                     featuredImage={content.featuredImage}
+                    commentCount={content.commentCount}
                   />
                 </>
               )}

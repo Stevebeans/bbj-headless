@@ -19,14 +19,46 @@ function CommentIcon({ className }) {
   );
 }
 
-export function JumpToComments({ commentCount = 0 }) {
-  const scrollToComments = () => {
-    const commentsSection = document.getElementById("comments");
-    if (commentsSection) {
-      commentsSection.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+function ChevronDownIcon({ className }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={className}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+    </svg>
+  );
+}
 
+function scrollToComments() {
+  const commentsSection = document.getElementById("comments");
+  if (commentsSection) {
+    commentsSection.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
+export function HeroJumpToComments({ commentCount = 0 }) {
+  return (
+    <button
+      onClick={scrollToComments}
+      className="absolute bottom-3 right-3 flex items-center gap-1.5
+        bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white
+        px-3 py-1.5 rounded-full text-sm font-medium
+        transition-colors"
+      aria-label="Jump to comments"
+    >
+      <CommentIcon className="w-4 h-4" />
+      <span>{commentCount > 0 ? `${commentCount} Comments` : "Comments"}</span>
+      <ChevronDownIcon className="w-3.5 h-3.5" />
+    </button>
+  );
+}
+
+export function JumpToComments({ commentCount = 0 }) {
   return (
     <button
       onClick={scrollToComments}
