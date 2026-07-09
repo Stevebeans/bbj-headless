@@ -7,9 +7,10 @@ import L from "leaflet";
 export function createBbjClusterGroup() {
   return L.markerClusterGroup({
     chunkedLoading: true,
-    // Face pins (42px) are wider than the old dot/pin markers — cluster a bit
-    // more aggressively so mid-zoom dense areas don't overlap into soup.
-    maxClusterRadius: 60,
+    // Keep faces individual unless they'd truly pile up: only cluster when
+    // markers are within ~half a face-pin of each other. Same-city players
+    // (identical coordinates) always cluster — clicking fans them out.
+    maxClusterRadius: 25,
     spiderfyOnMaxZoom: true,
     showCoverageOnHover: false,
     iconCreateFunction: (clusterObj) => {
