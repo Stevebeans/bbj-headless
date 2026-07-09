@@ -156,6 +156,7 @@ export default async function ContentPage({ params }) {
                     commentCount={content.commentCount}
                     content={content.content}
                     shareUrl={`${SITE_URL}/${slug}`}
+                    postId={content.id}
                   />
                   <PostHero
                     title={content.title}

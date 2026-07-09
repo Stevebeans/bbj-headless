@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { format } from "date-fns";
 import { ShareButtons } from "./ShareButtons";
+import { PostEditButton } from "./PostEditButton";
 
 function calcReadTime(html) {
   const text = (html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -33,6 +34,7 @@ export function PostHeader({
   commentCount = 0,
   content = "",
   shareUrl = "",
+  postId = null,
 }) {
   const readMin = calcReadTime(content);
   const published = formatPostTime(date);
@@ -58,11 +60,14 @@ export function PostHeader({
         </div>
       )}
 
-      {/* Title */}
-      <h1
-        className="font-display text-3xl md:text-4xl leading-[1.1] font-bold text-gray-900 dark:text-gray-100 mb-4"
-        dangerouslySetInnerHTML={{ __html: title }}
-      />
+      {/* Title — edit button (permission-gated) floats opposite */}
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <h1
+          className="font-display text-3xl md:text-4xl leading-[1.1] font-bold text-gray-900 dark:text-gray-100"
+          dangerouslySetInnerHTML={{ __html: title }}
+        />
+        {postId && <PostEditButton postId={postId} />}
+      </div>
 
       {/* Byline strip */}
       <div className="flex items-center justify-between gap-4 flex-wrap border-t border-b border-gray-200 dark:border-gray-700 py-4">
