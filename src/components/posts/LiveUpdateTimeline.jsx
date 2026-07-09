@@ -15,7 +15,7 @@ export async function LiveUpdateTimeline({ postId, liveState, closedAt, closingS
   const state = thread_state === "live" || thread_state === "closed" ? thread_state : liveState;
 
   const updateCount = updates.length;
-  const newestTs = updates.length > 0 ? updates[updates.length - 1].time : 0;
+  const newestTs = updates.length > 0 ? updateTs(updates[updates.length - 1]) : 0;
 
   return (
     <section
@@ -72,7 +72,7 @@ export async function LiveUpdateTimeline({ postId, liveState, closedAt, closingS
           {updates.map((u, idx) => {
             const isNewest = idx === updates.length - 1 && state === "live";
             return (
-              <li key={u.id} data-ts={u.time} className="relative pb-5 list-none">
+              <li key={u.id} data-ts={updateTs(u)} className="relative pb-5 list-none">
                 <span
                   className={
                     "absolute -left-[22px] top-1 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 " +
@@ -87,7 +87,7 @@ export async function LiveUpdateTimeline({ postId, liveState, closedAt, closingS
                       Breaking
                     </span>
                   )}
-                  <time dateTime={u.time_iso || undefined}>{formatUpdateTime(u.time)}</time>
+                  <time dateTime={u.date || undefined}>{formatUpdateTime(updateTs(u))}</time>
                 </div>
                 {u.title && (
                   <div className="font-bold text-primary-500 dark:text-primary-300 mb-1">{u.title}</div>
@@ -141,6 +141,14 @@ function ClosedBanner({ closedAt }) {
       {label && <span className="font-normal text-slate-500 dark:text-slate-400">{label}</span>}
     </div>
   );
+}
+
+// The API's `time` field is a display string ("3:42 pm") — the unix timestamp
+// lives in `time_unix` (newer plugin) or is derivable from the ISO `date`.
+function updateTs(u) {
+  if (u.time_unix) return u.time_unix;
+  const parsed = Date.parse(u.date);
+  return Number.isNaN(parsed) ? 0 : Math.floor(parsed / 1000);
 }
 
 function formatUpdateTime(unixSeconds) {

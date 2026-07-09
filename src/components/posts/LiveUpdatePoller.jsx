@@ -42,7 +42,7 @@ export function LiveUpdatePoller({ postId, initialLastSeen }) {
         }
         if (Array.isArray(data.updates) && data.updates.length > 0) {
           appendUpdatesToDom(data.updates);
-          lastSeen.current = data.updates[data.updates.length - 1].time;
+          lastSeen.current = updateTs(data.updates[data.updates.length - 1]);
         }
       } catch (err) {
         // Swallow — next tick will try again.
@@ -91,16 +91,24 @@ function appendUpdatesToDom(updates) {
   list.dispatchEvent(new CustomEvent("bbjd:live-update-appended", { bubbles: true }));
 }
 
+// The API's `time` field is a display string ("3:42 pm") — the unix timestamp
+// lives in `time_unix` (newer plugin) or is derivable from the ISO `date`.
+function updateTs(u) {
+  if (u.time_unix) return u.time_unix;
+  const parsed = Date.parse(u.date);
+  return Number.isNaN(parsed) ? 0 : Math.floor(parsed / 1000);
+}
+
 function renderUpdateLi(u) {
   const li = document.createElement("li");
-  li.dataset.ts = String(u.time);
+  li.dataset.ts = String(updateTs(u));
   li.dataset.updateId = String(u.id);
   li.className = "relative pb-5 list-none";
   li.innerHTML = `
     <span class="absolute -left-[22px] top-1 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 bg-red-500 ring-2 ring-red-500/40 animate-pulse"></span>
     <div class="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
       ${u.breaking ? '<span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">Breaking</span>' : ""}
-      <time datetime="${u.time_iso || ""}">${formatTime(u.time)}</time>
+      <time datetime="${u.date || ""}">${formatTime(updateTs(u))}</time>
     </div>
     ${u.title ? `<div class="font-bold text-primary-500 dark:text-primary-300 mb-1">${escapeHtml(u.title)}</div>` : ""}
     ${u.content ? `<div class="text-sm prose prose-sm dark:prose-invert max-w-none bg-red-50 dark:bg-red-950/30 border-l-2 border-red-500 pl-3 py-1 rounded-r">${u.content}</div>` : ""}
