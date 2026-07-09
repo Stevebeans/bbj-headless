@@ -99,19 +99,35 @@ function updateTs(u) {
   return Number.isNaN(parsed) ? 0 : Math.floor(parsed / 1000);
 }
 
+// Mirrors the server-rendered card in LiveUpdateTimeline (homepage FeedUpdateCard
+// layout: time rail + dot + card). Freshly-polled updates are always "fresh" → red time.
 function renderUpdateLi(u) {
   const li = document.createElement("li");
   li.dataset.ts = String(updateTs(u));
   li.dataset.updateId = String(u.id);
-  li.className = "relative pb-5 list-none";
+  li.className = "list-none";
+  const time = formatTime(updateTs(u));
+  const body = u.content || u.raw_content || "";
+  const thumb = u.thumbnail
+    ? `<div class="mb-3 w-[90%] md:max-w-[75%] mx-auto"><img src="${escapeHtml(u.thumbnail)}" alt="${escapeHtml(u.title || "Big Brother feed update")}" class="rounded-lg w-full h-auto" loading="lazy" /></div>`
+    : "";
   li.innerHTML = `
-    <span class="absolute -left-[22px] top-1 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 bg-red-500 ring-2 ring-red-500/40 animate-pulse"></span>
-    <div class="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
-      ${u.breaking ? '<span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">Breaking</span>' : ""}
-      <time datetime="${u.date || ""}">${formatTime(updateTs(u))}</time>
-    </div>
-    ${u.title ? `<div class="font-bold text-primary-500 dark:text-primary-300 mb-1">${escapeHtml(u.title)}</div>` : ""}
-    ${u.content ? `<div class="text-sm prose prose-sm dark:prose-invert max-w-none bg-red-50 dark:bg-red-950/30 border-l-2 border-red-500 pl-3 py-1 rounded-r">${u.content}</div>` : ""}
+    <article id="${escapeHtml(u.slug || "")}" class="group flex gap-4 py-4">
+      <div class="hidden sm:block w-20 shrink-0 text-right">
+        <time datetime="${u.date || ""}" class="block font-osw text-sm text-red-500">${time}</time>
+        <div class="text-[11px] text-red-500" data-nosnippet>just now</div>
+      </div>
+      <div class="relative flex-shrink-0">
+        <span class="block w-3 h-3 rounded-full mt-1.5 bg-red-500 ring-2 ring-red-500/40 animate-pulse" aria-hidden="true"></span>
+      </div>
+      <div class="flex-1 min-w-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+        <div class="sm:hidden text-xs mb-1"><time datetime="${u.date || ""}" class="text-red-500">${time}</time></div>
+        ${u.breaking ? '<span class="inline-block bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide mb-2">Breaking</span>' : ""}
+        ${u.title ? `<h3 class="font-display text-lg md:text-xl leading-snug mb-2 text-primary-500 dark:text-secondary-500"><a href="/live-feed-updates/${escapeHtml(u.slug || "")}" class="hover:text-primary-600 dark:hover:text-secondary-400">${escapeHtml(u.title)}</a></h3>` : ""}
+        ${body ? `<div class="text-sm text-gray-700 dark:text-gray-300 mb-3 feed-content">${body}</div>` : ""}
+        ${thumb}
+      </div>
+    </article>
   `;
   return li;
 }
@@ -126,13 +142,14 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// BB time (PT), same format as the homepage feed cards
 function formatTime(unixSeconds) {
   if (!unixSeconds) return "";
   const dt = new Date(unixSeconds * 1000);
-  return dt.toLocaleString("en-US", {
+  return dt.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
     timeZone: "America/Los_Angeles",
-    timeZoneName: "short",
   });
 }

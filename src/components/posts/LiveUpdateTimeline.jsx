@@ -2,7 +2,9 @@ import { getThreadUpdates } from "@/lib/api/liveThread";
 import { LiveUpdateSortToggle } from "./LiveUpdateSortToggle";
 import { LiveUpdatePoller } from "./LiveUpdatePoller";
 import { JumpToLatestPill } from "./JumpToLatestPill";
+import { isFreshUpdate } from "@/lib/feedUpdatesLive";
 import Image from "next/image";
+import Link from "next/link";
 
 /**
  * Server component: renders the timeline of feed-updates for a live thread.
@@ -64,55 +66,86 @@ export async function LiveUpdateTimeline({ postId, liveState, closedAt, closingS
           {state === "live" ? "Waiting for the first update…" : "No updates were posted in this thread."}
         </div>
       ) : (
-        <ol
-          className="relative pl-7 list-none m-0 p-0"
-          data-sortable
-        >
-          <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-gradient-to-b from-red-500 via-gray-300 to-gray-300 dark:via-gray-600 dark:to-gray-600" />
+        <ol className="list-none m-0 p-0" data-sortable>
           {updates.map((u, idx) => {
             const isNewest = idx === updates.length - 1 && state === "live";
+            const fresh = isFreshUpdate(u.modified || u.date);
+            const body = u.content || u.raw_content;
             return (
-              <li key={u.id} data-ts={updateTs(u)} className="relative pb-5 list-none">
-                <span
-                  className={
-                    "absolute -left-[22px] top-1 w-3 h-3 rounded-full border-2 border-white dark:border-gray-900 " +
-                    (u.breaking || isNewest
-                      ? "bg-red-500 ring-2 ring-red-500/40 " + (isNewest ? "animate-pulse" : "")
-                      : "bg-gray-300 dark:bg-gray-600")
-                  }
-                />
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
-                  {u.breaking && (
-                    <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
-                      Breaking
-                    </span>
-                  )}
-                  <time dateTime={u.date || undefined}>{formatUpdateTime(updateTs(u))}</time>
-                </div>
-                {u.title && (
-                  <div className="font-bold text-primary-500 dark:text-primary-300 mb-1">{u.title}</div>
-                )}
-                {u.thumbnail && (
-                  <div className="my-2">
-                    <Image
-                      src={u.thumbnail}
-                      alt={u.title || "Feed update image"}
-                      width={600}
-                      height={400}
-                      className="rounded-md"
-                      style={{ width: "auto", height: "auto", maxWidth: "100%" }}
+              <li key={u.id} data-ts={updateTs(u)} className="list-none">
+                {/* Mirrors the homepage FeedUpdateCard layout: time rail + dot + card */}
+                <article id={u.slug} className="group flex gap-4 py-4">
+                  <div className="hidden sm:block w-20 shrink-0 text-right">
+                    <time
+                      dateTime={u.modified || u.date}
+                      className={`block font-osw text-sm ${fresh ? "text-red-500" : "text-gray-900 dark:text-gray-200"}`}
+                    >
+                      {formatUpdateTime(updateTs(u))}
+                    </time>
+                    <div
+                      className={`text-[11px] ${fresh ? "text-red-500" : "text-gray-500 dark:text-gray-400"}`}
+                      data-nosnippet
+                    >
+                      {u.time_ago}
+                    </div>
+                  </div>
+
+                  <div className="relative flex-shrink-0">
+                    <span
+                      className={
+                        "block w-3 h-3 rounded-full mt-1.5 " +
+                        (u.breaking || isNewest
+                          ? "bg-red-500 ring-2 ring-red-500/40 " + (isNewest ? "animate-pulse" : "")
+                          : "bg-gray-400 dark:bg-gray-500")
+                      }
+                      aria-hidden="true"
                     />
                   </div>
-                )}
-                {u.content && (
-                  <div
-                    className={
-                      "text-sm prose prose-sm dark:prose-invert max-w-none " +
-                      (isNewest ? "bg-red-50 dark:bg-red-950/30 border-l-2 border-red-500 pl-3 py-1 rounded-r" : "")
-                    }
-                    dangerouslySetInnerHTML={{ __html: u.content }}
-                  />
-                )}
+
+                  <div className="flex-1 min-w-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+                    <div className="sm:hidden text-xs mb-1 flex items-center gap-2">
+                      <time
+                        dateTime={u.modified || u.date}
+                        className={fresh ? "text-red-500" : "text-gray-500 dark:text-gray-400"}
+                      >
+                        {formatUpdateTime(updateTs(u))}
+                      </time>
+                    </div>
+                    {u.breaking && (
+                      <span className="inline-block bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide mb-2">
+                        Breaking
+                      </span>
+                    )}
+                    {u.title && (
+                      <h3 className="font-display text-lg md:text-xl leading-snug mb-2 text-primary-500 dark:text-secondary-500">
+                        <Link
+                          href={`/live-feed-updates/${u.slug}`}
+                          className="hover:text-primary-600 dark:hover:text-secondary-400"
+                        >
+                          {u.title}
+                        </Link>
+                      </h3>
+                    )}
+                    {body && (
+                      <div
+                        className="text-sm text-gray-700 dark:text-gray-300 mb-3 feed-content"
+                        dangerouslySetInnerHTML={{ __html: body }}
+                      />
+                    )}
+                    {u.thumbnail && (
+                      <div className="mb-3 w-[90%] md:max-w-[75%] mx-auto">
+                        <Image
+                          src={u.thumbnail}
+                          alt={u.title || "Big Brother feed update"}
+                          width={800}
+                          height={533}
+                          sizes="(min-width: 768px) 45vw, 90vw"
+                          className="rounded-lg w-full h-auto"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </article>
               </li>
             );
           })}
@@ -151,13 +184,14 @@ function updateTs(u) {
   return Number.isNaN(parsed) ? 0 : Math.floor(parsed / 1000);
 }
 
+// BB time (PT), same format as the homepage feed cards
 function formatUpdateTime(unixSeconds) {
   if (!unixSeconds) return "";
   const dt = new Date(unixSeconds * 1000);
-  return dt.toLocaleString("en-US", {
+  return dt.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
     timeZone: "America/Los_Angeles",
-    timeZoneName: "short",
   });
 }
