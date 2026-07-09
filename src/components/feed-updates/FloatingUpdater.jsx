@@ -3,15 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   createFeedUpdate,
   getMode,
   setMode as setModeApi,
   getSocialConfig,
 } from "@/lib/api/feedUpdates";
-
-// Roles that can post feed updates
-const UPDATER_ROLES = ["administrator", "editor", "updater", "second_in_command"];
 
 // Character limits
 const MAX_CONTENT_LENGTH = 1000;
@@ -24,7 +22,8 @@ function getCharCountColor(isOverLimit, blueskyWarning) {
 }
 
 export function FloatingUpdater() {
-  const { user, isAuthenticated, hasAnyRole } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const { hasPermission } = usePermissions();
 
   // UI state
   const [isOpen, setIsOpen] = useState(false);
@@ -45,8 +44,10 @@ export function FloatingUpdater() {
   // Refs
   const fileInputRef = useRef(null);
 
-  // Check if user can post updates
-  const canPost = isAuthenticated && hasAnyRole(UPDATER_ROLES);
+  // Gate on the real feed_updates permission (matches the backend's
+  // checkUpdaterPermission and the admin permission matrix) rather than a
+  // hardcoded role list — so the button honors whatever roles you grant.
+  const canPost = isAuthenticated && hasPermission("feed_updates");
 
   // Load user's mode preference and social config
   useEffect(() => {
