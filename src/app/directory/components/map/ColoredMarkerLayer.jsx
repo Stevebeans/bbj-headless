@@ -5,6 +5,7 @@ import { useMap } from "react-leaflet";
 import L from "leaflet";
 import { buildPopupHtml } from "./MarkerClusterLayer";
 import { createBbjClusterGroup } from "./clusterUtils";
+import { createFaceIcon } from "./faceIcon";
 
 const STATUS_COLORS = {
   winner: "#059669",    // emerald-600
@@ -35,14 +36,11 @@ export default function ColoredMarkerLayer({ players }) {
 
       const color = STATUS_COLORS[player.status] || STATUS_COLORS.active;
 
-      const icon = L.divIcon({
-        className: "colored-marker",
-        html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>`,
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
+      // Face pin with the status color as the ring — color-coding and faces
+      // merge into one mode (legend still explains the ring colors).
+      const marker = L.marker([player.lat, player.lng], {
+        icon: createFaceIcon(player, color),
       });
-
-      const marker = L.marker([player.lat, player.lng], { icon });
       marker.bindPopup(buildPopupHtml(player));
       cluster.addLayer(marker);
     }

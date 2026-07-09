@@ -4,10 +4,11 @@ import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 import { createBbjClusterGroup } from "./clusterUtils";
+import { createFaceIcon } from "./faceIcon";
 
 /**
  * Basic marker cluster layer (free tier)
- * Uses default markers with photo popups
+ * Face-pin markers (player photo, initials fallback) with photo popups
  */
 export default function MarkerClusterLayer({ players }) {
   const map = useMap();
@@ -25,7 +26,9 @@ export default function MarkerClusterLayer({ players }) {
     for (const player of players) {
       if (!player.lat || !player.lng) continue;
 
-      const marker = L.marker([player.lat, player.lng]);
+      const marker = L.marker([player.lat, player.lng], {
+        icon: createFaceIcon(player),
+      });
       marker.bindPopup(buildPopupHtml(player));
       cluster.addLayer(marker);
     }
