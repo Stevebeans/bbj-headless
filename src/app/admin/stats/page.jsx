@@ -23,6 +23,8 @@ import {
   getAnalyticsAudience,
   getAnalyticsAdBlocker,
   getSearchConsole,
+  getRankTracker,
+  saveTrackedKeywords,
 } from "@/lib/api/analytics";
 import { getSeasons } from "@/lib/api/seasons";
 
@@ -278,6 +280,144 @@ const SEARCH_PAGES_COLUMNS = [
   { header: "Page", key: "page", truncate: "300px" },
   ...SEARCH_METRICS_COLUMNS,
 ];
+
+// ========================================
+// KEYWORD RANK TRACKER
+// ========================================
+
+const RANK_COLORS = ["#e64c3c", "#35546e", "#f5c518", "#10b981", "#8b5cf6", "#f97316", "#0ea5e9", "#ec4899", "#64748b", "#84cc16"];
+
+function RankDelta({ delta }) {
+  if (delta === null || delta === undefined || delta === 0) {
+    return <span className="text-gray-400 text-xs">—</span>;
+  }
+  // Positions count DOWN as you climb: negative delta = improvement.
+  const improved = delta < 0;
+  return (
+    <span className={`text-xs font-semibold ${improved ? "text-emerald-600" : "text-red-500"}`}>
+      {improved ? "▲" : "▼"} {Math.abs(delta)}
+    </span>
+  );
+}
+
+function RankTrackerSection({ data, onKeywordsSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+
+  if (!data?.series) return null;
+
+  // Merge per-keyword series into one row per date for the chart
+  const byDate = new Map();
+  for (const s of data.series) {
+    for (const p of s.points) {
+      if (!byDate.has(p.date)) byDate.set(p.date, { date: p.date });
+      byDate.get(p.date)[s.keyword] = p.position;
+    }
+  }
+  const chartData = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))
+    .map((row) => ({ ...row, label: formatShortDate(row.date) }));
+
+  const startEdit = () => {
+    setDraft(data.keywords.join(", "));
+    setSaveError(null);
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const keywords = draft.split(",").map((k) => k.trim()).filter(Boolean);
+      await saveTrackedKeywords(keywords);
+      setEditing(false);
+      onKeywordsSaved?.();
+    } catch (err) {
+      setSaveError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <SectionCard title="Keyword Rankings (Google)" fullWidth>
+      {/* Summary chips */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {data.series.map((s, i) => (
+          <div key={s.keyword} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: RANK_COLORS[i % RANK_COLORS.length] }} />
+            <span className="text-sm text-gray-700 dark:text-gray-300">{s.keyword}</span>
+            <span className="text-sm font-bold text-gray-900 dark:text-white">
+              {s.summary.position !== null ? `#${s.summary.position}` : "n/a"}
+            </span>
+            <RankDelta delta={s.summary.delta} />
+          </div>
+        ))}
+        <button
+          onClick={editing ? () => setEditing(false) : startEdit}
+          className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-primary-500 hover:bg-slate-50 dark:hover:bg-slate-800"
+        >
+          {editing ? "Cancel" : "Edit keywords"}
+        </button>
+      </div>
+
+      {editing && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="big brother 28, big brother spoilers, …"
+            className="flex-1 min-w-[280px] px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white"
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+          {saveError && <span className="text-xs text-red-500">{saveError}</span>}
+          <span className="text-xs text-gray-400 w-full">Comma-separated, up to 10. Exact-match against Google queries.</span>
+        </div>
+      )}
+
+      {/* Position over time — Y axis inverted so climbing = line going UP */}
+      {chartData.length > 0 ? (
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis reversed domain={[1, "auto"]} tick={{ fontSize: 11 }} label={{ value: "Position", angle: -90, position: "insideLeft", fontSize: 11 }} />
+              <Tooltip formatter={(v) => [`#${v}`, undefined]} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              {data.series.map((s, i) => (
+                <Line
+                  key={s.keyword}
+                  type="monotone"
+                  dataKey={s.keyword}
+                  stroke={RANK_COLORS[i % RANK_COLORS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500 py-8 text-center">
+          No ranking data in this range yet — Google Search Console data lags about 2 days.
+        </p>
+      )}
+      <p className="text-[11px] text-gray-400 mt-2">
+        Daily average Google position per query (Search Console). Lower is better; data lags ~2 days. Position shown is a 3-day average; the arrow compares to a week earlier.
+      </p>
+    </SectionCard>
+  );
+}
 
 // ========================================
 // KPI CARDS
@@ -561,6 +701,7 @@ export default function AdminStatsPage() {
   const [audience, setAudience] = useState(null);
   const [adBlocker, setAdBlocker] = useState(null);
   const [searchConsole, setSearchConsole] = useState(null);
+  const [rankTracker, setRankTracker] = useState(null);
 
   useEffect(() => {
     getSeasons({ orderBy: "start_date", order: "DESC" }).then(({ seasons: s }) => {
@@ -573,13 +714,14 @@ export default function AdminStatsPage() {
     setError(null);
 
     try {
-      const [overviewRes, pagesRes, sourcesRes, audienceRes, adBlockRes, searchConsoleRes] = await Promise.all([
+      const [overviewRes, pagesRes, sourcesRes, audienceRes, adBlockRes, searchConsoleRes, rankTrackerRes] = await Promise.all([
         getAnalyticsOverview(startDate, endDate),
         getAnalyticsPages(startDate, endDate),
         getAnalyticsSources(startDate, endDate),
         getAnalyticsAudience(startDate, endDate),
         getAnalyticsAdBlocker(startDate, endDate),
         getSearchConsole(startDate, endDate).catch(() => null),
+        getRankTracker(startDate, endDate).catch(() => null),
       ]);
 
       setOverview(overviewRes);
@@ -588,6 +730,7 @@ export default function AdminStatsPage() {
       setAudience(audienceRes);
       setAdBlocker(adBlockRes);
       setSearchConsole(searchConsoleRes);
+      setRankTracker(rankTrackerRes);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -718,6 +861,10 @@ export default function AdminStatsPage() {
               <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Google Search Console</h3>
               <span className="text-xs text-slate-400 dark:text-slate-500">Organic search performance</span>
             </div>
+            {/* Keyword rank tracker — daily position for the terms Steve is chasing */}
+            <LoadingSection loading={loading} title="Keyword Rankings (Google)" fullWidth skeleton={<ChartSkeleton />}>
+              {rankTracker && <RankTrackerSection data={rankTracker} onKeywordsSaved={fetchData} />}
+            </LoadingSection>
             <LoadingSection loading={loading} title="Top Search Keywords" fullWidth skeleton={<TableSkeleton rows={10} />}>
               <DataTable title="Top Search Keywords" data={searchConsole.keywords} columns={KEYWORDS_COLUMNS} fullWidth maxHeight="max-h-96" />
             </LoadingSection>

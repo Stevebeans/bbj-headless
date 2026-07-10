@@ -58,3 +58,25 @@ export const getAnalyticsSources = createDateEndpoint("/admin/analytics/sources"
 export const getAnalyticsAudience = createDateEndpoint("/admin/analytics/audience");
 export const getAnalyticsAdBlocker = createDateEndpoint("/admin/analytics/adblocker");
 export const getSearchConsole = createDateEndpoint("/admin/analytics/search-console");
+export const getRankTracker = createDateEndpoint("/admin/analytics/rank-tracker");
+
+export async function saveTrackedKeywords(keywords) {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_URL}/bbjd/v1/admin/analytics/tracked-keywords`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ keywords }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || error.error || `API error: ${response.status}`);
+  }
+
+  return response.json();
+}
