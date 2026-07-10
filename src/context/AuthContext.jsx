@@ -439,16 +439,22 @@ export function AuthProvider({ children }) {
     try {
       const userData = await fetchCurrentUser(token);
       const avatar = userData.user_avatar || userData.avatar;
+      // PHP serializes roles with non-sequential keys as an OBJECT (e.g. Steve:
+      // {"0":"administrator","34":"updater"}) — must normalize like login does,
+      // or every Array.isArray(user_roles) gate breaks (ads for supporters,
+      // vanished admin shield) as soon as this refresh lands mid-session.
+      const roles = normalizeRoles(userData.user_roles);
       setUser((prev) => ({
         ...prev,
         ...userData,
+        user_roles: roles,
         token,
         avatar,
       }));
       setUserCache({
         name: userData.user_display_name || userData.display_name || "",
         avatar: avatar || "",
-        roles: userData.user_roles || [],
+        roles,
       });
     } catch (err) {
       console.error("Failed to refresh user:", err);
