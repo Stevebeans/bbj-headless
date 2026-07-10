@@ -1,7 +1,7 @@
 import { getContent, getRelatedPosts } from "@/lib/api/posts";
 import { getSeasons } from "@/lib/api/seasons";
 import { wpFetch } from "@/lib/api/wordpress";
-import { autoLinkEntities, buildSeasonEntityMap } from "@/lib/utils/autoLink";
+import { autoLinkEntities, buildSeasonEntityMap, buildPlayerEntityMap, mergeEntityMaps } from "@/lib/utils/autoLink";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -106,7 +106,30 @@ export default async function ContentPage({ params }) {
 
   const { seasons } = await seasonsPromise;
   const seasonEntities = buildSeasonEntityMap(seasons);
-  const linkedContent = autoLinkEntities(content.content, seasonEntities);
+
+  // Player entities for auto-linking. Deliberately a DAILY time-based cache,
+  // decoupled from the live "players"/"spoiler-bar" tags — those revalidate on
+  // every weekly status update, which would mark every post's data stale and
+  // re-render the whole archive (the ISR-write churn from the Jul 10 bill).
+  // Names basically never change; a day of staleness is free.
+  const [allPlayersRes, rosterRes] = await Promise.all([
+    wpFetch("/bbjd/v1/players?per_page=500", { tags: ["autolink-players"], revalidate: 86400 }).catch(() => null),
+    wpFetch("/bbjd/v1/current-season-players", { tags: ["autolink-roster"], revalidate: 86400 }).catch(() => null),
+  ]);
+  const playerEntities = buildPlayerEntityMap(
+    allPlayersRes?.players || [],
+    rosterRes?.players || []
+  );
+
+  const entities = mergeEntityMaps(seasonEntities, playerEntities);
+  const linkedContent = autoLinkEntities(content.content, entities);
+
+  // Category kicker links: a category matching a season name links to its hub
+  // (so every BB28 post carries a hub link even if the body never says "BB28")
+  const categoryLinks = (content.categories || []).map((name) => ({
+    name,
+    url: seasonEntities.find((e) => e.name.toLowerCase() === String(name).toLowerCase())?.url || null,
+  }));
 
   const cleanTitle = content.title?.replace(/<[^>]*>/g, "") || "";
   const breadcrumb = {
@@ -153,6 +176,7 @@ export default async function ContentPage({ params }) {
                     date={content.date}
                     author={content.author}
                     categories={content.categories}
+                    categoryLinks={categoryLinks}
                     commentCount={content.commentCount}
                     content={content.content}
                     shareUrl={`${SITE_URL}/${slug}`}

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { format } from "date-fns";
 import { ShareButtons } from "./ShareButtons";
 import { PostEditButton } from "./PostEditButton";
@@ -31,6 +32,7 @@ export function PostHeader({
   date,
   author,
   categories = [],
+  categoryLinks = null,
   commentCount = 0,
   content = "",
   shareUrl = "",
@@ -38,22 +40,30 @@ export function PostHeader({
 }) {
   const readMin = calcReadTime(content);
   const published = formatPostTime(date);
+  // Prefer the enriched list (name + optional season-hub url); fall back to plain names
+  const kickerItems = categoryLinks || categories.map((name) => ({ name, url: null }));
 
   return (
     <header>
       {/* Kicker — categories with red dot */}
-      {categories.length > 0 && (
+      {kickerItems.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4 text-xs font-osw uppercase tracking-wider text-accent-red">
           <span className="inline-flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-red" aria-hidden="true" />
-            {categories.map((cat, i) => (
-              <span key={cat} className="inline-flex items-center gap-3">
+            {kickerItems.map((cat, i) => (
+              <span key={cat.name} className="inline-flex items-center gap-3">
                 {i > 0 && (
                   <span className="text-gray-400 dark:text-gray-500" aria-hidden="true">
                     ·
                   </span>
                 )}
-                <span>{cat}</span>
+                {cat.url ? (
+                  <Link href={cat.url} className="hover:underline">
+                    {cat.name}
+                  </Link>
+                ) : (
+                  <span>{cat.name}</span>
+                )}
               </span>
             ))}
           </span>
