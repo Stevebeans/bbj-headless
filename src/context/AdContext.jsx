@@ -13,7 +13,8 @@ const PREVIEW_ADMIN_ROLES = ["administrator", "editor"];
 // Routes that never show ads. The supporter sales page sells ad removal —
 // Freestar's auto-managed dynamic in-content was injecting units inside the
 // pricing cards there (bigbrotherjunkies_articles_dynamic_incontent).
-const AD_FREE_ROUTES = ["/become-supporter", "/checkout/success", "/checkout/cancel"];
+const AD_FREE_ROUTES = ["/become-supporter", "/billing/plans", "/checkout/success", "/checkout/cancel"];
+const ADFREE_RELOAD_KEY = "bbj_adfree_reload";
 
 const AdContext = createContext({
   shouldShowAds: true,
@@ -66,6 +67,26 @@ export function AdProvider({
   useEffect(() => {
     setIsPWA(detectPWA());
   }, []);
+
+  // Ad-free routes only stay clean on a FRESH load — if the fan browsed other
+  // pages first, the Freestar SDK is already booted and its auto-managed units
+  // (sticky footer, dynamic in-content) can't be un-injected by React; they
+  // ended up INSIDE the supporter pricing cards. Arriving on an ad-free route
+  // with the SDK live → hard-reload once; the fresh load never boots the SDK
+  // (shouldShowAds is false from the first render). Session guard stops loops;
+  // it re-arms on any clean ad-free load so later SPA re-entries reload too.
+  useEffect(() => {
+    if (!AD_FREE_ROUTES.includes(pathname)) return;
+    if (typeof window === "undefined") return;
+    if (window.freestar) {
+      if (sessionStorage.getItem(ADFREE_RELOAD_KEY) !== "1") {
+        sessionStorage.setItem(ADFREE_RELOAD_KEY, "1");
+        window.location.reload();
+      }
+    } else {
+      sessionStorage.removeItem(ADFREE_RELOAD_KEY);
+    }
+  }, [pathname]);
 
   // Read preview-mode cookie on mount and whenever auth state changes
   useEffect(() => {

@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useAds } from "@/context/AdContext";
 
 export function QuickLinks() {
+  const { isSupporter } = useAds();
+
   return (
     <div className="mx-auto rounded border w-fit border-slate-300 dark:border-slate-600 bg-slate-200 dark:bg-slate-800 p-2 text-sm shadow-lg mb-2">
       <div className="text-gray-700 dark:text-gray-300">Follow Us:</div>
@@ -17,15 +22,15 @@ export function QuickLinks() {
           bigbrotherjunkies
         </a>
         <a
-          href="https://twitter.com/BigBrotherBBJ"
+          href="https://bsky.app/profile/bigbrotherjunkies.com"
           target="_blank"
           rel="noopener noreferrer"
           className="bbj-btn-sm flex items-center gap-1"
         >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 568 501" aria-hidden="true">
+            <path d="M123.121 33.664C188.241 82.553 258.281 181.68 284 234.873c25.719-53.192 95.759-152.32 160.879-201.21C491.866-1.611 568-28.906 568 57.947c0 17.346-9.945 145.713-15.778 166.555-20.275 72.453-94.155 90.933-159.875 79.748C507.222 323.8 536.444 388.56 473.333 453.32c-119.86 122.992-172.272-30.859-185.702-70.281-2.462-7.227-3.614-10.608-3.631-7.733-.017-2.875-1.169.506-3.631 7.733-13.43 39.422-65.842 193.273-185.702 70.281-63.111-64.76-33.89-129.52 80.986-149.071-65.72 11.185-139.6-7.295-159.875-79.748C9.945 203.659 0 75.291 0 57.946 0-28.906 76.135-1.612 123.121 33.664Z" />
           </svg>
-          BigBrotherBBJ
+          bigbrotherjunkies.com
         </a>
         <a
           href="https://www.instagram.com/bigbrotherjunky/"
@@ -38,6 +43,21 @@ export function QuickLinks() {
           </svg>
           bigbrotherjunky
         </a>
+      </div>
+      {/* Supporter-aware line — thanks the paid crowd, sells the rest */}
+      <div className="text-center mt-2 text-xs">
+        {isSupporter ? (
+          <span className="text-gray-600 dark:text-gray-400">
+            Thanks for being a supporter <span aria-hidden="true">⭐</span>
+          </span>
+        ) : (
+          <Link
+            href="/become-supporter"
+            className="text-primary-500 dark:text-secondary-500 hover:underline font-medium"
+          >
+            Get your ad-free experience here →
+          </Link>
+        )}
       </div>
     </div>
   );
