@@ -156,7 +156,6 @@ export default async function RootLayout({ children }) {
   // Live-feeds header state — manual admin toggle + configurable Paramount+ link.
   // Defaults keep the button "on" if the WP plugin hasn't shipped the fields yet.
   const feedsLive = adSettings.feeds_live !== false;
-  const paramountUrl = adSettings.feeds_paramount_url || "https://paramountplus.qflm.net/c/161260/3116112/3065";
 
   // Countdown banner — site-wide event timer above the header. Off unless enabled.
   const countdownEnabled = adSettings.countdown_enabled === true;
@@ -184,7 +183,7 @@ export default async function RootLayout({ children }) {
           {/* Above-header leaderboard — replaces the removed Freestar pushdown.
               Global (like the sticky footer); self-gates for ad-free users. */}
           <TopLeaderboard />
-          <Header liveThread={liveThread} feedsLive={feedsLive} paramountUrl={paramountUrl} />
+          <Header liveThread={liveThread} feedsLive={feedsLive} />
           {/* Event countdown — under the nav, above the page's spoiler bar; self-hides when target passes. */}
           <CountdownBanner enabled={countdownEnabled} label={countdownLabel} target={countdownTarget} />
           <RoleSimulationBanner />

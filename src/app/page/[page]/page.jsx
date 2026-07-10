@@ -11,7 +11,6 @@ import {
   StoryCard,
   Houseboard,
   SocialFollow,
-  WatchLiveFeeds,
 } from "@/components/home";
 
 const PER_PAGE = 20;
@@ -121,7 +120,6 @@ export default async function ArchivePage({ params }) {
               seasonName={houseboardData.season?.name}
             />
             <SocialFollow />
-            <WatchLiveFeeds />
             <SubscribeWidget />
           </Sidebar>
         </div>

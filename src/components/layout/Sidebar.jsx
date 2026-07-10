@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
-import { ParamountPlusCard } from "../sidebar/ParamountPlusCard";
 import { StickyAdSlot } from "../sidebar/StickyAdSlot";
 
 // Client Component - Sidebar with widgets
@@ -96,9 +95,6 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
           </>
         )}
       </div>
-
-      {/* Paramount+ Promo Card */}
-      <ParamountPlusCard />
 
       {/* Injected children (e.g. home page widgets) */}
       {children}

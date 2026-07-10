@@ -17,9 +17,8 @@ import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
 const LOGO_URL = "https://bigbrotherjunkies.com/wp-content/themes/BBJ/images/bbjlogo2020.png";
 const MOBILE_LOGO_URL = "/images/bbj-logo-sm.png";
-const DEFAULT_PARAMOUNT_URL = "https://paramountplus.qflm.net/c/161260/3116112/3065";
 
-export function Header({ liveThread = null, feedsLive = true, paramountUrl = DEFAULT_PARAMOUNT_URL }) {
+export function Header({ liveThread = null, feedsLive = true }) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const { user, isAuthenticated, loading } = useAuth();
   const { openLogin } = useAuthModal();
@@ -174,18 +173,16 @@ export function Header({ liveThread = null, feedsLive = true, paramountUrl = DEF
                   <span className="max-w-[180px] truncate normal-case tracking-normal font-sans font-semibold">{liveThread.title}</span>
                 </Link>
               ) : (
-                <a
-                  href={paramountUrl}
-                  target="_blank"
-                  rel="noopener noreferrer sponsored"
+                <Link
+                  href="/live-feed-updates"
                   className={`inline-flex items-center gap-2 px-4 py-3 font-osw uppercase tracking-wider text-sm text-white transition-colors whitespace-nowrap ${
                     feedsLive ? "bg-accent-red hover:bg-accent-red/90" : "bg-slate-500 hover:bg-slate-600"
                   }`}
-                  title={feedsLive ? "Watch the Big Brother live feeds" : "Live feeds are off-season — subscribe for next season"}
+                  title={feedsLive ? "Live feed updates from the Big Brother house" : "Feed updates are off-season — check back next season"}
                 >
                   <span className={`w-2 h-2 rounded-full bg-white ${feedsLive ? "animate-pulse" : "opacity-60"}`} />
-                  Watch Live Feeds
-                </a>
+                  Live Feed Updates
+                </Link>
               )}
             </div>
           </div>

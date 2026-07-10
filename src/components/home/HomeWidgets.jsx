@@ -137,38 +137,7 @@ function HouseboardCard({ title, players, bgColor, emptyText }) {
   );
 }
 
-/**
- * Watch Live Feeds Affiliate Widget
- */
-export function WatchLiveFeeds() {
-  return (
-    <section className="v2-primary-container-inner p-4" aria-labelledby="watch-feeds-title">
-      <h2 id="watch-feeds-title" className="v2-primary-subheader">
-        Watch Live Feeds
-      </h2>
-      <div className="flex justify-center items-center flex-col mt-3">
-        <a
-          rel="sponsored"
-          href="https://paramountplus.qflm.net/c/161260/3116110/3065"
-          target="_blank"
-          className="block hover:opacity-90 transition-opacity"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="//a.impactradius-go.com/display-ad/3065-3116110"
-            alt="Paramount+ Live Feeds"
-            width={290}
-            height={46}
-            className="mx-auto"
-          />
-          <div className="font-display text-center font-semibold text-primary-500 dark:text-primary-400 mt-2">
-            One Week Free
-          </div>
-        </a>
-      </div>
-    </section>
-  );
-}
+// (Paramount+ affiliate widget removed 2026-07-10 — Impact program terminated)
 
 /**
  * Season Stats Widget
