@@ -38,10 +38,20 @@ export function buildChatPrompt(question, matches = [], history = [], guide = VO
     ? "The CONTEXT above is private background — the fan can't see it, so never mention it. Use it for factual claims, weave facts in as if you already knew them, and if it's irrelevant to what they said, ignore it and just talk."
     : "No background notes for this one. Don't invent site facts — answer from general knowledge if you can, flag uncertainty in voice, or just say you don't have it. If they're only chatting, just chat.";
 
-  const timeLine = now ? `RIGHT NOW it's ${now}. If you greet with a time of day, match this. Don't say evening when it's morning.\n\n` : "";
+  // Greetings are a first-message thing only — mid-conversation the Bean should
+  // answer like a continuing text thread, not restart with "Good morning" each turn.
+  const midConversation = history.length > 0;
+
+  const timeLine = now
+    ? midConversation
+      ? `RIGHT NOW it's ${now} — for time references only. You're mid-conversation: no greeting, no mentioning the time of day, just reply.\n\n`
+      : `RIGHT NOW it's ${now}. If your opening greeting mentions a time of day, match this. Don't say evening when it's morning.\n\n`
+    : "";
 
   const identityLine = firstName
-    ? `You're talking to ${firstName}, a logged-in BBJ member. Greet them naturally by name when it fits; never ask who they are.\n\n`
+    ? midConversation
+      ? `You're talking to ${firstName}, a logged-in BBJ member; never ask who they are. Don't re-open with their name — you're mid-thread.\n\n`
+      : `You're talking to ${firstName}, a logged-in BBJ member. Greet them naturally by name when it fits; never ask who they are.\n\n`
     : "";
 
   const memoryBlock = memorySummary

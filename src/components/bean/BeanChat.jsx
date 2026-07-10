@@ -230,6 +230,12 @@ export default function BeanChat({ variant = "page", onClose }) {
     .charAt(0)
     .toUpperCase();
 
+  // Focus the composer the moment the widget opens (it mounts fresh per open) —
+  // same quick-start behavior as the New Feed composer.
+  useEffect(() => {
+    if (variant === "widget") taRef.current?.focus();
+  }, [variant]);
+
   useEffect(() => {
     if (msgs.length === 0) return; // don't scroll the welcome screen out of view
     requestAnimationFrame(() => {
