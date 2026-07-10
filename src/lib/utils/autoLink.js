@@ -109,8 +109,17 @@ export function buildPlayerEntityMap(players = [], currentRoster = []) {
   for (const p of currentRoster) {
     const fn = firstNameOf(p);
     const slug = slugOf(p);
-    if (slug && fn.length >= 3 && counts.get(fn.toLowerCase()) === 1) {
+    if (!slug) continue;
+
+    if (fn.length >= 3 && counts.get(fn.toLowerCase()) === 1) {
       entities.push({ name: fn, url: `/bigbrother-players/${slug}` });
+    }
+
+    // Official nickname ("The Lip", "MJ") — curated by admins, so trust it
+    // (2-char minimum; no uniqueness requirement like bare first names)
+    const nickname = (p?.nickname || "").trim();
+    if (nickname.length >= 2 && nickname.toLowerCase() !== fn.toLowerCase()) {
+      entities.push({ name: nickname, url: `/bigbrother-players/${slug}` });
     }
   }
 
