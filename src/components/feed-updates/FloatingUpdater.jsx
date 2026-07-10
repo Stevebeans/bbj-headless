@@ -230,6 +230,7 @@ export function FloatingUpdater() {
 
             {/* Content Textarea */}
             <textarea
+              autoFocus
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder={
