@@ -28,6 +28,10 @@ export function Hero({ post, season }) {
     ? `Latest Big Brother ${seasonNum} Spoilers`
     : "Latest Big Brother Spoilers";
 
+  // BB22+ season slugs follow big-brother-{n}; earlier seasons use bbNN and
+  // never appear as the current season, so only link when the pattern holds.
+  const seasonHref = seasonNum >= 22 ? `/bigbrother-seasons/big-brother-${seasonNum}` : null;
+
   const kickerParts = [
     seasonNum > 0 ? `BB${seasonNum}` : null,
     seasonName,
@@ -44,8 +48,8 @@ export function Hero({ post, season }) {
       className="v2-primary-container-inner p-5 md:p-[22px]"
       aria-labelledby="featured-post-title"
     >
-      {/* Page H1 — defines the page topic for SEO */}
-      <SectionHeader as="h1">{masthead}</SectionHeader>
+      {/* Page H1 — defines the page topic for SEO; links to the season hub */}
+      <SectionHeader as="h1" href={seasonHref}>{masthead}</SectionHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Image */}
