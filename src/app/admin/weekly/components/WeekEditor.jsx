@@ -50,6 +50,26 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
 
   const toggleIn = (list, id) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
 
+  // HoH and nominees always compete in the veto, so selecting them
+  // auto-checks "played in veto" (still manually toggleable after).
+  const swapVetoPlayer = (list, oldId, newId, keep) => {
+    const next = list.filter((x) => (x !== oldId || keep.includes(x)) && x !== newId);
+    if (newId) next.push(newId);
+    return next;
+  };
+  const setHoh = (v) =>
+    set({ hoh: v, vetoPlayed: swapVetoPlayer(form.vetoPlayed, form.hoh, v, [form.pov, ...form.noms]) });
+  const setPov = (v) =>
+    set({ pov: v, vetoPlayed: swapVetoPlayer(form.vetoPlayed, form.pov, v, [form.hoh, ...form.noms]) });
+  const toggleNom = (id) => {
+    const nomsNext = toggleIn(form.noms, id);
+    const adding = nomsNext.length > form.noms.length;
+    const vetoNext = adding
+      ? (form.vetoPlayed.includes(id) ? form.vetoPlayed : [...form.vetoPlayed, id])
+      : form.vetoPlayed.filter((x) => x !== id);
+    set({ noms: nomsNext, vetoPlayed: vetoNext });
+  };
+
   const updateMisc = (i, patch) =>
     set({ miscComps: form.miscComps.map((mc, j) => (j === i ? { ...mc, ...patch } : mc)) });
 
@@ -109,11 +129,11 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>HoH winner</label>
-          <PlayerSelect value={form.hoh} onChange={(v) => set({ hoh: v })} players={activePlayers} />
+          <PlayerSelect value={form.hoh} onChange={setHoh} players={activePlayers} />
         </div>
         <div>
           <label className={labelCls}>Veto winner</label>
-          <PlayerSelect value={form.pov} onChange={(v) => set({ pov: v })} players={activePlayers} />
+          <PlayerSelect value={form.pov} onChange={setPov} players={activePlayers} />
         </div>
       </div>
 
@@ -122,7 +142,7 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
         <div className="flex flex-wrap gap-2">
           {activePlayers.map((p) => (
             <label key={p.id} className={`px-2 py-1 rounded-full text-xs cursor-pointer border ${form.noms.includes(p.id) ? "bg-amber-100 dark:bg-amber-900/40 border-amber-400 text-amber-900 dark:text-amber-200" : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300"}`}>
-              <input type="checkbox" className="sr-only" checked={form.noms.includes(p.id)} onChange={() => set({ noms: toggleIn(form.noms, p.id) })} />
+              <input type="checkbox" className="sr-only" checked={form.noms.includes(p.id)} onChange={() => toggleNom(p.id)} />
               {p.name}
             </label>
           ))}
@@ -147,6 +167,18 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
               <span className="text-xs text-gray-400 dark:text-gray-500 pt-1">Pick nominees first</span>
             )}
           </div>
+        </div>
+      </div>
+
+      <div>
+        <label className={labelCls}>Played in veto comp (HoH + nominees auto-check; add the drawn players)</label>
+        <div className="flex flex-wrap gap-2">
+          {activePlayers.map((p) => (
+            <label key={p.id} className={`px-2 py-1 rounded-full text-xs cursor-pointer border ${form.vetoPlayed.includes(p.id) ? "bg-sky-100 dark:bg-sky-900/40 border-sky-400 text-sky-900 dark:text-sky-200" : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300"}`}>
+              <input type="checkbox" className="sr-only" checked={form.vetoPlayed.includes(p.id)} onChange={() => set({ vetoPlayed: toggleIn(form.vetoPlayed, p.id) })} />
+              {p.name}
+            </label>
+          ))}
         </div>
       </div>
 

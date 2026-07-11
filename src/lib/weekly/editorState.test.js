@@ -37,11 +37,23 @@ describe("weekToForm", () => {
     expect(form.vetoUsedOn).toBe(104); // row with saved_by_player_id
     expect(form.evicted).toEqual([103]);
     expect(form.havenot).toEqual([103, 104]);
+    // No veto_played flags stored -> default to HoH + nominees (they always play).
+    expect(form.vetoPlayed).toEqual([101, 103, 104]);
     expect(form.votes).toEqual({ 104: 103 });
     expect(form.miscComps).toEqual([{ player_id: 106, comp_type_id: 9, notes: "AI Arena" }]);
     expect(form.summary).toBe("wk one");
     expect(form.startDate).toBe("2026-07-10");
     expect(form.endDate).toBe("");
+  });
+
+  it("uses stored veto_played flags when the week has them", () => {
+    const week = {
+      ...weeks[0],
+      players: weeks[0].players.map((p) =>
+        p.player_id === 104 ? { ...p, veto_played: 1 } : { ...p, veto_played: 0 }
+      ),
+    };
+    expect(weekToForm(week).vetoPlayed).toEqual([104]);
   });
 });
 
@@ -62,6 +74,7 @@ describe("formToPayload", () => {
       veto_used_on: 104,
       evicted: [103],
       havenot: [103, 104],
+      veto_played: [101, 103, 104],
       votes: { 104: 103 },
       misc_comps: [{ player_id: 106, comp_type_id: 9, notes: "AI Arena" }],
       summary: "wk one", start_date: "2026-07-10", end_date: null,
@@ -69,7 +82,7 @@ describe("formToPayload", () => {
   });
 
   it("omits jury_votes unless present, drops blank misc rows and zero votes", () => {
-    const form = { hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], havenot: [], votes: { 101: 0 }, miscComps: [{ player_id: 0, comp_type_id: 9, notes: "" }], summary: "", startDate: "", endDate: "", juryVotes: {} };
+    const form = { hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], havenot: [], vetoPlayed: [], votes: { 101: 0 }, miscComps: [{ player_id: 0, comp_type_id: 9, notes: "" }], summary: "", startDate: "", endDate: "", juryVotes: {} };
     const payload = formToPayload(form, [101]);
     expect(payload.hoh).toBeNull();
     expect(payload.votes).toEqual({});

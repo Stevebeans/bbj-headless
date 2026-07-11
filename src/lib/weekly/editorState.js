@@ -19,7 +19,7 @@ export function deriveActiveIds(rosterIds, weeks, weekNum) {
 
 export function weekToForm(week) {
   const form = {
-    hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], havenot: [], votes: {}, miscComps: [],
+    hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], havenot: [], vetoPlayed: [], votes: {}, miscComps: [],
     summary: week.summary || "", startDate: week.start_date || "", endDate: week.end_date || "",
     juryVotes: {},
   };
@@ -33,8 +33,14 @@ export function weekToForm(week) {
     if (Number(p.nom) === 1) form.noms.push(pid);
     if (Number(p.evicted) === 1) form.evicted.push(pid);
     if (Number(p.havenot) === 1) form.havenot.push(pid);
+    if (Number(p.veto_played) === 1) form.vetoPlayed.push(pid);
     if (Number(p.saved_by_player_id) > 0) form.vetoUsedOn = pid;
     if (Number(p.voted_for) > 0) form.votes[pid] = Number(p.voted_for);
+  }
+  // Weeks saved before veto-played tracking have no flags: default to
+  // HoH + nominees, who always compete in the veto.
+  if (form.vetoPlayed.length === 0) {
+    form.vetoPlayed = [form.hoh, ...form.noms].filter((id) => id > 0);
   }
   return form;
 }
@@ -58,6 +64,7 @@ export function formToPayload(form, activeIds) {
     veto_used_on: Number(form.vetoUsedOn) || null,
     evicted: form.evicted.map(Number),
     havenot: form.havenot.map(Number),
+    veto_played: form.vetoPlayed.map(Number),
     votes: {},
     misc_comps: [],
     summary: form.summary,
