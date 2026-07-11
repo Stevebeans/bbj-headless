@@ -50,6 +50,9 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
 
   const toggleIn = (list, id) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
 
+  const updateMisc = (i, patch) =>
+    set({ miscComps: form.miscComps.map((mc, j) => (j === i ? { ...mc, ...patch } : mc)) });
+
   const handleSave = async () => {
     setSaving(true);
     setErrors([]);
@@ -181,21 +184,15 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
         {form.miscComps.map((mc, i) => (
           <div key={i} className="flex items-center gap-2 mb-2">
             <div className="flex-1">
-              <PlayerSelect value={mc.player_id} onChange={(v) => {
-                const next = [...form.miscComps]; next[i] = { ...mc, player_id: v }; set({ miscComps: next });
-              }} players={activePlayers} />
+              <PlayerSelect value={mc.player_id} onChange={(v) => updateMisc(i, { player_id: v })} players={activePlayers} />
             </div>
             <div className="flex-1">
-              <select value={mc.comp_type_id || 0} onChange={(e) => {
-                const next = [...form.miscComps]; next[i] = { ...mc, comp_type_id: Number(e.target.value) }; set({ miscComps: next });
-              }} className={inputCls}>
+              <select value={mc.comp_type_id || 0} onChange={(e) => updateMisc(i, { comp_type_id: Number(e.target.value) })} className={inputCls}>
                 <option value={0}>Comp type…</option>
                 {compTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
               </select>
             </div>
-            <input value={mc.notes} placeholder="notes" onChange={(e) => {
-              const next = [...form.miscComps]; next[i] = { ...mc, notes: e.target.value }; set({ miscComps: next });
-            }} className={`${inputCls} flex-1`} />
+            <input value={mc.notes} placeholder="notes" onChange={(e) => updateMisc(i, { notes: e.target.value })} className={`${inputCls} flex-1`} />
             <button onClick={() => set({ miscComps: form.miscComps.filter((_, j) => j !== i) })} className="text-red-500 text-xs">✕</button>
           </div>
         ))}
