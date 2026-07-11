@@ -80,6 +80,14 @@ function SeasonIcon({ className }) {
   );
 }
 
+function WeekIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+    </svg>
+  );
+}
+
 function AdIcon({ className }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,6 +135,7 @@ const TABS = [
   { id: "comments", label: "Comments", href: "/admin/comments", icon: ChatIcon, permission: "comment_moderation" },
   { id: "players", label: "Players", href: "/admin/players", icon: PlayerIcon, permission: "player_management" },
   { id: "seasons", label: "Seasons", href: "/admin/seasons", icon: SeasonIcon, permission: "season_management" },
+  { id: "weekly", label: "Weekly", href: "/admin/weekly", icon: WeekIcon, permission: "season_management" },
   { id: "bug-reports", label: "Bugs", href: "/admin/bug-reports", icon: BugIcon, permission: "bug_reports" },
   { id: "announcements", label: "Announcements", href: "/admin/announcements", icon: MegaphoneIcon, permission: "announcements" },
   { id: "content-engine", label: "Content", href: "/admin/content-engine", icon: PencilSquareIcon, permission: "content_engine" },
