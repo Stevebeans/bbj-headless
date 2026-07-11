@@ -19,7 +19,9 @@ const DEFAULTS = {
  */
 export async function getHomepageData() {
   try {
-    const data = await bbjdFetch("/homepage", {
+    // ?v=2 busts a poisoned 30-day Varnish entry on staging WP (cached 2026-07-11
+    // under stale Breeze .htaccess headers, immune to purges). Harmless on prod.
+    const data = await bbjdFetch("/homepage?v=2", {
       tags: ["hero-post", "posts", "feed-updates", "houseboard", "players", "season-stats", "comments"],
       revalidate: false, // Webhook-driven via tags
     });
