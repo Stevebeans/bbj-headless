@@ -19,7 +19,7 @@ export function deriveActiveIds(rosterIds, weeks, weekNum) {
 
 export function weekToForm(week) {
   const form = {
-    hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], votes: {}, miscComps: [],
+    hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], havenot: [], votes: {}, miscComps: [],
     summary: week.summary || "", startDate: week.start_date || "", endDate: week.end_date || "",
     juryVotes: {},
   };
@@ -32,6 +32,7 @@ export function weekToForm(week) {
     const pid = Number(p.player_id);
     if (Number(p.nom) === 1) form.noms.push(pid);
     if (Number(p.evicted) === 1) form.evicted.push(pid);
+    if (Number(p.havenot) === 1) form.havenot.push(pid);
     if (Number(p.saved_by_player_id) > 0) form.vetoUsedOn = pid;
     if (Number(p.voted_for) > 0) form.votes[pid] = Number(p.voted_for);
   }
@@ -56,6 +57,7 @@ export function formToPayload(form, activeIds) {
     noms: form.noms.map(Number),
     veto_used_on: Number(form.vetoUsedOn) || null,
     evicted: form.evicted.map(Number),
+    havenot: form.havenot.map(Number),
     votes: {},
     misc_comps: [],
     summary: form.summary,

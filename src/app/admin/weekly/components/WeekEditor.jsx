@@ -174,6 +174,18 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
       )}
 
       <div>
+        <label className={labelCls}>Have-Nots</label>
+        <div className="flex flex-wrap gap-2">
+          {activePlayers.map((p) => (
+            <label key={p.id} className={`px-2 py-1 rounded-full text-xs cursor-pointer border ${form.havenot.includes(p.id) ? "bg-slate-200 dark:bg-slate-700 border-slate-400 text-slate-900 dark:text-slate-100" : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300"}`}>
+              <input type="checkbox" className="sr-only" checked={form.havenot.includes(p.id)} onChange={() => set({ havenot: toggleIn(form.havenot, p.id) })} />
+              {p.name}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
         <div className="flex items-center justify-between mb-1">
           <label className={labelCls}>Other comp wins (Block Buster, AI Arena, co-HoH…)</label>
           <button
