@@ -22,7 +22,7 @@ describe("wordpress.js API_URL resolution", () => {
     await bbjdFetch("/feed-updates/recent");
 
     expect(fetchMock.mock.calls[0][0]).toBe(
-      "https://wp.example.com/wp-json/bbjd/v1/feed-updates/recent"
+      "https://wp.example.com/wp-json/bbjd/v1/feed-updates/recent?wpv=2"
     );
   });
 
@@ -38,7 +38,7 @@ describe("wordpress.js API_URL resolution", () => {
     await bbjdFetch("/houseboard");
 
     expect(fetchMock.mock.calls[0][0]).toBe(
-      "https://server-only.example.com/wp-json/bbjd/v1/houseboard"
+      "https://server-only.example.com/wp-json/bbjd/v1/houseboard?wpv=2"
     );
   });
 });
