@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveActiveIds, weekToForm, collectJuryVotes, formToPayload } from "./editorState.js";
+import { deriveActiveIds, deriveHohPlayedDefault, weekToForm, collectJuryVotes, formToPayload } from "./editorState.js";
 
 const weeks = [
   {
@@ -57,6 +57,16 @@ describe("weekToForm", () => {
   });
 });
 
+describe("deriveHohPlayedDefault", () => {
+  it("excludes the previous week's HoH", () => {
+    // week 1 HoH is 101 -> week 2 default excludes them
+    expect(deriveHohPlayedDefault(weeks, 2, [101, 102, 104, 105])).toEqual([102, 104, 105]);
+  });
+  it("week 1 has no previous HoH so everyone plays", () => {
+    expect(deriveHohPlayedDefault(weeks, 1, [101, 102, 103])).toEqual([101, 102, 103]);
+  });
+});
+
 describe("collectJuryVotes", () => {
   it("gathers vote_to_win_for across all weeks", () => {
     expect(collectJuryVotes(weeks)).toEqual({ 103: 101, 105: 102 });
@@ -75,6 +85,7 @@ describe("formToPayload", () => {
       evicted: [103],
       havenot: [103, 104],
       veto_played: [101, 103, 104],
+      hoh_played: [],
       votes: { 104: 103 },
       misc_comps: [{ player_id: 106, comp_type_id: 9, notes: "AI Arena" }],
       summary: "wk one", start_date: "2026-07-10", end_date: null,
@@ -82,7 +93,7 @@ describe("formToPayload", () => {
   });
 
   it("omits jury_votes unless present, drops blank misc rows and zero votes", () => {
-    const form = { hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], havenot: [], vetoPlayed: [], votes: { 101: 0 }, miscComps: [{ player_id: 0, comp_type_id: 9, notes: "" }], summary: "", startDate: "", endDate: "", juryVotes: {} };
+    const form = { hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], havenot: [], vetoPlayed: [], hohPlayed: [], votes: { 101: 0 }, miscComps: [{ player_id: 0, comp_type_id: 9, notes: "" }], summary: "", startDate: "", endDate: "", juryVotes: {} };
     const payload = formToPayload(form, [101]);
     expect(payload.hoh).toBeNull();
     expect(payload.votes).toEqual({});

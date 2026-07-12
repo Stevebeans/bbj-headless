@@ -19,7 +19,7 @@ export function deriveActiveIds(rosterIds, weeks, weekNum) {
 
 export function weekToForm(week) {
   const form = {
-    hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], havenot: [], vetoPlayed: [], votes: {}, miscComps: [],
+    hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], havenot: [], vetoPlayed: [], hohPlayed: [], votes: {}, miscComps: [],
     summary: week.summary || "", startDate: week.start_date || "", endDate: week.end_date || "",
     juryVotes: {},
   };
@@ -34,6 +34,7 @@ export function weekToForm(week) {
     if (Number(p.evicted) === 1) form.evicted.push(pid);
     if (Number(p.havenot) === 1) form.havenot.push(pid);
     if (Number(p.veto_played) === 1) form.vetoPlayed.push(pid);
+    if (Number(p.hoh_played) === 1) form.hohPlayed.push(pid);
     if (Number(p.saved_by_player_id) > 0) form.vetoUsedOn = pid;
     if (Number(p.voted_for) > 0) form.votes[pid] = Number(p.voted_for);
   }
@@ -43,6 +44,16 @@ export function weekToForm(week) {
     form.vetoPlayed = [form.hoh, ...form.noms].filter((id) => id > 0);
   }
   return form;
+}
+
+// Default HoH-comp players: everyone still in the game EXCEPT the outgoing
+// HoH (who can't compete). Twists that let them play are a manual re-check.
+export function deriveHohPlayedDefault(weeks, weekNum, activeIds) {
+  const prev = weeks.find((w) => Number(w.week_num) === Number(weekNum) - 1);
+  const prevHohs = new Set(
+    (prev?.comps || []).filter((c) => c.slug === "hoh").map((c) => Number(c.player_id))
+  );
+  return activeIds.map(Number).filter((id) => !prevHohs.has(id));
 }
 
 export function collectJuryVotes(weeks) {
@@ -65,6 +76,7 @@ export function formToPayload(form, activeIds) {
     evicted: form.evicted.map(Number),
     havenot: form.havenot.map(Number),
     veto_played: form.vetoPlayed.map(Number),
+    hoh_played: form.hohPlayed.map(Number),
     votes: {},
     misc_comps: [],
     summary: form.summary,

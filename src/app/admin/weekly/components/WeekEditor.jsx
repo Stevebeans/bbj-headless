@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { deriveActiveIds, weekToForm, collectJuryVotes, formToPayload } from "@/lib/weekly/editorState";
+import { deriveActiveIds, deriveHohPlayedDefault, weekToForm, collectJuryVotes, formToPayload } from "@/lib/weekly/editorState";
 import { saveWeek, deleteWeek } from "@/lib/api/adminWeekly";
 
 const inputCls = "w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white";
@@ -19,7 +19,16 @@ function PlayerSelect({ value, onChange, players, allowEmpty = true }) {
 }
 
 export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, onDeleted }) {
-  const [form, setForm] = useState(() => weekToForm(week));
+  const [form, setForm] = useState(() => {
+    const f = weekToForm(week);
+    // Weeks saved before HoH-played tracking: default to everyone active
+    // except the outgoing HoH (twists that let them play = manual re-check).
+    if (f.hohPlayed.length === 0) {
+      const act = deriveActiveIds(roster.map((r) => r.id), weeks, week.week_num);
+      f.hohPlayed = deriveHohPlayedDefault(weeks, week.week_num, act);
+    }
+    return f;
+  });
   const [showFinale, setShowFinale] = useState(() => Object.keys(collectJuryVotes(weeks)).length > 0);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState([]);
@@ -58,7 +67,12 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
     return next;
   };
   const setHoh = (v) =>
-    set({ hoh: v, vetoPlayed: swapVetoPlayer(form.vetoPlayed, form.hoh, v, [form.pov, ...form.noms]) });
+    set({
+      hoh: v,
+      vetoPlayed: swapVetoPlayer(form.vetoPlayed, form.hoh, v, [form.pov, ...form.noms]),
+      // the HoH winner definitionally competed in the HoH comp
+      hohPlayed: v && !form.hohPlayed.includes(v) ? [...form.hohPlayed, v] : form.hohPlayed,
+    });
   const setPov = (v) =>
     set({ pov: v, vetoPlayed: swapVetoPlayer(form.vetoPlayed, form.pov, v, [form.hoh, ...form.noms]) });
   const toggleNom = (id) => {
@@ -134,6 +148,18 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
         <div>
           <label className={labelCls}>Veto winner</label>
           <PlayerSelect value={form.pov} onChange={setPov} players={activePlayers} />
+        </div>
+      </div>
+
+      <div>
+        <label className={labelCls}>Played in HoH comp (defaults to everyone but the outgoing HoH)</label>
+        <div className="flex flex-wrap gap-2">
+          {activePlayers.map((p) => (
+            <label key={p.id} className={`px-2 py-1 rounded-full text-xs cursor-pointer border ${form.hohPlayed.includes(p.id) ? "bg-emerald-100 dark:bg-emerald-900/40 border-emerald-400 text-emerald-900 dark:text-emerald-200" : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300"}`}>
+              <input type="checkbox" className="sr-only" checked={form.hohPlayed.includes(p.id)} onChange={() => set({ hohPlayed: toggleIn(form.hohPlayed, p.id) })} />
+              {p.name}
+            </label>
+          ))}
         </div>
       </div>
 
