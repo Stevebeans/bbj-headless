@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getPlayerBySlug } from "@/lib/api/players";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { SubscribeWidget } from "@/components/email/SubscribeWidget";
+import { PrimarySidebarWidgets } from "@/components/layout/PrimarySidebarWidgets";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
@@ -32,17 +32,26 @@ function derivePlayerTotals(player) {
     return {
       hoh: player.stats?.total_hoh || 0,
       pov: player.stats?.total_pov || 0,
+      nom: player.stats?.total_nom || 0,
+      hohPlayed: 0,
+      vetoPlayed: 0,
       seasons: player.stats?.total_seasons || 0,
     };
   }
   let hoh = 0;
   let pov = 0;
+  let nom = 0;
+  let hohPlayed = 0;
+  let vetoPlayed = 0;
   for (const s of seasons) {
     const cells = s.weekly_timeline?.tracked ? s.weekly_timeline.cells : null;
     hoh += cells ? cells.hoh?.length || 0 : Number(s.hoh) || 0;
     pov += cells ? cells.pov?.length || 0 : Number(s.pov) || 0;
+    nom += cells ? cells.nom?.length || 0 : Number(s.nom) || 0;
+    hohPlayed += Number(s.comps_played?.hoh) || 0;
+    vetoPlayed += Number(s.comps_played?.veto) || 0;
   }
-  return { hoh, pov, seasons: player.stats?.total_seasons || seasons.length };
+  return { hoh, pov, nom, hohPlayed, vetoPlayed, seasons: player.stats?.total_seasons || seasons.length };
 }
 
 export const revalidate = false; // Pure webhook-driven — rebuild only when WP fires /api/revalidate
@@ -114,9 +123,7 @@ export default async function PlayerPage({ params }) {
   }
 
   const { player, related_posts, related_players } = data;
-
-  // Check if player has any awards
-  const hasAwards = player.awards?.winner || player.awards?.runner_up || player.awards?.afp;
+  const totals = derivePlayerTotals(player);
 
   // Check if player has social links
   const hasSocial =
@@ -161,13 +168,13 @@ export default async function PlayerPage({ params }) {
                   <PlayerEditButton slug={slug} />
                 </div>
 
-                {/* Award Badges */}
-                {hasAwards && <PlayerBadges awards={player.awards} />}
+                {/* Award + comp-count badges */}
+                <PlayerBadges awards={player.awards} totals={totals} />
 
-                {/* Career Statistics */}
+                {/* Career Statistics (+ win rates where participation is tracked) */}
                 <section>
                   <h2 className="v2-primary-subheader mb-3">Career Statistics</h2>
-                  <PlayerStats stats={player.stats} />
+                  <PlayerStats stats={player.stats} advanced={totals} />
                 </section>
 
                 {/* Social Links */}
@@ -217,9 +224,9 @@ export default async function PlayerPage({ params }) {
             </section>
           </section>
 
-          {/* Sidebar */}
+          {/* Sidebar — primary widget stack (client-fetched, no ISR tag coupling) */}
           <Sidebar>
-            <SubscribeWidget />
+            <PrimarySidebarWidgets />
           </Sidebar>
         </div>
       </main>

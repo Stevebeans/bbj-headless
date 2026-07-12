@@ -1,9 +1,11 @@
 import { StatCard, StatCardGrid } from "@/components/shared";
 
 /**
- * Career statistics grid for player profile
+ * Career statistics grid for player profile.
+ * `advanced` = { hoh, pov, hohPlayed, vetoPlayed } career totals — win-rate
+ * cards render only for seasons with comp-participation tracking (played > 0).
  */
-export function PlayerStats({ stats, className = "" }) {
+export function PlayerStats({ stats, advanced, className = "" }) {
   const {
     total_hoh = 0,
     total_pov = 0,
@@ -12,6 +14,10 @@ export function PlayerStats({ stats, className = "" }) {
     total_days = 0,
     total_seasons = 0,
   } = stats || {};
+
+  const pct = (wins, played) => `${Math.round(((Number(wins) || 0) / played) * 100)}%`;
+  const showHohRate = advanced?.hohPlayed > 0;
+  const showVetoRate = advanced?.vetoPlayed > 0;
 
   return (
     <StatCardGrid columns={6} className={className}>
@@ -51,6 +57,22 @@ export function PlayerStats({ stats, className = "" }) {
         icon={<ClockIcon />}
         tooltip="Total days in the Big Brother house"
       />
+      {showHohRate && (
+        <StatCard
+          label="HoH Win Rate"
+          value={pct(advanced.hoh, advanced.hohPlayed)}
+          icon={<CrownIcon />}
+          tooltip={`Won ${advanced.hoh} of ${advanced.hohPlayed} HoH comps played`}
+        />
+      )}
+      {showVetoRate && (
+        <StatCard
+          label="Veto Win Rate"
+          value={pct(advanced.pov, advanced.vetoPlayed)}
+          icon={<MedalIcon />}
+          tooltip={`Won ${advanced.pov} of ${advanced.vetoPlayed} veto comps played`}
+        />
+      )}
     </StatCardGrid>
   );
 }

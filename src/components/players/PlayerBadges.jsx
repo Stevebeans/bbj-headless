@@ -1,13 +1,18 @@
 import { Badge } from "@/components/shared";
 
 /**
- * Display award badges for players (Winner, Runner Up, AFP)
+ * Display award badges (Winner, Runner Up, AFP) plus career comp-count
+ * badges (Nx HoH / Nx PoV / Nx Nominated) when `totals` is provided.
  */
-export function PlayerBadges({ awards, className = "" }) {
+export function PlayerBadges({ awards, totals, className = "" }) {
   const { winner, runner_up, afp } = awards || {};
+  const counts = [
+    { n: totals?.hoh, label: "HoH" },
+    { n: totals?.pov, label: "PoV" },
+    { n: totals?.nom, label: "Nominated" },
+  ].filter((c) => c.n > 0);
 
-  // Don't render if no awards
-  if (!winner && !runner_up && !afp) {
+  if (!winner && !runner_up && !afp && counts.length === 0) {
     return null;
   }
 
@@ -28,6 +33,11 @@ export function PlayerBadges({ awards, className = "" }) {
           America&apos;s Favorite
         </Badge>
       )}
+      {counts.map((c) => (
+        <Badge key={c.label} variant="default" size="md">
+          {c.n}&times; {c.label}
+        </Badge>
+      ))}
     </div>
   );
 }
