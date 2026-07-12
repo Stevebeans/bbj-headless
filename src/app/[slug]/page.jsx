@@ -5,7 +5,7 @@ import { autoLinkEntities, buildSeasonEntityMap, buildPlayerEntityMap, mergeEnti
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { SubscribeWidget } from "@/components/email/SubscribeWidget";
+import { PrimarySidebarWidgets } from "@/components/layout/PrimarySidebarWidgets";
 import { PostHero } from "@/components/posts/PostHero";
 import { PostHeader } from "@/components/posts/PostHeader";
 import { PostJsonLd } from "@/components/posts/PostJsonLd";
@@ -257,9 +257,10 @@ export default async function ContentPage({ params }) {
             )}
           </section>
 
-          {/* Sidebar */}
+          {/* Sidebar — the site's primary widget stack (client-fetched; keeps
+              post pages decoupled from homepage cache tags) */}
           <Sidebar showAds={showAds}>
-            <SubscribeWidget />
+            <PrimarySidebarWidgets />
           </Sidebar>
         </div>
 
