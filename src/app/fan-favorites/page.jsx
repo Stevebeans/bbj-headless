@@ -41,6 +41,12 @@ export default function FanFavoritesPage() {
               To vote: visit your favorite player&apos;s page and click the ♥. You can change your
               vote as your opinion on the player changes.
             </p>
+            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+              How scoring works: rank the whole cast with the list on this page. Your #1 pick earns
+              15 points, #2 earns 10, #3 earns 7, #4 earns 5, #5 earns 3, and everyone else on your
+              list earns 1. The ♥ on a player&apos;s page adds a bonus 15-point top vote. Supporter
+              votes count 2x and Full Bean votes count 3x.
+            </p>
           </article>
         </section>
 

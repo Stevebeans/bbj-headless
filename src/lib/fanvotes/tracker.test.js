@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chartModel, thinLabels, formatDelta, LINE_COLORS } from "./tracker";
+import { chartModel, thinLabels, formatDelta, LINE_COLORS, slotPointsFor, BALLOT_SLOT_POINTS } from "./tracker";
 
 describe("chartModel", () => {
   const payload = {
@@ -177,5 +177,16 @@ describe("formatDelta", () => {
 
   it("formats string numbers correctly", () => {
     expect(formatDelta("5.2")).toEqual({ text: "+5.2%", dir: "up" });
+  });
+});
+
+describe("slotPointsFor", () => {
+  it("returns the top-heavy decay values for the first five slots", () => {
+    expect([0, 1, 2, 3, 4].map(slotPointsFor)).toEqual([15, 10, 7, 5, 3]);
+    expect(BALLOT_SLOT_POINTS).toEqual([15, 10, 7, 5, 3]);
+  });
+  it("returns 1 point for slot six and below", () => {
+    expect(slotPointsFor(5)).toBe(1);
+    expect(slotPointsFor(15)).toBe(1);
   });
 });

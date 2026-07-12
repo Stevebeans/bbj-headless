@@ -51,3 +51,11 @@ export function formatDelta(d) {
   if (n < 0) return { text: `${n.toFixed(1)}%`, dir: "down" };
   return { text: "—", dir: "flat" };
 }
+
+// Ballot slot values (mirror of the plugin's FanVoteMath::SLOT_POINTS).
+export const BALLOT_SLOT_POINTS = [15, 10, 7, 5, 3];
+
+// Points for a 0-based ballot index: 15/10/7/5/3, then 1 for everyone below.
+export function slotPointsFor(index) {
+  return index < BALLOT_SLOT_POINTS.length ? BALLOT_SLOT_POINTS[index] : 1;
+}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getTracker, saveMoverNote } from "@/lib/api/fanVotes";
 import { chartModel, thinLabels, formatDelta } from "@/lib/fanvotes/tracker";
 import { usePermissions } from "@/hooks/usePermissions";
+import BallotPanel from "./BallotPanel";
 
 const RANGES = [
   { label: "7D", days: 7 },
@@ -504,25 +505,33 @@ export function TrackerClient() {
         )}
       </div>
 
-      {/* Hero chart / empty-state */}
-      {loading && !payload ? (
-        <div className="h-64 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
-      ) : error && !payload ? (
-        <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-700 text-sm text-gray-500">
-          Standings are taking a moment to load. They will refresh automatically.
+      {/* TOP ROW — hero chart / empty-state (80%) + ballot panel (20%) */}
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-4 min-w-0">
+          {/* Hero chart / empty-state */}
+          {loading && !payload ? (
+            <div className="h-64 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
+          ) : error && !payload ? (
+            <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-700 text-sm text-gray-500">
+              Standings are taking a moment to load. They will refresh automatically.
+            </div>
+          ) : tooFew ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-primary-300 dark:border-primary-700 bg-primary-50/40 dark:bg-primary-900/10 px-6 py-12 text-center">
+              <p className="text-base font-medium text-gray-700 dark:text-gray-200">
+                Not enough votes yet — visit your favorite player&apos;s page and be one of the first ♥
+              </p>
+            </div>
+          ) : (
+            <HeroChart
+              payload={payload}
+              onFace={(slug) => router.push(playerHref(slug))}
+            />
+          )}
         </div>
-      ) : tooFew ? (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-primary-300 dark:border-primary-700 bg-primary-50/40 dark:bg-primary-900/10 px-6 py-12 text-center">
-          <p className="text-base font-medium text-gray-700 dark:text-gray-200">
-            Not enough votes yet — visit your favorite player&apos;s page and be one of the first ♥
-          </p>
+        <div className="lg:col-span-1 min-w-0">
+          <BallotPanel players={players} onSaved={refetch} />
         </div>
-      ) : (
-        <HeroChart
-          payload={payload}
-          onFace={(slug) => router.push(playerHref(slug))}
-        />
-      )}
+      </div>
 
       {/* Standings grid — only once we have enough voters */}
       {!tooFew && players.length > 0 && (
@@ -584,7 +593,10 @@ export function TrackerClient() {
                         <Sparkline values={sparkFor(p.id)} />
                       </td>
                       <td className="py-2 px-2 text-right font-bold tabular-nums text-gray-800 dark:text-gray-100">
-                        {Number(p.share ?? 0).toFixed(1)}%
+                        <div>{Number(p.share ?? 0).toFixed(1)}%</div>
+                        <div className="text-[10px] font-normal text-gray-400 tabular-nums">
+                          {Number(p.points ?? 0).toFixed(1)} pts
+                        </div>
                       </td>
                       <td className="py-2 pl-2 text-right">
                         <DeltaBadge delta={p.delta24h} />
