@@ -84,9 +84,13 @@ export function FloatingUpdater() {
     }
   };
 
-  const handleImageSelect = (e) => {
-    const file = e.target.files?.[0];
+  const handleImageSelect = async (e) => {
+    let file = e.target.files?.[0];
     if (file) {
+      // Downscale before the size guard so a large camera photo (5-8MB) gets
+      // shrunk first and can still pass — the guard only rejects files that
+      // remain oversized after processing (e.g. undecodable formats).
+      file = await downscaleImage(file);
       if (file.size > 5 * 1024 * 1024) {
         setError("Image must be under 5MB");
         return;
@@ -137,7 +141,8 @@ export function FloatingUpdater() {
 
       // The post itself succeeded, but if the image could not be attached the
       // server tells us why — surface it as a warning (not a full failure).
-      if (result.image_error) {
+      const hasImageError = Boolean(result.image_error);
+      if (hasImageError) {
         setError(`Image could not be attached: ${result.image_error}`);
       }
 
@@ -163,11 +168,15 @@ export function FloatingUpdater() {
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      // Auto-close after success
-      setTimeout(() => {
-        setSuccess(null);
-        setIsOpen(false);
-      }, 3000);
+      // Auto-close after success — but not when an image warning is showing.
+      // The writer needs to actually read that message, so leave the panel
+      // open until they dismiss/close it themselves.
+      if (!hasImageError) {
+        setTimeout(() => {
+          setSuccess(null);
+          setIsOpen(false);
+        }, 3000);
+      }
     } catch (err) {
       setError(err.message || "Failed to post update");
     } finally {
