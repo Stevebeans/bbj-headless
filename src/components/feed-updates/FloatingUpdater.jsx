@@ -10,6 +10,7 @@ import {
   setMode as setModeApi,
   getSocialConfig,
 } from "@/lib/api/feedUpdates";
+import { downscaleImage } from "@/lib/images/downscaleImage";
 
 // Character limits
 const MAX_CONTENT_LENGTH = 1000;
@@ -112,11 +113,16 @@ export function FloatingUpdater() {
     setSuccess(null);
 
     try {
+      // Downscale/re-encode at submit (not preview — preview keeps the instant
+      // local blob). Converts multi-MB camera photos to a web-friendly JPEG so
+      // they clear server upload limits; passes small files through untouched.
+      const upload = imageFile ? await downscaleImage(imageFile) : null;
+
       const result = await createFeedUpdate(
         {
           content: content.trim(),
           mode,
-          image: imageFile,
+          image: upload,
           postToBluesky,
         },
         user.token
@@ -128,6 +134,12 @@ export function FloatingUpdater() {
         successMsg += " Also posted to Bluesky.";
       }
       setSuccess(successMsg);
+
+      // The post itself succeeded, but if the image could not be attached the
+      // server tells us why — surface it as a warning (not a full failure).
+      if (result.image_error) {
+        setError(`Image could not be attached: ${result.image_error}`);
+      }
 
       // Let live feed lists (homepage + hub) prepend this instantly — the
       // poster sees their own update without a refresh, on ANY tier.
