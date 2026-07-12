@@ -688,9 +688,9 @@ export function TrackerClient() {
         )}
       </div>
 
-      {/* TOP ROW — hero chart / empty-state (80%) + ballot panel (20%) */}
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-4 min-w-0">
+      {/* TOP ROW — hero chart / empty-state (fluid) + ballot panel (fixed ~300px) */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0">
           {/* Hero chart / empty-state */}
           {loading && !payload ? (
             <div className="h-64 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
@@ -712,7 +712,7 @@ export function TrackerClient() {
             />
           )}
         </div>
-        <div className="lg:col-span-1 min-w-0">
+        <div className="min-w-0">
           <BallotPanel players={players} onSaved={refetch} getBallot={getSharedBallot} />
         </div>
       </div>
