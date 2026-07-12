@@ -252,7 +252,7 @@ export default function BallotPanel({ players, onSaved }) {
       {!isAuthed ? (
         <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 px-4 py-6 text-center">
           <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
-            Log in to rank your favorites. Your #1 earns 15 points a day.
+            Log in to rank your favorites. Your #1 pick earns the most points.
           </p>
           <button type="button" onClick={openLogin} className="btn-primary text-sm">
             Log in to vote
