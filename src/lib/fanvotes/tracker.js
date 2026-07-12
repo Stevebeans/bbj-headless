@@ -6,8 +6,13 @@
 // Top-N by current share get solid colored lines; the rest are dashed gray.
 export const LINE_COLORS = ["#1e3a5f", "#c0392b", "#1e7a4f", "#6b3fa0", "#e8940c"];
 
-export function chartModel(payload, { topN = 5, width = 1000, height = 380, pad = 40 } = {}) {
-  const players = payload.players || [];
+export function chartModel(payload, { topN = 5, width = 1000, height = 380, pad = 40, filterIds = null } = {}) {
+  const allPlayers = payload.players || [];
+  // When filterIds is set, restrict lines to that set (preserving the payload's
+  // points-desc order) and recompute the solid top-N within it. null = all.
+  const players = filterIds
+    ? allPlayers.filter((p) => filterIds.includes(p.id))
+    : allPlayers;
   const series = payload.series || [];
   if (series.length === 0) return { lines: [], xLabels: [], yMax: 10 };
 

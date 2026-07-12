@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getTracker, saveMoverNote } from "@/lib/api/fanVotes";
+import { getTracker, saveMoverNote, getMyBallot, savePrefs } from "@/lib/api/fanVotes";
+import { getToken } from "@/lib/auth/cookies";
 import { chartModel, thinLabels, formatDelta } from "@/lib/fanvotes/tracker";
 import { usePermissions } from "@/hooks/usePermissions";
 import BallotPanel from "./BallotPanel";
@@ -13,6 +14,17 @@ const RANGES = [
   { label: "30D", days: 30 },
   { label: "Season", days: 120 },
 ];
+
+// Chart-only filters (single-select). Mirrors the plugin's PREF_CHART_FILTERS.
+const CHART_FILTERS = [
+  { id: "all", label: "All" },
+  { id: "top5", label: "Top 5" },
+  { id: "top10", label: "Top 10" },
+  { id: "in_house", label: "In the house" },
+];
+const FILTER_IDS = CHART_FILTERS.map((f) => f.id);
+const PREF_DAYS = RANGES.map((r) => r.days);
+const PREFS_STORAGE_KEY = "bbj_fanfav_prefs";
 
 const playerHref = (slug) => `/bigbrother-players/${slug}`;
 
@@ -26,9 +38,22 @@ function fmtTick(d) {
 /* Hero chart (Option A)                                                       */
 /* -------------------------------------------------------------------------- */
 
-function HeroChart({ payload, onFace }) {
-  const model = chartModel(payload, { topN: 5 });
+function HeroChart({ payload, filterIds, onFace }) {
+  const model = chartModel(payload, { topN: 5, filterIds });
   const { lines, xLabels, yMax, x, y } = model;
+
+  const containerRef = useRef(null);
+  // Hover tooltip: { name, share, x, y } in container-relative pixels, or null.
+  const [tip, setTip] = useState(null);
+
+  const showTip = useCallback((e, l) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const px = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const py = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+    setTip({ name: l.player.name, share: Number(l.player.share ?? 0), x: px, y: py });
+  }, []);
+  const hideTip = useCallback(() => setTip(null), []);
 
   if (!lines.length || !x || xLabels.length === 0) {
     return (
@@ -51,7 +76,8 @@ function HeroChart({ payload, onFace }) {
   const pack = lines.filter((l) => !l.solid);
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div ref={containerRef} className="relative">
+      <div className="w-full overflow-x-auto">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="w-full min-w-[560px]"
@@ -146,12 +172,15 @@ function HeroChart({ payload, onFace }) {
           </g>
         ))}
 
-        {/* Pack faces — small, faded, no label */}
+        {/* Pack faces — small, faded, brighten to full opacity on hover */}
         {pack.map((l) => (
           <g
             key={`face-${l.player.id}`}
             className="cursor-pointer"
             onClick={() => onFace(l.player.slug)}
+            onMouseEnter={(e) => showTip(e, l)}
+            onMouseMove={(e) => showTip(e, l)}
+            onMouseLeave={hideTip}
           >
             {l.player.photo ? (
               <image
@@ -161,21 +190,30 @@ function HeroChart({ payload, onFace }) {
                 width="18"
                 height="18"
                 clipPath={`url(#ff-clip-${l.player.id})`}
-                opacity="0.4"
+                className="opacity-40 transition-opacity hover:opacity-100"
                 preserveAspectRatio="xMidYMid slice"
               />
             ) : (
-              <circle cx={l.end.x} cy={l.end.y} r="9" fill={l.color} opacity="0.4" />
+              <circle
+                cx={l.end.x}
+                cy={l.end.y}
+                r="9"
+                fill={l.color}
+                className="opacity-40 transition-opacity hover:opacity-100"
+              />
             )}
           </g>
         ))}
 
-        {/* Solid faces + name labels */}
+        {/* Solid faces — no name label (hover tooltip instead) */}
         {solid.map((l) => (
           <g
             key={`face-${l.player.id}`}
             className="cursor-pointer"
             onClick={() => onFace(l.player.slug)}
+            onMouseEnter={(e) => showTip(e, l)}
+            onMouseMove={(e) => showTip(e, l)}
+            onMouseLeave={hideTip}
           >
             <circle
               cx={l.end.x}
@@ -198,18 +236,19 @@ function HeroChart({ payload, onFace }) {
             ) : (
               <circle cx={l.end.x} cy={l.end.y} r="14" fill={l.color} />
             )}
-            <text
-              x={l.end.x + 22}
-              y={l.end.y + 4}
-              fontSize="13"
-              fontWeight="600"
-              fill={l.color}
-            >
-              {l.player.name}
-            </text>
           </g>
         ))}
       </svg>
+      </div>
+
+      {tip && (
+        <div
+          className="pointer-events-none absolute z-10 rounded-md bg-gray-900/95 px-2 py-1 text-xs font-medium text-white shadow-lg"
+          style={{ left: tip.x + 12, top: tip.y + 12 }}
+        >
+          {tip.name} · {tip.share.toFixed(1)}%
+        </div>
+      )}
     </div>
   );
 }
@@ -407,6 +446,7 @@ export function TrackerClient() {
   const isAdmin = hasPermission("season_management");
 
   const [days, setDays] = useState(30);
+  const [chartFilter, setChartFilter] = useState("all");
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -419,6 +459,69 @@ export function TrackerClient() {
       mounted.current = false;
     };
   }, []);
+
+  // Single shared ballot fetch: BallotPanel needs order/weight, TrackerClient
+  // needs prefs from the SAME /fan-vote/ballot response. Cache-keyed by token
+  // so a mount dedupes to one request, but an in-place login/logout re-fetches.
+  const ballotCache = useRef({ token: undefined, promise: null });
+  const getSharedBallot = useCallback(() => {
+    const token = getToken();
+    if (ballotCache.current.token !== token) {
+      ballotCache.current = { token, promise: getMyBallot() };
+    }
+    return ballotCache.current.promise;
+  }, []);
+
+  // Persistence is enabled only after prefs hydration so the initial
+  // localStorage/server reads don't echo straight back out as writes.
+  const prefsHydrated = useRef(false);
+
+  // Hydrate prefs on mount: instant paint from localStorage, then the
+  // logged-in user's server-stored prefs (cross-device) win.
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      const raw = localStorage.getItem(PREFS_STORAGE_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (FILTER_IDS.includes(p.chart_filter)) setChartFilter(p.chart_filter);
+        if (PREF_DAYS.includes(Number(p.days))) setDays(Number(p.days));
+      }
+    } catch {
+      /* ignore malformed localStorage */
+    }
+    if (getToken()) {
+      getSharedBallot()
+        .then((b) => {
+          if (cancelled || !mounted.current) return;
+          const p = b?.prefs;
+          if (p?.chart_filter && FILTER_IDS.includes(p.chart_filter)) setChartFilter(p.chart_filter);
+          if (p?.days && PREF_DAYS.includes(Number(p.days))) setDays(Number(p.days));
+        })
+        .catch(() => {})
+        .finally(() => {
+          prefsHydrated.current = true;
+        });
+    } else {
+      prefsHydrated.current = true;
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [getSharedBallot]);
+
+  // Persist range + filter whenever either changes (post-hydration).
+  // localStorage always; server (fire-and-forget) when logged in.
+  useEffect(() => {
+    if (!prefsHydrated.current) return;
+    const next = { chart_filter: chartFilter, days };
+    try {
+      localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore quota/availability errors */
+    }
+    if (getToken()) savePrefs(next).catch(() => {});
+  }, [chartFilter, days]);
 
   // Tracks the currently selected range so a stale in-flight fetch (e.g. a
   // 7D request that resolves after the user has already toggled to 30D)
@@ -478,28 +581,61 @@ export function TrackerClient() {
 
   const leaderboard = showFullCast ? players : players.slice(0, 5);
 
+  // Chart-only filter -> the player ids whose lines to draw (null = all).
+  const filterIds = useMemo(() => {
+    switch (chartFilter) {
+      case "top5":
+        return players.slice(0, 5).map((p) => p.id);
+      case "top10":
+        return players.slice(0, 10).map((p) => p.id);
+      case "in_house":
+        return players.filter((p) => p.active).map((p) => p.id);
+      default:
+        return null;
+    }
+  }, [chartFilter, players]);
+
   return (
     <div className="space-y-6">
-      {/* Range toggle */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5">
-          {RANGES.map((r) => (
-            <button
-              key={r.days}
-              type="button"
-              onClick={() => setDays(r.days)}
-              className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                days === r.days
-                  ? "bg-primary-500 text-white"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
+      {/* Range toggle + chart filters */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5">
+            {RANGES.map((r) => (
+              <button
+                key={r.days}
+                type="button"
+                onClick={() => setDays(r.days)}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  days === r.days
+                    ? "bg-primary-500 text-white"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5">
+            {CHART_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setChartFilter(f.id)}
+                aria-pressed={chartFilter === f.id}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  chartFilter === f.id
+                    ? "bg-primary-500 text-white"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
         {payload?.as_of && (
-          <span className="text-xs text-gray-400" suppressHydrationWarning>
+          <span className="whitespace-nowrap text-xs text-gray-400" suppressHydrationWarning>
             As of {payload.as_of}
           </span>
         )}
@@ -524,12 +660,13 @@ export function TrackerClient() {
           ) : (
             <HeroChart
               payload={payload}
+              filterIds={filterIds}
               onFace={(slug) => router.push(playerHref(slug))}
             />
           )}
         </div>
         <div className="lg:col-span-1 min-w-0">
-          <BallotPanel players={players} onSaved={refetch} />
+          <BallotPanel players={players} onSaved={refetch} getBallot={getSharedBallot} />
         </div>
       </div>
 

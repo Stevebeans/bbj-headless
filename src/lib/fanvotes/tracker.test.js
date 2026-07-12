@@ -116,6 +116,43 @@ describe("chartModel", () => {
     const model = chartModel(payload);
     expect(model.xLabels).toEqual(["Jul 1", "Jul 2", "Jul 3"]);
   });
+
+  it("filterIds null keeps current behavior (all players get lines)", () => {
+    const model = chartModel(payload, { filterIds: null });
+    expect(model.lines).toHaveLength(6);
+    expect(model.lines.filter((l) => l.solid)).toHaveLength(5);
+  });
+
+  it("filterIds limits lines to only the given players", () => {
+    const model = chartModel(payload, { filterIds: [2, 4] });
+    expect(model.lines).toHaveLength(2);
+    expect(model.lines.map((l) => l.player.id).sort((a, b) => a - b)).toEqual([2, 4]);
+  });
+
+  it("recomputes solid top-N and colors WITHIN the filtered set", () => {
+    // Filter to ids 3,4,5,6 (players pre-sorted, so filtered order is [3,4,5,6]).
+    // Default topN=5 -> all four are solid; colors assigned in filtered order.
+    const model = chartModel(payload, { filterIds: [3, 4, 5, 6] });
+    expect(model.lines.filter((l) => l.solid)).toHaveLength(4);
+    expect(model.lines[0].player.id).toBe(3);
+    expect(model.lines[0].color).toBe(LINE_COLORS[0]);
+    expect(model.lines[1].color).toBe(LINE_COLORS[1]);
+    expect(model.lines[3].color).toBe(LINE_COLORS[3]);
+  });
+
+  it("applies topN within the filtered set (rest dashed gray)", () => {
+    const model = chartModel(payload, { filterIds: [2, 3, 4], topN: 2 });
+    const solids = model.lines.filter((l) => l.solid);
+    const dashed = model.lines.filter((l) => !l.solid);
+    expect(solids.map((l) => l.player.id)).toEqual([2, 3]);
+    expect(dashed.map((l) => l.player.id)).toEqual([4]);
+    expect(dashed[0].color).toBe("#9ca3af");
+  });
+
+  it("an empty filterIds array yields no lines (e.g. nobody in the house)", () => {
+    const model = chartModel(payload, { filterIds: [] });
+    expect(model.lines).toEqual([]);
+  });
 });
 
 describe("thinLabels", () => {

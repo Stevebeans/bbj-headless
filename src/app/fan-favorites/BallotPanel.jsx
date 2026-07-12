@@ -100,7 +100,7 @@ function SortableRow({ player, index, onMove, count }) {
   );
 }
 
-export default function BallotPanel({ players, onSaved }) {
+export default function BallotPanel({ players, onSaved, getBallot = getMyBallot }) {
   const { openLogin } = useAuthModal();
   const isAuthed = Boolean(getToken());
 
@@ -159,7 +159,7 @@ export default function BallotPanel({ players, onSaved }) {
       const roster = (players || []).map((p) => p.id);
 
       if (orderRef.current === null || authChanged) {
-        const mine = isAuthed ? await getMyBallot() : { order: [], weight: 1 };
+        const mine = isAuthed ? await getBallot() : { order: [], weight: 1 };
         if (!active || !mounted.current) return;
         const saved = mine.order.filter((id) => byId.has(id));
         const rest = [...roster]

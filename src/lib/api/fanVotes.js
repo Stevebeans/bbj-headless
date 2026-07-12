@@ -45,13 +45,26 @@ export async function saveMoverNote(playerId, note) {
 
 export async function getMyBallot() {
   const token = getToken();
-  if (!token) return { order: [], weight: 1 };
+  if (!token) return { order: [], weight: 1, prefs: null };
   const res = await fetch(`${API_URL}/bbjd/v1/fan-vote/ballot`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) return { order: [], weight: 1 };
+  if (!res.ok) return { order: [], weight: 1, prefs: null };
   const data = await res.json();
-  return { order: data.order || [], weight: Number(data.weight) || 1 };
+  return { order: data.order || [], weight: Number(data.weight) || 1, prefs: data.prefs || null };
+}
+
+export async function savePrefs(prefs) {
+  const token = getToken();
+  if (!token) throw new Error("not-authenticated");
+  const res = await fetch(`${API_URL}/bbjd/v1/fan-vote/prefs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(prefs),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || `Prefs save failed: ${res.status}`);
+  return data;
 }
 
 export async function saveBallot(order) {
