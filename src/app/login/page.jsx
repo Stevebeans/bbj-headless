@@ -1,19 +1,24 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 import Link from "next/link";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated, loading: authLoading, error: authError } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, loading: authLoading, error: authError } = useAuth();
+  const { openLinkAccount } = useAuthModal();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleFailed, setGoogleFailed] = useState(false);
+  const googleReadyRef = useRef(false);
   // Always default CHECKED — see LoginView.jsx: seeding from the stored
   // pref silently kept the box unchecked for previously-branded users.
   const [rememberMe, setRememberMe] = useState(true);
@@ -26,6 +31,98 @@ function LoginForm() {
       router.push(redirect);
     }
   }, [isAuthenticated, authLoading, router, redirect]);
+
+  // Initialize Google Sign-In (mirrors the modal's LoginView.jsx pattern:
+  // script-load guard, render into the container, visible-failure fallback).
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || typeof window === "undefined") return;
+
+    let failTimer;
+    const markFailed = () => setGoogleFailed(true);
+
+    const initGoogle = () => {
+      if (!window.google?.accounts?.id) return;
+
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleResponse,
+        auto_select: false,
+      });
+
+      const btnContainer = document.getElementById("google-signin-btn");
+      if (!btnContainer) return;
+
+      window.google.accounts.id.renderButton(btnContainer, {
+        theme: "outline",
+        size: "large",
+        width: 320,
+        text: "continue_with",
+      });
+
+      // Success — cancel the failure fallback.
+      googleReadyRef.current = true;
+      setGoogleFailed(false);
+      if (failTimer) clearTimeout(failTimer);
+    };
+
+    if (window.google?.accounts?.id) {
+      initGoogle();
+    } else {
+      const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+      if (existingScript) {
+        existingScript.addEventListener("load", initGoogle);
+        existingScript.addEventListener("error", markFailed);
+      } else {
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        script.onload = initGoogle;
+        // Fires when the script is blocked / fails to load (firewall, ad-blocker, offline).
+        script.onerror = markFailed;
+        document.body.appendChild(script);
+      }
+    }
+
+    // Backstop: if the button still hasn't rendered after 6s, surface the note.
+    failTimer = setTimeout(() => {
+      if (!googleReadyRef.current) setGoogleFailed(true);
+    }, 6000);
+
+    return () => {
+      if (failTimer) clearTimeout(failTimer);
+    };
+  }, []);
+
+  const handleGoogleResponse = async (response) => {
+    if (!response.credential) return;
+
+    setGoogleLoading(true);
+    setError(null);
+
+    try {
+      const result = await loginWithGoogle(response.credential, rememberMe);
+      if (result.needs_linking) {
+        // No account matched this Google email — open the modal's link-account
+        // flow (AuthModal is mounted globally in Providers), carrying redirect.
+        openLinkAccount(
+          {
+            credential: result.credential,
+            google_user: result.google_user,
+            rememberMe: rememberMe,
+          },
+          redirect,
+        );
+      } else if (!result.success) {
+        setError(result.error || "Google sign-in failed");
+      }
+    } catch (err) {
+      setError(err.message || "Google sign-in failed");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,6 +163,41 @@ function LoginForm() {
           {error || authError}
         </div>
       )}
+
+      {/* Google Sign-In Button */}
+      <div className="mb-4">
+        <div id="google-signin-btn" className="w-full flex justify-center" />
+        {googleLoading && (
+          <div className="mt-2 flex items-center justify-center gap-2 text-sm text-slate-500">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500" />
+            Signing in with Google...
+          </div>
+        )}
+        {googleFailed && !googleLoading && (
+          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-300">
+            <p className="font-semibold">Google sign-in didn&apos;t load.</p>
+            <p className="mt-1">
+              This is almost always your network or browser blocking Google, not your account. You can
+              still log in with your username &amp; password below, or try another network (like your phone).
+            </p>
+            <p className="mt-1 text-amber-700 dark:text-amber-400">
+              On a work computer? Ask your IT/admin to allow{" "}
+              <span className="font-mono">accounts.google.com</span>. Error code{" "}
+              <span className="font-mono font-semibold">GSI-BLOCKED</span>.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div className="relative mb-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white dark:bg-slate-800 text-slate-500">or</span>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

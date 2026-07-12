@@ -13,7 +13,7 @@ const PREVIEW_ADMIN_ROLES = ["administrator", "editor"];
 // Routes that never show ads. The supporter sales page sells ad removal —
 // Freestar's auto-managed dynamic in-content was injecting units inside the
 // pricing cards there (bigbrotherjunkies_articles_dynamic_incontent).
-const AD_FREE_ROUTES = ["/become-supporter", "/billing/plans", "/checkout/success", "/checkout/cancel"];
+const AD_FREE_ROUTES = ["/become-supporter", "/billing/plans", "/checkout/success", "/checkout/cancel", "/login"];
 const ADFREE_RELOAD_KEY = "bbj_adfree_reload";
 
 const AdContext = createContext({

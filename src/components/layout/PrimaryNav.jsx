@@ -73,9 +73,9 @@ export default function PrimaryNav() {
       {!isAuthenticated && !loading && (
         <>
           <li role="none">
-            <button onClick={() => openLogin()} role="menuitem" className={authLinkClass}>
+            <a href="/login" onClick={(e) => { e.preventDefault(); openLogin(); }} role="menuitem" className={authLinkClass}>
               Log In
-            </button>
+            </a>
           </li>
           <li role="none">
             <button onClick={() => openRegister()} role="menuitem" className={authLinkClass}>

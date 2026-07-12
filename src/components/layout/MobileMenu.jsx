@@ -148,12 +148,13 @@ export function MobileMenu({ isOpen, onClose, onSearchOpen }) {
                 </>
               ) : (
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => { openLogin(); onClose(); }}
+                  <a
+                    href="/login"
+                    onClick={(e) => { e.preventDefault(); openLogin(); onClose(); }}
                     className="flex-1 py-2.5 bg-primary-500 text-white rounded-lg font-osw uppercase tracking-wide hover:bg-primary-600 transition-colors text-center"
                   >
                     Log In
-                  </button>
+                  </a>
                   <button
                     onClick={() => { openRegister(); onClose(); }}
                     className="flex-1 py-2.5 border border-primary-500 text-primary-500 dark:text-primary-400 rounded-lg font-osw uppercase tracking-wide hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors text-center"

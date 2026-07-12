@@ -79,12 +79,13 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
               Sign in to join the discussion and access exclusive features.
             </p>
             <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => openLogin()}
+              <a
+                href="/login"
+                onClick={(e) => { e.preventDefault(); openLogin(); }}
                 className="bbj-btn text-sm flex-1 text-center"
               >
                 Login
-              </button>
+              </a>
               <button
                 onClick={() => openRegister()}
                 className="v2-btn text-sm flex-1 text-center"
