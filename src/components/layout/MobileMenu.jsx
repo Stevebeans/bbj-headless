@@ -53,6 +53,7 @@ export function MobileMenu({ isOpen, onClose, onSearchOpen }) {
     { href: "/contact", label: "Contact" },
     { href: "/live-feed-updates", label: "Feed Updates" },
     { href: "/directory", label: "Directory" },
+    { href: "/fan-favorites", label: "Fan Favorites" },
     { href: "/become-supporter", label: "Go Ad Free" },
   ];
 
