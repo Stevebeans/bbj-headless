@@ -419,17 +419,25 @@ export function TrackerClient() {
     };
   }, []);
 
+  // Tracks the currently selected range so a stale in-flight fetch (e.g. a
+  // 7D request that resolves after the user has already toggled to 30D)
+  // can be dropped instead of overwriting the newer selection's payload.
+  const latestDays = useRef(days);
+  useEffect(() => {
+    latestDays.current = days;
+  }, [days]);
+
   const load = useCallback(async (d, { silent = false } = {}) => {
     if (!silent) setLoading(true);
     try {
       const data = await getTracker(d);
-      if (!mounted.current) return;
+      if (!mounted.current || d !== latestDays.current) return;
       setPayload(data);
       setError(false);
     } catch {
-      if (mounted.current && !silent) setError(true);
+      if (mounted.current && d === latestDays.current && !silent) setError(true);
     } finally {
-      if (mounted.current && !silent) setLoading(false);
+      if (mounted.current && d === latestDays.current && !silent) setLoading(false);
     }
   }, []);
 
