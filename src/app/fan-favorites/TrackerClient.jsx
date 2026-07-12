@@ -444,6 +444,11 @@ export function TrackerClient() {
   const router = useRouter();
   const { hasPermission } = usePermissions();
   const isAdmin = hasPermission("season_management");
+  // Auth-state signal for the prefs hydration effect below. Recomputed every
+  // render — TrackerClient already re-renders on login/logout transitions
+  // via usePermissions()'s internal useAuth() subscription, same mechanism
+  // BallotPanel relies on for its own isAuthed.
+  const isAuthed = Boolean(getToken());
 
   const [days, setDays] = useState(30);
   const [chartFilter, setChartFilter] = useState("all");
@@ -475,22 +480,24 @@ export function TrackerClient() {
   // Persistence is enabled only after prefs hydration so the initial
   // localStorage/server reads don't echo straight back out as writes.
   const prefsHydrated = useRef(false);
+  // Mirrors BallotPanel's prevAuthRef: null = "not yet initialized" (first
+  // run = mount, not a transition); after that, any change to isAuthed is
+  // an in-place login/logout via the modal, with no page reload.
+  const prevAuthRef = useRef(null);
 
-  // Hydrate prefs on mount: instant paint from localStorage, then the
-  // logged-in user's server-stored prefs (cross-device) win.
+  // Hydrate prefs on mount, and re-hydrate on an in-place auth transition
+  // (login/logout via the modal, no page reload). On mount: instant paint
+  // from localStorage, then — if logged in — the server-stored prefs
+  // (cross-device) win. On a login transition: server prefs are applied
+  // over whatever's on screen (the guest's localStorage-seeded values).
+  // On a logout transition: current UI state is left alone; server prefs
+  // simply stop being authoritative going forward (localStorage-only).
   useEffect(() => {
+    const authChanged = prevAuthRef.current !== null && prevAuthRef.current !== isAuthed;
+    prevAuthRef.current = isAuthed;
     let cancelled = false;
-    try {
-      const raw = localStorage.getItem(PREFS_STORAGE_KEY);
-      if (raw) {
-        const p = JSON.parse(raw);
-        if (FILTER_IDS.includes(p.chart_filter)) setChartFilter(p.chart_filter);
-        if (PREF_DAYS.includes(Number(p.days))) setDays(Number(p.days));
-      }
-    } catch {
-      /* ignore malformed localStorage */
-    }
-    if (getToken()) {
+
+    const applyServerPrefs = () =>
       getSharedBallot()
         .then((b) => {
           if (cancelled || !mounted.current) return;
@@ -502,13 +509,42 @@ export function TrackerClient() {
         .finally(() => {
           prefsHydrated.current = true;
         });
+
+    if (!authChanged) {
+      // Initial mount.
+      try {
+        const raw = localStorage.getItem(PREFS_STORAGE_KEY);
+        if (raw) {
+          const p = JSON.parse(raw);
+          if (FILTER_IDS.includes(p.chart_filter)) setChartFilter(p.chart_filter);
+          if (PREF_DAYS.includes(Number(p.days))) setDays(Number(p.days));
+        }
+      } catch {
+        /* ignore malformed localStorage */
+      }
+      if (isAuthed) {
+        applyServerPrefs();
+      } else {
+        prefsHydrated.current = true;
+      }
+    } else if (isAuthed) {
+      // Login transition: guard the persist effect off (synchronously,
+      // before the await) so applying the freshly-fetched server prefs
+      // doesn't immediately POST them straight back as a "change".
+      prefsHydrated.current = false;
+      applyServerPrefs();
     } else {
+      // Logout transition: keep current chart/range state as-is. Server
+      // prefs are no longer authoritative — savePrefs is already gated on
+      // getToken() in the persist effect below, so future changes only
+      // reach localStorage.
       prefsHydrated.current = true;
     }
+
     return () => {
       cancelled = true;
     };
-  }, [getSharedBallot]);
+  }, [isAuthed, getSharedBallot]);
 
   // Persist range + filter whenever either changes (post-hydration).
   // localStorage always; server (fire-and-forget) when logged in.
