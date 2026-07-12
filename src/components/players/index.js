@@ -8,6 +8,8 @@ export { PlayerSeasons } from "./PlayerSeasons";
 export { PlayerBio } from "./PlayerBio";
 export { PlayerJsonLd } from "./PlayerJsonLd";
 export { RelatedPlayers } from "./RelatedPlayers";
+export { FanVoteHeart } from "./FanVoteHeart";
+export { isFanVoteEligible } from "@/lib/fanVoteEligible";
 
 // Season page components
 export { PlayerCard } from "./PlayerCard";

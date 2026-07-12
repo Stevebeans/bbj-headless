@@ -17,6 +17,8 @@ import {
   PlayerJsonLd,
   RelatedPlayers,
   CompareButton,
+  FanVoteHeart,
+  isFanVoteEligible,
 } from "@/components/players";
 import { SITE_URL, ORG_LOGO, breadcrumbJsonLd } from "@/lib/seo";
 
@@ -162,10 +164,18 @@ export default async function PlayerPage({ params }) {
               <PlayerMeta player={player} slug={slug} />
 
               <div className="p-4 space-y-6">
-                {/* Admin Edit + Compare Buttons */}
-                <div className="flex justify-end gap-2">
-                  <CompareButton player={player} />
-                  <PlayerEditButton slug={slug} />
+                {/* Fan-favorite heart + Compare + Admin Edit */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-end gap-2">
+                    <FanVoteHeart player={player} />
+                    <CompareButton player={player} />
+                    <PlayerEditButton slug={slug} />
+                  </div>
+                  {isFanVoteEligible(player) && (
+                    <p className="text-right text-xs text-gray-500 dark:text-gray-400">
+                      Your AFP vote — change it anytime.
+                    </p>
+                  )}
                 </div>
 
                 {/* Award + comp-count badges */}
