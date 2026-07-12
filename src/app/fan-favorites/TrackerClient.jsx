@@ -39,7 +39,22 @@ function fmtTick(d) {
 /* -------------------------------------------------------------------------- */
 
 function HeroChart({ payload, filterIds, onFace }) {
-  const model = chartModel(payload, { topN: 5, filterIds });
+  // Taller canvas on narrow screens: early-season shares cluster hard and the
+  // extra vertical resolution keeps overlapping faces readable.
+  const [isNarrow, setIsNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const apply = () => setIsNarrow(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  const WIDTH = 1000;
+  const HEIGHT = isNarrow ? 620 : 460;
+  const PAD = 40;
+
+  const model = chartModel(payload, { topN: 5, filterIds, height: HEIGHT });
   const { lines, xLabels, yMax, x, y } = model;
 
   const containerRef = useRef(null);
@@ -62,10 +77,6 @@ function HeroChart({ payload, filterIds, onFace }) {
       </div>
     );
   }
-
-  const WIDTH = 1000;
-  const HEIGHT = 380;
-  const PAD = 40;
 
   // Horizontal gridlines every 10% up to yMax.
   const gridVals = [];
