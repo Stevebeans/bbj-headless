@@ -25,7 +25,9 @@ import { useAuthModal } from "@/context/AuthModalContext";
 
 function SortableRow({ player, index, onMove, count }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: player.id });
+    useSortable({ id: player?.id });
+
+  if (!player) return null;
 
   const pts = slotPointsFor(index);
   const topFive = index < 5;
@@ -108,6 +110,7 @@ export default function BallotPanel({ players, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null); // { ok: bool, text: string }
   const mounted = useRef(true);
+  const orderRef = useRef(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -122,27 +125,65 @@ export default function BallotPanel({ players, onSaved }) {
     return m;
   }, [players]);
 
-  // Initial order: saved ballot first (dropping any id no longer on the
-  // roster), then everyone unranked appended alphabetically.
+  // Stable signature of roster membership (ids only, sorted) — unlike the
+  // `players` array reference, this only changes when a player actually
+  // joins/leaves the roster, not on every silent auto-refresh tick.
+  const rosterSig = useMemo(
+    () =>
+      (players || [])
+        .map((p) => p.id)
+        .sort((a, b) => a - b)
+        .join(","),
+    [players]
+  );
+
+  useEffect(() => {
+    orderRef.current = order;
+  }, [order]);
+
+  // Build the initial order once (saved ballot first, dropping any id no
+  // longer on the roster, then everyone unranked appended alphabetically).
+  // On later roster-membership changes, reconcile the CURRENT order in
+  // place instead of refetching/rebuilding — this is what keeps an
+  // in-progress unsaved drag order alive across the 60s auto-refresh.
   useEffect(() => {
     let active = true;
     (async () => {
-      const mine = isAuthed ? await getMyBallot() : { order: [], weight: 1 };
-      if (!active || !mounted.current) return;
       const roster = (players || []).map((p) => p.id);
-      const saved = mine.order.filter((id) => byId.has(id));
-      const rest = [...roster]
-        .filter((id) => !saved.includes(id))
-        .sort((a, b) => byId.get(a).name.localeCompare(byId.get(b).name));
-      setOrder([...saved, ...rest]);
-      setSavedOrder(saved);
-      setWeight(mine.weight);
+
+      if (orderRef.current === null) {
+        const mine = isAuthed ? await getMyBallot() : { order: [], weight: 1 };
+        if (!active || !mounted.current) return;
+        const saved = mine.order.filter((id) => byId.has(id));
+        const rest = [...roster]
+          .filter((id) => !saved.includes(id))
+          .sort((a, b) => byId.get(a).name.localeCompare(byId.get(b).name));
+        setOrder([...saved, ...rest]);
+        setSavedOrder(saved);
+        setWeight(mine.weight);
+        return;
+      }
+
+      // Roster membership changed while a list already exists: keep
+      // existing ids in their current positions, drop ids no longer on the
+      // roster, append genuinely new roster ids at the bottom (alphabetical
+      // among themselves). No refetch, no rebuild from savedOrder.
+      const rosterSet = new Set(roster);
+      setOrder((current) => {
+        const kept = current.filter((id) => rosterSet.has(id));
+        const keptSet = new Set(kept);
+        const added = roster
+          .filter((id) => !keptSet.has(id))
+          .sort((a, b) => byId.get(a).name.localeCompare(byId.get(b).name));
+        return [...kept, ...added];
+      });
+      setSavedOrder((current) => current.filter((id) => rosterSet.has(id)));
     })();
     return () => {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthed, byId]);
+  }, [isAuthed, rosterSig]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
