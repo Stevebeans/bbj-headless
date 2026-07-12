@@ -12,10 +12,16 @@ const API_URL =
 /**
  * Fetch from WordPress API with caching
  */
+// Cache-key version appended to every WP request. Bump to invalidate stale
+// upstream (Varnish) copies of bare URLs — entries stored 2026-07-11 under
+// broken staging cache headers are immortal to purges (see /homepage?v=2).
+const WP_CACHE_VERSION = "2";
+
 export async function wpFetch(endpoint, options = {}) {
   const { tags, revalidate = false, ...fetchOptions } = options;
 
-  const url = `${API_URL}${endpoint}`;
+  const sep = endpoint.includes("?") ? "&" : "?";
+  const url = `${API_URL}${endpoint}${sep}wpv=${WP_CACHE_VERSION}`;
 
   const response = await fetch(url, {
     ...fetchOptions,
