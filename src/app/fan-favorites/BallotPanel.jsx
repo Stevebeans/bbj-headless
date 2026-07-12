@@ -111,6 +111,7 @@ export default function BallotPanel({ players, onSaved }) {
   const [message, setMessage] = useState(null); // { ok: bool, text: string }
   const mounted = useRef(true);
   const orderRef = useRef(null);
+  const prevAuthRef = useRef(null); // null = "not yet initialized"
 
   useEffect(() => {
     mounted.current = true;
@@ -146,12 +147,18 @@ export default function BallotPanel({ players, onSaved }) {
   // On later roster-membership changes, reconcile the CURRENT order in
   // place instead of refetching/rebuilding — this is what keeps an
   // in-progress unsaved drag order alive across the 60s auto-refresh.
+  // Also rebuild (rather than reconcile) whenever the auth state itself
+  // changes — e.g. an in-place login/logout via the modal — so the real
+  // saved ballot + vote weight load without requiring a page refresh.
   useEffect(() => {
+    const authChanged = prevAuthRef.current !== null && prevAuthRef.current !== isAuthed;
+    prevAuthRef.current = isAuthed;
+
     let active = true;
     (async () => {
       const roster = (players || []).map((p) => p.id);
 
-      if (orderRef.current === null) {
+      if (orderRef.current === null || authChanged) {
         const mine = isAuthed ? await getMyBallot() : { order: [], weight: 1 };
         if (!active || !mounted.current) return;
         const saved = mine.order.filter((id) => byId.has(id));
