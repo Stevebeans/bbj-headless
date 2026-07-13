@@ -274,11 +274,11 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
           </g>
         ))}
 
-        {/* Row connectors — hairline from the true line end to a face that a
-            cluster row moved aside */}
+        {/* Line extensions — each line continues in its own stroke style all
+            the way to its player's thumbnail, so faces never float */}
         {lines.map((l) => {
           const p = facePos.get(l.player.id) ?? { x: l.end.x, y: l.end.y };
-          if (Math.abs(p.y - l.end.y) <= 2 && Math.abs(p.x - l.end.x) <= 2) return null;
+          const lit = highlightId === l.player.id;
           return (
             <line
               key={`lead-${l.player.id}`}
@@ -286,9 +286,11 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
               y1={l.end.y}
               x2={p.x}
               y2={p.y}
-              stroke={l.solid ? l.color : "#9ca3af"}
-              strokeWidth="1"
-              strokeOpacity={isDim(l.player.id) ? 0.1 : 0.5}
+              stroke={l.solid || lit ? (colorMap[l.player.id] ?? l.color) : l.color}
+              strokeWidth={l.solid ? 2.5 : lit ? 2.5 : 1.5}
+              strokeDasharray={l.solid || lit ? undefined : "4 4"}
+              strokeOpacity={isDim(l.player.id) ? 0.15 : 1}
+              strokeLinecap="round"
             />
           );
         })}
