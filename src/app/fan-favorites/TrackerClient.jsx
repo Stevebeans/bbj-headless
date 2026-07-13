@@ -112,7 +112,13 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
     if (!rect) return;
     const px = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
     const py = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
-    setTip({ name: l.player.name, share: Number(l.player.share ?? 0), x: px, y: py });
+    setTip({
+      name: l.player.name,
+      share: Number(l.player.share ?? 0),
+      points: Number(l.player.points ?? 0),
+      x: px,
+      y: py,
+    });
   }, []);
   const hideTip = useCallback(() => setTip(null), []);
 
@@ -352,7 +358,7 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
           className="pointer-events-none absolute z-10 rounded-md bg-gray-900/95 px-2 py-1 text-xs font-medium text-white shadow-lg"
           style={{ left: tip.x + 12, top: tip.y + 12 }}
         >
-          {tip.name} · {tip.share.toFixed(1)}%
+          {tip.name} · {tip.share.toFixed(1)}% · {tip.points.toFixed(1)} pts
         </div>
       )}
     </div>
