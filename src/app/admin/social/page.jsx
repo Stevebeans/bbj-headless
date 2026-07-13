@@ -488,18 +488,20 @@ export default function AdminSocialPage() {
 
         {pollResult && (
           <div className="mb-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm">
-            <p className="text-slate-700 dark:text-slate-300">
-              Inserted{" "}
-              <strong>{pollResult.inserted ?? pollResult.inserted_total ?? 0}</strong> new posts
-              {typeof pollResult.trusted_inserted === "number" && (
-                <> ({pollResult.trusted_inserted} trusted, {pollResult.tag_inserted ?? 0} tag)</>
-              )}
-              .
-            </p>
+            {pollResult.skipped ? (
+              <p className="text-slate-700 dark:text-slate-300">
+                Polling is disabled. Enable monitoring in Settings and save first.
+              </p>
+            ) : (
+              <p className="text-slate-700 dark:text-slate-300">
+                Added <strong>{pollResult.trusted ?? 0}</strong> trusted and{" "}
+                <strong>{pollResult.tag ?? 0}</strong> tag posts.
+              </p>
+            )}
             {Array.isArray(pollResult.errors) && pollResult.errors.length > 0 && (
               <ul className="mt-2 list-disc list-inside text-red-600 dark:text-red-400">
                 {pollResult.errors.map((err, i) => (
-                  <li key={i}>{typeof err === "string" ? err : (err.source ? `${err.source}: ` : "") + (err.message || JSON.stringify(err))}</li>
+                  <li key={i}>{err}</li>
                 ))}
               </ul>
             )}
