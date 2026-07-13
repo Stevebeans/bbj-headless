@@ -8,6 +8,29 @@ const API_URL =
   process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 const DEBOUNCE_MS = 250;
 
+// Frontend-only routes the WP search can never return (they are not WP
+// content). Matched client-side against title + aliases and pinned above the
+// WP results.
+const SITE_PAGES = [
+  { title: "Fan Favorites Tracker", href: "/fan-favorites", aliases: ["fan favorites", "fan favorite", "afp", "voting", "tracker", "rankings"] },
+  { title: "Become a Supporter", href: "/become-supporter", aliases: ["supporter", "premium", "subscribe", "membership", "support"] },
+  { title: "Players Directory", href: "/directory", aliases: ["players", "directory", "cast", "houseguests"] },
+  { title: "Live Feed Updates", href: "/live-feed-updates", aliases: ["feed updates", "live feeds", "feeds", "spoilers"] },
+  { title: "Season Compare", href: "/compare", aliases: ["compare", "comparison", "versus"] },
+  { title: "Ask the Bean", href: "/search", aliases: ["bean", "ask the bean", "ai search"] },
+  { title: "Contact", href: "/contact", aliases: ["contact", "email us"] },
+];
+
+function sitePageMatches(query) {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return [];
+  return SITE_PAGES.filter(
+    (p) =>
+      p.title.toLowerCase().includes(q) ||
+      p.aliases.some((a) => a.includes(q) || q.includes(a))
+  ).map((p) => ({ title: p.title, href: p.href }));
+}
+
 // True for "http(s)://…" or a bare domain like "cbs.com/x" — treated as an external link.
 function looksLikeUrl(s) {
   const t = s.trim();
@@ -76,7 +99,7 @@ export default function LinkModal({ editor, onClose }) {
         ]
           .map(normalize)
           .filter(Boolean);
-        setResults(flat);
+        setResults([...sitePageMatches(t), ...flat]);
       } catch (e) {
         if (e.name !== "AbortError") setResults([]);
       } finally {
