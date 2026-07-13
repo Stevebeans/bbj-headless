@@ -128,6 +128,14 @@ function MailIcon({ className }) {
   );
 }
 
+function SocialIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+    </svg>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "Overview", href: "/admin", icon: HomeIcon, permission: null },
   { id: "posts", label: "Posts", href: "/admin/posts", icon: DocumentTextIcon, permission: "blog_review" },
@@ -139,6 +147,7 @@ const TABS = [
   { id: "bug-reports", label: "Bugs", href: "/admin/bug-reports", icon: BugIcon, permission: "bug_reports" },
   { id: "announcements", label: "Announcements", href: "/admin/announcements", icon: MegaphoneIcon, permission: "announcements" },
   { id: "content-engine", label: "Content", href: "/admin/content-engine", icon: PencilSquareIcon, permission: "content_engine" },
+  { id: "social", label: "Social Intel", href: "/admin/social", icon: SocialIcon, permission: "social_monitor" },
   { id: "ads", label: "Ads", href: "/admin/ads", icon: AdIcon, permission: "ad_management" },
   { id: "mailing", label: "Mailing", href: "/admin/mailing", icon: MailIcon, permission: "admin_settings" },
   { id: "users", label: "Users", href: "/admin/users", icon: UsersIcon, permission: "user_management" },
