@@ -20,6 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { getMyBallot, saveBallot } from "@/lib/api/fanVotes";
 import { slotPointsFor } from "@/lib/fanvotes/tracker";
+import PlayerAvatar from "./PlayerAvatar";
 import { getToken } from "@/lib/auth/cookies";
 import { useAuthModal } from "@/context/AuthModalContext";
 
@@ -56,14 +57,7 @@ function SortableRow({ player, index, onMove, count }) {
       >
         {index + 1}
       </span>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={player.photo}
-        alt={player.name}
-        width={28}
-        height={28}
-        className="h-7 w-7 rounded-full object-cover bg-gray-100 dark:bg-gray-800"
-      />
+      <PlayerAvatar player={player} size={28} />
       <span className="min-w-0 flex-grow truncate text-sm font-medium text-gray-800 dark:text-gray-100">
         {player.name}
       </span>

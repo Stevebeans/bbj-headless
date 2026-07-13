@@ -5,9 +5,34 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getTracker, saveMoverNote, getMyBallot, savePrefs } from "@/lib/api/fanVotes";
 import { getToken } from "@/lib/auth/cookies";
-import { chartModel, thinLabels, formatDelta } from "@/lib/fanvotes/tracker";
+import {
+  chartModel,
+  thinLabels,
+  formatDelta,
+  playerColorMap,
+  standingsRows,
+  dodgeYs,
+  seasonShort,
+} from "@/lib/fanvotes/tracker";
 import { usePermissions } from "@/hooks/usePermissions";
 import BallotPanel from "./BallotPanel";
+import PlayerAvatar, { playerInitials } from "./PlayerAvatar";
+import { SectionHeader } from "@/components/home/SectionHeader";
+
+// Tailwind dark mode is class-driven; watch <html class="dark"> so the chart
+// swaps to the dark-validated palette in sync with the site theme toggle.
+function useIsDark() {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const el = document.documentElement;
+    const apply = () => setIsDark(el.classList.contains("dark"));
+    apply();
+    const mo = new MutationObserver(apply);
+    mo.observe(el, { attributes: true, attributeFilter: ["class"] });
+    return () => mo.disconnect();
+  }, []);
+  return isDark;
+}
 
 const RANGES = [
   { label: "7D", days: 7 },
@@ -38,7 +63,7 @@ function fmtTick(d) {
 /* Hero chart (Option A)                                                       */
 /* -------------------------------------------------------------------------- */
 
-function HeroChart({ payload, filterIds, onFace }) {
+function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
   // Taller canvas on narrow screens: early-season shares cluster hard and the
   // extra vertical resolution keeps overlapping faces readable.
   const [isNarrow, setIsNarrow] = useState(false);
@@ -57,8 +82,26 @@ function HeroChart({ payload, filterIds, onFace }) {
   const HEIGHT = isNarrow ? 620 : 660;
   const PAD = 40;
 
-  const model = chartModel(payload, { topN: 5, filterIds, width: WIDTH, height: HEIGHT });
+  const isDark = useIsDark();
+  const colorMap = useMemo(
+    () => playerColorMap(payload?.players, isDark ? "dark" : "light"),
+    [payload, isDark]
+  );
+  const model = chartModel(payload, { topN: 5, filterIds, width: WIDTH, height: HEIGHT, colorMap });
   const { lines, xLabels, yMax, x, y } = model;
+
+  // Tied/near-tied shares stack end-faces on top of each other: dodge them
+  // apart vertically and remember each player's face position.
+  const faceY = useMemo(() => {
+    const adjusted = dodgeYs(
+      lines.map((l) => ({ y: l.end?.y ?? 0, r: l.solid ? 20 : 12 })),
+      PAD,
+      HEIGHT - PAD
+    );
+    return new Map(lines.map((l, i) => [l.player.id, adjusted[i]]));
+  }, [lines, HEIGHT]);
+
+  const isDim = (id) => highlightId != null && highlightId !== id;
 
   const containerRef = useRef(null);
   // Hover tooltip: { name, share, x, y } in container-relative pixels, or null.
@@ -103,7 +146,7 @@ function HeroChart({ payload, filterIds, onFace }) {
         <defs>
           {lines.map((l) => (
             <clipPath key={`clip-${l.player.id}`} id={`ff-clip-${l.player.id}`}>
-              <circle cx={l.end.x} cy={l.end.y} r={l.solid ? 19 : 12} />
+              <circle cx={l.end.x} cy={faceY.get(l.player.id) ?? l.end.y} r={l.solid ? 19 : 12} />
             </clipPath>
           ))}
         </defs>
@@ -148,15 +191,17 @@ function HeroChart({ payload, filterIds, onFace }) {
           </text>
         ))}
 
-        {/* Dashed pack lines (drawn under solid) */}
+        {/* Dashed pack lines (drawn under solid). A rail-highlighted pack
+            player gets its stable color and a solid stroke so it pops. */}
         {pack.map((l) => (
           <path
             key={`line-${l.player.id}`}
             d={l.path}
             fill="none"
-            stroke={l.color}
-            strokeWidth="1.5"
-            strokeDasharray="4 4"
+            stroke={highlightId === l.player.id ? colorMap[l.player.id] : l.color}
+            strokeWidth={highlightId === l.player.id ? 2.5 : 1.5}
+            strokeDasharray={highlightId === l.player.id ? undefined : "4 4"}
+            strokeOpacity={isDim(l.player.id) ? 0.15 : 1}
             strokeLinejoin="round"
             strokeLinecap="round"
           />
@@ -164,12 +209,12 @@ function HeroChart({ payload, filterIds, onFace }) {
 
         {/* Solid top-5 lines + dots */}
         {solid.map((l) => (
-          <g key={`line-${l.player.id}`}>
+          <g key={`line-${l.player.id}`} opacity={isDim(l.player.id) ? 0.15 : 1}>
             <path
               d={l.path}
               fill="none"
               stroke={l.color}
-              strokeWidth="2.5"
+              strokeWidth={highlightId === l.player.id ? 3.5 : 2.5}
               strokeLinejoin="round"
               strokeLinecap="round"
             />
@@ -187,72 +232,118 @@ function HeroChart({ payload, filterIds, onFace }) {
           </g>
         ))}
 
+        {/* Dodge connectors — hairline from the true line end to a face that
+            was nudged aside by a tie/near-tie */}
+        {lines.map((l) => {
+          const fy = faceY.get(l.player.id) ?? l.end.y;
+          if (Math.abs(fy - l.end.y) <= 2) return null;
+          return (
+            <line
+              key={`lead-${l.player.id}`}
+              x1={l.end.x}
+              y1={l.end.y}
+              x2={l.end.x}
+              y2={fy}
+              stroke={l.solid ? l.color : "#9ca3af"}
+              strokeWidth="1"
+              strokeOpacity={isDim(l.player.id) ? 0.1 : 0.5}
+            />
+          );
+        })}
+
         {/* Pack faces — small, faded, brighten to full opacity on hover */}
-        {pack.map((l) => (
-          <g
-            key={`face-${l.player.id}`}
-            className="cursor-pointer"
-            onClick={() => onFace(l.player.slug)}
-            onMouseEnter={(e) => showTip(e, l)}
-            onMouseMove={(e) => showTip(e, l)}
-            onMouseLeave={hideTip}
-          >
-            {l.player.photo ? (
-              <image
-                href={l.player.photo}
-                x={l.end.x - 12}
-                y={l.end.y - 12}
-                width="24"
-                height="24"
-                clipPath={`url(#ff-clip-${l.player.id})`}
-                className="opacity-40 transition-opacity hover:opacity-100"
-                preserveAspectRatio="xMidYMid slice"
-              />
-            ) : (
-              <circle
-                cx={l.end.x}
-                cy={l.end.y}
-                r="12"
-                fill={l.color}
-                className="opacity-40 transition-opacity hover:opacity-100"
-              />
-            )}
-          </g>
-        ))}
+        {pack.map((l) => {
+          const fy = faceY.get(l.player.id) ?? l.end.y;
+          const lit = highlightId === l.player.id;
+          return (
+            <g
+              key={`face-${l.player.id}`}
+              className="cursor-pointer"
+              opacity={isDim(l.player.id) ? 0.2 : 1}
+              onClick={() => onFace(l.player.slug)}
+              onMouseEnter={(e) => showTip(e, l)}
+              onMouseMove={(e) => showTip(e, l)}
+              onMouseLeave={hideTip}
+            >
+              {l.player.photo ? (
+                <image
+                  href={l.player.photo}
+                  x={l.end.x - 12}
+                  y={fy - 12}
+                  width="24"
+                  height="24"
+                  clipPath={`url(#ff-clip-${l.player.id})`}
+                  className={lit ? "" : "opacity-40 transition-opacity hover:opacity-100"}
+                  preserveAspectRatio="xMidYMid slice"
+                />
+              ) : (
+                <g className={lit ? "" : "opacity-40 transition-opacity hover:opacity-100"}>
+                  <circle cx={l.end.x} cy={fy} r="12" fill={colorMap[l.player.id] ?? l.color} />
+                  <text
+                    x={l.end.x}
+                    y={fy + 3.5}
+                    textAnchor="middle"
+                    fontSize="9"
+                    fontWeight="700"
+                    fill="#ffffff"
+                  >
+                    {playerInitials(l.player.name)}
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
 
         {/* Solid faces — no name label (hover tooltip instead) */}
-        {solid.map((l) => (
-          <g
-            key={`face-${l.player.id}`}
-            className="cursor-pointer"
-            onClick={() => onFace(l.player.slug)}
-            onMouseEnter={(e) => showTip(e, l)}
-            onMouseMove={(e) => showTip(e, l)}
-            onMouseLeave={hideTip}
-          >
-            <circle
-              cx={l.end.x}
-              cy={l.end.y}
-              r="20"
-              fill="#ffffff"
-              stroke={l.color}
-              strokeWidth="2.5"
-            />
-            {l.player.photo ? (
-              <image
-                href={l.player.photo}
-                x={l.end.x - 19}
-                y={l.end.y - 19}
-                width="38"
-                height="38"
-                clipPath={`url(#ff-clip-${l.player.id})`}
-                preserveAspectRatio="xMidYMid slice"
+        {solid.map((l) => {
+          const fy = faceY.get(l.player.id) ?? l.end.y;
+          return (
+            <g
+              key={`face-${l.player.id}`}
+              className="cursor-pointer"
+              opacity={isDim(l.player.id) ? 0.2 : 1}
+              onClick={() => onFace(l.player.slug)}
+              onMouseEnter={(e) => showTip(e, l)}
+              onMouseMove={(e) => showTip(e, l)}
+              onMouseLeave={hideTip}
+            >
+              <circle
+                cx={l.end.x}
+                cy={fy}
+                r="20"
+                fill="#ffffff"
+                stroke={l.color}
+                strokeWidth="2.5"
               />
-            ) : (
-              <circle cx={l.end.x} cy={l.end.y} r="19" fill={l.color} />
-            )}
-          </g>
-        ))}
+              {l.player.photo ? (
+                <image
+                  href={l.player.photo}
+                  x={l.end.x - 19}
+                  y={fy - 19}
+                  width="38"
+                  height="38"
+                  clipPath={`url(#ff-clip-${l.player.id})`}
+                  preserveAspectRatio="xMidYMid slice"
+                />
+              ) : (
+                <g>
+                  <circle cx={l.end.x} cy={fy} r="19" fill={l.color} />
+                  <text
+                    x={l.end.x}
+                    y={fy + 5}
+                    textAnchor="middle"
+                    fontSize="14"
+                    fontWeight="700"
+                    fill="#ffffff"
+                  >
+                    {playerInitials(l.player.name)}
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
       </svg>
       </div>
 
@@ -265,50 +356,6 @@ function HeroChart({ payload, filterIds, onFace }) {
         </div>
       )}
     </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Sparkline — last <=7 series points, normalized per-row                      */
-/* -------------------------------------------------------------------------- */
-
-function Sparkline({ values, color = "#1e3a5f" }) {
-  const W = 84;
-  const H = 24;
-  const P = 3;
-  if (!values || values.length === 0) {
-    return <svg width={W} height={H} aria-hidden="true" />;
-  }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min;
-  const n = values.length;
-  const xAt = (i) => (n === 1 ? W / 2 : P + (i / (n - 1)) * (W - 2 * P));
-  const yAt = (v) => (range === 0 ? H / 2 : H - P - ((v - min) / range) * (H - 2 * P));
-
-  if (n === 1) {
-    return (
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
-        <circle cx={xAt(0)} cy={yAt(values[0])} r="2.5" fill={color} />
-      </svg>
-    );
-  }
-
-  const d = values
-    .map((v, i) => `${i === 0 ? "M" : "L"}${xAt(i).toFixed(1)},${yAt(v).toFixed(1)}`)
-    .join(" ");
-
-  return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
-      <path
-        d={d}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
 
@@ -326,6 +373,77 @@ function DeltaBadge({ delta }) {
       {arrow && <span aria-hidden="true">{arrow}</span>}
       {text}
     </span>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Standings rail — full cast, competition-ranked, hover highlights the chart  */
+/* -------------------------------------------------------------------------- */
+
+function StandingsRail({ players, highlightId, onHighlight }) {
+  const isDark = useIsDark();
+  const colorMap = useMemo(
+    () => playerColorMap(players, isDark ? "dark" : "light"),
+    [players, isDark]
+  );
+  const rows = useMemo(() => standingsRows(players), [players]);
+  const top5 = new Set(players.slice(0, 5).map((p) => p.id));
+  // Click pins a highlight (mobile has no hover); click again to unpin.
+  const [pinned, setPinned] = useState(null);
+
+  return (
+    <section className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <h2 className="mb-1 font-display text-xl text-primary-500 dark:text-primary-400">
+        Standings
+      </h2>
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+        Tap a player to spotlight their line.
+      </p>
+      <ol onMouseLeave={() => onHighlight(pinned)}>
+        {rows.map(({ rank, tied, player: p }) => {
+          const active = highlightId === p.id;
+          return (
+            <li key={p.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = pinned === p.id ? null : p.id;
+                  setPinned(next);
+                  onHighlight(next);
+                }}
+                onMouseEnter={() => onHighlight(p.id)}
+                aria-pressed={active}
+                className={`flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors ${
+                  active ? "bg-primary-50 dark:bg-primary-900/20" : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`}
+              >
+                <span
+                  className="w-7 shrink-0 text-center text-xs font-bold tabular-nums text-gray-400"
+                  title={tied ? "Tied" : undefined}
+                >
+                  {tied ? `T${rank}` : rank}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-1 shrink-0 rounded-full"
+                  style={{ backgroundColor: top5.has(p.id) ? colorMap[p.id] : "transparent" }}
+                />
+                <PlayerAvatar player={p} size={28} />
+                <span className="min-w-0 flex-grow truncate text-sm font-medium text-gray-800 dark:text-gray-100">
+                  {p.name}
+                </span>
+                <span className="shrink-0 text-sm font-bold tabular-nums text-gray-800 dark:text-gray-100">
+                  {Number(p.share ?? 0).toFixed(1)}%
+                </span>
+                <span className="w-14 shrink-0 text-right text-xs">
+                  <DeltaBadge delta={p.delta24h} />
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 
@@ -372,14 +490,7 @@ function MoverRow({ player, max, isAdmin, onSaved }) {
     <li className="py-3 first:pt-0 last:pb-0">
       <div className="flex items-center gap-3">
         <Link href={playerHref(player.slug)} className="shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={player.photo}
-            alt={player.name}
-            width={40}
-            height={40}
-            className="h-10 w-10 rounded-full object-cover bg-gray-100 dark:bg-gray-800"
-          />
+          <PlayerAvatar player={player} size={40} />
         </Link>
         <div className="min-w-0 flex-grow">
           <Link
@@ -470,7 +581,8 @@ export function TrackerClient() {
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [showFullCast, setShowFullCast] = useState(false);
+  // Rail hover/click spotlight: the player id whose chart line to emphasize.
+  const [highlightId, setHighlightId] = useState(null);
 
   const mounted = useRef(true);
   useEffect(() => {
@@ -616,10 +728,6 @@ export function TrackerClient() {
   const tooFew =
     payload && Number(payload.total_voters) < Number(payload.min_voters);
 
-  // Sparkline values per player from the last <=7 daily snapshots.
-  const sparkFor = (id) =>
-    series.slice(-7).map((s) => Number(s.shares?.[id] ?? 0));
-
   // Biggest movers — client-side sort by |delta|, drop tiny moves, take 5.
   const movers = players
     .filter((p) => Math.abs(Number(p.delta24h) || 0) >= 0.1)
@@ -629,8 +737,6 @@ export function TrackerClient() {
     (m, p) => Math.max(m, Math.abs(Number(p.delta24h) || 0)),
     0.1
   );
-
-  const leaderboard = showFullCast ? players : players.slice(0, 5);
 
   // Chart-only filter -> the player ids whose lines to draw (null = all).
   const filterIds = useMemo(() => {
@@ -646,8 +752,20 @@ export function TrackerClient() {
     }
   }, [chartFilter, players]);
 
+  const seasonTag = seasonShort(payload?.season_slug);
+
   return (
     <div className="space-y-6">
+      {/* Season-driven heading (server shell renders the generic version) */}
+      <div>
+        <SectionHeader as="h1">
+          {seasonTag ? `${seasonTag} Fan Favorite Tracker` : "Fan Favorite Tracker"}
+        </SectionHeader>
+        <p className="-mt-2 text-gray-600 dark:text-gray-400">
+          Live standings, daily history — powered by BBJ reader votes.
+        </p>
+      </div>
+
       {/* Range toggle + chart filters */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -713,91 +831,31 @@ export function TrackerClient() {
               payload={payload}
               filterIds={filterIds}
               onFace={(slug) => router.push(playerHref(slug))}
+              highlightId={highlightId}
             />
           )}
         </div>
         <div className="min-w-0">
-          <BallotPanel players={players} onSaved={refetch} getBallot={getSharedBallot} />
+          {!tooFew && players.length > 0 ? (
+            <StandingsRail
+              players={players}
+              highlightId={highlightId}
+              onHighlight={setHighlightId}
+            />
+          ) : (
+            <BallotPanel players={players} onSaved={refetch} getBallot={getSharedBallot} />
+          )}
         </div>
       </div>
 
-      {/* Standings grid — only once we have enough voters */}
+      {/* SECOND ROW — ballot + biggest movers (standings live beside the chart) */}
       {!tooFew && players.length > 0 && (
-        <div className="grid gap-6 lg:grid-cols-5">
-          {/* LEFT — Top 5 Today */}
-          <div className="lg:col-span-3">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-xl text-primary-500 dark:text-primary-400">
-                {showFullCast ? "Full Cast" : "Top 5 Today"}
-              </h2>
-              {players.length > 5 && (
-                <button
-                  type="button"
-                  onClick={() => setShowFullCast((v) => !v)}
-                  className="text-sm text-primary-500 hover:text-primary-600"
-                >
-                  {showFullCast ? "Show top 5" : "Show full cast"}
-                </button>
-              )}
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                    <th className="py-2 pr-2 font-medium">#</th>
-                    <th className="py-2 pr-2 font-medium">Player</th>
-                    <th className="py-2 px-2 font-medium">7-day</th>
-                    <th className="py-2 px-2 font-medium text-right">Share</th>
-                    <th className="py-2 pl-2 font-medium text-right">Δ 24h</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaderboard.map((p, i) => (
-                    <tr
-                      key={p.id}
-                      className="border-b border-gray-100 dark:border-gray-800 last:border-0"
-                    >
-                      <td className="py-2 pr-2 text-gray-400 tabular-nums">{i + 1}</td>
-                      <td className="py-2 pr-2">
-                        <Link
-                          href={playerHref(p.slug)}
-                          className="flex items-center gap-2 hover:text-primary-500"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={p.photo}
-                            alt={p.name}
-                            width={40}
-                            height={40}
-                            className="h-10 w-10 rounded-full object-cover bg-gray-100 dark:bg-gray-800"
-                          />
-                          <span className="font-medium text-gray-800 dark:text-gray-100">
-                            {p.name}
-                          </span>
-                        </Link>
-                      </td>
-                      <td className="py-2 px-2">
-                        <Sparkline values={sparkFor(p.id)} />
-                      </td>
-                      <td className="py-2 px-2 text-right font-bold tabular-nums text-gray-800 dark:text-gray-100">
-                        <div>{Number(p.share ?? 0).toFixed(1)}%</div>
-                        <div className="text-[10px] font-normal text-gray-400 tabular-nums">
-                          {Number(p.points ?? 0).toFixed(1)} pts
-                        </div>
-                      </td>
-                      <td className="py-2 pl-2 text-right">
-                        <DeltaBadge delta={p.delta24h} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+          <div className="min-w-0">
+            <BallotPanel players={players} onSaved={refetch} getBallot={getSharedBallot} />
           </div>
 
-          {/* RIGHT — Biggest Movers */}
-          <div className="lg:col-span-2">
+          <div className="min-w-0">
             <h2 className="mb-3 font-display text-xl text-primary-500 dark:text-primary-400">
               Biggest Movers · last 24h
             </h2>

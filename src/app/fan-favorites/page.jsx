@@ -1,6 +1,5 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PrimarySidebarWidgets } from "@/components/layout/PrimarySidebarWidgets";
-import { SectionHeader } from "@/components/home/SectionHeader";
 import { TrackerClient } from "./TrackerClient";
 
 // Pure static shell — zero server-side data fetching. All vote data is
@@ -29,11 +28,8 @@ export default function FanFavoritesPage() {
         {/* Main Content */}
         <section id="main-left" className="flex-grow space-y-4">
           <article className="v2-primary-container-inner p-5 md:p-[22px]">
-            <SectionHeader as="h1">BB28 Fan Favorite Tracker</SectionHeader>
-            <p className="-mt-2 mb-5 text-gray-600 dark:text-gray-400">
-              Live standings, daily history — powered by BBJ reader votes.
-            </p>
-
+            {/* h1 + subtitle render inside TrackerClient, prefixed with the
+                current season from the tracker payload (client-fetched). */}
             <TrackerClient />
 
             {/* Footer copy block — Steve's exact wording */}

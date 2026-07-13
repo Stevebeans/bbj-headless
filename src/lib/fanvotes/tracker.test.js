@@ -1,5 +1,96 @@
 import { describe, it, expect } from "vitest";
-import { chartModel, thinLabels, formatDelta, LINE_COLORS, slotPointsFor, BALLOT_SLOT_POINTS } from "./tracker";
+import {
+  chartModel,
+  thinLabels,
+  formatDelta,
+  LINE_COLORS,
+  slotPointsFor,
+  BALLOT_SLOT_POINTS,
+  PLAYER_COLORS,
+  playerColorMap,
+  standingsRows,
+  dodgeYs,
+  seasonShort,
+} from "./tracker";
+
+describe("playerColorMap", () => {
+  it("assigns colors by sorted id so they are stable across order and filters", () => {
+    const a = playerColorMap([{ id: 3 }, { id: 1 }, { id: 2 }]);
+    const b = playerColorMap([{ id: 2 }, { id: 3 }, { id: 1 }]);
+    expect(a).toEqual(b);
+    expect(a[1]).toBe(PLAYER_COLORS.light[0]);
+    expect(a[3]).toBe(PLAYER_COLORS.light[2]);
+  });
+
+  it("uses the dark palette when asked", () => {
+    const m = playerColorMap([{ id: 5 }], "dark");
+    expect(m[5]).toBe(PLAYER_COLORS.dark[0]);
+  });
+
+  it("wraps around when players outnumber the palette", () => {
+    const players = Array.from({ length: 12 }, (_, i) => ({ id: i + 1 }));
+    const m = playerColorMap(players);
+    expect(m[11]).toBe(PLAYER_COLORS.light[0]);
+  });
+});
+
+describe("standingsRows", () => {
+  it("gives tied points the same rank and skips the next (competition ranking)", () => {
+    const rows = standingsRows([
+      { id: 1, name: "Ann", points: 30 },
+      { id: 2, name: "Bob", points: 20 },
+      { id: 3, name: "Cid", points: 20 },
+      { id: 4, name: "Dee", points: 10 },
+    ]);
+    expect(rows.map((r) => r.rank)).toEqual([1, 2, 2, 4]);
+    expect(rows.map((r) => r.tied)).toEqual([false, true, true, false]);
+  });
+
+  it("orders ties by name and sorts by points desc regardless of input order", () => {
+    const rows = standingsRows([
+      { id: 1, name: "Zed", points: 20 },
+      { id: 2, name: "Ann", points: 20 },
+      { id: 3, name: "Top", points: 50 },
+    ]);
+    expect(rows.map((r) => r.player.name)).toEqual(["Top", "Ann", "Zed"]);
+  });
+});
+
+describe("dodgeYs", () => {
+  it("leaves non-overlapping faces alone", () => {
+    const out = dodgeYs([{ y: 100, r: 10 }, { y: 200, r: 10 }], 0, 600);
+    expect(out).toEqual([100, 200]);
+  });
+
+  it("separates identical positions with at least the edge gap", () => {
+    const out = dodgeYs([{ y: 100, r: 10 }, { y: 100, r: 10 }, { y: 100, r: 10 }], 0, 600);
+    const sorted = [...out].sort((a, b) => a - b);
+    expect(sorted[1] - sorted[0]).toBeGreaterThanOrEqual(22);
+    expect(sorted[2] - sorted[1]).toBeGreaterThanOrEqual(22);
+  });
+
+  it("clamps inside the chart area", () => {
+    const out = dodgeYs([{ y: 595, r: 20 }, { y: 598, r: 20 }], 0, 600);
+    for (const y of out) {
+      expect(y).toBeLessThanOrEqual(580);
+      expect(y).toBeGreaterThanOrEqual(20);
+    }
+  });
+
+  it("returns values in the caller's original item order", () => {
+    const out = dodgeYs([{ y: 300, r: 10 }, { y: 100, r: 10 }], 0, 600);
+    expect(out[0]).toBeGreaterThan(out[1]);
+  });
+});
+
+describe("seasonShort", () => {
+  it("handles both season slug eras and garbage", () => {
+    expect(seasonShort("big-brother-26")).toBe("BB26");
+    expect(seasonShort("bb17")).toBe("BB17");
+    expect(seasonShort("celebrity-big-brother")).toBe("");
+    expect(seasonShort(null)).toBe("");
+  });
+});
 
 describe("chartModel", () => {
   const payload = {
