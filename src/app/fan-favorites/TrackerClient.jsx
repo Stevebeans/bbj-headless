@@ -75,10 +75,10 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
     return () => mq.removeEventListener("change", apply);
   }, []);
 
-  // Desktop renders in the ~560px column beside the 300px ballot, so it gets a
-  // portrait viewBox that lands at roughly the My Rankings card height instead
-  // of a wide canvas scaled down to half size.
-  const WIDTH = isNarrow ? 1000 : 640;
+  // Portrait viewBoxes sized near their real render widths so text and faces
+  // draw at close-to-native size: desktop fills the ~560px column beside the
+  // ballot; narrow fills the phone viewport with NO horizontal scroll.
+  const WIDTH = isNarrow ? 400 : 640;
   const HEIGHT = isNarrow ? 620 : 660;
   const PAD = 40;
 
@@ -141,10 +141,10 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="w-full overflow-x-auto">
+      <div className="w-full">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className="w-full min-w-[560px]"
+        className="w-full"
         role="img"
         aria-label="Fan favorite vote share over time"
         style={{ overflow: "visible" }}
