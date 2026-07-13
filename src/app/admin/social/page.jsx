@@ -340,11 +340,11 @@ export default function AdminSocialPage() {
     }
   };
 
-  const handleCopyDraft = async (text) => {
+  const copyToClipboard = async (text, setCopiedState) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedState(true);
+      setTimeout(() => setCopiedState(false), 2000);
     } catch {
       showToast("error", "Copy failed. Select the text manually.");
     }
@@ -416,15 +416,6 @@ export default function AdminSocialPage() {
     }
   };
 
-  const handleDraftCopy = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setDraftCopied(true);
-      setTimeout(() => setDraftCopied(false), 2000);
-    } catch {
-      showToast("error", "Copy failed. Select the text manually.");
-    }
-  };
 
   // ---- Render guards --------------------------------------------------------
   if (permLoading || loading) {
@@ -845,7 +836,7 @@ export default function AdminSocialPage() {
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-sm font-bold text-slate-800 dark:text-white">{sections.facebook.heading}</h4>
                   <button
-                    onClick={() => handleCopyDraft(sections.facebook.body)}
+                    onClick={() => copyToClipboard(sections.facebook.body, setCopied)}
                     className="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
                     {copied ? "Copied" : "Copy"}
@@ -1089,7 +1080,7 @@ export default function AdminSocialPage() {
                 {draft.post_count} posts
               </span>
               <button
-                onClick={() => handleDraftCopy(decodeEntities(draft.content))}
+                onClick={() => copyToClipboard(decodeEntities(draft.content), setDraftCopied)}
                 className="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
               >
                 {draftCopied ? "Copied" : "Copy"}
