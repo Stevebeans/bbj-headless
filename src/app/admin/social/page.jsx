@@ -92,7 +92,6 @@ export default function AdminSocialPage() {
   const [trustingUri, setTrustingUri] = useState(null);
 
   // Digest
-  const [summaries, setSummaries] = useState([]);
   const [latestSummary, setLatestSummary] = useState(null);
   const [summarizing, setSummarizing] = useState(false);
   const [summarizeError, setSummarizeError] = useState(null);
@@ -147,10 +146,11 @@ export default function AdminSocialPage() {
     }
   }, [sourceFilter, searchTerm, showToast]);
 
+  // Latest digest panel: only digest rows count, else a facebook/blog draft
+  // (also stored in /social/summaries) would render as the "latest digest".
   const loadSummaries = useCallback(async () => {
-    const data = await adminFetch("/social/summaries");
-    const list = Array.isArray(data) ? data : (data.items || data.summaries || []);
-    setSummaries(list);
+    const data = await adminFetch("/social/summaries?kind=digest");
+    const list = Array.isArray(data) ? data : (data.summaries || data.items || []);
     if (list.length > 0) setLatestSummary(list[0]);
     return list;
   }, []);
@@ -328,7 +328,6 @@ export default function AdminSocialPage() {
       const data = await adminFetch("/social/summarize", { method: "POST" });
       if (data && data.success && data.summary) {
         setLatestSummary(data.summary);
-        setSummaries((prev) => [data.summary, ...prev]);
         showToast("success", "Digest generated.");
       } else {
         setSummarizeError((data && data.message) || "Summarize returned no summary.");
