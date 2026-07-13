@@ -100,6 +100,7 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
   const probeEnds = probe.lines.map((l) => ({
     y: l.end?.y ?? 0,
     r: l.solid ? 20 : 12,
+    share: Number(l.player.share ?? 0),
   }));
   const clusters = useMemo(
     () => endClusters(probeEnds, CLUSTER_GAP),
@@ -126,6 +127,7 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
     const pos = clusterFaceLayout(lite, clusters, {
       lo: PAD,
       hi: HEIGHT - PAD,
+      alignX: WIDTH - 24,
       maxSpread: WIDTH * 0.3,
     });
     return new Map(lines.map((l, i) => [l.player.id, pos[i] ?? { x: lite[i].endX, y: lite[i].endY }]));

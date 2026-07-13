@@ -17,12 +17,25 @@ import {
 } from "./tracker";
 
 describe("endClusters", () => {
-  const e = (y, r = 12) => ({ y, r });
+  const e = (y, r = 12, share = 5.5) => ({ y, r, share });
 
   it("chains ends whose face circles would collide, splits at real gaps", () => {
-    // pack faces r=12: circles collide when gap < 26
+    // pack faces r=12: circles collide when gap < 26; same whole-% bucket
     const clusters = endClusters([e(100), e(110), e(120), e(200), e(210), e(400)]);
     expect(clusters).toEqual([[0, 1, 2], [3, 4], [5]]);
+  });
+
+  it("splits a colliding chain on whole-percent boundaries", () => {
+    // Steve's rule: 4.x players one row, 3.x players the next
+    const clusters = endClusters([
+      e(100, 12, 4.2),
+      e(105, 12, 4.0),
+      e(110, 12, 3.8),
+      e(115, 12, 3.7),
+      e(120, 12, 3.1),
+      e(126, 12, 2.8),
+    ]);
+    expect(clusters).toEqual([[0, 1], [2, 3, 4], [5]]);
   });
 
   it("uses per-item radii (big solid faces collide from further away)", () => {
@@ -39,7 +52,7 @@ describe("endClusters", () => {
 describe("clusterFaceLayout", () => {
   const mk = (ys) => ys.map((endY) => ({ endX: 500, endY, r: 12 }));
 
-  it("puts cluster members on one row, spreading right from the line end", () => {
+  it("puts cluster members on one row in share order", () => {
     const lines = mk([100, 104, 108]);
     const pos = clusterFaceLayout(lines, [[0, 1, 2]], { lo: 40, hi: 580 });
     expect(pos[0].y).toBe(pos[1].y);
@@ -49,7 +62,15 @@ describe("clusterFaceLayout", () => {
     expect(pos[2].x).toBeGreaterThan(pos[1].x);
   });
 
-  it("leaves singles at their own line end", () => {
+  it("right-aligns every row (and singles) to the shared column edge", () => {
+    const lines = mk([100, 104, 300]);
+    const pos = clusterFaceLayout(lines, [[0, 1], [2]], { lo: 40, hi: 580, alignX: 600 });
+    expect(pos[1].x).toBe(600); // last of the row sits on the column edge
+    expect(pos[0].x).toBeLessThan(600); // earlier member extends leftward
+    expect(pos[2]).toEqual({ x: 600, y: 300 }); // single: column x, own y
+  });
+
+  it("leaves singles at their own line end when no alignX is given", () => {
     const lines = mk([100, 300]);
     const pos = clusterFaceLayout(lines, [[0], [1]], { lo: 40, hi: 580 });
     expect(pos[0]).toEqual({ x: 500, y: 100 });
@@ -70,13 +91,13 @@ describe("clusterFaceLayout", () => {
 });
 
 describe("clusterGutter", () => {
-  it("is zero when every cluster is a single", () => {
-    expect(clusterGutter([[0], [1]], [12, 12])).toBe(0);
+  it("reserves a face diameter even when every cluster is a single", () => {
+    expect(clusterGutter([[0], [1]], [12, 12])).toBe(28); // 2r + 4
   });
 
   it("sizes to the widest row", () => {
     const g = clusterGutter([[0, 1, 2]], [12, 12, 12]);
-    expect(g).toBe(Math.ceil(2 * 18 + 12)); // 2 steps of r*1.5 plus trailing radius
+    expect(g).toBe(Math.ceil(2 * 18 + 24 + 4)); // 2 steps of r*1.5 + diameter + margin
   });
 });
 

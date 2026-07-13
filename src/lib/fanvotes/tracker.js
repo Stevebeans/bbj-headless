@@ -76,30 +76,50 @@ export function dodgeYs(items, lo, hi, gap = 2) {
   return out;
 }
 
-// Group chart line ends whose faces would visually collide. Input: [{y, r}]
-// ordered by ascending y (= descending share); adjacent ends chain into one
-// cluster when the gap between their circle edges is under `gap`. Each
-// cluster renders as a single horizontal face row.
+// Group chart line ends whose faces would visually collide. Input:
+// [{y, r, share}] ordered by ascending y (= descending share); adjacent ends
+// chain when the gap between their circle edges is under `gap`, and chains
+// then SPLIT on whole-percent boundaries (all the 3.x players share a row,
+// the 4.x players get their own). Each cluster renders as one face row.
 export function endClusters(items, gap = 2) {
-  const clusters = [];
+  const chains = [];
   let current = null;
   items.forEach((it, i) => {
     if (current === null || it.y - items[i - 1].y >= items[i - 1].r + it.r + gap) {
       current = [i];
-      clusters.push(current);
+      chains.push(current);
     } else {
       current.push(i);
     }
   });
+  const clusters = [];
+  chains.forEach((chain) => {
+    if (chain.length === 1) {
+      clusters.push(chain);
+      return;
+    }
+    let row = null;
+    let bucket = null;
+    chain.forEach((idx) => {
+      const b = Math.floor(Number(items[idx].share ?? 0));
+      if (row === null || b !== bucket) {
+        row = [idx];
+        clusters.push(row);
+        bucket = b;
+      } else {
+        row.push(idx);
+      }
+    });
+  });
   return clusters;
 }
 
-// Face positions for clustered line ends: each cluster becomes one horizontal
-// row (share-desc, left to right) starting at the line-end x and extending
-// right into the reserved gutter; rows are vertically dodged apart. Returns
-// {x, y} keyed by cluster-member index order flattened back to line order.
+// Face positions for clustered line ends: every row is RIGHT-ALIGNED to a
+// shared column edge (`alignX`), extending leftward, so faces form one tidy
+// column regardless of row length; rows are vertically dodged apart and
+// singles keep their own line-end y. Returns {x, y} keyed back to line order.
 // lines: [{endX, endY, r}] in the SAME desc-share order used for endClusters.
-export function clusterFaceLayout(lines, clusters, { lo, hi, maxSpread = 200, gap = 2 } = {}) {
+export function clusterFaceLayout(lines, clusters, { lo, hi, alignX = null, maxSpread = 200, gap = 2 } = {}) {
   const rows = clusters.map((members) => {
     const r = Math.max(...members.map((i) => lines[i].r));
     const meanY = members.reduce((s, i) => s + lines[i].endY, 0) / members.length;
@@ -113,21 +133,24 @@ export function clusterFaceLayout(lines, clusters, { lo, hi, maxSpread = 200, ga
   const dodged = dodgeYs(rows.map((row) => ({ y: row.y, r: row.r })), lo, hi, gap);
   const pos = {};
   rows.forEach((row, k) => {
+    const n = row.members.length;
     row.members.forEach((lineIdx, j) => {
-      pos[lineIdx] = { x: lines[lineIdx].endX + j * row.step, y: dodged[k] };
+      const right = alignX ?? lines[lineIdx].endX + (n - 1) * row.step;
+      pos[lineIdx] = { x: right - (n - 1 - j) * row.step, y: dodged[k] };
     });
   });
   return pos;
 }
 
-// Gutter width a face-row layout needs beyond the plot's right edge.
+// Gutter width the right-aligned face column needs beyond the plot's right
+// edge: the widest row plus a face radius of breathing room.
 export function clusterGutter(clusters, radii, { maxSpread = 200 } = {}) {
   let need = 0;
   clusters.forEach((members) => {
-    if (members.length < 2) return;
     const r = Math.max(...members.map((i) => radii[i]));
-    const step = Math.min(r * 1.5, maxSpread / (members.length - 1));
-    need = Math.max(need, (members.length - 1) * step + r);
+    const step =
+      members.length > 1 ? Math.min(r * 1.5, maxSpread / (members.length - 1)) : 0;
+    need = Math.max(need, (members.length - 1) * step + r * 2 + 4);
   });
   return Math.ceil(need);
 }
