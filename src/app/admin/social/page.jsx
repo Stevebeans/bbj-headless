@@ -11,6 +11,17 @@ const MODEL_OPTIONS = [
 ];
 
 const INTERVAL_OPTIONS = [5, 10, 15, 30];
+const BEANBOT_INTERVALS = [30, 45, 60];
+const DRAFT_WINDOWS = [
+  { id: "today", label: "Today" },
+  { id: "12h", label: "Last 12h" },
+  { id: "24h", label: "Last 24h" },
+];
+const HISTORY_KINDS = [
+  { id: "digest", label: "Digest" },
+  { id: "facebook", label: "Facebook" },
+  { id: "blog", label: "Blog" },
+];
 const PER_PAGE = 50;
 
 // Bluesky post text arrives emoji-entity-encoded (utf8mb3 storage). Decode for display.
@@ -88,6 +99,25 @@ export default function AdminSocialPage() {
   const [expandedId, setExpandedId] = useState(null);
   const [copied, setCopied] = useState(false);
 
+  // Bean Bot
+  const [beanbot, setBeanbot] = useState(null);
+  const [beanbotMissing, setBeanbotMissing] = useState(false);
+  const [beanbotSaving, setBeanbotSaving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [preview, setPreview] = useState(null);
+
+  // Drafts
+  const [draftWindow, setDraftWindow] = useState("today");
+  const [draftBusy, setDraftBusy] = useState(null); // 'facebook' | 'blog'
+  const [draft, setDraft] = useState(null);
+  const [draftError, setDraftError] = useState(null);
+  const [draftCopied, setDraftCopied] = useState(false);
+
+  // Summary history (Digest / Facebook / Blog), lives in the Drafts card
+  const [historyKind, setHistoryKind] = useState("digest");
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   const showToast = useCallback((type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 3500);
@@ -125,6 +155,31 @@ export default function AdminSocialPage() {
     return list;
   }, []);
 
+  // Bean Bot settings. Absent on older plugins, so failures degrade gracefully
+  // (card shows a "plugin update required" note) instead of blocking the page.
+  const loadBeanbot = useCallback(async () => {
+    try {
+      const data = await adminFetch("/social/beanbot");
+      setBeanbot(data.settings);
+      setBeanbotMissing(false);
+    } catch {
+      setBeanbotMissing(true);
+    }
+  }, []);
+
+  const loadHistory = useCallback(async (kind) => {
+    setHistoryLoading(true);
+    try {
+      const data = await adminFetch(`/social/summaries?kind=${encodeURIComponent(kind)}`);
+      const list = Array.isArray(data) ? data : (data.summaries || data.items || []);
+      setHistory(list);
+    } catch {
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (permLoading) return;
     if (!hasPermission("social_monitor")) {
@@ -133,7 +188,13 @@ export default function AdminSocialPage() {
     }
     (async () => {
       try {
-        await Promise.all([loadConfig(), loadPosts(1), loadSummaries()]);
+        await Promise.all([
+          loadConfig(),
+          loadPosts(1),
+          loadSummaries(),
+          loadBeanbot(),
+          loadHistory("digest"),
+        ]);
       } catch (err) {
         setLoadError(err.message || "Failed to load Social Intel.");
       } finally {
@@ -149,6 +210,14 @@ export default function AdminSocialPage() {
     loadPosts(1, sourceFilter, searchTerm);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceFilter, searchTerm]);
+
+  // Re-fetch summary history when the kind chip changes (initial load is in mount effect).
+  useEffect(() => {
+    if (loading) return;
+    setExpandedId(null);
+    loadHistory(historyKind);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyKind]);
 
   // ---- Settings mutations ---------------------------------------------------
   const patchSetting = (key, value) => {
@@ -277,6 +346,82 @@ export default function AdminSocialPage() {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showToast("error", "Copy failed. Select the text manually.");
+    }
+  };
+
+  // ---- Bean Bot actions -----------------------------------------------------
+  const patchBeanbot = (key, value) => {
+    setBeanbot((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleBeanbotSave = async () => {
+    if (!beanbot) return;
+    setBeanbotSaving(true);
+    try {
+      const data = await adminFetch("/social/beanbot", {
+        method: "POST",
+        body: JSON.stringify({
+          enabled: !!beanbot.enabled,
+          interval_minutes: Number(beanbot.interval_minutes) || 30,
+          max_per_day: Math.min(96, Math.max(1, Number(beanbot.max_per_day) || 1)),
+          bluesky_enabled: !!beanbot.bluesky_enabled,
+        }),
+      });
+      setBeanbot(data.settings);
+      showToast("success", "Bean Bot settings saved.");
+    } catch (err) {
+      showToast("error", err.message || "Save failed.");
+    } finally {
+      setBeanbotSaving(false);
+    }
+  };
+
+  // Dry run: the server never publishes here, it only reports what it would do.
+  const handlePreview = async () => {
+    setPreviewing(true);
+    setPreview(null);
+    try {
+      const data = await adminFetch("/social/beanbot/preview", { method: "POST" });
+      setPreview(data);
+    } catch (err) {
+      setPreview({ action: "error", message: err.message || "Preview failed." });
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  // ---- Drafts actions -------------------------------------------------------
+  const handleDraft = async (kind) => {
+    setDraftBusy(kind);
+    setDraftError(null);
+    try {
+      const data = await adminFetch("/social/draft", {
+        method: "POST",
+        body: JSON.stringify({ kind, window: draftWindow }),
+      });
+      if (data && data.success && data.draft) {
+        setDraft(data.draft);
+        // Surface the new item in history for its kind.
+        if (kind === historyKind) loadHistory(kind);
+        else setHistoryKind(kind);
+      } else {
+        setDraftError((data && data.message) || "Draft returned no content.");
+      }
+    } catch (err) {
+      // adminFetch throws the API message verbatim for non-2xx responses.
+      setDraftError(err.message || "Draft generation failed.");
+    } finally {
+      setDraftBusy(null);
+    }
+  };
+
+  const handleDraftCopy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setDraftCopied(true);
+      setTimeout(() => setDraftCopied(false), 2000);
     } catch {
       showToast("error", "Copy failed. Select the text manually.");
     }
@@ -728,13 +873,265 @@ export default function AdminSocialPage() {
         ) : (
           <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No digests yet.</p>
         )}
+      </section>
 
-        {/* History */}
-        {summaries.length > 0 && (
-          <div className="mt-6">
-            <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">History</h4>
+      {/* ============================= BEAN BOT ============================= */}
+      <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h3 className="text-base font-osw font-bold text-slate-800 dark:text-white">Bean Bot</h3>
+          {beanbot && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!beanbot.enabled}
+                onChange={(e) => patchBeanbot("enabled", e.target.checked)}
+                className="w-4 h-4 text-primary-500 border-slate-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Auto-posting {beanbot.enabled ? "enabled" : "disabled"}
+              </span>
+            </label>
+          )}
+        </div>
+
+        {beanbotMissing ? (
+          <p className="text-slate-500 dark:text-slate-400 text-sm py-4">
+            Bean Bot is unavailable. A plugin update is required before automated posting can be configured.
+          </p>
+        ) : !beanbot ? (
+          <p className="text-slate-500 dark:text-slate-400 text-sm py-4">Loading Bean Bot...</p>
+        ) : (
+          <>
+            <div className="grid gap-5 md:grid-cols-2">
+              {/* Interval */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Post interval
+                </label>
+                <select
+                  value={beanbot.interval_minutes ?? 30}
+                  onChange={(e) => patchBeanbot("interval_minutes", parseInt(e.target.value, 10))}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  {BEANBOT_INTERVALS.map((m) => (
+                    <option key={m} value={m}>{m} minutes</option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500 mt-1">How often the bot may post when enabled.</p>
+              </div>
+
+              {/* Max per day */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Max posts per day
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={96}
+                  value={beanbot.max_per_day ?? 1}
+                  onChange={(e) => patchBeanbot("max_per_day", parseInt(e.target.value, 10) || 1)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+                <p className="text-xs text-slate-500 mt-1">Between 1 and 96.</p>
+              </div>
+            </div>
+
+            {/* Bluesky cross-post */}
+            <div className="mt-5">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!beanbot.bluesky_enabled}
+                  onChange={(e) => patchBeanbot("bluesky_enabled", e.target.checked)}
+                  className="w-4 h-4 text-primary-500 border-slate-300 rounded focus:ring-primary-500"
+                />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Cross-post to Bluesky
+                </span>
+              </label>
+            </div>
+
+            {/* Status line */}
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-4">
+              Last run {beanbot.last_run ? fmtTime(beanbot.last_run) : "never"} &middot;{" "}
+              {beanbot.posts_today ?? 0} posted today &middot; cursor #{beanbot.cursor_post_id ?? 0}
+            </p>
+
+            {beanbot.last_error && (
+              <div className="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+                {beanbot.last_error}
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                onClick={handleBeanbotSave}
+                disabled={beanbotSaving}
+                className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {beanbotSaving ? "Saving..." : "Save Settings"}
+              </button>
+              <button
+                onClick={handlePreview}
+                disabled={previewing}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {previewing && (
+                  <span className="w-4 h-4 border-2 border-slate-300 border-t-primary-500 rounded-full animate-spin" />
+                )}
+                {previewing ? "Checking..." : "Preview next post"}
+              </button>
+            </div>
+
+            {/* Preview result. Nothing is published here. */}
+            {preview && (
+              preview.action === "posted" ? (
+                <div className="mt-5 space-y-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                      Preview only
+                    </span>
+                    {preview.bluesky && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                        Would cross-post to Bluesky
+                      </span>
+                    )}
+                    {preview.window && typeof preview.window.count === "number" && (
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {preview.window.count} new trusted reports
+                      </span>
+                    )}
+                  </div>
+                  <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
+                    <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                      {decodeEntities(preview.text)}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Nothing was published. This is what Bean Bot would post next.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm">
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 mr-2">
+                    {preview.action || "skipped"}
+                  </span>
+                  <span className="text-slate-700 dark:text-slate-300">
+                    {preview.message || "Nothing to post right now."}
+                  </span>
+                </div>
+              )
+            )}
+          </>
+        )}
+      </section>
+
+      {/* ============================= DRAFTS ============================= */}
+      <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h3 className="text-base font-osw font-bold text-slate-800 dark:text-white">Drafts</h3>
+        </div>
+
+        {/* Window chips */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <span className="text-sm text-slate-500 dark:text-slate-400">Window</span>
+          <div className="flex gap-1">
+            {DRAFT_WINDOWS.map((chip) => (
+              <button
+                key={chip.id}
+                onClick={() => setDraftWindow(chip.id)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                  draftWindow === chip.id
+                    ? "bg-primary-500 border-primary-500 text-white"
+                    : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => handleDraft("facebook")}
+            disabled={!!draftBusy}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {draftBusy === "facebook" && (
+              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            )}
+            {draftBusy === "facebook" ? "Generating..." : "Facebook post"}
+          </button>
+          <button
+            onClick={() => handleDraft("blog")}
+            disabled={!!draftBusy}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {draftBusy === "blog" && (
+              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            )}
+            {draftBusy === "blog" ? "Generating..." : "Blog recap"}
+          </button>
+        </div>
+
+        {draftError && (
+          <div className="mt-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+            {draftError}
+          </div>
+        )}
+
+        {draft && (
+          <div className="mt-5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {draft.kind} &middot; {fmtTime(draft.window_from)} &rarr; {fmtTime(draft.window_to)} &middot;{" "}
+                {draft.post_count} posts
+              </span>
+              <button
+                onClick={() => handleDraftCopy(decodeEntities(draft.content))}
+                className="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                {draftCopied ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+              {decodeEntities(draft.content)}
+            </div>
+          </div>
+        )}
+
+        {/* History (Digest / Facebook / Blog) */}
+        <div className="mt-6">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
+            <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400">History</h4>
+            <div className="flex gap-1">
+              {HISTORY_KINDS.map((chip) => (
+                <button
+                  key={chip.id}
+                  onClick={() => setHistoryKind(chip.id)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                    historyKind === chip.id
+                      ? "bg-primary-500 border-primary-500 text-white"
+                      : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {historyLoading ? (
+            <div className="text-center py-6">
+              <div className="animate-spin inline-block w-6 h-6 border-2 border-slate-300 dark:border-slate-600 border-t-primary-500 rounded-full" />
+            </div>
+          ) : history.length === 0 ? (
+            <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No {historyKind} history yet.</p>
+          ) : (
             <ul className="divide-y divide-slate-200 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
-              {summaries.map((s) => {
+              {history.map((s) => {
                 const open = expandedId === s.id;
                 return (
                   <li key={s.id} className="bg-white dark:bg-slate-800">
@@ -744,7 +1141,7 @@ export default function AdminSocialPage() {
                     >
                       <span className="text-sm text-slate-700 dark:text-slate-300">
                         {fmtTime(s.created_at)}
-                        <span className="text-slate-400"> &middot; {s.model} &middot; {s.post_count} posts</span>
+                        <span className="text-slate-400"> &middot; {s.post_count} posts</span>
                         {s.window_from && s.window_to && (
                           <span className="text-slate-400"> &middot; {fmtTime(s.window_from)} to {fmtTime(s.window_to)}</span>
                         )}
@@ -767,8 +1164,8 @@ export default function AdminSocialPage() {
                 );
               })}
             </ul>
-          </div>
-        )}
+          )}
+        </div>
       </section>
     </div>
   );
