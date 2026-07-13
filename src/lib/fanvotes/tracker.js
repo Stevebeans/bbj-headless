@@ -76,6 +76,62 @@ export function dodgeYs(items, lo, hi, gap = 2) {
   return out;
 }
 
+// Group chart line ends whose faces would visually collide. Input: [{y, r}]
+// ordered by ascending y (= descending share); adjacent ends chain into one
+// cluster when the gap between their circle edges is under `gap`. Each
+// cluster renders as a single horizontal face row.
+export function endClusters(items, gap = 2) {
+  const clusters = [];
+  let current = null;
+  items.forEach((it, i) => {
+    if (current === null || it.y - items[i - 1].y >= items[i - 1].r + it.r + gap) {
+      current = [i];
+      clusters.push(current);
+    } else {
+      current.push(i);
+    }
+  });
+  return clusters;
+}
+
+// Face positions for clustered line ends: each cluster becomes one horizontal
+// row (share-desc, left to right) starting at the line-end x and extending
+// right into the reserved gutter; rows are vertically dodged apart. Returns
+// {x, y} keyed by cluster-member index order flattened back to line order.
+// lines: [{endX, endY, r}] in the SAME desc-share order used for endClusters.
+export function clusterFaceLayout(lines, clusters, { lo, hi, maxSpread = 200, gap = 2 } = {}) {
+  const rows = clusters.map((members) => {
+    const r = Math.max(...members.map((i) => lines[i].r));
+    const meanY = members.reduce((s, i) => s + lines[i].endY, 0) / members.length;
+    // Facepile step: slight overlap keeps long rows compact; compress to fit.
+    const step =
+      members.length > 1
+        ? Math.min(r * 1.5, maxSpread / (members.length - 1))
+        : 0;
+    return { members, r, y: meanY, step };
+  });
+  const dodged = dodgeYs(rows.map((row) => ({ y: row.y, r: row.r })), lo, hi, gap);
+  const pos = {};
+  rows.forEach((row, k) => {
+    row.members.forEach((lineIdx, j) => {
+      pos[lineIdx] = { x: lines[lineIdx].endX + j * row.step, y: dodged[k] };
+    });
+  });
+  return pos;
+}
+
+// Gutter width a face-row layout needs beyond the plot's right edge.
+export function clusterGutter(clusters, radii, { maxSpread = 200 } = {}) {
+  let need = 0;
+  clusters.forEach((members) => {
+    if (members.length < 2) return;
+    const r = Math.max(...members.map((i) => radii[i]));
+    const step = Math.min(r * 1.5, maxSpread / (members.length - 1));
+    need = Math.max(need, (members.length - 1) * step + r);
+  });
+  return Math.ceil(need);
+}
+
 // "big-brother-26" / "bb17" -> "BB26" / "BB17"; unknown shapes -> "".
 export function seasonShort(slug) {
   const m = /(?:^bb|big-brother-)(\d+)$/.exec(String(slug || "").toLowerCase());

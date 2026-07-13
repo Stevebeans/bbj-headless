@@ -11,7 +11,9 @@ import {
   formatDelta,
   playerColorMap,
   standingsRows,
-  dodgeYs,
+  endClusters,
+  clusterFaceLayout,
+  clusterGutter,
   seasonShort,
 } from "@/lib/fanvotes/tracker";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -87,19 +89,47 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
     () => playerColorMap(payload?.players, isDark ? "dark" : "light"),
     [payload, isDark]
   );
-  const model = chartModel(payload, { topN: 5, filterIds, width: WIDTH, height: HEIGHT, colorMap });
+
+  // Faces whose circles would collide vertically merge into ONE horizontal
+  // row (a wall of 3-4% ties reads as a group instead of a misleading
+  // vertical stack). End y-positions are width-independent, so a probe pass
+  // finds the collisions, the plot then shrinks to leave a right gutter for
+  // the rows to spread into.
+  const CLUSTER_GAP = 2;
+  const probe = chartModel(payload, { topN: 5, filterIds, width: WIDTH, height: HEIGHT, colorMap });
+  const probeEnds = probe.lines.map((l) => ({
+    y: l.end?.y ?? 0,
+    r: l.solid ? 20 : 12,
+  }));
+  const clusters = useMemo(
+    () => endClusters(probeEnds, CLUSTER_GAP),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(probeEnds)]
+  );
+  const GUTTER = Math.min(
+    Math.round(WIDTH * 0.35),
+    clusterGutter(clusters, probeEnds.map((e) => e.r), { maxSpread: WIDTH * 0.3 })
+  );
+  const PLOT_W = WIDTH - GUTTER;
+
+  const model = chartModel(payload, { topN: 5, filterIds, width: PLOT_W, height: HEIGHT, colorMap });
   const { lines, xLabels, yMax, x, y } = model;
 
-  // Tied/near-tied shares stack end-faces on top of each other: dodge them
-  // apart vertically and remember each player's face position.
-  const faceY = useMemo(() => {
-    const adjusted = dodgeYs(
-      lines.map((l) => ({ y: l.end?.y ?? 0, r: l.solid ? 20 : 12 })),
-      PAD,
-      HEIGHT - PAD
-    );
-    return new Map(lines.map((l, i) => [l.player.id, adjusted[i]]));
-  }, [lines, HEIGHT]);
+  // Face positions: cluster rows spread rightward into the gutter, rows
+  // vertically dodged apart; singles sit at their own line end.
+  const facePos = useMemo(() => {
+    const lite = lines.map((l) => ({
+      endX: l.end?.x ?? 0,
+      endY: l.end?.y ?? 0,
+      r: l.solid ? 20 : 12,
+    }));
+    const pos = clusterFaceLayout(lite, clusters, {
+      lo: PAD,
+      hi: HEIGHT - PAD,
+      maxSpread: WIDTH * 0.3,
+    });
+    return new Map(lines.map((l, i) => [l.player.id, pos[i] ?? { x: lite[i].endX, y: lite[i].endY }]));
+  }, [lines, clusters, HEIGHT, WIDTH]);
 
   const isDim = (id) => highlightId != null && highlightId !== id;
 
@@ -152,7 +182,11 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
         <defs>
           {lines.map((l) => (
             <clipPath key={`clip-${l.player.id}`} id={`ff-clip-${l.player.id}`}>
-              <circle cx={l.end.x} cy={faceY.get(l.player.id) ?? l.end.y} r={l.solid ? 19 : 12} />
+              <circle
+                cx={facePos.get(l.player.id)?.x ?? l.end.x}
+                cy={facePos.get(l.player.id)?.y ?? l.end.y}
+                r={l.solid ? 19 : 12}
+              />
             </clipPath>
           ))}
         </defs>
@@ -162,7 +196,7 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
           <g key={`grid-${g}`}>
             <line
               x1={PAD}
-              x2={WIDTH - PAD}
+              x2={PLOT_W - PAD}
               y1={y(g)}
               y2={y(g)}
               stroke="currentColor"
@@ -238,18 +272,18 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
           </g>
         ))}
 
-        {/* Dodge connectors — hairline from the true line end to a face that
-            was nudged aside by a tie/near-tie */}
+        {/* Row connectors — hairline from the true line end to a face that a
+            cluster row moved aside */}
         {lines.map((l) => {
-          const fy = faceY.get(l.player.id) ?? l.end.y;
-          if (Math.abs(fy - l.end.y) <= 2) return null;
+          const p = facePos.get(l.player.id) ?? { x: l.end.x, y: l.end.y };
+          if (Math.abs(p.y - l.end.y) <= 2 && Math.abs(p.x - l.end.x) <= 2) return null;
           return (
             <line
               key={`lead-${l.player.id}`}
               x1={l.end.x}
               y1={l.end.y}
-              x2={l.end.x}
-              y2={fy}
+              x2={p.x}
+              y2={p.y}
               stroke={l.solid ? l.color : "#9ca3af"}
               strokeWidth="1"
               strokeOpacity={isDim(l.player.id) ? 0.1 : 0.5}
@@ -259,7 +293,7 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
 
         {/* Pack faces — small, faded, brighten to full opacity on hover */}
         {pack.map((l) => {
-          const fy = faceY.get(l.player.id) ?? l.end.y;
+          const p = facePos.get(l.player.id) ?? { x: l.end.x, y: l.end.y };
           const lit = highlightId === l.player.id;
           return (
             <g
@@ -274,8 +308,8 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
               {l.player.photo ? (
                 <image
                   href={l.player.photo}
-                  x={l.end.x - 12}
-                  y={fy - 12}
+                  x={p.x - 12}
+                  y={p.y - 12}
                   width="24"
                   height="24"
                   clipPath={`url(#ff-clip-${l.player.id})`}
@@ -284,10 +318,10 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
                 />
               ) : (
                 <g className={lit ? "" : "opacity-40 transition-opacity hover:opacity-100"}>
-                  <circle cx={l.end.x} cy={fy} r="12" fill={colorMap[l.player.id] ?? l.color} />
+                  <circle cx={p.x} cy={p.y} r="12" fill={colorMap[l.player.id] ?? l.color} />
                   <text
-                    x={l.end.x}
-                    y={fy + 3.5}
+                    x={p.x}
+                    y={p.y + 3.5}
                     textAnchor="middle"
                     fontSize="9"
                     fontWeight="700"
@@ -303,7 +337,7 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
 
         {/* Solid faces — no name label (hover tooltip instead) */}
         {solid.map((l) => {
-          const fy = faceY.get(l.player.id) ?? l.end.y;
+          const p = facePos.get(l.player.id) ?? { x: l.end.x, y: l.end.y };
           return (
             <g
               key={`face-${l.player.id}`}
@@ -315,8 +349,8 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
               onMouseLeave={hideTip}
             >
               <circle
-                cx={l.end.x}
-                cy={fy}
+                cx={p.x}
+                cy={p.y}
                 r="20"
                 fill="#ffffff"
                 stroke={l.color}
@@ -325,8 +359,8 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
               {l.player.photo ? (
                 <image
                   href={l.player.photo}
-                  x={l.end.x - 19}
-                  y={fy - 19}
+                  x={p.x - 19}
+                  y={p.y - 19}
                   width="38"
                   height="38"
                   clipPath={`url(#ff-clip-${l.player.id})`}
@@ -334,10 +368,10 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
                 />
               ) : (
                 <g>
-                  <circle cx={l.end.x} cy={fy} r="19" fill={l.color} />
+                  <circle cx={p.x} cy={p.y} r="19" fill={l.color} />
                   <text
-                    x={l.end.x}
-                    y={fy + 5}
+                    x={p.x}
+                    y={p.y + 5}
                     textAnchor="middle"
                     fontSize="14"
                     fontWeight="700"

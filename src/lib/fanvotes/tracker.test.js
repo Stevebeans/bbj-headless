@@ -10,8 +10,75 @@ import {
   playerColorMap,
   standingsRows,
   dodgeYs,
+  endClusters,
+  clusterFaceLayout,
+  clusterGutter,
   seasonShort,
 } from "./tracker";
+
+describe("endClusters", () => {
+  const e = (y, r = 12) => ({ y, r });
+
+  it("chains ends whose face circles would collide, splits at real gaps", () => {
+    // pack faces r=12: circles collide when gap < 26
+    const clusters = endClusters([e(100), e(110), e(120), e(200), e(210), e(400)]);
+    expect(clusters).toEqual([[0, 1, 2], [3, 4], [5]]);
+  });
+
+  it("uses per-item radii (big solid faces collide from further away)", () => {
+    // solid r=20 pair: threshold 42
+    const clusters = endClusters([e(100, 20), e(140, 20), e(300, 20)]);
+    expect(clusters).toEqual([[0, 1], [2]]);
+  });
+
+  it("leaves everyone single when nothing overlaps", () => {
+    expect(endClusters([e(100), e(200), e(300)])).toEqual([[0], [1], [2]]);
+  });
+});
+
+describe("clusterFaceLayout", () => {
+  const mk = (ys) => ys.map((endY) => ({ endX: 500, endY, r: 12 }));
+
+  it("puts cluster members on one row, spreading right from the line end", () => {
+    const lines = mk([100, 104, 108]);
+    const pos = clusterFaceLayout(lines, [[0, 1, 2]], { lo: 40, hi: 580 });
+    expect(pos[0].y).toBe(pos[1].y);
+    expect(pos[1].y).toBe(pos[2].y);
+    expect(pos[0].x).toBe(500);
+    expect(pos[1].x).toBeGreaterThan(pos[0].x);
+    expect(pos[2].x).toBeGreaterThan(pos[1].x);
+  });
+
+  it("leaves singles at their own line end", () => {
+    const lines = mk([100, 300]);
+    const pos = clusterFaceLayout(lines, [[0], [1]], { lo: 40, hi: 580 });
+    expect(pos[0]).toEqual({ x: 500, y: 100 });
+    expect(pos[1]).toEqual({ x: 500, y: 300 });
+  });
+
+  it("dodges overlapping rows apart vertically", () => {
+    const lines = mk([100, 101, 102, 103]);
+    const pos = clusterFaceLayout(lines, [[0, 1], [2, 3]], { lo: 40, hi: 580 });
+    expect(Math.abs(pos[2].y - pos[0].y)).toBeGreaterThanOrEqual(26);
+  });
+
+  it("compresses the facepile step to fit maxSpread", () => {
+    const lines = mk([100, 100, 100, 100, 100, 100]);
+    const pos = clusterFaceLayout(lines, [[0, 1, 2, 3, 4, 5]], { lo: 40, hi: 580, maxSpread: 50 });
+    expect(pos[5].x - pos[0].x).toBeLessThanOrEqual(50);
+  });
+});
+
+describe("clusterGutter", () => {
+  it("is zero when every cluster is a single", () => {
+    expect(clusterGutter([[0], [1]], [12, 12])).toBe(0);
+  });
+
+  it("sizes to the widest row", () => {
+    const g = clusterGutter([[0, 1, 2]], [12, 12, 12]);
+    expect(g).toBe(Math.ceil(2 * 18 + 12)); // 2 steps of r*1.5 plus trailing radius
+  });
+});
 
 describe("playerColorMap", () => {
   it("assigns colors by sorted id so they are stable across order and filters", () => {
