@@ -55,7 +55,7 @@ describe("chartModel", () => {
     expect(model.yMax).toBe(10);
   });
 
-  it("does not divide by zero with a single-point series (all points at x=pad)", () => {
+  it("does not divide by zero with a single-point series (points centered)", () => {
     const singlePayload = {
       players: [{ id: 1 }, { id: 2 }],
       series: [{ date: "Jul 1", shares: { 1: 10, 2: 5 } }],
@@ -66,32 +66,33 @@ describe("chartModel", () => {
       expect(line.points).toHaveLength(1);
       expect(Number.isFinite(line.points[0].x)).toBe(true);
       expect(Number.isFinite(line.points[0].y)).toBe(true);
-      expect(line.points[0].x).toBe(40); // pad, since series.length === 1 branch avoids /0
+      expect(line.points[0].x).toBe(500); // width/2: a lone snapshot centers horizontally
     }
   });
 
-  it("rounds yMax up to the nearest 10 above the max share, with a floor of 10", () => {
+  it("fits yMax to the data in 5% steps with ~10% headroom", () => {
     const model = chartModel(payload);
-    // max share in fixture is 30 -> yMax should be 30
-    expect(model.yMax).toBe(30);
+    // max share in fixture is 30 -> 33 with headroom -> next 5 step = 35
+    expect(model.yMax).toBe(35);
   });
 
-  it("rounds yMax up to the next 10 when max share isn't a multiple of 10", () => {
+  it("rounds yMax up to the next 5 step above the padded max share", () => {
     const p = {
       players: [{ id: 1 }],
       series: [{ date: "Jul 1", shares: { 1: 22 } }],
     };
     const model = chartModel(p);
-    expect(model.yMax).toBe(30);
+    // 22 * 1.1 = 24.2 -> next 5 step = 25
+    expect(model.yMax).toBe(25);
   });
 
-  it("floors yMax at 10 even when all shares are near zero", () => {
+  it("floors yMax at 5 even when all shares are near zero", () => {
     const p = {
       players: [{ id: 1 }],
       series: [{ date: "Jul 1", shares: { 1: 0.5 } }],
     };
     const model = chartModel(p);
-    expect(model.yMax).toBe(10);
+    expect(model.yMax).toBe(5);
   });
 
   it("treats missing shares for a player/date as 0", () => {

@@ -50,11 +50,14 @@ function HeroChart({ payload, filterIds, onFace }) {
     return () => mq.removeEventListener("change", apply);
   }, []);
 
-  const WIDTH = 1000;
-  const HEIGHT = isNarrow ? 620 : 460;
+  // Desktop renders in the ~560px column beside the 300px ballot, so it gets a
+  // portrait viewBox that lands at roughly the My Rankings card height instead
+  // of a wide canvas scaled down to half size.
+  const WIDTH = isNarrow ? 1000 : 640;
+  const HEIGHT = isNarrow ? 620 : 660;
   const PAD = 40;
 
-  const model = chartModel(payload, { topN: 5, filterIds, height: HEIGHT });
+  const model = chartModel(payload, { topN: 5, filterIds, width: WIDTH, height: HEIGHT });
   const { lines, xLabels, yMax, x, y } = model;
 
   const containerRef = useRef(null);
@@ -78,9 +81,10 @@ function HeroChart({ payload, filterIds, onFace }) {
     );
   }
 
-  // Horizontal gridlines every 10% up to yMax.
+  // Horizontal gridlines: 5% steps while the axis is zoomed in, 10% later.
+  const gridStep = yMax <= 25 ? 5 : 10;
   const gridVals = [];
-  for (let g = 0; g <= yMax; g += 10) gridVals.push(g);
+  for (let g = 0; g <= yMax; g += gridStep) gridVals.push(g);
 
   const ticks = thinLabels(xLabels, 7);
   const solid = lines.filter((l) => l.solid);
@@ -99,7 +103,7 @@ function HeroChart({ payload, filterIds, onFace }) {
         <defs>
           {lines.map((l) => (
             <clipPath key={`clip-${l.player.id}`} id={`ff-clip-${l.player.id}`}>
-              <circle cx={l.end.x} cy={l.end.y} r={l.solid ? 14 : 9} />
+              <circle cx={l.end.x} cy={l.end.y} r={l.solid ? 19 : 12} />
             </clipPath>
           ))}
         </defs>
@@ -196,10 +200,10 @@ function HeroChart({ payload, filterIds, onFace }) {
             {l.player.photo ? (
               <image
                 href={l.player.photo}
-                x={l.end.x - 9}
-                y={l.end.y - 9}
-                width="18"
-                height="18"
+                x={l.end.x - 12}
+                y={l.end.y - 12}
+                width="24"
+                height="24"
                 clipPath={`url(#ff-clip-${l.player.id})`}
                 className="opacity-40 transition-opacity hover:opacity-100"
                 preserveAspectRatio="xMidYMid slice"
@@ -208,7 +212,7 @@ function HeroChart({ payload, filterIds, onFace }) {
               <circle
                 cx={l.end.x}
                 cy={l.end.y}
-                r="9"
+                r="12"
                 fill={l.color}
                 className="opacity-40 transition-opacity hover:opacity-100"
               />
@@ -229,23 +233,23 @@ function HeroChart({ payload, filterIds, onFace }) {
             <circle
               cx={l.end.x}
               cy={l.end.y}
-              r="15"
+              r="20"
               fill="#ffffff"
               stroke={l.color}
-              strokeWidth="2"
+              strokeWidth="2.5"
             />
             {l.player.photo ? (
               <image
                 href={l.player.photo}
-                x={l.end.x - 14}
-                y={l.end.y - 14}
-                width="28"
-                height="28"
+                x={l.end.x - 19}
+                y={l.end.y - 19}
+                width="38"
+                height="38"
                 clipPath={`url(#ff-clip-${l.player.id})`}
                 preserveAspectRatio="xMidYMid slice"
               />
             ) : (
-              <circle cx={l.end.x} cy={l.end.y} r="14" fill={l.color} />
+              <circle cx={l.end.x} cy={l.end.y} r="19" fill={l.color} />
             )}
           </g>
         ))}

@@ -18,13 +18,16 @@ export function chartModel(payload, { topN = 5, width = 1000, height = 380, pad 
 
   const top = players.slice(0, topN).map((p) => p.id);
   const maxShare = Math.max(
-    10,
+    0,
     ...series.flatMap((s) => Object.values(s.shares || {}).map(Number))
   );
-  const yMax = Math.ceil(maxShare / 10) * 10;
+  // Fit the axis to the data (5% steps, ~10% headroom) so early-season
+  // clustering fills the canvas instead of hugging the bottom of a 0-10 axis.
+  const yMax = Math.max(5, Math.ceil((maxShare * 1.1) / 5) * 5);
 
+  // A single snapshot centers horizontally instead of pinning to the left edge.
   const x = (i) =>
-    pad + (series.length === 1 ? 0 : (i / (series.length - 1)) * (width - pad * 2));
+    series.length === 1 ? width / 2 : pad + (i / (series.length - 1)) * (width - pad * 2);
   const y = (share) => height - pad - (share / yMax) * (height - pad * 2);
 
   const lines = players.map((p, idx) => {
