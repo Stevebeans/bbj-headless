@@ -1,13 +1,32 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { attemptStaleBuildHeal } from "@/lib/staleBuildHeal";
 
 export default function Error({ error, reset }) {
+  const [healing, setHealing] = useState(false);
+
   useEffect(() => {
     // Log the error to console in development
     console.error("Application error:", error);
+    // Build-skew errors (stale tab / cached zombie page navigating into the
+    // current deployment) are fixed by a hard reload — do it once instead of
+    // showing the error page.
+    if (attemptStaleBuildHeal(error)) setHealing(true);
   }, [error]);
+
+  if (healing) {
+    return (
+      <main className="v2-primary-container">
+        <div className="v2-primary-container-inner p-8 text-center">
+          <p className="text-xl text-gray-600 dark:text-gray-300 font-osw animate-pulse">
+            Refreshing the page…
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="v2-primary-container">
