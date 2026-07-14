@@ -1,5 +1,5 @@
 // Pure helpers for feed-update thread comments (quick-reply prefix + thread CTA).
-// No side effects, no fetches — Task 3 consumes these in the card components.
+// No side effects, no fetches - the card components consume these directly.
 
 const MAX_QUOTE_LEN = 80;
 
