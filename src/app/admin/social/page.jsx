@@ -42,6 +42,41 @@ function fmtTime(utc) {
   return d.toLocaleString();
 }
 
+// Pill switch that states the current fact and flips it. Replaces the header
+// checkboxes whose "X disabled" label read like an instruction ("check to
+// disable") instead of a status.
+function ToggleSwitch({ checked, onChange, label }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="flex items-center gap-2.5 cursor-pointer select-none"
+    >
+      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</span>
+      <span
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+          checked ? "bg-primary-500" : "bg-slate-300 dark:bg-slate-600"
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+            checked ? "translate-x-6" : "translate-x-1"
+          }`}
+        />
+      </span>
+      <span
+        className={`text-xs font-bold uppercase tracking-wide ${
+          checked ? "text-primary-600 dark:text-primary-400" : "text-slate-400"
+        }`}
+      >
+        {checked ? "On" : "Off"}
+      </span>
+    </button>
+  );
+}
+
 function truncate(str, max = 200) {
   if (!str) return "";
   return str.length > max ? str.slice(0, max) + "…" : str;
@@ -471,17 +506,11 @@ export default function AdminSocialPage() {
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-osw font-bold text-slate-800 dark:text-white">Settings</h3>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={!!settings?.enabled}
-              onChange={(e) => patchSetting("enabled", e.target.checked)}
-              className="w-4 h-4 text-primary-500 border-slate-300 rounded focus:ring-primary-500"
-            />
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Polling {settings?.enabled ? "enabled" : "disabled"}
-            </span>
-          </label>
+          <ToggleSwitch
+            checked={!!settings?.enabled}
+            onChange={(v) => patchSetting("enabled", v)}
+            label="Monitoring"
+          />
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
@@ -870,17 +899,11 @@ export default function AdminSocialPage() {
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <h3 className="text-base font-osw font-bold text-slate-800 dark:text-white">Bean Bot</h3>
           {beanbot && (
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!!beanbot.enabled}
-                onChange={(e) => patchBeanbot("enabled", e.target.checked)}
-                className="w-4 h-4 text-primary-500 border-slate-300 rounded focus:ring-primary-500"
-              />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Auto-posting {beanbot.enabled ? "enabled" : "disabled"}
-              </span>
-            </label>
+            <ToggleSwitch
+              checked={!!beanbot.enabled}
+              onChange={(v) => patchBeanbot("enabled", v)}
+              label="Auto-posting"
+            />
           )}
         </div>
 
