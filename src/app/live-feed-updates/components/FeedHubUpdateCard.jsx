@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { voteFeedUpdate } from "@/lib/api/feedUpdates";
+import { threadCta } from "@/lib/feedUpdates/threadComments";
 import { isFreshUpdate } from "@/lib/feedUpdatesLive";
 
 // One update row in the editorial thread. Client component (real voting).
@@ -14,6 +15,8 @@ export function FeedHubUpdateCard({ update }) {
   const [isVoting, setIsVoting] = useState(false);
   const href = `/live-feed-updates/${update.slug}`;
   const init = (update.author?.name || "BBJ").slice(0, 2).toUpperCase();
+  // Route the comment link to today's live thread when this update belongs to one.
+  const cta = threadCta(update.thread);
 
   const handleVote = async (value) => {
     if (!isAuthenticated || isVoting) return;
@@ -55,7 +58,11 @@ export function FeedHubUpdateCard({ update }) {
           </Link>
         )}
         <div className="fuh-foot">
-          <Link className="fuh-cmt" href={`${href}#comments`}>💬 {update.comment_count} comments</Link>
+          {cta ? (
+            <Link className="fuh-cmt" href={cta.href}>💬 {cta.label}</Link>
+          ) : (
+            <Link className="fuh-cmt" href={`${href}#comments`}>💬 {update.comment_count} comments</Link>
+          )}
           <Link href={href}>↗ Open</Link>
         </div>
       </div>

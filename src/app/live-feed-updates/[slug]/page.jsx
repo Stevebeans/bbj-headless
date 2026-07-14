@@ -238,11 +238,23 @@ export default async function FeedUpdatePage({ params }) {
             </div>
           </article>
 
-          {/* Comments Section */}
+          {/* Comments Section — routes to today's live thread when this update
+              belongs to one; otherwise the update's own comments (fallback). */}
           <section id="comments" className="v2-primary-container-inner p-4">
+            {update.thread && (
+              <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                Discussion happens in today's live thread:{" "}
+                <Link
+                  href={`/${update.thread.slug}`}
+                  className="text-primary-500 hover:text-primary-600 hover:underline"
+                >
+                  {update.thread.title || "today's live thread"}
+                </Link>
+              </p>
+            )}
             <CommentSection
-              postId={update.id}
-              initialCommentCount={update.comment_count || 0}
+              postId={update.thread?.id ?? update.id}
+              initialCommentCount={update.thread?.comment_count ?? (update.comment_count || 0)}
             />
           </section>
         </section>

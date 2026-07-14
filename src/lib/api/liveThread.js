@@ -3,6 +3,8 @@ import { bbjdFetch } from "./wordpress";
 /**
  * Server-side: fetch the currently-active live thread (or null).
  * Cached with tag `live-thread-active` — invalidated only on open/close/take-over.
+ * Returns `{ post_id, title, slug, started_at, comment_count }` (all passthrough
+ * from the endpoint; comment_count defaulted to 0 so thread CTAs can rely on it).
  */
 export async function getActiveLiveThread() {
   try {
@@ -10,7 +12,8 @@ export async function getActiveLiveThread() {
       tags: ["live-thread-active"],
       revalidate: false,
     });
-    return data || null;
+    if (!data) return null;
+    return { ...data, comment_count: data.comment_count ?? 0 };
   } catch (err) {
     console.error("[liveThread] getActiveLiveThread failed:", err.message);
     return null;

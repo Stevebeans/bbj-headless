@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useAds } from "@/context/AdContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { postComment } from "@/lib/api/comments";
+import { quickReplyPrefix, threadCta } from "@/lib/feedUpdates/threadComments";
 import { isFreshUpdate } from "@/lib/feedUpdatesLive";
 
 function slugify(s) {
@@ -53,26 +54,52 @@ export function FeedUpdateCard({ update }) {
   // Old-theme parity: timestamps go red while the update is <4h old.
   const isFresh = isFreshUpdate(update.modified);
 
+  // Thread routing: when this update belongs to today's live thread, replies and
+  // the CTA point at the thread post. Null thread = today's exact behavior.
+  const cta = threadCta(update.thread);
+
+  // The card body is CSS line-clamped (line-clamp-3). Detect when the rendered
+  // text is actually cut off so we can offer a link to the full update.
+  const contentRef = useRef(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+  useEffect(() => {
+    const el = contentRef.current;
+    if (el) setIsTruncated(el.scrollHeight > el.clientHeight + 1);
+  }, []);
+
   const handleQuickReply = async (e) => {
     e.preventDefault();
     if (!replyContent.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      await postComment(update.id, replyContent.trim(), 0, null);
+      // Thread path: post into today's live thread with the quoted-quick-reply
+      // prefix. Fallback path (no thread): post to this update's own id, no prefix.
+      const threadId = update.thread?.id;
+      const targetId = threadId ?? update.id;
+      const content = threadId
+        ? quickReplyPrefix({ created_at: update.modified, text: update.excerpt }) +
+          replyContent.trim()
+        : replyContent.trim();
 
-      const newComment = {
-        author: user?.user_display_name || user?.user_login || "You",
-        content:
-          replyContent.trim().length > 60
-            ? replyContent.trim().substring(0, 57) + "..."
-            : replyContent.trim(),
-      };
-      setRecentComments((prev) => [...prev, newComment].slice(-3));
+      await postComment(targetId, content, 0, null);
+
+      // The recent-comments preview + per-update count only exist on the fallback
+      // path (both are hidden when threaded), so skip mutating them for threads.
+      if (!threadId) {
+        const newComment = {
+          author: user?.user_display_name || user?.user_login || "You",
+          content:
+            replyContent.trim().length > 60
+              ? replyContent.trim().substring(0, 57) + "..."
+              : replyContent.trim(),
+        };
+        setRecentComments((prev) => [...prev, newComment].slice(-3));
+        setCommentCount((prev) => prev + 1);
+      }
       setReplyContent("");
       setShowReplyForm(false);
       setReplySuccess(true);
-      setCommentCount((prev) => prev + 1);
       setTimeout(() => setReplySuccess(false), 3000);
     } catch (err) {
       console.error("Reply failed:", err);
@@ -131,10 +158,21 @@ export function FeedUpdateCard({ update }) {
         </h3>
 
         {update.content && (
-          <div
-            className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-3 feed-content"
-            dangerouslySetInnerHTML={{ __html: update.content }}
-          />
+          <>
+            <div
+              ref={contentRef}
+              className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-3 feed-content"
+              dangerouslySetInnerHTML={{ __html: update.content }}
+            />
+            {isTruncated && (
+              <Link
+                href={permalink}
+                className="block -mt-2 mb-3 text-sm text-primary-500 dark:text-secondary-500 hover:underline"
+              >
+                Read the full update →
+              </Link>
+            )}
+          </>
         )}
 
         {update.thumbnail && (
@@ -150,8 +188,8 @@ export function FeedUpdateCard({ update }) {
           </div>
         )}
 
-        {/* Recent Comments Preview */}
-        {recentComments?.length > 0 && (
+        {/* Recent Comments Preview — fallback path only (hidden when threaded) */}
+        {!cta && recentComments?.length > 0 && (
           <div className="mt-3 mb-3 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg border-l-2 border-gray-300 dark:border-gray-600">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
@@ -192,17 +230,28 @@ export function FeedUpdateCard({ update }) {
         <div className="flex flex-wrap gap-3 items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <div className="flex flex-wrap gap-3 items-center">
             {authorSlug && <span className="font-osw">@{authorSlug}</span>}
-            <span>
-              {commentCount > 0
-                ? `${commentCount} ${commentCount === 1 ? "reply" : "replies"}`
-                : "No replies yet"}
-            </span>
-            <Link
-              href={`${permalink}#comments`}
-              className="text-primary-500 dark:text-secondary-500 hover:underline"
-            >
-              Join the thread →
-            </Link>
+            {cta ? (
+              <Link
+                href={cta.href}
+                className="text-primary-500 dark:text-secondary-500 hover:underline"
+              >
+                {cta.label} →
+              </Link>
+            ) : (
+              <>
+                <span>
+                  {commentCount > 0
+                    ? `${commentCount} ${commentCount === 1 ? "reply" : "replies"}`
+                    : "No replies yet"}
+                </span>
+                <Link
+                  href={`${permalink}#comments`}
+                  className="text-primary-500 dark:text-secondary-500 hover:underline"
+                >
+                  Join the thread →
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Quick Reply */}
