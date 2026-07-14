@@ -20,6 +20,7 @@ import {
   FanVoteHeart,
   isFanVoteEligible,
 } from "@/components/players";
+import { PlayerQuotes } from "@/components/players/PlayerQuotes";
 import { SITE_URL, ORG_LOGO, breadcrumbJsonLd } from "@/lib/seo";
 
 /**
@@ -207,6 +208,9 @@ export default async function PlayerPage({ params }) {
                     <PlayerBio content={player.bio} />
                   </section>
                 )}
+
+                {/* Memorable Quotes */}
+                <PlayerQuotes quotes={player?.quotes} />
 
                 {/* Related Players (Castmates) */}
                 {related_players?.length > 0 && (

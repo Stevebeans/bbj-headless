@@ -29,6 +29,7 @@ import {
   QuickFacts,
   MoreSeasons,
 } from "./components";
+import { QuoteBoard } from "./components/QuoteBoard";
 
 export const revalidate = false; // Pure webhook-driven — rebuild only when WP fires /api/revalidate
 export const dynamicParams = true;
@@ -191,7 +192,7 @@ function tallyComp(weeks, players, facesKey, statKey) {
 
 export default async function SeasonPage({ params }) {
   const { slug } = await params;
-  const { season, players, count, category_id, article_count, weeks } =
+  const { season, players, count, category_id, article_count, weeks, quote_board } =
     await getSeasonBySlug(slug);
 
   if (!season) {
@@ -315,6 +316,7 @@ export default async function SeasonPage({ params }) {
               <div className="stick">
                 <SeasonTOC sections={sectionNav} />
                 <QuickFacts season={season} playerCount={count} />
+                <QuoteBoard quotes={quote_board} />
                 <MoreSeasons seasons={seasons} currentSlug={slug} />
                 <SubscribeWidget />
                 <StickyAdSlot />

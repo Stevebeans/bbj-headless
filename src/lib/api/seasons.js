@@ -82,10 +82,11 @@ export async function getSeasonBySlug(slug, options = {}) {
       category_id: response.category_id || null,
       article_count: response.article_count || 0,
       weeks: response.weeks || [],
+      quote_board: response.quote_board || [],
     };
   } catch (error) {
     console.error(`Failed to fetch season ${slug}:`, error);
-    return { season: null, players: [], count: 0, category_id: null, article_count: 0, weeks: [] };
+    return { season: null, players: [], count: 0, category_id: null, article_count: 0, weeks: [], quote_board: [] };
   }
 }
 
