@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api/admin";
 import { usePermissions } from "@/hooks/usePermissions";
-import { TranscriptCard } from "./TranscriptCard";
 
 const MODEL_OPTIONS = [
   { id: "claude-sonnet-5", label: "Sonnet 5 (default)" },
@@ -117,7 +116,6 @@ export default function AdminSocialPage() {
   const { hasPermission, loading: permLoading } = usePermissions();
 
   const [settings, setSettings] = useState(null);
-  const [currentSeason, setCurrentSeason] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -173,7 +171,6 @@ export default function AdminSocialPage() {
   const loadConfig = useCallback(async () => {
     const data = await adminFetch("/social/config");
     setSettings(data.settings);
-    setCurrentSeason(data.current_season || null);
     return data.settings;
   }, []);
 
@@ -825,8 +822,6 @@ export default function AdminSocialPage() {
           </>
         )}
       </section>
-
-      <TranscriptCard currentSeason={currentSeason} />
 
       {/* ============================= DIGEST ============================= */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">

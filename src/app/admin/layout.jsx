@@ -148,6 +148,7 @@ const TABS = [
   { id: "announcements", label: "Announcements", href: "/admin/announcements", icon: MegaphoneIcon, permission: "announcements" },
   { id: "content-engine", label: "Content", href: "/admin/content-engine", icon: PencilSquareIcon, permission: "content_engine" },
   { id: "social", label: "Social Intel", href: "/admin/social", icon: SocialIcon, permission: "social_monitor" },
+  { id: "transcript", label: "Transcript", href: "/admin/transcript", icon: DocumentTextIcon, permission: "social_monitor" },
   { id: "ads", label: "Ads", href: "/admin/ads", icon: AdIcon, permission: "ad_management" },
   { id: "mailing", label: "Mailing", href: "/admin/mailing", icon: MailIcon, permission: "admin_settings" },
   { id: "users", label: "Users", href: "/admin/users", icon: UsersIcon, permission: "user_management" },

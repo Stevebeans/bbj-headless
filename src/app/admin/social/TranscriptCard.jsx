@@ -20,6 +20,8 @@ function fmtHouseTime(posted_at) {
   return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" });
 }
 
+const VISIBLE_STEP = 250;
+
 function truncate(str, max = 200) {
   if (!str) return "";
   return str.length > max ? str.slice(0, max) + "…" : str;
@@ -38,6 +40,9 @@ export function TranscriptCard({ currentSeason }) {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [filter, setFilter] = useState("");
+  // Busy days collect 1000+ posts; rendering them all at once makes the page
+  // crawl. Window the table and let Steve pull more as he skims.
+  const [visibleCount, setVisibleCount] = useState(VISIBLE_STEP);
 
   const [candidates, setCandidates] = useState(null); // null = none generated/stored yet
   const [candLoading, setCandLoading] = useState(false);
@@ -56,6 +61,11 @@ export function TranscriptCard({ currentSeason }) {
   const showError = useCallback((setter, err, fallback) => {
     setter((err && err.message) || fallback);
   }, []);
+
+  // Re-window when the day or the filter changes.
+  useEffect(() => {
+    setVisibleCount(VISIBLE_STEP);
+  }, [date, filter]);
 
   // ---- Loaders --------------------------------------------------------------
   const loadTranscript = useCallback(async (d) => {
@@ -230,6 +240,7 @@ export function TranscriptCard({ currentSeason }) {
   const filteredPosts = filter.trim()
     ? posts.filter((p) => (p.text || "").toLowerCase().includes(filter.trim().toLowerCase()))
     : posts;
+  const visiblePosts = filteredPosts.slice(0, visibleCount);
 
   return (
     <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
@@ -392,7 +403,7 @@ export function TranscriptCard({ currentSeason }) {
               </tr>
             </thead>
             <tbody>
-              {filteredPosts.map((p) => (
+              {visiblePosts.map((p) => (
                 <tr key={p.id} className="border-b border-slate-100 dark:border-slate-800 align-top hover:bg-slate-50 dark:hover:bg-slate-800/40">
                   <td className="py-2 px-2 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                     {fmtHouseTime(p.posted_at)}
@@ -429,6 +440,16 @@ export function TranscriptCard({ currentSeason }) {
               ))}
             </tbody>
           </table>
+          {filteredPosts.length > visibleCount && (
+            <div className="text-center py-3">
+              <button
+                onClick={() => setVisibleCount((n) => n + VISIBLE_STEP)}
+                className="px-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                Show more ({filteredPosts.length - visibleCount} remaining)
+              </button>
+            </div>
+          )}
         </div>
       )}
 
