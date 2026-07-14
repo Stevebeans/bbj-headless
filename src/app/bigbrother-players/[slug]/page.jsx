@@ -19,8 +19,8 @@ import {
   CompareButton,
   FanVoteHeart,
   isFanVoteEligible,
+  PlayerQuotes,
 } from "@/components/players";
-import { PlayerQuotes } from "@/components/players/PlayerQuotes";
 import { SITE_URL, ORG_LOGO, breadcrumbJsonLd } from "@/lib/seo";
 
 /**

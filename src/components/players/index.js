@@ -18,3 +18,6 @@ export { PlayerBadge } from "./PlayerBadge";
 // Comparison components
 export { CompareButton } from "./CompareButton";
 export { PlayerPicker } from "./PlayerPicker";
+
+// Player profile: memorable quotes
+export { PlayerQuotes } from "./PlayerQuotes";

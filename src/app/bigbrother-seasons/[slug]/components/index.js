@@ -22,3 +22,4 @@ export { MemorableMoments } from "./MemorableMoments";
 export { SeasonTOC } from "./SeasonTOC";
 export { QuickFacts } from "./QuickFacts";
 export { MoreSeasons } from "./MoreSeasons";
+export { QuoteBoard } from "./QuoteBoard";

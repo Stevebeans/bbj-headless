@@ -28,8 +28,8 @@ import {
   SeasonTOC,
   QuickFacts,
   MoreSeasons,
+  QuoteBoard,
 } from "./components";
-import { QuoteBoard } from "./components/QuoteBoard";
 
 export const revalidate = false; // Pure webhook-driven — rebuild only when WP fires /api/revalidate
 export const dynamicParams = true;
