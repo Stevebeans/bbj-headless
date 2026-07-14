@@ -82,6 +82,16 @@ function truncate(str, max = 200) {
   return str.length > max ? str.slice(0, max) + "…" : str;
 }
 
+// Render **bold** spans as <strong> while keeping everything as React text
+// nodes (no dangerouslySetInnerHTML). Splitting on a single capture group
+// yields alternating plain/bold segments, so odd indices are the bold ones.
+function renderBold(text) {
+  if (!text) return text;
+  return String(text)
+    .split(/\*\*([^*]+)\*\*/g)
+    .map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part));
+}
+
 // Split a summary's markdown into its three "## " sections, keyed by a match hint.
 function splitSummary(content) {
   const out = { timeline: null, missed: null, facebook: null, other: [] };
@@ -849,14 +859,14 @@ export default function AdminSocialPage() {
             {sections.timeline && (
               <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
                 <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2">{sections.timeline.heading}</h4>
-                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{sections.timeline.body}</div>
+                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(sections.timeline.body)}</div>
               </div>
             )}
 
             {sections.missed && (
               <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
                 <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2">{sections.missed.heading}</h4>
-                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{sections.missed.body}</div>
+                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(sections.missed.body)}</div>
               </div>
             )}
 
@@ -871,21 +881,21 @@ export default function AdminSocialPage() {
                     {copied ? "Copied" : "Copy"}
                   </button>
                 </div>
-                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{sections.facebook.body}</div>
+                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(sections.facebook.body)}</div>
               </div>
             )}
 
             {sections.other.map((s, i) => (
               <div key={i} className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
                 <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2">{s.heading}</h4>
-                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{s.body}</div>
+                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(s.body)}</div>
               </div>
             ))}
 
             {/* Fallback: no recognizable sections, render raw content. */}
             {!sections.timeline && !sections.missed && !sections.facebook && sections.other.length === 0 && (
               <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
-                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{latestSummary.content}</div>
+                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(latestSummary.content)}</div>
               </div>
             )}
           </div>
@@ -1110,7 +1120,7 @@ export default function AdminSocialPage() {
               </button>
             </div>
             <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-              {decodeEntities(draft.content)}
+              {renderBold(decodeEntities(draft.content))}
             </div>
           </div>
         )}
@@ -1170,7 +1180,7 @@ export default function AdminSocialPage() {
                     </button>
                     {open && (
                       <div className="px-4 pb-4 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap border-t border-slate-100 dark:border-slate-700 pt-3">
-                        {s.content}
+                        {renderBold(s.content)}
                       </div>
                     )}
                   </li>
