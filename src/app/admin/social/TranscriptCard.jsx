@@ -48,6 +48,7 @@ export function TranscriptCard({ currentSeason }) {
   const [houseTx, setHouseTx] = useState(null); // null = not generated for this day
   const [txLoading, setTxLoading] = useState(false);
   const [txError, setTxError] = useState(null);
+  const [showRaw, setShowRaw] = useState(false);
 
   const [roster, setRoster] = useState([]);
 
@@ -457,6 +458,19 @@ export function TranscriptCard({ currentSeason }) {
         </div>
       )}
 
+      {/* Raw collected posts — the receipts behind the transcript. Collapsed
+          by default: the screenplay is the page, the log is opt-in. */}
+      <div className="mb-4">
+        <button
+          onClick={() => setShowRaw((v) => !v)}
+          className="text-sm text-slate-500 dark:text-slate-400 hover:text-primary-500 font-medium"
+        >
+          {showRaw ? "▾" : "▸"} Raw posts ({posts.length})
+        </button>
+      </div>
+
+      {showRaw && (
+      <>
       {/* Search-in-day filter */}
       <div className="mb-4">
         <input
@@ -547,6 +561,8 @@ export function TranscriptCard({ currentSeason }) {
             </div>
           )}
         </div>
+      )}
+      </>
       )}
 
       {/* Approved quotes */}
