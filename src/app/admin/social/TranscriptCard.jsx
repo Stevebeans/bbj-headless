@@ -183,7 +183,7 @@ export function TranscriptCard({ currentSeason }) {
     try {
       const data = await adminFetch("/social/house-transcript", {
         method: "POST",
-        body: JSON.stringify({ date }),
+        body: JSON.stringify({ date, roster: roster.map((p) => p.name) }),
       });
       if (data && data.success) {
         setHouseTx(data.lines || []);
