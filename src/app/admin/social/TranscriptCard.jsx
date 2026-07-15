@@ -48,6 +48,10 @@ export function TranscriptCard({ currentSeason }) {
   const [candLoading, setCandLoading] = useState(false);
   const [candError, setCandError] = useState(null);
 
+  const [houseTx, setHouseTx] = useState(null); // null = not generated for this day
+  const [txLoading, setTxLoading] = useState(false);
+  const [txError, setTxError] = useState(null);
+
   const [roster, setRoster] = useState([]);
 
   const [approved, setApproved] = useState([]);
@@ -88,6 +92,15 @@ export function TranscriptCard({ currentSeason }) {
       setCandidates(data.candidates || null);
     } catch {
       setCandidates(null);
+    }
+  }, []);
+
+  const loadHouseTx = useCallback(async (d) => {
+    try {
+      const data = await adminFetch(`/social/house-transcript?date=${d}`);
+      setHouseTx(Array.isArray(data.lines) ? data.lines : null);
+    } catch {
+      setHouseTx(null);
     }
   }, []);
 
@@ -134,6 +147,7 @@ export function TranscriptCard({ currentSeason }) {
   useEffect(() => {
     loadTranscript(date);
     loadCandidates(date);
+    loadHouseTx(date);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
@@ -160,6 +174,46 @@ export function TranscriptCard({ currentSeason }) {
     } finally {
       setCandLoading(false);
     }
+  };
+
+  // ---- House transcript ---------------------------------------------------
+  const handleGenerateTranscript = async () => {
+    setTxLoading(true);
+    setTxError(null);
+    try {
+      const data = await adminFetch("/social/house-transcript", {
+        method: "POST",
+        body: JSON.stringify({ date }),
+      });
+      if (data && data.success) {
+        setHouseTx(data.lines || []);
+      } else {
+        setTxError((data && data.message) || "Transcript generation returned no result.");
+      }
+    } catch (err) {
+      showError(setTxError, err, "Transcript generation failed.");
+    } finally {
+      setTxLoading(false);
+    }
+  };
+
+  const openDraftFromLine = (line, idx) => {
+    const key = `tx-${idx}`;
+    if (drafts.some((d) => d.key === key)) return;
+    const suggested = suggestPlayer(line.speaker, roster);
+    setDrafts((prev) => [
+      ...prev,
+      {
+        key,
+        ...blankDraft({
+          quote_text: line.quote,
+          speaker: line.speaker,
+          said_on: date,
+          source_count: 1,
+        }),
+        player_id: suggested ? suggested.id : 0,
+      },
+    ]);
   };
 
   // ---- Draft cards (approval flow) ---------------------------------------
@@ -297,6 +351,69 @@ export function TranscriptCard({ currentSeason }) {
           </div>
         </div>
       )}
+
+      {/* House transcript — the day as a screenplay, distilled from the posts below */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400">House Transcript</h4>
+          <button
+            onClick={handleGenerateTranscript}
+            disabled={txLoading}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {txLoading && (
+              <span className="w-4 h-4 border-2 border-slate-400/40 border-t-slate-500 rounded-full animate-spin" />
+            )}
+            {txLoading ? "Generating..." : houseTx ? "Regenerate" : "Generate"}
+          </button>
+        </div>
+        {txError && (
+          <div className="mb-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+            {txError}
+          </div>
+        )}
+        {houseTx === null ? (
+          !txLoading && (
+            <p className="text-sm text-slate-400 dark:text-slate-500">
+              No transcript generated for this day yet.
+            </p>
+          )
+        ) : houseTx.length === 0 ? (
+          <p className="text-sm text-slate-400 dark:text-slate-500">
+            Nothing quotable found for this day.
+          </p>
+        ) : (
+          <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700/60 max-h-[32rem] overflow-y-auto">
+            {houseTx.map((line, idx) => (
+              <div key={`tx-${idx}`} className="flex items-baseline gap-3 px-4 py-2 text-sm">
+                <span className="text-xs text-slate-400 whitespace-nowrap w-16 shrink-0">{line.time}</span>
+                <span className="min-w-0 flex-grow text-slate-700 dark:text-slate-300 break-words">
+                  <span className="font-medium text-slate-800 dark:text-white">
+                    {line.speaker}
+                    {line.to ? ` → ${line.to}` : ""}
+                  </span>
+                  {": "}
+                  {line.kind === "paraphrase" ? (
+                    <em className="text-slate-500 dark:text-slate-400">{line.quote}</em>
+                  ) : (
+                    <>&ldquo;{line.quote}&rdquo;</>
+                  )}
+                  {line.source && (
+                    <span className="text-xs text-slate-400"> &middot; @{line.source}</span>
+                  )}
+                </span>
+                <button
+                  onClick={() => openDraftFromLine(line, idx)}
+                  className="text-slate-300 hover:text-secondary-500 shrink-0"
+                  title="Make this a quote"
+                >
+                  ★
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Approval cards */}
       {drafts.length > 0 && (
