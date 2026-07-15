@@ -23,16 +23,24 @@ function formatBbTime(date) {
  * they sat. SSR snapshot in the cached HTML compounded it (regeneration
  * moment could be hours stale before a visitor hydrates).
  *
+ * State starts null (blank on the server / until mount) rather than seeded
+ * with the current time: the ISR-cached HTML bakes an hours-old timestamp,
+ * and if the initial client state already equals "now", the mount-time snap
+ * is a no-op state update — React bails out of the re-render and the stale
+ * suppressHydrationWarning'd server text stays in the DOM until the next
+ * minute tick. null → time is always a real state change, so the DOM is
+ * patched immediately on mount.
+ *
  * Ticks on the next wall-clock minute boundary, then every 60s after.
+ * Chrome freezes timers in long-backgrounded tabs, so the clock also
+ * re-snaps whenever the tab becomes visible again.
  */
 export function useBbTime() {
-  const [time, setTime] = useState(() => formatBbTime(new Date()));
+  const [time, setTime] = useState(null);
 
   useEffect(() => {
-    // Snap to "now" immediately on hydration so a stale SSR value gets overwritten.
-    setTime(formatBbTime(new Date()));
-
     const tick = () => setTime(formatBbTime(new Date()));
+    tick();
     const now = new Date();
     const msToNextMinute = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
 
@@ -42,9 +50,15 @@ export function useBbTime() {
       interval = setInterval(tick, 60000);
     }, msToNextMinute);
 
+    const onVisible = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       clearTimeout(timeout);
       if (interval) clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 
