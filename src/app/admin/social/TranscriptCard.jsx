@@ -4,9 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api/admin";
 import { suggestPlayer } from "@/lib/social/quoteMatch";
 
-const SEASON_API_URL =
-  process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
-
 function todayPT() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
 }
@@ -116,33 +113,11 @@ export function TranscriptCard({ currentSeason }) {
     }
   }, []);
 
-  // Roster fetched once from the public season payload (not adminFetch — this
-  // is the same public endpoint season pages use). suggestPlayer only reads
-  // .name/.nickname; .slug is best-effort from the permalink for a stable key.
+  // Roster rides the /social/config payload (the public season endpoint is
+  // CORS-blocked for browser fetches). suggestPlayer reads .name/.nickname.
   useEffect(() => {
-    if (!currentSeason?.slug) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`${SEASON_API_URL}/seasons/by-slug/${currentSeason.slug}`);
-        const data = await res.json();
-        if (cancelled || !data?.success) return;
-        const mapped = (data.players || []).map((p) => ({
-          id: p.id,
-          name: p.name,
-          nickname: p.nickname,
-          slug: p.permalink ? p.permalink.replace(/\/+$/, "").split("/").pop() : null,
-        }));
-        setRoster(mapped);
-      } catch {
-        // Roster is a convenience for pre-selecting the player dropdown; a
-        // failed fetch just leaves it empty and the admin picks manually.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [currentSeason?.slug]);
+    setRoster(Array.isArray(currentSeason?.players) ? currentSeason.players : []);
+  }, [currentSeason]);
 
   useEffect(() => {
     loadTranscript(date);
