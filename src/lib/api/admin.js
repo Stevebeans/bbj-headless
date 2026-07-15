@@ -49,6 +49,10 @@ export async function adminFetch(endpoint, options = {}) {
     throw new Error(error.message || `API error: ${response.status}`);
   }
 
+  if (response.status === 204) {
+    return null;
+  }
+
   return response.json();
 }
 
