@@ -102,7 +102,9 @@ function splitSummary(content) {
     if (!part.trim()) continue;
     const nl = part.indexOf("\n");
     const heading = (nl === -1 ? part : part.slice(0, nl)).trim();
-    const body = (nl === -1 ? "" : part.slice(nl + 1)).trim();
+    // Drop the model's "- " list dashes — the digest is copy-paste material
+    // and the leading dash reads badly stacked against "~" time estimates.
+    const body = (nl === -1 ? "" : part.slice(nl + 1)).trim().replace(/^-\s+/gm, "");
     const h = heading.toLowerCase();
     const section = { heading, body };
     if (h.includes("confirmed") || h.includes("timeline")) out.timeline = section;
@@ -111,6 +113,13 @@ function splitSummary(content) {
     else out.other.push(section);
   }
   return out;
+}
+
+// Strip the parenthesized source attributions — "(@handle)", "(@a, @b — echoed
+// by 100+ tag posts)" — for clean copy-paste. Only parentheticals containing an
+// @ are removed, so normal prose parentheses survive.
+function stripSources(text) {
+  return String(text || "").replace(/\s*\([^()]*@[^()]*\)/g, "");
 }
 
 export default function AdminSocialPage() {
@@ -141,6 +150,7 @@ export default function AdminSocialPage() {
   const [latestSummary, setLatestSummary] = useState(null);
   const [summarizing, setSummarizing] = useState(false);
   const [summarizeError, setSummarizeError] = useState(null);
+  const [hideSources, setHideSources] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [copied, setCopied] = useState(false);
 
@@ -857,17 +867,27 @@ export default function AdminSocialPage() {
               )}
             </p>
 
+            <label className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={hideSources}
+                onChange={(e) => setHideSources(e.target.checked)}
+                className="rounded border-slate-300 dark:border-slate-600 text-primary-500 focus:ring-primary-500"
+              />
+              Hide sources (clean copy/paste)
+            </label>
+
             {sections.timeline && (
               <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
                 <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2">{sections.timeline.heading}</h4>
-                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(sections.timeline.body)}</div>
+                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(hideSources ? stripSources(sections.timeline.body) : sections.timeline.body)}</div>
               </div>
             )}
 
             {sections.missed && (
               <div className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
                 <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2">{sections.missed.heading}</h4>
-                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(sections.missed.body)}</div>
+                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(hideSources ? stripSources(sections.missed.body) : sections.missed.body)}</div>
               </div>
             )}
 
@@ -889,7 +909,7 @@ export default function AdminSocialPage() {
             {sections.other.map((s, i) => (
               <div key={i} className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
                 <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-2">{s.heading}</h4>
-                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(s.body)}</div>
+                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{renderBold(hideSources ? stripSources(s.body) : s.body)}</div>
               </div>
             ))}
 
