@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { getWeeklyBundle, createWeek } from "@/lib/api/adminWeekly";
 import { listAdminSeasons } from "@/lib/api/adminContent";
 import WeekEditor from "./components/WeekEditor";
@@ -62,7 +63,17 @@ export default function AdminWeekly() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white">Weekly Results</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white">Weekly Results</h2>
+          {bundle?.season_slug && (
+            <Link
+              href={`/bigbrother-seasons/${bundle.season_slug}/edit`}
+              className="text-sm text-primary-500 dark:text-secondary-500 hover:underline"
+            >
+              Edit spoiler bar →
+            </Link>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <select
             value={seasonId}

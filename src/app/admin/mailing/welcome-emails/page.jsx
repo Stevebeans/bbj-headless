@@ -108,7 +108,7 @@ export default function WelcomeEmailsPage() {
   };
 
   return (
-    <div className="p-6">
+    <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-osw font-bold text-slate-800 dark:text-white">Welcome Emails</h1>
         <div className="flex gap-2">

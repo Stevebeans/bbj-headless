@@ -49,8 +49,8 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="animate-pulse">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+          {[1, 2, 3].map((i) => (
             <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800/50 rounded-lg"></div>
           ))}
         </div>
@@ -105,17 +105,8 @@ export default function AdminDashboard() {
       ),
       iconColor: "text-green-500 bg-green-100 dark:bg-green-900/30",
     },
-    {
-      label: "Open Bugs",
-      value: data?.open_bug_reports || 0,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-      iconColor: "text-red-500 bg-red-100 dark:bg-red-900/30",
-      link: "/admin/bug-reports",
-    },
+    // Open Bugs card removed 7/15 — public bug reporting is disabled and the
+    // Bugs tab is hidden; /admin/bug-reports remains routable if ever needed.
   ];
 
   const quickActions = [
@@ -151,9 +142,8 @@ export default function AdminDashboard() {
     },
     {
       label: "Ad Manager",
-      description: "Coming Soon",
-      href: null,
-      disabled: true,
+      description: "Placements, kill switch, house ads",
+      href: "/admin/ads",
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
@@ -176,7 +166,7 @@ export default function AdminDashboard() {
   return (
     <div>
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {stats.map((stat) => (
           <div
             key={stat.label}

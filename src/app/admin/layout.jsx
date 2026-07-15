@@ -23,14 +23,6 @@ function ChatIcon({ className }) {
   );
 }
 
-function BugIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-}
-
 function GearIcon({ className }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,14 +88,6 @@ function AdIcon({ className }) {
   );
 }
 
-function PencilSquareIcon({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-    </svg>
-  );
-}
-
 function UsersIcon({ className }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,9 +128,10 @@ const TABS = [
   { id: "players", label: "Players", href: "/admin/players", icon: PlayerIcon, permission: "player_management" },
   { id: "seasons", label: "Seasons", href: "/admin/seasons", icon: SeasonIcon, permission: "season_management" },
   { id: "weekly", label: "Weekly", href: "/admin/weekly", icon: WeekIcon, permission: "season_management" },
-  { id: "bug-reports", label: "Bugs", href: "/admin/bug-reports", icon: BugIcon, permission: "bug_reports" },
+  // Bugs hidden 7/15: the public bug-report button is gone (was staging-only);
+  // page still routable at /admin/bug-reports if ever needed.
+  // Content hidden 7/15: superseded by Social Intel; page remains at /admin/content-engine.
   { id: "announcements", label: "Announcements", href: "/admin/announcements", icon: MegaphoneIcon, permission: "announcements" },
-  { id: "content-engine", label: "Content", href: "/admin/content-engine", icon: PencilSquareIcon, permission: "content_engine" },
   { id: "social", label: "Social Intel", href: "/admin/social", icon: SocialIcon, permission: "social_monitor" },
   { id: "transcript", label: "Transcript", href: "/admin/transcript", icon: DocumentTextIcon, permission: "social_monitor" },
   { id: "ads", label: "Ads", href: "/admin/ads", icon: AdIcon, permission: "ad_management" },
