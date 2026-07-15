@@ -419,11 +419,15 @@ export function TranscriptCard({ currentSeason }) {
                       {p.source === "trusted" ? "trusted" : "tag"}
                     </span>
                   </td>
-                  <td className="py-2 px-2 whitespace-nowrap">
-                    <span className="text-primary-500 font-medium">@{p.handle}</span>
-                    {p.display_name && <div className="text-xs text-slate-400">{p.display_name}</div>}
+                  <td className="py-2 px-2 whitespace-nowrap max-w-[240px]">
+                    <span className="text-primary-500 font-medium block truncate">@{p.handle}</span>
+                    {p.display_name && (
+                      <div className="text-xs text-slate-400 truncate" title={p.display_name}>
+                        {p.display_name}
+                      </div>
+                    )}
                   </td>
-                  <td className="py-2 px-2 text-slate-700 dark:text-slate-300 max-w-md">
+                  <td className="py-2 px-2 text-slate-700 dark:text-slate-300 max-w-md break-words">
                     <span title={p.text}>{truncate(p.text, 200)}</span>
                   </td>
                   <td className="py-2 px-2 text-right whitespace-nowrap">
