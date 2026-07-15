@@ -13,6 +13,7 @@ const MODEL_OPTIONS = [
 const INTERVAL_OPTIONS = [5, 10, 15, 30];
 const BEANBOT_INTERVALS = [30, 45, 60];
 const DRAFT_WINDOWS = [
+  { id: "1h", label: "Last 1h" },
   { id: "today", label: "Today" },
   { id: "12h", label: "Last 12h" },
   { id: "24h", label: "Last 24h" },
