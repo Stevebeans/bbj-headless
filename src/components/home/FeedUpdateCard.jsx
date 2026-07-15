@@ -60,11 +60,18 @@ export function FeedUpdateCard({ update }) {
 
   // The card body is CSS line-clamped (line-clamp-3). Detect when the rendered
   // text is actually cut off so we can offer a link to the full update.
+  // Measured again after webfonts load (the swap reflows text, so a card that
+  // fit at mount can overflow after) and on resize.
   const contentRef = useRef(null);
   const [isTruncated, setIsTruncated] = useState(false);
   useEffect(() => {
     const el = contentRef.current;
-    if (el) setIsTruncated(el.scrollHeight > el.clientHeight + 1);
+    if (!el) return;
+    const measure = () => setIsTruncated(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    document.fonts?.ready?.then(measure);
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
   }, []);
 
   const handleQuickReply = async (e) => {
