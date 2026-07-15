@@ -374,7 +374,7 @@ export function TranscriptCard({ currentSeason }) {
                     <>&ldquo;{line.quote}&rdquo;</>
                   )}
                   {line.source && (
-                    <span className="text-xs text-slate-400"> &middot; @{line.source}</span>
+                    <span className="text-xs text-slate-400"> &middot; @{line.source.replace(/^@+/, "")}</span>
                   )}
                 </span>
                 <button
