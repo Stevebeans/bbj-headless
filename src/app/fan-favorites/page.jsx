@@ -32,17 +32,24 @@ export default function FanFavoritesPage() {
                 current season from the tracker payload (client-fetched). */}
             <TrackerClient />
 
-            {/* Footer copy block — Steve's exact wording */}
-            <p className="mt-8 pt-5 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400">
-              To vote: visit your favorite player&apos;s page and click the ♥. You can change your
-              vote as your opinion on the player changes.
-            </p>
-            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-              How scoring works: rank the whole cast with the list on this page. Your #1 pick earns
-              15 points, #2 earns 10, #3 earns 7, #4 earns 5, #5 earns 3, and everyone else on your
-              list earns 1. The ♥ on a player&apos;s page adds a bonus 15-point top vote. Supporter
-              votes count 2x and Full Bean votes count 3x.
-            </p>
+            {/* Footer copy block */}
+            <div className="mt-8 pt-5 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 space-y-3">
+              <p>
+                <strong className="text-gray-700 dark:text-gray-300">To vote:</strong> visit your
+                favorite player&apos;s page and click the ♥. You can change your vote as your
+                opinion on the player changes.
+              </p>
+              <p>
+                <strong className="text-gray-700 dark:text-gray-300">How scoring works:</strong>{" "}
+                rank the whole cast with the list on this page.
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Your #1 pick earns 15 points, #2 earns 10, #3 earns 7, #4 earns 5, #5 earns 3.</li>
+                <li>Everyone else on your list earns 1 point.</li>
+                <li>The ♥ on a player&apos;s page adds a bonus 15-point top vote.</li>
+                <li>Supporter votes count 1.5x and Full Bean votes count 2x.</li>
+              </ul>
+            </div>
           </article>
         </section>
 

@@ -393,7 +393,7 @@ function HeroChart({ payload, filterIds, onFace, highlightId = null }) {
 
       {tip && (
         <div
-          className="pointer-events-none absolute z-10 rounded-md bg-gray-900/95 px-2 py-1 text-xs font-medium text-white shadow-lg"
+          className="pointer-events-none absolute z-10 whitespace-nowrap rounded-md bg-gray-900/95 px-2 py-1 text-xs font-medium text-white shadow-lg"
           style={{ left: tip.x + 12, top: tip.y + 12 }}
         >
           {tip.name} · {tip.share.toFixed(1)}% · {tip.points.toFixed(1)} pts
@@ -807,6 +807,12 @@ export function TrackerClient() {
         </SectionHeader>
         <p className="-mt-2 text-gray-600 dark:text-gray-400">
           Live standings, daily history — powered by BBJ reader votes.
+          {Number(payload?.total_voters) > 0 && (
+            <span className="ml-1 font-medium text-gray-700 dark:text-gray-300">
+              {Number(payload.total_voters).toLocaleString()}{" "}
+              {Number(payload.total_voters) === 1 ? "ballot" : "ballots"} cast so far.
+            </span>
+          )}
         </p>
       </div>
 
