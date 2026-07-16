@@ -163,7 +163,9 @@ export default function AdminSocialPage() {
 
   // Drafts
   const [draftWindow, setDraftWindow] = useState("today");
-  const [draftBusy, setDraftBusy] = useState(null); // 'facebook' | 'blog'
+  const [draftBusy, setDraftBusy] = useState(null); // 'facebook' | 'blog' | 'batch'
+  const [batchPosts, setBatchPosts] = useState([]);
+  const [batchCopiedIdx, setBatchCopiedIdx] = useState(null);
   const [draft, setDraft] = useState(null);
   const [draftError, setDraftError] = useState(null);
   const [draftCopied, setDraftCopied] = useState(false);
@@ -467,6 +469,27 @@ export default function AdminSocialPage() {
     } catch (err) {
       // adminFetch throws the API message verbatim for non-2xx responses.
       setDraftError(err.message || "Draft generation failed.");
+    } finally {
+      setDraftBusy(null);
+    }
+  };
+
+  // Batch mode: 1-5 queueable FB posts covering everything since the last batch.
+  const handleDraftBatch = async () => {
+    setDraftBusy("batch");
+    setDraftError(null);
+    try {
+      const data = await adminFetch("/social/draft-batch", { method: "POST" });
+      if (data && data.success && Array.isArray(data.posts) && data.posts.length) {
+        setBatchPosts(data.posts);
+        setDraft(null); // batch cards replace the single-draft card
+        if (historyKind === "facebook") loadHistory("facebook");
+        else setHistoryKind("facebook");
+      } else {
+        setDraftError((data && data.message) || "Batch returned no posts.");
+      }
+    } catch (err) {
+      setDraftError(err.message || "Batch generation failed.");
     } finally {
       setDraftBusy(null);
     }
@@ -1118,11 +1141,57 @@ export default function AdminSocialPage() {
             )}
             {draftBusy === "blog" ? "Generating..." : "Blog recap"}
           </button>
+          <button
+            onClick={handleDraftBatch}
+            disabled={!!draftBusy}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-secondary-500 hover:bg-secondary-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Splits everything since the last batch into 1-5 queueable FB posts"
+          >
+            {draftBusy === "batch" && (
+              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            )}
+            {draftBusy === "batch" ? "Generating batch..." : "FB batch since last"}
+          </button>
         </div>
 
         {draftError && (
           <div className="mt-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
             {draftError}
+          </div>
+        )}
+
+        {batchPosts.length > 0 && (
+          <div className="mt-5 space-y-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {batchPosts.length} post{batchPosts.length === 1 ? "" : "s"} — copy each into
+              Facebook&apos;s scheduler, spaced out however you like.
+            </p>
+            {batchPosts.map((post, idx) => (
+              <div
+                key={post.id ?? idx}
+                className="rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4"
+              >
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Post {idx + 1}
+                    {post.covers && <> &middot; covers {post.covers} PT</>}
+                  </span>
+                  <button
+                    onClick={() =>
+                      copyToClipboard(decodeEntities(post.content), (on) =>
+                        setBatchCopiedIdx(on ? idx : null)
+                      )
+                    }
+                    className="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  >
+                    {batchCopiedIdx === idx ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                  {decodeEntities(post.content)}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
