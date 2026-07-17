@@ -45,10 +45,10 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
     [roster, activeIds]
   );
 
-  // A nominee who won an "other comp" (Block Buster, AI Arena…) was saved
-  // from the block at the live show: not a vote target, votes like anyone else.
+  // "Eviction safe" comp wins (Block Buster, AI Arena…) pulled the nominee
+  // off the block at the live show: not a vote target, votes like anyone else.
   const compSaved = form.miscComps
-    .filter((mc) => Number(mc.player_id) > 0 && Number(mc.comp_type_id) > 0)
+    .filter((mc) => mc.saved && Number(mc.player_id) > 0)
     .map((mc) => Number(mc.player_id))
     .filter((id) => form.noms.includes(id));
   // Final noms = nominees minus veto-saved and comp-saved; they're the vote targets.
@@ -268,7 +268,7 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
         <div className="flex items-center justify-between mb-1">
           <label className={labelCls}>Other comp wins (Block Buster, AI Arena, co-HoH…)</label>
           <button
-            onClick={() => set({ miscComps: [...form.miscComps, { player_id: 0, comp_type_id: 0, notes: "" }] })}
+            onClick={() => set({ miscComps: [...form.miscComps, { player_id: 0, comp_type_id: 0, notes: "", saved: false }] })}
             className="text-primary-500 hover:text-primary-600 text-xs font-medium"
           >+ Add</button>
         </div>
@@ -283,6 +283,10 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
                 {compTypes.map((ct) => <option key={ct.id} value={ct.id}>{ct.name}</option>)}
               </select>
             </div>
+            <label className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap cursor-pointer" title="This win pulled the player off the block at the live show (Block Buster, AI Arena…)">
+              <input type="checkbox" checked={!!mc.saved} onChange={(e) => updateMisc(i, { saved: e.target.checked })} className="rounded" />
+              Eviction safe
+            </label>
             <input value={mc.notes} placeholder="notes" onChange={(e) => updateMisc(i, { notes: e.target.value })} className={`${inputCls} flex-1`} />
             <button onClick={() => set({ miscComps: form.miscComps.filter((_, j) => j !== i) })} className="text-red-500 text-xs">✕</button>
           </div>

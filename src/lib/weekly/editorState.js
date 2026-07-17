@@ -26,7 +26,7 @@ export function weekToForm(week) {
   for (const c of week.comps || []) {
     if (c.slug === "hoh" && !form.hoh) form.hoh = Number(c.player_id);
     else if (c.slug === "pov" && !form.pov) form.pov = Number(c.player_id);
-    else form.miscComps.push({ player_id: Number(c.player_id), comp_type_id: Number(c.comp_type_id), notes: c.notes || "" });
+    else form.miscComps.push({ player_id: Number(c.player_id), comp_type_id: Number(c.comp_type_id), notes: c.notes || "", saved: Number(c.saved) === 1 });
   }
   for (const p of week.players || []) {
     const pid = Number(p.player_id);
@@ -88,7 +88,7 @@ export function formToPayload(form, activeIds) {
   }
   for (const mc of form.miscComps) {
     if (Number(mc.player_id) && Number(mc.comp_type_id)) {
-      payload.misc_comps.push({ player_id: Number(mc.player_id), comp_type_id: Number(mc.comp_type_id), notes: mc.notes || "" });
+      payload.misc_comps.push({ player_id: Number(mc.player_id), comp_type_id: Number(mc.comp_type_id), notes: mc.notes || "", saved: mc.saved ? 1 : 0 });
     }
   }
   const jury = Object.entries(form.juryVotes || {}).filter(([, v]) => Number(v) > 0);
