@@ -45,8 +45,14 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
     [roster, activeIds]
   );
 
-  // Final noms = nominees minus the veto-saved one; they're the vote targets.
-  const finalNoms = form.noms.filter((id) => id !== form.vetoUsedOn);
+  // A nominee who won an "other comp" (Block Buster, AI Arena…) was saved
+  // from the block at the live show: not a vote target, votes like anyone else.
+  const compSaved = form.miscComps
+    .filter((mc) => Number(mc.player_id) > 0 && Number(mc.comp_type_id) > 0)
+    .map((mc) => Number(mc.player_id))
+    .filter((id) => form.noms.includes(id));
+  // Final noms = nominees minus veto-saved and comp-saved; they're the vote targets.
+  const finalNoms = form.noms.filter((id) => id !== form.vetoUsedOn && !compSaved.includes(id));
   // Voters: active players who aren't on the block (HoH included — ties happen).
   const voters = activePlayers.filter((p) => !finalNoms.includes(p.id));
   // Jurors: anyone evicted in ANY week of the season.
