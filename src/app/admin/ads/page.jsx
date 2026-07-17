@@ -13,6 +13,7 @@ const MANUAL_PLACEMENTS = [
   { key: "bigbrotherjunkies_leaderboard_atf", label: "Leaderboard ATF" },
   { key: "bigbrotherjunkies_incontent_reusable", label: "In-Content Reusable" },
   { key: "bigbrotherjunkies_incontent_reusable_Homepage2", label: "In-Content Homepage 2" },
+  { key: "bigbrotherjunkies_article_incontent_live_feed_updates", label: "Feed Update In-Content" },
   { key: "bigbrotherjunkies_middle_feed", label: "Middle Feed" },
   { key: "bigbrotherjunkies_middle_post", label: "Middle Post" },
   { key: "bigbrotherjunkies_siderail_right_1", label: "Siderail Right 1" },

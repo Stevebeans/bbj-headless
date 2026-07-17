@@ -45,6 +45,13 @@ export const adSlots = {
     mobile: { width: 300, height: 250 },
     label: "In-Content (Homepage 2)",
   },
+  bigbrotherjunkies_article_incontent_live_feed_updates: {
+    // Static unit on single feed-update pages (Freestar/Monica 2026-07-17):
+    // dynamic insertion only ever fit 1 ad on these short pages.
+    desktop: { width: 336, height: 280 },
+    mobile: { width: 300, height: 250 },
+    label: "Feed Update In-Content",
+  },
   bigbrotherjunkies_middle_feed: {
     desktop: { width: 336, height: 280 },
     mobile: { width: 300, height: 250 },

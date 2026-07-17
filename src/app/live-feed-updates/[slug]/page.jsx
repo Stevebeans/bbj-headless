@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
@@ -237,6 +238,13 @@ export default async function FeedUpdatePage({ params }) {
               </div>
             </div>
           </article>
+
+          {/* Static in-content unit — these pages are too short for dynamic
+              insertion to place more than one ad (Freestar rec, 2026-07-17). */}
+          <FreestarSlot
+            placementName="bigbrotherjunkies_article_incontent_live_feed_updates"
+            slotId="live_feed_update_incontent"
+          />
 
           {/* Comments Section — routes to today's live thread when this update
               belongs to one; otherwise the update's own comments (fallback). */}
