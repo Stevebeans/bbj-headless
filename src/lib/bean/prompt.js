@@ -23,7 +23,7 @@ function formatSource(m, i) {
  * @returns {{ system: Array, messages: Array }}
  */
 export function buildChatPrompt(question, matches = [], history = [], guide = VOICE_GUIDE, now = null, opts = {}) {
-  const { userName = "", memorySummary = "" } = opts;
+  const { userName = "", memorySummary = "", sharedFacts = "", justSavedSharedFact = false } = opts;
   const firstName = (userName || "").trim().split(/\s+/)[0] || "";
 
   const system = [
@@ -58,9 +58,20 @@ export function buildChatPrompt(question, matches = [], history = [], guide = VO
     ? `WHAT YOU REMEMBER ABOUT ${firstName || "them"} (private notes from past chats — never recite verbatim, just let it inform how you talk):\n${memorySummary}\n\n`
     : "";
 
+  // Steve's curated site-wide knowledge — rides in every user's chats.
+  const sharedBlock = sharedFacts
+    ? `YOUR OWN NOTES (facts the real Steve keeps for you — state them as things you know, never mention a note sheet):\n${sharedFacts}\n\n`
+    : "";
+
+  const savedLine = justSavedSharedFact
+    ? `You're talking to the real Steve (site owner). He just asked you to save a note for everyone, and it HAS been saved to your notes — briefly confirm it's saved for everyone (in voice, one line), then carry on.\n\n`
+    : "";
+
   const content =
     timeLine +
     identityLine +
+    savedLine +
+    sharedBlock +
     memoryBlock +
     `CONTEXT:\n${context}\n\n` +
     `${guidance}\n\n` +

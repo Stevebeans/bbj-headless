@@ -12,6 +12,7 @@ import { pacificNowLabel } from "@/lib/bean/time";
 import { modelForTier, cappedMessage } from "@/lib/bean/tiers";
 import { sseEvent } from "@/lib/bean/sse";
 import { updateMemory } from "@/lib/bean/memory";
+import { SAVE_FOR_OTHERS_RE, updateSharedFacts } from "@/lib/bean/sharedFacts";
 
 export const runtime = "nodejs"; // needs the SDK + env, not edge
 export const dynamic = "force-dynamic"; // per-user, auth-gated — never cached
@@ -80,6 +81,33 @@ async function beanMemoryGet(token) {
     console.error("bean memory read failed:", err?.message || err);
     return "";
   }
+}
+
+// Shared "site facts" sheet (Steve-curated, injected for every user). canEdit
+// gates the conversational write path; best-effort like everything WP-side.
+async function beanFactsGet(token) {
+  if (!token) return { facts: "", canEdit: false };
+  try {
+    const res = await fetch(`${WP}/bbjd/v1/bean/facts`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return { facts: "", canEdit: false };
+    const data = await res.json();
+    return {
+      facts: typeof data.facts === "string" ? data.facts : "",
+      canEdit: data.canEdit === true,
+    };
+  } catch (err) {
+    console.error("bean facts read failed:", err?.message || err);
+    return { facts: "", canEdit: false };
+  }
+}
+
+async function beanFactsSet(token, facts) {
+  const res = await fetch(`${WP}/bbjd/v1/bean/facts`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ facts }),
+  });
+  if (!res.ok) throw new Error(`facts write failed: HTTP ${res.status}`);
 }
 
 async function beanMemorySet(token, summary) {
@@ -158,16 +186,41 @@ export async function POST(request) {
   // Grounding is best-effort: if the vector store or card lookups fail (e.g. Upstash
   // misconfigured/unreachable), Bean still answers — just without site context —
   // instead of dying with the "nap" error. Logged so the degradation is visible.
-  const [matches, seasonCard] = await Promise.all([
+  const [matches, seasonCard, sharedData] = await Promise.all([
     retrieve(question, { withText: true }).catch((e) => { console.error("bean grounding (retrieve) failed:", e); return []; }),
     buildAnswerCard(question).catch(() => null),
+    beanFactsGet(token),
   ]);
   const card = seasonCard || (await buildPlayerCard(question, matches).catch(() => null));
   const grounding = card
     ? [{ type: "season", title: card.title, url: card.url, text: cardFacts(card) }, ...matches]
     : matches;
   const memorySummary = snap.memory ? await beanMemoryGet(token) : "";
-  const { system, messages } = buildChatPrompt(question, grounding, history, guide, pacificNowLabel(), { userName, memorySummary });
+
+  // Admin-only conversational write: "save that to memory for others" folds
+  // the fact into the shared sheet BEFORE the reply, so the Bean can confirm
+  // instead of claiming it can't save. Server enforces manage_options on the
+  // POST regardless of what canEdit claimed.
+  let justSavedSharedFact = false;
+  if (sharedData.canEdit && SAVE_FOR_OTHERS_RE.test(question)) {
+    try {
+      const updated = await updateSharedFacts({ priorFacts: sharedData.facts, history, userMessage: question });
+      if (updated && updated !== sharedData.facts) {
+        await beanFactsSet(token, updated);
+        sharedData.facts = updated;
+        justSavedSharedFact = true;
+      }
+    } catch (err) {
+      console.error("bean shared facts update failed:", err?.message || err);
+    }
+  }
+
+  const { system, messages } = buildChatPrompt(question, grounding, history, guide, pacificNowLabel(), {
+    userName,
+    memorySummary,
+    sharedFacts: sharedData.facts,
+    justSavedSharedFact,
+  });
   const SOURCE_MIN_SCORE = 0.82;
   const sources =
     (matches[0]?.score ?? 0) >= SOURCE_MIN_SCORE
