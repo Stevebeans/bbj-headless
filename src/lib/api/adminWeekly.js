@@ -25,3 +25,12 @@ export async function saveWeek(weekId, payload) {
 export async function deleteWeek(weekId) {
   return adminFetch(`/admin/weeks/${weekId}`, { method: "DELETE" });
 }
+
+// AI-drafts the season-page summary from the CURRENT form payload (unsaved
+// edits included); returns { summary } for the textarea, saves nothing.
+export async function generateWeekSummary(weekId, payload) {
+  return adminFetch(`/admin/weeks/${weekId}/summary-draft`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

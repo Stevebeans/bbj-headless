@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { deriveActiveIds, deriveHohPlayedDefault, weekToForm, collectJuryVotes, formToPayload } from "@/lib/weekly/editorState";
-import { saveWeek, deleteWeek } from "@/lib/api/adminWeekly";
+import { saveWeek, deleteWeek, generateWeekSummary } from "@/lib/api/adminWeekly";
 
 const inputCls = "w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white";
 const labelCls = "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1";
@@ -31,6 +31,7 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
   });
   const [showFinale, setShowFinale] = useState(() => Object.keys(collectJuryVotes(weeks)).length > 0);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [errors, setErrors] = useState([]);
   const [savedFlash, setSavedFlash] = useState(false);
 
@@ -103,6 +104,20 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
       setErrors([err.message || "Save failed"]);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    setGenerating(true);
+    setErrors([]);
+    try {
+      const payload = formToPayload({ ...form, juryVotes: {} }, activeIds);
+      const res = await generateWeekSummary(week.id, payload);
+      set({ summary: res.summary || "" });
+    } catch (err) {
+      setErrors([err.message || "Summary generation failed"]);
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -269,7 +284,14 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
       </div>
 
       <div>
-        <label className={labelCls}>Week summary (shows on the season page)</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelCls}>Week summary (shows on the season page)</label>
+          <button
+            onClick={handleGenerateSummary}
+            disabled={generating}
+            className="text-primary-500 hover:text-primary-600 disabled:opacity-50 text-xs font-medium"
+          >{generating ? "Generating…" : "✨ Generate"}</button>
+        </div>
         <textarea rows={3} value={form.summary} onChange={(e) => set({ summary: e.target.value })} className={inputCls} />
       </div>
 
