@@ -76,10 +76,10 @@ $updates = QueueBridge::recentFeedUpdates(5);
 check('recentFeedUpdates returns rows with url+shared keys', $updates === [] || (isset($updates[0]['url'], $updates[0]['shared'])));
 
 if (!empty($updates)) {
-    $queued = QueueBridge::enqueueFeedShares([$updates[0]['id']], 'verify-page', 'Verify Page');
-    check('enqueueFeedShares queues 1 row', count($queued) === 1);
+    $result = QueueBridge::enqueueFeedShares([$updates[0]['id']], 'verify-page', 'Verify Page');
+    check('enqueueFeedShares queues 1 row', count($result['queued']) === 1 && $result['errors'] === []);
     $again = QueueBridge::enqueueFeedShares([$updates[0]['id']], 'verify-page', 'Verify Page');
-    check('re-queue of same update skipped', count($again) === 0);
+    check('re-queue of same update skipped', count($again['queued']) === 0 && $again['errors'] === []);
     // Cleanup so the row never actually fires.
     $wpdb->query("DELETE FROM {$wpdb->prefix}bbj_content_queue WHERE target_page = 'verify-page'");
 }
