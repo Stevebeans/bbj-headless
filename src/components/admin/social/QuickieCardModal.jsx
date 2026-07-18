@@ -46,6 +46,10 @@ function fmtPostedAt(utc) {
 
 export default function QuickieCardModal({ post, onClose }) {
   const cardRef = useRef(null);
+  // Platform rides the post so a future paste-an-X-link path just sets
+  // post.platform = "X" and every credit line follows. Bluesky is the default.
+  const platform = post.platform || "Bluesky";
+  const creditName = post.display_name || `@${post.handle}`;
   const [bg, setBg] = useState(BACKGROUNDS[0]);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [caption, setCaption] = useState("");
@@ -57,7 +61,9 @@ export default function QuickieCardModal({ post, onClose }) {
 
   // Avatar: Bluesky public profile -> blob object URL (html-to-image needs a
   // CORS-safe source). Any failure falls back to the initial circle.
+  // Non-Bluesky posts (future X paste path) skip the lookup entirely.
   useEffect(() => {
+    if (platform !== "Bluesky") return undefined;
     let revoke = null;
     (async () => {
       try {
@@ -76,7 +82,7 @@ export default function QuickieCardModal({ post, onClose }) {
       }
     })();
     return () => revoke && URL.revokeObjectURL(revoke);
-  }, [post.handle]);
+  }, [post.handle, platform]);
 
   // FB pages for the destination select.
   useEffect(() => {
@@ -113,9 +119,9 @@ export default function QuickieCardModal({ post, onClose }) {
   }, []);
 
   const fullMessage = useCallback(() => {
-    const credit = `Post by @${post.handle} on Bluesky`;
+    const credit = `- via ${creditName} on ${platform}`;
     return caption.trim() ? `${caption.trim()}\n\n${credit}` : credit;
-  }, [caption, post.handle]);
+  }, [caption, creditName, platform]);
 
   const postNow = async () => {
     if (!pageId) return;
@@ -241,7 +247,7 @@ export default function QuickieCardModal({ post, onClose }) {
                 fontFamily: "Arial, sans-serif",
               }}
             >
-              <span>via Bluesky</span>
+              <span>via {creditName} on {platform}</span>
               <span style={{ fontWeight: 700, letterSpacing: 0.5 }}>BigBrotherJunkies.com 👁</span>
             </div>
           </div>
@@ -288,7 +294,7 @@ export default function QuickieCardModal({ post, onClose }) {
             placeholder={captionLoading ? "Asking the Bean…" : "One dry line"}
           />
           <p className="text-xs text-slate-400 mt-1">
-            Posted as: caption + "Post by @{post.handle} on Bluesky"
+            Posted as: caption + "- via {creditName} on {platform}"
           </p>
         </div>
 
