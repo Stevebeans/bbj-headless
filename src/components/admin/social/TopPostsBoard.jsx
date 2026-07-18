@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getTopSocialPosts } from "@/lib/api/admin";
 import QuickieCardModal from "./QuickieCardModal";
 
@@ -9,6 +9,25 @@ const WINDOWS = [
   { hours: 12, label: "12h" },
   { hours: 24, label: "24h" },
 ];
+
+// Row totals; wpdb serializes counts as strings, so coerce.
+const totalOf = (p) =>
+  Number(p.likes || 0) + Number(p.reposts || 0) + Number(p.replies || 0) + Number(p.quotes || 0);
+
+const SORTS = [
+  { id: "top", label: "Top" }, // server order: likes + 2x reposts, airing-window downweight
+  { id: "likes", label: "♥" },
+  { id: "reposts", label: "↻" },
+  { id: "replies", label: "💬" },
+  { id: "total", label: "Σ Total" },
+];
+
+function sortPosts(list, sort) {
+  if (sort === "top") return list;
+  const val =
+    sort === "total" ? totalOf : (p) => Number(p[sort] || 0);
+  return [...list].sort((a, b) => val(b) - val(a));
+}
 
 // UTC 'Y-m-d H:i:s' -> short local time.
 function fmtTime(utc) {
@@ -58,6 +77,9 @@ export default function TopPostsBoard() {
   const [error, setError] = useState(null);
   const [cardPost, setCardPost] = useState(null);
   const [images, setImages] = useState({});
+  const [sort, setSort] = useState("top");
+
+  const displayed = useMemo(() => sortPosts(posts, sort), [posts, sort]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -110,6 +132,24 @@ export default function TopPostsBoard() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-1.5 mb-3 text-xs text-slate-400">
+        <span className="mr-1">Sort:</span>
+        {SORTS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => setSort(s.id)}
+            className={`px-2.5 py-1 rounded-full font-medium ${
+              sort === s.id
+                ? "bg-primary-500 text-white"
+                : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
       {loading && <p className="text-sm text-slate-500">Loading…</p>}
       {!loading && posts.length === 0 && !error && (
@@ -117,7 +157,7 @@ export default function TopPostsBoard() {
       )}
 
       <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-        {posts.map((p, i) => (
+        {displayed.map((p, i) => (
           <li key={p.id} className="py-3 flex items-start gap-3">
             <span className="w-6 shrink-0 text-right text-sm font-bold text-slate-400">
               {i + 1}
@@ -145,7 +185,7 @@ export default function TopPostsBoard() {
                 {p.text}
               </p>
               <div className="mt-1 text-xs text-slate-400">
-                ♥ {p.likes} · ↻ {p.reposts} · 💬 {p.replies}
+                ♥ {p.likes} · ↻ {p.reposts} · 💬 {p.replies} · Σ {totalOf(p)}
               </div>
             </div>
             {images[p.uri] && (
