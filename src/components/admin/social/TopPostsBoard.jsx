@@ -18,19 +18,56 @@ function fmtTime(utc) {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+// Pull the first attached image (fullsize) per post from Bluesky's public
+// API, batched 25 URIs per getPosts call. The poller only stores text, so
+// meme/screenshot posts need this hydration pass to card properly.
+async function fetchEmbedImages(uris) {
+  const map = {};
+  for (let i = 0; i < uris.length; i += 25) {
+    const batch = uris.slice(i, i + 25);
+    const qs = batch.map((u) => `uris=${encodeURIComponent(u)}`).join("&");
+    try {
+      const res = await fetch(`https://public.api.bsky.app/xrpc/app.bsky.feed.getPosts?${qs}`);
+      const data = await res.json();
+      for (const post of data.posts || []) {
+        const embed = post.embed || {};
+        const images =
+          embed.$type === "app.bsky.embed.images#view"
+            ? embed.images
+            : embed.$type === "app.bsky.embed.recordWithMedia#view" &&
+                embed.media?.$type === "app.bsky.embed.images#view"
+              ? embed.media.images
+              : null;
+        if (images?.length && images[0].fullsize) {
+          map[post.uri] = images[0].fullsize;
+        }
+      }
+    } catch {
+      /* board still works without thumbnails */
+    }
+  }
+  return map;
+}
+
+const proxied = (src) => `/api/social/img?src=${encodeURIComponent(src)}`;
+
 export default function TopPostsBoard() {
   const [hours, setHours] = useState(24);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [cardPost, setCardPost] = useState(null);
+  const [images, setImages] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await getTopSocialPosts(hours);
-      setPosts(res.posts || []);
+      const list = res.posts || [];
+      setPosts(list);
+      // Hydrate attached images in the background; rows fill in as it lands.
+      fetchEmbedImages(list.map((p) => p.uri).filter(Boolean)).then(setImages);
     } catch (e) {
       setError(e.message || "Failed to load top posts");
     } finally {
@@ -111,9 +148,19 @@ export default function TopPostsBoard() {
                 ♥ {p.likes} · ↻ {p.reposts} · 💬 {p.replies}
               </div>
             </div>
+            {images[p.uri] && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={proxied(images[p.uri])}
+                alt=""
+                className="shrink-0 h-12 w-12 rounded object-cover"
+              />
+            )}
             <button
               type="button"
-              onClick={() => setCardPost(p)}
+              onClick={() =>
+                setCardPost(images[p.uri] ? { ...p, image: proxied(images[p.uri]) } : p)
+              }
               className="shrink-0 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
             >
               FB Card
