@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api/admin";
 import { usePermissions } from "@/hooks/usePermissions";
+import TopPostsBoard from "@/components/admin/social/TopPostsBoard";
 
 const MODEL_OPTIONS = [
   { id: "claude-sonnet-5", label: "Sonnet 5 (default)" },
@@ -856,6 +857,8 @@ export default function AdminSocialPage() {
           </>
         )}
       </section>
+
+      <TopPostsBoard />
 
       {/* ============================= DIGEST ============================= */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
