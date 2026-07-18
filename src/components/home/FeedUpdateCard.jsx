@@ -9,6 +9,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import { postComment } from "@/lib/api/comments";
 import { quickReplyPrefix, threadCta } from "@/lib/feedUpdates/threadComments";
 import { isFreshUpdate } from "@/lib/feedUpdatesLive";
+import { BeanBotNotice } from "./BeanBotNotice";
 
 function slugify(s) {
   return (s || "")
@@ -309,6 +310,8 @@ export function FeedUpdateCard({ update }) {
             )}
           </div>
         </div>
+
+        {update.author?.is_bot && <BeanBotNotice className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/60" />}
 
         {/* Quick Reply Form (premium only) */}
         {showReplyForm && isPremium && (

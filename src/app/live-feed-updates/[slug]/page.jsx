@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
+import { BeanBotNotice } from "@/components/home/BeanBotNotice";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
@@ -166,6 +167,7 @@ export default async function FeedUpdatePage({ params }) {
                   </time>
                 </div>
               </div>
+              {update.author?.is_bot && <BeanBotNotice className="mt-3" />}
             </div>
 
             {/* Content */}

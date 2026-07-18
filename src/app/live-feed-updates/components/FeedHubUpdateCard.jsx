@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { voteFeedUpdate } from "@/lib/api/feedUpdates";
 import { threadCta } from "@/lib/feedUpdates/threadComments";
 import { isFreshUpdate } from "@/lib/feedUpdatesLive";
+import { BeanBotNotice } from "@/components/home/BeanBotNotice";
 
 // One update row in the editorial thread. Client component (real voting).
 export function FeedHubUpdateCard({ update }) {
@@ -65,6 +66,7 @@ export function FeedHubUpdateCard({ update }) {
           )}
           <Link href={href}>↗ Open</Link>
         </div>
+        {update.author?.is_bot && <BeanBotNotice className="mt-2" />}
       </div>
     </article>
   );
