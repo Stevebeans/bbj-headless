@@ -59,29 +59,16 @@ export default function QuickieCardModal({ post, onClose }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null); // {ok, msg}
 
-  // Avatar: Bluesky public profile -> blob object URL (html-to-image needs a
-  // CORS-safe source). Any failure falls back to the initial circle.
-  // Non-Bluesky posts (future X paste path) skip the lookup entirely.
+  // Avatar via our same-origin proxy (/api/social/avatar): cdn.bsky.app sends
+  // no CORS headers, so a direct fetch is browser-blocked and a direct <img>
+  // would taint the html-to-image canvas. The <img> onError falls back to the
+  // initials circle. Non-Bluesky posts (future X paste path) skip the lookup.
   useEffect(() => {
-    if (platform !== "Bluesky") return undefined;
-    let revoke = null;
-    (async () => {
-      try {
-        const res = await fetch(
-          `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(post.handle)}`
-        );
-        const data = await res.json();
-        if (!data.avatar) return;
-        const img = await fetch(data.avatar);
-        const blob = await img.blob();
-        const url = URL.createObjectURL(blob);
-        revoke = url;
-        setAvatarUrl(url);
-      } catch {
-        /* initials fallback */
-      }
-    })();
-    return () => revoke && URL.revokeObjectURL(revoke);
+    setAvatarUrl(
+      platform === "Bluesky"
+        ? `/api/social/avatar?actor=${encodeURIComponent(post.handle)}`
+        : null
+    );
   }, [post.handle, platform]);
 
   // FB pages for the destination select.
@@ -198,6 +185,7 @@ export default function QuickieCardModal({ post, onClose }) {
                   width={48}
                   height={48}
                   style={{ borderRadius: "50%", objectFit: "cover" }}
+                  onError={() => setAvatarUrl(null)}
                 />
               ) : (
                 <div
