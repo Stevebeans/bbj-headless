@@ -30,6 +30,10 @@ function StatTile({ label, value, sub }) {
   );
 }
 
+function fmtMoney(cents) {
+  return (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
 function fmtDate(s) {
   if (!s) return "—";
   const d = new Date(s.replace(" ", "T") + "Z");
@@ -41,6 +45,7 @@ export default function AdminPremium() {
   const [pagination, setPagination] = useState(null);
   const [stats, setStats] = useState(null);
   const [trends, setTrends] = useState(null);
+  const [revenue, setRevenue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
@@ -63,7 +68,11 @@ export default function AdminPremium() {
 
   useEffect(() => {
     getSubscriptionStats()
-      .then((data) => { setStats(data.stats || null); setTrends(data.trends || null); })
+      .then((data) => {
+        setStats(data.stats || null);
+        setTrends(data.trends || null);
+        setRevenue(data.revenue || null);
+      })
       .catch(() => {});
   }, []);
 
@@ -98,13 +107,39 @@ export default function AdminPremium() {
       </div>
 
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
           <StatTile label="Active recurring" value={stats.active} sub={`${stats.monthly} monthly · ${stats.annual} annual`} />
           <StatTile label="Lifetime" value={stats.lifetime} />
           <StatTile label="Full Bean" value={stats.full_bean} sub={`${stats.supporter_tier} supporter tier`} />
           <StatTile label="Stripe / PayPal" value={`${stats.stripe_total} / ${stats.paypal_total}`} sub="all time" />
           <StatTile label="New joins" value={trends ? trends.joins_30d : "—"} sub={trends ? `${trends.joins_7d} in last 7d · 30d shown` : ""} />
           <StatTile label="Cancels (30d)" value={trends ? trends.cancels_30d : "—"} />
+        </div>
+      )}
+
+      {revenue && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+          <StatTile
+            label="Avg monthly revenue"
+            value={fmtMoney(revenue.mrr_cents)}
+            sub="monthly billers + annual ÷ 12"
+          />
+          <StatTile
+            label="Billed monthly"
+            value={`${fmtMoney(revenue.monthly_billed_cents)}/mo`}
+            sub="real monthly cashflow"
+          />
+          <StatTile
+            label="Billed annually"
+            value={`${fmtMoney(revenue.annual_billed_cents)}/yr`}
+            sub={`≈ ${fmtMoney(Math.round(revenue.annual_billed_cents / 12))}/mo spread out`}
+          />
+          {revenue.lifetime_collected_cents > 0 && (
+            <StatTile label="Lifetime collected" value={fmtMoney(revenue.lifetime_collected_cents)} sub="one-time, all time" />
+          )}
+          {revenue.unpriced_active > 0 && (
+            <StatTile label="Missing price data" value={revenue.unpriced_active} sub="subs not counted above" />
+          )}
         </div>
       )}
 
