@@ -219,13 +219,14 @@ export function FloatingUpdater() {
 
       // The post itself succeeded, but if media could not be attached the
       // server tells us why — surface it as a warning (not a full failure).
-      const mediaError = result.image_error
-        ? `Image could not be attached: ${result.image_error}`
-        : result.video_error
-          ? `Video could not be attached: ${result.video_error}`
-          : null;
-      const hasImageError = Boolean(mediaError);
-      if (hasImageError) {
+      let mediaError = null;
+      if (result.image_error) {
+        mediaError = `Image could not be attached: ${result.image_error}`;
+      } else if (result.video_error) {
+        mediaError = `Video could not be attached: ${result.video_error}`;
+      }
+      const hasMediaError = Boolean(mediaError);
+      if (hasMediaError) {
         setError(mediaError);
       }
 
@@ -254,10 +255,10 @@ export function FloatingUpdater() {
       if (fileInputRef.current) fileInputRef.current.value = "";
       if (videoInputRef.current) videoInputRef.current.value = "";
 
-      // Auto-close after success — but not when an image warning is showing.
+      // Auto-close after success — but not when a media warning is showing.
       // The writer needs to actually read that message, so leave the panel
       // open until they dismiss/close it themselves.
-      if (!hasImageError) {
+      if (!hasMediaError) {
         setTimeout(() => {
           setSuccess(null);
           setIsOpen(false);

@@ -91,6 +91,7 @@ export async function getFeedUpdateBySlug(slug) {
  * @param {Object} data - Update data
  * @param {string} data.content - Update content
  * @param {File} data.image - Optional image file
+ * @param {File} data.video - Optional video clip
  * @param {string} data.mode - Update mode: feed or show
  * @param {boolean} data.postToBluesky - Post to Bluesky
  * @param {string} token - JWT auth token
