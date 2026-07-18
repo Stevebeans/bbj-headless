@@ -50,6 +50,35 @@ function fontSizeFor(text) {
   return 16;
 }
 
+// Fetch a (same-origin) image and inline it as a data URL so html-to-image
+// rasterizes it deterministically. A plain URL src can silently drop out of
+// the export when the library's re-fetch races or fails - that's how the
+// first live card posted without its avatar (7/18).
+function useDataUrl(src) {
+  const [dataUrl, setDataUrl] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    setDataUrl(null);
+    if (!src) return undefined;
+    (async () => {
+      try {
+        const res = await fetch(src);
+        if (!res.ok) throw new Error(String(res.status));
+        const blob = await res.blob();
+        const reader = new FileReader();
+        reader.onload = () => alive && setDataUrl(reader.result);
+        reader.readAsDataURL(blob);
+      } catch {
+        if (alive) setDataUrl(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [src]);
+  return dataUrl;
+}
+
 function fmtPostedAt(utc) {
   if (!utc) return "";
   const d = new Date(utc.replace(" ", "T") + "Z");
@@ -69,25 +98,19 @@ export default function QuickieCardModal({ post, onClose }) {
   const platform = post.platform || "Bluesky";
   const creditName = post.display_name || `@${post.handle}`;
   const [bg, setBg] = useState(BACKGROUNDS[0]);
-  const [avatarUrl, setAvatarUrl] = useState(null);
+  // Data-URL image sources: fully loaded before export, or initials fallback.
+  const avatarData = useDataUrl(
+    platform === "Bluesky"
+      ? `/api/social/avatar?actor=${encodeURIComponent(post.handle)}`
+      : post.avatar || null
+  );
+  const imageData = useDataUrl(post.image || null);
   const [caption, setCaption] = useState("");
   const [captionLoading, setCaptionLoading] = useState(false);
   const [pages, setPages] = useState([]);
   const [pageId, setPageId] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null); // {ok, msg}
-
-  // Avatar via our same-origin proxy (/api/social/avatar): cdn.bsky.app sends
-  // no CORS headers, so a direct fetch is browser-blocked and a direct <img>
-  // would taint the html-to-image canvas. The <img> onError falls back to the
-  // initials circle. Non-Bluesky posts (future X paste path) skip the lookup.
-  useEffect(() => {
-    setAvatarUrl(
-      platform === "Bluesky"
-        ? `/api/social/avatar?actor=${encodeURIComponent(post.handle)}`
-        : post.avatar || null
-    );
-  }, [post.handle, post.avatar, platform]);
 
   // FB pages for the destination select.
   useEffect(() => {
@@ -195,15 +218,14 @@ export default function QuickieCardModal({ post, onClose }) {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {avatarUrl ? (
+              {avatarData ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={avatarUrl}
+                  src={avatarData}
                   alt=""
                   width={48}
                   height={48}
                   style={{ borderRadius: "50%", objectFit: "cover" }}
-                  onError={() => setAvatarUrl(null)}
                 />
               ) : (
                 <div
@@ -245,12 +267,14 @@ export default function QuickieCardModal({ post, onClose }) {
                   {post.text}
                 </p>
                 <div style={{ flex: 1, overflow: "hidden", borderRadius: 8, marginBottom: 10 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={post.image}
-                    alt=""
-                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                  />
+                  {imageData && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={imageData}
+                      alt=""
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    />
+                  )}
                 </div>
               </>
             ) : (
@@ -343,15 +367,15 @@ export default function QuickieCardModal({ post, onClose }) {
           <button
             type="button"
             onClick={postNow}
-            disabled={busy || !pageId}
+            disabled={busy || !pageId || (!!post.image && !imageData)}
             className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold disabled:opacity-50"
           >
-            {busy ? "Working…" : "Post now"}
+            {busy ? "Working…" : post.image && !imageData ? "Loading image…" : "Post now"}
           </button>
           <button
             type="button"
             onClick={addToQueue}
-            disabled={busy || !pageId}
+            disabled={busy || !pageId || (!!post.image && !imageData)}
             className="px-4 py-2 rounded-lg bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold disabled:opacity-50"
           >
             Add to queue
