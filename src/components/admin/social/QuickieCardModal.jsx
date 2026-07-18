@@ -10,16 +10,34 @@ import {
 } from "@/lib/api/admin";
 
 const BACKGROUNDS = [
-  { id: "navy", label: "Navy", style: { background: "#16233b" } },
+  { id: "navy", label: "Navy", text: "#f1f5f9", muted: "#94a3b8", style: { background: "#16233b" } },
   {
     id: "bean",
     label: "Bean",
+    text: "#f1f5f9",
+    muted: "#c9b99a",
     style: { background: "linear-gradient(135deg, #3b2f23 0%, #6b5334 100%)" },
   },
   {
     id: "slate",
     label: "Slate",
+    text: "#f1f5f9",
+    muted: "#94a3b8",
     style: { background: "linear-gradient(160deg, #1e293b 0%, #0f172a 100%)" },
+  },
+  {
+    id: "paper",
+    label: "Paper",
+    text: "#0f172a",
+    muted: "#64748b",
+    style: { background: "#f8fafc" },
+  },
+  {
+    id: "cream",
+    label: "Cream",
+    text: "#3b2f23",
+    muted: "#8a7a63",
+    style: { background: "linear-gradient(135deg, #fdf6e9 0%, #f3e5cd 100%)" },
   },
 ];
 
@@ -67,9 +85,9 @@ export default function QuickieCardModal({ post, onClose }) {
     setAvatarUrl(
       platform === "Bluesky"
         ? `/api/social/avatar?actor=${encodeURIComponent(post.handle)}`
-        : null
+        : post.avatar || null
     );
-  }, [post.handle, platform]);
+  }, [post.handle, post.avatar, platform]);
 
   // FB pages for the destination select.
   useEffect(() => {
@@ -170,7 +188,7 @@ export default function QuickieCardModal({ post, onClose }) {
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              color: "#f1f5f9",
+              color: bg.text,
               fontFamily: "Georgia, 'Times New Roman', serif",
               borderRadius: 0,
               ...bg.style,
@@ -206,32 +224,57 @@ export default function QuickieCardModal({ post, onClose }) {
               )}
               <div style={{ lineHeight: 1.25 }}>
                 <div style={{ fontWeight: 700, fontSize: 17 }}>{post.display_name || post.handle}</div>
-                <div style={{ fontSize: 13, color: "#94a3b8" }}>
+                <div style={{ fontSize: 13, color: bg.muted }}>
                   @{post.handle} · {fmtPostedAt(post.posted_at)}
                 </div>
               </div>
             </div>
 
-            <p
-              style={{
-                fontSize: fontSizeFor(post.text),
-                lineHeight: 1.4,
-                margin: "16px 0",
-                overflow: "hidden",
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <span>{post.text}</span>
-            </p>
+            {post.image ? (
+              <>
+                <p
+                  style={{
+                    fontSize: Math.min(fontSizeFor(post.text), 16),
+                    lineHeight: 1.35,
+                    margin: "10px 0",
+                    overflow: "hidden",
+                    maxHeight: 66,
+                    flex: "0 0 auto",
+                  }}
+                >
+                  {post.text}
+                </p>
+                <div style={{ flex: 1, overflow: "hidden", borderRadius: 8, marginBottom: 10 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={post.image}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                </div>
+              </>
+            ) : (
+              <p
+                style={{
+                  fontSize: fontSizeFor(post.text),
+                  lineHeight: 1.4,
+                  margin: "16px 0",
+                  overflow: "hidden",
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <span>{post.text}</span>
+              </p>
+            )}
 
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 fontSize: 12,
-                color: "#94a3b8",
+                color: bg.muted,
                 fontFamily: "Arial, sans-serif",
               }}
             >

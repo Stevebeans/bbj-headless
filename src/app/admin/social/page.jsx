@@ -7,6 +7,7 @@ import TopPostsBoard from "@/components/admin/social/TopPostsBoard";
 import FeedShareQueue from "@/components/admin/social/FeedShareQueue";
 import CbsSlotsEditor from "@/components/admin/social/CbsSlotsEditor";
 import BeanFactsEditor from "@/components/admin/social/BeanFactsEditor";
+import XImportBox from "@/components/admin/social/XImportBox";
 
 const MODEL_OPTIONS = [
   { id: "claude-sonnet-5", label: "Sonnet 5 (default)" },
@@ -867,6 +868,8 @@ export default function AdminSocialPage() {
       </section>
 
       <TopPostsBoard />
+
+      <XImportBox />
 
       <FeedShareQueue />
 
