@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getFacebookPages, getRecentFeedUpdates, queueFeedShares } from "@/lib/api/admin";
+import { adminFetch, getFacebookPages, getRecentFeedUpdates, queueFeedShares } from "@/lib/api/admin";
 
 function fmtWhen(gmt) {
   if (!gmt) return "";
@@ -17,6 +17,8 @@ export default function FeedShareQueue() {
   const [pageId, setPageId] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
+  const [spacing, setSpacing] = useState(20);
+  const [spacingSaved, setSpacingSaved] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -36,7 +38,28 @@ export default function FeedShareQueue() {
         if (withToken.length) setPageId(withToken[0].id);
       })
       .catch(() => {});
+    adminFetch("/social/config")
+      .then((res) => {
+        const mins = Number(res.settings?.queue_spacing_minutes);
+        if (mins > 0) setSpacing(mins);
+      })
+      .catch(() => {});
   }, [load]);
+
+  const saveSpacing = async () => {
+    setSpacingSaved(null);
+    try {
+      const res = await adminFetch("/social/config", {
+        method: "POST",
+        body: JSON.stringify({ queue_spacing_minutes: spacing }),
+      });
+      const mins = Number(res.settings?.queue_spacing_minutes);
+      if (mins > 0) setSpacing(mins);
+      setSpacingSaved({ ok: true, msg: "Saved ✓" });
+    } catch (e) {
+      setSpacingSaved({ ok: false, msg: e.message || "Save failed" });
+    }
+  };
 
   const selected = Object.keys(checked).filter((id) => checked[id]);
 
@@ -48,7 +71,7 @@ export default function FeedShareQueue() {
       const page = pages.find((p) => p.id === pageId);
       const res = await queueFeedShares(pageId, selected.map(Number), page?.name || "");
       if (res.success) {
-        setStatus({ ok: true, msg: `Queued ${res.queued.length} share(s), 20 min apart ✓` });
+        setStatus({ ok: true, msg: `Queued ${res.queued.length} share(s), ${spacing} min apart ✓` });
         setChecked({});
         load();
       } else {
@@ -112,8 +135,30 @@ export default function FeedShareQueue() {
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-xs text-slate-400">
-        Shares post as link posts, spaced 20 minutes apart from the next free queue slot.
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <span>Queue spacing:</span>
+        <input
+          type="number"
+          min={5}
+          max={180}
+          value={spacing}
+          onChange={(e) => setSpacing(Number(e.target.value))}
+          className="w-16 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 p-1 text-sm text-slate-800 dark:text-slate-100"
+        />
+        <span>min between posts (applies to quickie cards too)</span>
+        <button
+          type="button"
+          onClick={saveSpacing}
+          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium"
+        >
+          Save
+        </button>
+        {spacingSaved && (
+          <span className={spacingSaved.ok ? "text-emerald-600" : "text-red-600"}>{spacingSaved.msg}</span>
+        )}
+      </div>
+      <p className="mt-2 text-xs text-slate-400">
+        Shares post as link posts from the next free queue slot.
         Reschedule or delete from the Content Engine → Queue tab.
       </p>
     </section>
