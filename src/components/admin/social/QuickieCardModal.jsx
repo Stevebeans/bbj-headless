@@ -206,7 +206,10 @@ export default function QuickieCardModal({ post, onClose }) {
             ref={cardRef}
             style={{
               width: 600,
-              height: 338,
+              // Text-only cards stay 16:9; image cards grow to fit the whole
+              // image (Benny-style tall cards) instead of center-cropping.
+              height: post.image ? "auto" : 338,
+              minHeight: 338,
               padding: 32,
               display: "flex",
               flexDirection: "column",
@@ -259,20 +262,23 @@ export default function QuickieCardModal({ post, onClose }) {
                     fontSize: Math.min(fontSizeFor(post.text), 16),
                     lineHeight: 1.35,
                     margin: "10px 0",
-                    overflow: "hidden",
-                    maxHeight: 66,
                     flex: "0 0 auto",
                   }}
                 >
                   {post.text}
                 </p>
-                <div style={{ flex: 1, overflow: "hidden", borderRadius: 8, marginBottom: 10 }}>
+                <div style={{ overflow: "hidden", borderRadius: 8, marginBottom: 10 }}>
                   {imageData && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={imageData}
                       alt=""
-                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      style={{
+                        width: "100%",
+                        maxHeight: 680,
+                        objectFit: "contain",
+                        display: "block",
+                      }}
                     />
                   )}
                 </div>
