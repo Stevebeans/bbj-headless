@@ -6,6 +6,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import TopPostsBoard from "@/components/admin/social/TopPostsBoard";
 import FeedShareQueue from "@/components/admin/social/FeedShareQueue";
 import CbsSlotsEditor from "@/components/admin/social/CbsSlotsEditor";
+import BeanFactsEditor from "@/components/admin/social/BeanFactsEditor";
 
 const MODEL_OPTIONS = [
   { id: "claude-sonnet-5", label: "Sonnet 5 (default)" },
@@ -683,6 +684,8 @@ export default function AdminSocialPage() {
 
       {/* ============================= CBS SLOTS ============================= */}
       <CbsSlotsEditor />
+
+      <BeanFactsEditor />
 
       {/* ============================= COLLECTOR ============================= */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
