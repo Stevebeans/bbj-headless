@@ -105,6 +105,10 @@ export async function createFeedUpdate(data, token) {
     formData.append("image", data.image);
   }
 
+  if (data.video) {
+    formData.append("video", data.video);
+  }
+
   if (data.postToBluesky !== undefined) {
     formData.append("post_to_bluesky", data.postToBluesky ? "1" : "0");
   }

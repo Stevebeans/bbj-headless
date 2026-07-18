@@ -53,7 +53,18 @@ export function FeedHubUpdateCard({ update }) {
         </div>
         <h3><Link href={href}>{update.title}</Link></h3>
         {update.excerpt && <p>{update.excerpt}</p>}
-        {update.thumbnail && (
+        {update.video?.url ? (
+          <div className="fuh-thumb">
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              src={update.video.url}
+              controls
+              playsInline
+              preload="metadata"
+              style={{ width: "100%", height: "auto", borderRadius: 8, background: "#000" }}
+            />
+          </div>
+        ) : update.thumbnail && (
           <Link className="fuh-thumb" href={href} aria-hidden="true" tabIndex={-1}>
             <Image src={update.thumbnail} alt="" width={520} height={300} style={{ width: "100%", height: "auto" }} />
           </Link>

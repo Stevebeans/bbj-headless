@@ -183,7 +183,18 @@ export function FeedUpdateCard({ update }) {
           </>
         )}
 
-        {update.thumbnail && (
+        {update.video?.url ? (
+          <div className="mb-3 w-[90%] md:max-w-[75%] mx-auto">
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              src={update.video.url}
+              controls
+              playsInline
+              preload="metadata"
+              className="rounded-lg w-full h-auto bg-black"
+            />
+          </div>
+        ) : update.thumbnail && (
           <div className="mb-3 w-[90%] md:max-w-[75%] mx-auto">
             <Image
               src={update.thumbnail}

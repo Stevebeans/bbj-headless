@@ -16,6 +16,31 @@ import { downscaleImage } from "@/lib/images/downscaleImage";
 const MAX_CONTENT_LENGTH = 1000;
 const BLUESKY_LIMIT = 300;
 
+// Video clip limits — mirror the server (FeedUpdateCreator::VIDEO_MAX_BYTES /
+// VIDEO_MIMES). Duration is a client-side courtesy check; size is enforced on
+// both ends.
+const VIDEO_MAX_MB = 80;
+const VIDEO_MAX_SECONDS = 180;
+const VIDEO_ACCEPT = "video/mp4,video/x-m4v,video/quicktime,video/webm";
+
+/** Resolve a video File's duration in seconds (null when unreadable). */
+function getVideoDuration(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const el = document.createElement("video");
+    el.preload = "metadata";
+    el.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(Number.isFinite(el.duration) ? el.duration : null);
+    };
+    el.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+    el.src = url;
+  });
+}
+
 function getCharCountColor(isOverLimit, blueskyWarning) {
   if (isOverLimit) return "text-red-500";
   if (blueskyWarning) return "text-yellow-600 dark:text-yellow-400";
@@ -37,6 +62,8 @@ export function FloatingUpdater() {
   const [mode, setModeState] = useState("feed"); // feed or show
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoPreview, setVideoPreview] = useState(null);
 
   // Social posting
   const [postToBluesky, setPostToBluesky] = useState(true);
@@ -44,6 +71,7 @@ export function FloatingUpdater() {
 
   // Refs
   const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   // Gate on the real feed_updates permission (matches the backend's
   // checkUpdaterPermission and the admin permission matrix) rather than a
@@ -71,6 +99,26 @@ export function FloatingUpdater() {
     }
   }, [canPost, user?.token]);
 
+  // Paste-to-attach: while the panel is open, an image on the clipboard
+  // (feed screenshots!) attaches exactly like a picked file. Same pattern as
+  // BugReportFAB. Registered before the canPost early-return (hooks rule).
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPaste = (e) => {
+      const item = Array.from(e.clipboardData?.items || []).find((i) =>
+        i.type.startsWith("image/")
+      );
+      const file = item?.getAsFile();
+      if (file) {
+        e.preventDefault();
+        attachImage(file);
+      }
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
   // Don't render if user can't post
   if (!canPost) return null;
 
@@ -84,20 +132,24 @@ export function FloatingUpdater() {
     }
   };
 
-  const handleImageSelect = async (e) => {
-    let file = e.target.files?.[0];
-    if (file) {
-      // Downscale before the size guard so a large camera photo (5-8MB) gets
-      // shrunk first and can still pass — the guard only rejects files that
-      // remain oversized after processing (e.g. undecodable formats).
-      file = await downscaleImage(file);
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Image must be under 5MB");
-        return;
-      }
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+  // Shared by the file input AND clipboard paste. Downscale before the size
+  // guard so a large camera photo (5-8MB) gets shrunk first and can still
+  // pass — the guard only rejects files that remain oversized after
+  // processing (e.g. undecodable formats).
+  async function attachImage(rawFile) {
+    const file = await downscaleImage(rawFile);
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be under 5MB");
+      return;
     }
+    setError(null);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  }
+
+  const handleImageSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (file) await attachImage(file);
   };
 
   const handleRemoveImage = () => {
@@ -105,6 +157,31 @@ export function FloatingUpdater() {
     setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handleVideoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > VIDEO_MAX_MB * 1024 * 1024) {
+      setError(`Video must be under ${VIDEO_MAX_MB}MB`);
+      return;
+    }
+    const duration = await getVideoDuration(file);
+    if (duration !== null && duration > VIDEO_MAX_SECONDS) {
+      setError(`Clips max out at ${VIDEO_MAX_SECONDS / 60} minutes (this one is ${Math.round(duration)}s)`);
+      return;
+    }
+    setError(null);
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveVideo = () => {
+    setVideoFile(null);
+    setVideoPreview(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = "";
     }
   };
 
@@ -127,6 +204,7 @@ export function FloatingUpdater() {
           content: content.trim(),
           mode,
           image: upload,
+          video: videoFile,
           postToBluesky,
         },
         user.token
@@ -139,11 +217,16 @@ export function FloatingUpdater() {
       }
       setSuccess(successMsg);
 
-      // The post itself succeeded, but if the image could not be attached the
+      // The post itself succeeded, but if media could not be attached the
       // server tells us why — surface it as a warning (not a full failure).
-      const hasImageError = Boolean(result.image_error);
+      const mediaError = result.image_error
+        ? `Image could not be attached: ${result.image_error}`
+        : result.video_error
+          ? `Video could not be attached: ${result.video_error}`
+          : null;
+      const hasImageError = Boolean(mediaError);
       if (hasImageError) {
-        setError(`Image could not be attached: ${result.image_error}`);
+        setError(mediaError);
       }
 
       // Let live feed lists (homepage + hub) prepend this instantly — the
@@ -166,7 +249,10 @@ export function FloatingUpdater() {
       setContent("");
       setImageFile(null);
       setImagePreview(null);
+      setVideoFile(null);
+      setVideoPreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (videoInputRef.current) videoInputRef.current.value = "";
 
       // Auto-close after success — but not when an image warning is showing.
       // The writer needs to actually read that message, so leave the panel
@@ -298,22 +384,59 @@ export function FloatingUpdater() {
               </div>
             )}
 
-            {/* Actions Row */}
-            <div className="flex items-center justify-between gap-2 mb-3">
-              {/* Image Upload */}
-              <label className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500 cursor-pointer">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span className="hidden sm:inline">Add Image</span>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
+            {/* Video Preview */}
+            {videoPreview && (
+              <div className="relative mb-3 inline-block max-w-full">
+                <video
+                  src={videoPreview}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="rounded-lg max-h-40 max-w-full"
                 />
-              </label>
+                <button
+                  type="button"
+                  onClick={handleRemoveVideo}
+                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Actions Row */}
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="flex items-center gap-3">
+                {/* Image Upload */}
+                <label className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500 cursor-pointer">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="hidden sm:inline">Image</span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* Video Upload */}
+                <label className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-500 cursor-pointer">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span className="hidden sm:inline">Video</span>
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept={VIDEO_ACCEPT}
+                    onChange={handleVideoSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
 
               {/* Social Posting Options */}
               <div className="flex items-center gap-3 text-sm">
@@ -344,6 +467,13 @@ export function FloatingUpdater() {
                 </label>
               </div>
             </div>
+
+            {/* Media limits */}
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">
+              Paste or attach an image (auto-compressed) · video clips MP4/MOV/WebM, up to{" "}
+              {VIDEO_MAX_SECONDS / 60} min &amp; {VIDEO_MAX_MB}MB
+              {videoFile && postToBluesky && " · video posts on the site; Bluesky gets the text + link"}
+            </p>
 
             {/* Submit Button */}
             <button

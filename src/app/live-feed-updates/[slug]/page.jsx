@@ -172,8 +172,22 @@ export default async function FeedUpdatePage({ params }) {
 
             {/* Content */}
             <div className="p-4">
+              {/* Video clip (takes the featured spot when present) */}
+              {update.video?.url && (
+                <div className="mb-6">
+                  {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                  <video
+                    src={update.video.url}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="rounded-lg w-full h-auto bg-black"
+                  />
+                </div>
+              )}
+
               {/* Featured Image */}
-              {update.thumbnail && (
+              {!update.video?.url && update.thumbnail && (
                 <div className="mb-6">
                   <Image
                     src={update.thumbnail}
