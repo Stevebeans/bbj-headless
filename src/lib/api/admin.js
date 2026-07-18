@@ -341,6 +341,39 @@ export async function enhanceTemplate(templateText) {
 }
 
 // ========================================
+// SOCIAL QUICKIES (FB pipeline)
+// ========================================
+
+export async function getTopSocialPosts(hours = 24, limit = 25) {
+  return adminFetch(`/social/top-posts?hours=${hours}&limit=${limit}`);
+}
+
+export async function generateQuickieCaption(text, handle) {
+  return adminFetch('/social/quickie-caption', {
+    method: 'POST',
+    body: JSON.stringify({ text, handle }),
+  });
+}
+
+export async function queueQuickie(data) {
+  return adminFetch('/social/quickie-queue', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getRecentFeedUpdates() {
+  return adminFetch('/social/feed-updates-recent');
+}
+
+export async function queueFeedShares(pageId, postIds, pageName = '') {
+  return adminFetch('/social/feed-share-queue', {
+    method: 'POST',
+    body: JSON.stringify({ page_id: pageId, post_ids: postIds, page_name: pageName }),
+  });
+}
+
+// ========================================
 // NEWS
 // ========================================
 
