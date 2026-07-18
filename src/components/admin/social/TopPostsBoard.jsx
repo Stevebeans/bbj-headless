@@ -16,6 +16,7 @@ const totalOf = (p) =>
 
 const SORTS = [
   { id: "top", label: "Top" }, // server order: likes + 2x reposts, airing-window downweight
+  { id: "trending", label: "📈 Trending" }, // server: <2h old, ranked by engagement/minute
   { id: "likes", label: "♥" },
   { id: "reposts", label: "↻" },
   { id: "replies", label: "💬" },
@@ -23,7 +24,7 @@ const SORTS = [
 ];
 
 function sortPosts(list, sort) {
-  if (sort === "top") return list;
+  if (sort === "top" || sort === "trending") return list; // server-ordered
   const val =
     sort === "total" ? totalOf : (p) => Number(p[sort] || 0);
   return [...list].sort((a, b) => val(b) - val(a));
@@ -81,11 +82,15 @@ export default function TopPostsBoard() {
 
   const displayed = useMemo(() => sortPosts(posts, sort), [posts, sort]);
 
+  // Trending is a different server query (velocity over the last 2h);
+  // the other sorts rearrange the fetched Top pool client-side.
+  const serverSort = sort === "trending" ? "trending" : "top";
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await getTopSocialPosts(hours);
+      const res = await getTopSocialPosts(hours, 25, serverSort);
       const list = res.posts || [];
       setPosts(list);
       // Hydrate attached images in the background; rows fill in as it lands.
@@ -95,7 +100,7 @@ export default function TopPostsBoard() {
     } finally {
       setLoading(false);
     }
-  }, [hours]);
+  }, [hours, serverSort]);
 
   useEffect(() => {
     load();
@@ -186,6 +191,9 @@ export default function TopPostsBoard() {
               </p>
               <div className="mt-1 text-xs text-slate-400">
                 ♥ {p.likes} · ↻ {p.reposts} · 💬 {p.replies} · Σ {totalOf(p)}
+                {sort === "trending" && p.velocity != null && (
+                  <span className="text-emerald-600 font-medium"> · 📈 {p.velocity}/min</span>
+                )}
               </div>
             </div>
             {images[p.uri] && (
