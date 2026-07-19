@@ -91,7 +91,10 @@ function fmtPostedAt(utc) {
   });
 }
 
-export default function QuickieCardModal({ post, onClose }) {
+export default function QuickieCardModal({ post, onClose, preview = false }) {
+  // Preview mode: render the exact card (avatar/image/backgrounds) but skip
+  // the caption call and posting controls - a cheap look before committing.
+  const [previewMode, setPreviewMode] = useState(preview);
   const cardRef = useRef(null);
   // Platform rides the post so a future paste-an-X-link path just sets
   // post.platform = "X" and every credit line follows. Bluesky is the default.
@@ -112,8 +115,9 @@ export default function QuickieCardModal({ post, onClose }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null); // {ok, msg}
 
-  // FB pages for the destination select.
+  // FB pages for the destination select (skipped while previewing).
   useEffect(() => {
+    if (previewMode) return;
     getFacebookPages()
       .then((res) => {
         const withToken = (res.pages || []).filter((p) => p.has_token);
@@ -121,7 +125,7 @@ export default function QuickieCardModal({ post, onClose }) {
         if (withToken.length) setPageId(withToken[0].id);
       })
       .catch(() => setStatus({ ok: false, msg: "Couldn't load Facebook pages" }));
-  }, []);
+  }, [previewMode]);
 
   const fetchCaption = useCallback(async () => {
     setCaptionLoading(true);
@@ -137,8 +141,8 @@ export default function QuickieCardModal({ post, onClose }) {
   }, [post.text, post.handle]);
 
   useEffect(() => {
-    fetchCaption();
-  }, [fetchCaption]);
+    if (!previewMode) fetchCaption();
+  }, [fetchCaption, previewMode]);
 
   const exportPng = useCallback(async () => {
     // pixelRatio 2 turns the 600x338 DOM card into a 1200x676 PNG.
@@ -208,7 +212,9 @@ export default function QuickieCardModal({ post, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">FB Quickie Card</h3>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+            {previewMode ? "Card Preview" : "FB Quickie Card"}
+          </h3>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl">✕</button>
         </div>
 
@@ -344,7 +350,28 @@ export default function QuickieCardModal({ post, onClose }) {
           ))}
         </div>
 
+        {/* Preview footer: like it -> flip into the full composer. */}
+        {previewMode && (
+          <div className="mt-4 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setPreviewMode(false)}
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+            >
+              Make this card →
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-semibold"
+            >
+              Skip
+            </button>
+          </div>
+        )}
+
         {/* Caption */}
+        {!previewMode && (
         <div className="mt-4">
           <div className="flex items-center justify-between mb-1">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -370,8 +397,10 @@ export default function QuickieCardModal({ post, onClose }) {
             Posted as: caption + "- via {creditName} on {platform}"
           </p>
         </div>
+        )}
 
         {/* Destination + actions */}
+        {!previewMode && (
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <select
             value={pageId}
@@ -407,6 +436,7 @@ export default function QuickieCardModal({ post, onClose }) {
             ⬇ Download
           </button>
         </div>
+        )}
 
         {status && (
           <p className={`mt-3 text-sm ${status.ok ? "text-emerald-600" : "text-red-600"}`}>

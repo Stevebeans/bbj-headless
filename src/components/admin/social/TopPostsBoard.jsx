@@ -77,6 +77,7 @@ export default function TopPostsBoard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [cardPost, setCardPost] = useState(null);
+  const [cardPreview, setCardPreview] = useState(false);
   const [images, setImages] = useState({});
   const [sort, setSort] = useState("top");
 
@@ -204,20 +205,40 @@ export default function TopPostsBoard() {
                 className="shrink-0 h-12 w-12 rounded object-cover"
               />
             )}
-            <button
-              type="button"
-              onClick={() =>
-                setCardPost(images[p.uri] ? { ...p, image: proxied(images[p.uri]) } : p)
-              }
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
-            >
-              FB Card
-            </button>
+            <div className="shrink-0 flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setCardPreview(false);
+                  setCardPost(images[p.uri] ? { ...p, image: proxied(images[p.uri]) } : p);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+              >
+                FB Card
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCardPreview(true);
+                  setCardPost(images[p.uri] ? { ...p, image: proxied(images[p.uri]) } : p);
+                }}
+                className="px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
+              >
+                👁 Preview
+              </button>
+            </div>
           </li>
         ))}
       </ul>
 
-      {cardPost && <QuickieCardModal post={cardPost} onClose={() => setCardPost(null)} />}
+      {cardPost && (
+        <QuickieCardModal
+          key={`${cardPost.id}-${cardPreview}`}
+          post={cardPost}
+          preview={cardPreview}
+          onClose={() => setCardPost(null)}
+        />
+      )}
     </section>
   );
 }
