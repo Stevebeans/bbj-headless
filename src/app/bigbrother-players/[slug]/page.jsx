@@ -22,6 +22,7 @@ import {
   PlayerQuotes,
 } from "@/components/players";
 import { SITE_URL, ORG_LOGO, breadcrumbJsonLd } from "@/lib/seo";
+import AskBeanPrompt from "@/components/bean/AskBeanPrompt";
 
 /**
  * Accurate career comp totals. The aggregate `stats.total_hoh/pov` are stale for
@@ -231,6 +232,12 @@ export default async function PlayerPage({ params }) {
                 )}
               </div>
             </article>
+
+            {/* Premium funnel E1: static, cache-safe Bean entry point. */}
+            <AskBeanPrompt
+              question={`Tell me about ${player.title || player.name || "this player"}'s Big Brother game`}
+              label={`Want the real story on ${player.title || player.name || "this player"}?`}
+            />
 
             {/* Comments Section */}
             <section className="v2-primary-container-inner p-4">

@@ -7,10 +7,14 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function SearchPage() {
+export default async function SearchPage({ searchParams }) {
+  // `await` is a no-op on the plain object older Next versions pass, and
+  // required for the Promise newer ones pass - safe either way.
+  const sp = await searchParams;
+  const q = typeof sp?.q === "string" ? sp.q.slice(0, 200) : "";
   return (
     <div className="bean-search-wrap">
-      <BeanChat />
+      <BeanChat initialQuestion={q} />
     </div>
   );
 }

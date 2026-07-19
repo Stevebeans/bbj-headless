@@ -212,7 +212,7 @@ function ThinkingRow() {
   );
 }
 
-export default function BeanChat({ variant = "page", onClose }) {
+export default function BeanChat({ variant = "page", onClose, initialQuestion = "" }) {
   const { user } = useAuth();
   const { openLogin } = useAuthModal();
   const [msgs, setMsgs] = useState([]); // {role:'user'|'bean', text, sources?, pose?, card?, streaming?}
@@ -235,6 +235,17 @@ export default function BeanChat({ variant = "page", onClose }) {
   useEffect(() => {
     if (variant === "widget") taRef.current?.focus();
   }, [variant]);
+
+  // Pre-seed the composer when arriving from an "Ask the Bean about this"
+  // link (feed updates, player pages). Prefill only, never auto-send - a
+  // shared link can't burn the visitor's quota.
+  useEffect(() => {
+    if (initialQuestion) {
+      setVal(initialQuestion);
+      taRef.current?.focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (msgs.length === 0) return; // don't scroll the welcome screen out of view
@@ -350,9 +361,33 @@ export default function BeanChat({ variant = "page", onClose }) {
           </button>
         </div>
       ) : (
-        <button className="bean-gate" onClick={openLogin}>
-          Log in to chat with Steve
-        </button>
+        <div>
+          {/* Logged-out teaser (funnel E3): show what an answer looks like
+              instead of a bare login wall. Evergreen sample - no season
+              facts that can go stale. */}
+          <div
+            style={{
+              fontSize: 14,
+              lineHeight: 1.5,
+              padding: "10px 14px",
+              marginBottom: 10,
+              borderRadius: 12,
+              background: "rgba(148, 163, 184, 0.12)",
+            }}
+          >
+            <p style={{ margin: "0 0 6px" }}>
+              <b>You:</b> who won Big Brother 25?
+            </p>
+            <p style={{ margin: 0 }}>
+              <b>🫘 The Bean:</b> Jag Bains - first Sikh winner, and he ran the whole back half
+              of that season. Ask me anything Big Brother, from season 1 to what happened on the
+              feeds an hour ago. I read every report and I remember all of it.
+            </p>
+          </div>
+          <button className="bean-gate" onClick={openLogin}>
+            Log in free - 5 questions a day
+          </button>
+        </div>
       )}
       {quota?.remaining != null && (
         <div className="bean-quota">

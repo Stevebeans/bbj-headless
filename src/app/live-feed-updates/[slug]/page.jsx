@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { BeanBotNotice } from "@/components/home/BeanBotNotice";
+import AskBeanPrompt from "@/components/bean/AskBeanPrompt";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
@@ -254,6 +255,12 @@ export default async function FeedUpdatePage({ params }) {
               </div>
             </div>
           </article>
+
+          {/* Premium funnel E1: static, cache-safe Bean entry point. */}
+          <AskBeanPrompt
+            question="Catch me up on today's Big Brother feeds"
+            label="Want the full story?"
+          />
 
           {/* Static in-content unit — these pages are too short for dynamic
               insertion to place more than one ad (Freestar rec, 2026-07-17). */}

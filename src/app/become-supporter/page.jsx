@@ -25,7 +25,7 @@ const COMPARE_ROWS = [
   { label: "Supporter badge", sub: null, free: false, supporter: true, full_bean: true },
   { label: "Ask the Bean", sub: "chats per day", free: "5", supporter: "30", full_bean: "Unlimited", bold: true },
   { label: "Bean AI model", sub: null, free: "Standard", supporter: "Standard", full_bean: "Smartest", bold: true },
-  { label: "Longer conversation memory", sub: null, free: false, supporter: false, full_bean: true },
+  { label: "Remembers you between chats", sub: null, free: false, supporter: false, full_bean: true },
 ];
 
 const FAQ_ITEMS = [
@@ -481,7 +481,7 @@ export default function BecomeSupporterPage() {
                     <span>Our smartest AI model<small className="block text-xs text-gray-400 dark:text-gray-500">sharper takes, better recall of the season</small></span>
                   </Feature>
                   <Feature>
-                    <span>Longer conversation memory<small className="block text-xs text-gray-400 dark:text-gray-500">pick up where you left off</small></span>
+                    <span>Remembers you between chats<small className="block text-xs text-gray-400 dark:text-gray-500">he keeps a note of what matters to you - viewable and deletable in Settings</small></span>
                   </Feature>
                 </ul>
                 <button
@@ -571,7 +571,7 @@ export default function BecomeSupporterPage() {
                 A word from the Bean
               </h2>
               <blockquote className="italic text-[15px] leading-relaxed text-gray-600 dark:text-gray-300">
-                &ldquo;Look, the spoilers stay free, that&apos;s the deal. But if you want me at full power? Unlimited questions, my sharpest takes, and I actually remember our last conversation. Full Bean is the move. No pressure. Some pressure.&rdquo;
+                &ldquo;Look, the spoilers stay free, that&apos;s the deal. But if you want me at full power? Unlimited questions, my sharpest takes, and I remember what matters about you between chats. Full Bean is the move. No pressure. Some pressure.&rdquo;
               </blockquote>
               <Link
                 href="/search"

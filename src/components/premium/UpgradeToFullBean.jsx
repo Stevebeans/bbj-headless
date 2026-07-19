@@ -57,7 +57,7 @@ export default function UpgradeToFullBean({ beanMonthly, beanAnnual, initialInte
       <Image src="/bean/bean-point.png" alt="The Bean pointing" width={72} height={72} className="absolute -top-9 right-4 w-[72px] h-auto drop-shadow-md pointer-events-none select-none" />
       <h2 className="text-xl font-display font-bold uppercase tracking-wide text-gray-900 dark:text-white mb-1">Upgrade to Full Bean</h2>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-        Unlimited Bean chats, our smartest model, and longer memory. Applied instantly, prorated automatically.
+        Unlimited Bean chats, our smartest model, and he remembers you between chats. Applied instantly, prorated automatically.
       </p>
 
       <div className="inline-flex rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 p-1 mb-4" role="tablist" aria-label="Billing period">

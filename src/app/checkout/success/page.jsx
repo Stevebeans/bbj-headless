@@ -141,7 +141,9 @@ function SuccessContent() {
             <p className="text-amber-600 dark:text-amber-400 mb-6">{error}</p>
           ) : activated ? (
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Thank you for becoming a BBJ Supporter! Your support helps us continue providing quality Big Brother coverage.
+              {subscription?.tier === "full_bean"
+                ? "You've got the Full Bean! Unlimited chats with the smartest Bean there is, and he'll start remembering what matters about you between conversations."
+                : "Thank you for becoming a BBJ Supporter! Your support helps us continue providing quality Big Brother coverage."}
             </p>
           ) : (
             <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -215,8 +217,18 @@ function SuccessContent() {
                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Enable priority push notifications in Settings
+                  {subscription?.tier === "full_bean"
+                    ? "Unlimited Bean chats on the smartest model - ask him anything"
+                    : "30 Bean chats a day - say hi at Ask the Bean"}
                 </li>
+                {subscription?.tier === "full_bean" && (
+                  <li className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    The Bean remembers what matters about you between chats
+                  </li>
+                )}
               </ul>
             </div>
           )}
