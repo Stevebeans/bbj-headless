@@ -33,6 +33,7 @@ export default function FanFavSnapshot() {
   const cardRef = useRef(null);
   const [data, setData] = useState(null);
   const [photos, setPhotos] = useState({});
+  const [eye, setEye] = useState(null); // BBJ eye logo as data URL (export-safe)
   const [caption, setCaption] = useState(
     "Today's Fan Favorite standings. You can change your ballot every day - takes 30 seconds at bigbrotherjunkies.com/fan-favorites"
   );
@@ -58,6 +59,7 @@ export default function FanFavSnapshot() {
 
   useEffect(() => {
     load();
+    toDataUrl("/icons/icon-192.png").then(setEye);
     getFacebookPages()
       .then((res) => {
         const withToken = (res.pages || []).filter((p) => p.has_token);
@@ -167,8 +169,26 @@ export default function FanFavSnapshot() {
               }}
             >
               <div style={{ textAlign: "center", marginBottom: 18 }}>
-                <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: 1 }}>
-                  ⭐ FAN FAVORITE STANDINGS
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 12,
+                    fontSize: 24,
+                    fontWeight: 700,
+                    letterSpacing: 1,
+                  }}
+                >
+                  {eye && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={eye} alt="" width={28} height={28} />
+                  )}
+                  <span>FAN FAVORITE STANDINGS</span>
+                  {eye && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={eye} alt="" width={28} height={28} />
+                  )}
                 </div>
                 <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>
                   {dateLabel} · ranked-ballot standings
