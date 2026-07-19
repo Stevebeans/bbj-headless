@@ -55,12 +55,26 @@ export async function fetchAllContent() {
   const [posts, players, seasons, feeds] = await Promise.all([
     fetchAllPosts(),
     // Players list returns { success, players: [{id, slug, name, permalink, nickname, ...}] }
+    // Rich text per player: the old name+hometown stub embedded so weakly that
+    // "tell me about <player>" retrieved unrelated posts (Dee, 2026-07-19).
     fetchBbjd("players?per_page=500", "player", (p) => ({
       id: p.id, type: "player",
       title: stripHtml(p.name || ""),
       url: toRelative(p.permalink || ""),
       date: p.date || "",
-      text: stripHtml([p.name, p.nickname, p.occupation, p.hometown].filter(Boolean).join(". ")),
+      text: stripHtml([
+        `${p.name} is a Big Brother houseguest`,
+        p.nickname ? `nicknamed "${p.nickname}"` : "",
+        [p.occupation, p.age ? `${p.age} years old` : "", p.hometown ? `from ${p.hometown}` : ""]
+          .filter(Boolean)
+          .join(", "),
+        p.status === "active" ? "currently playing as an active houseguest this season" : (p.status_label || ""),
+        p.is_winner ? "won Big Brother" : "",
+        p.is_afp ? "voted America's Favorite Player" : "",
+        p.stats
+          ? `career stats: ${p.stats.hoh || 0} HoH wins, ${p.stats.pov || 0} veto wins, nominated ${p.stats.nom || 0} times`
+          : "",
+      ].filter(Boolean).join(". ")),
     })),
     // Seasons list returns { success, seasons: [{id, name, slug, permalink, abbreviation, ...}] }
     fetchBbjd("seasons", "season", (s) => ({
@@ -70,14 +84,24 @@ export async function fetchAllContent() {
       date: s.start_date || s.date || "",
       text: stripHtml([s.name || s.full_name, s.abbreviation].filter(Boolean).join(". ")),
     })),
-    // Feed updates return { slug, title, excerpt, permalink, date, ... }
-    fetchBbjd("feed-updates?per_page=500", "feed_update", (f) => ({
-      id: f.id, type: "feed_update",
-      title: stripHtml(f.title || ""),
-      url: toRelative(f.permalink || ""),
-      date: f.date || "",
-      text: stripHtml(f.excerpt || f.content || f.title || ""),
-    })),
+    // Feed updates return { slug, title, excerpt, permalink, date, ... }.
+    // The endpoint caps at ~30 per pull but paginates — walk up to 10 pages
+    // (~300 updates ≈ several days of season coverage).
+    (async () => {
+      const out = [];
+      for (let page = 1; page <= 10; page++) {
+        const batch = await fetchBbjd(`feed-updates?per_page=30&page=${page}`, "feed_update", (f) => ({
+          id: f.id, type: "feed_update",
+          title: stripHtml(f.title || ""),
+          url: toRelative(f.permalink || ""),
+          date: f.date || "",
+          text: stripHtml(f.excerpt || f.content || f.title || ""),
+        }));
+        out.push(...batch);
+        if (batch.length < 30) break;
+      }
+      return out;
+    })(),
   ]);
   return [...posts, ...players, ...seasons, ...feeds].filter((i) => i.text && i.text.length > 0);
 }

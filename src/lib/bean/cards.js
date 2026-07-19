@@ -143,16 +143,45 @@ export function shapePlayerCard(p) {
 }
 
 /**
- * Build a player card from retrieved matches: take the top player match, confirm
- * the player is actually named in the question, then fetch their full record.
+ * Roster cache for direct name matching (10-min TTL). Vector retrieval can
+ * miss a player (thin embeddings — the Dee gap, 2026-07-19), so the card
+ * builder also scans the live roster for a name stated in the question.
+ */
+let rosterCache = { at: 0, players: [] };
+async function playerRoster() {
+  if (Date.now() - rosterCache.at < 10 * 60 * 1000 && rosterCache.players.length) {
+    return rosterCache.players;
+  }
+  try {
+    const res = await fetch(`${WP}/bbjd/v1/players?per_page=500`);
+    if (!res.ok) return rosterCache.players;
+    const data = await res.json();
+    rosterCache = { at: Date.now(), players: data.players || [] };
+  } catch {
+    /* keep stale cache */
+  }
+  return rosterCache.players;
+}
+
+/**
+ * Build a player card: prefer the top retrieved player match, but fall back
+ * to a direct roster scan when retrieval missed the player entirely. Either
+ * way the player must actually be named in the question.
  * @param {string} question
- * @param {Array} matches  retrieve() results (have type/title/url)
+ * @param {Array} matches  retrieve() results (have type/type/title/url)
  */
 export async function buildPlayerCard(question, matches = []) {
   const hit = matches.find((m) => m.type === "player" && m.title && m.url);
-  if (!hit || !playerNamedIn(hit.title, question)) return null;
-  const slug = hit.url.split("/").filter(Boolean).pop();
+  let slug = null;
+
+  if (hit && playerNamedIn(hit.title, question)) {
+    slug = hit.url.split("/").filter(Boolean).pop() || null;
+  } else {
+    const named = (await playerRoster()).find((p) => p.name && playerNamedIn(p.name, question));
+    if (named?.slug) slug = named.slug;
+  }
   if (!slug) return null;
+
   try {
     const p = await fetch(`${WP}/bbjd/v1/players/${slug}`).then((r) => (r.ok ? r.json() : null));
     const player = p?.player || p;
