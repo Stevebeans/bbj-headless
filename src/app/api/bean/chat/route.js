@@ -54,12 +54,15 @@ async function beanCheck(token) {
   }
 }
 
-async function beanConsume(token) {
+async function beanConsume(token, question = "") {
   if (!token) return null;
   try {
     const res = await fetch(`${WP}/bbjd/v1/bean/consume`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      // The question rides along for the admin prompt log (questions only,
+      // never answers).
+      body: JSON.stringify({ question }),
     });
     return res.ok ? await res.json() : null;
   } catch {
@@ -240,7 +243,7 @@ export async function POST(request) {
       await ai.finalMessage();
       // Record the message (only when metering is live) and report remaining quota.
       if (!snap._nometer) {
-        const updated = await beanConsume(token);
+        const updated = await beanConsume(token, question);
         if (updated) send({ type: "quota", tier: updated.tier, remaining: updated.remaining, cap: updated.cap });
       }
       send({ type: "done" });

@@ -176,9 +176,14 @@ export async function POST(request) {
     // Keep "Ask the Bean"'s knowledge fresh (best-effort; never block revalidation).
     // No-ops if Upstash env vars are absent (e.g. previews without the index configured).
     try {
-      if (type === "post" && slug && process.env.UPSTASH_VECTOR_REST_URL) {
-        const { reindexPostBySlug } = await import("@/lib/bean/reindexOne.js");
-        await reindexPostBySlug(slug);
+      if (slug && process.env.UPSTASH_VECTOR_REST_URL) {
+        if (type === "post") {
+          const { reindexPostBySlug } = await import("@/lib/bean/reindexOne.js");
+          await reindexPostBySlug(slug);
+        } else if (type === "feed-update") {
+          const { reindexFeedUpdateBySlug } = await import("@/lib/bean/reindexOne.js");
+          await reindexFeedUpdateBySlug(slug);
+        }
       }
     } catch (e) {
       console.error("[bean] reindex on publish failed:", e?.message);
