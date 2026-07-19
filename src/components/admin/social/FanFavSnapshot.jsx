@@ -171,7 +171,7 @@ export default function FanFavSnapshot() {
                   ⭐ FAN FAVORITE STANDINGS
                 </div>
                 <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>
-                  {dateLabel} · {data.total_voters} voters · ranked-ballot points
+                  {dateLabel} · ranked-ballot standings
                 </div>
               </div>
 
