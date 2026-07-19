@@ -3,7 +3,14 @@ import { NextResponse } from "next/server";
 // Whitelisted image proxy for card sources whose CDNs lack CORS headers
 // (X's pbs.twimg.com, Bluesky's cdn.bsky.app). STRICT https + host
 // allowlist — this must never become an open proxy (SSRF).
-const ALLOWED_HOSTS = new Set(["pbs.twimg.com", "abs.twimg.com", "cdn.bsky.app"]);
+const ALLOWED_HOSTS = new Set([
+  "pbs.twimg.com",
+  "abs.twimg.com",
+  "cdn.bsky.app",
+  // Own WP uploads (player photos on fan-fav snapshot cards).
+  "wp.bigbrotherjunkies.com",
+  "bigbrotherjunkies.com",
+]);
 
 export async function GET(request) {
   const src = request.nextUrl.searchParams.get("src") || "";

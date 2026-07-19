@@ -9,6 +9,7 @@ import CbsSlotsEditor from "@/components/admin/social/CbsSlotsEditor";
 import BeanFactsEditor from "@/components/admin/social/BeanFactsEditor";
 import XImportBox from "@/components/admin/social/XImportBox";
 import BeanPromptsViewer from "@/components/admin/social/BeanPromptsViewer";
+import FanFavSnapshot from "@/components/admin/social/FanFavSnapshot";
 
 const MODEL_OPTIONS = [
   { id: "claude-sonnet-5", label: "Sonnet 5 (default)" },
@@ -136,6 +137,9 @@ export default function AdminSocialPage() {
   const [loadError, setLoadError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', message }
+  // Sub-tab is a pure visual filter: every section stays mounted (hidden via
+  // CSS) so switching never re-fetches or loses state.
+  const [subTab, setSubTab] = useState("pipeline");
 
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [handleInput, setHandleInput] = useState("");
@@ -532,6 +536,15 @@ export default function AdminSocialPage() {
   const totalPages = Math.max(1, Math.ceil(postsTotal / PER_PAGE));
   const sections = splitSummary(latestSummary?.content);
 
+  const SUB_TABS = [
+    ["pipeline", "📤 FB Pipeline"],
+    ["fanfav", "⭐ Fan Favorites"],
+    ["collector", "📡 Collector"],
+    ["drafts", "📝 Digest & Drafts"],
+    ["bean", "🫘 Bean"],
+    ["settings", "⚙️ Settings"],
+  ];
+
   return (
     <div>
       {/* Toast */}
@@ -552,6 +565,24 @@ export default function AdminSocialPage() {
         <span className="text-xs text-slate-500 dark:text-slate-400">Bluesky feed monitor</span>
       </div>
 
+      <div className="flex flex-wrap gap-1.5 mb-6">
+        {SUB_TABS.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setSubTab(id)}
+            className={`px-3.5 py-1.5 rounded-full text-sm font-medium ${
+              subTab === id
+                ? "bg-primary-500 text-white"
+                : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className={subTab === "settings" ? "" : "hidden"}>
       {/* ============================= SETTINGS ============================= */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -686,11 +717,15 @@ export default function AdminSocialPage() {
 
       {/* ============================= CBS SLOTS ============================= */}
       <CbsSlotsEditor />
+      </div>
 
+      <div className={subTab === "bean" ? "" : "hidden"}>
       <BeanFactsEditor />
 
       <BeanPromptsViewer />
+      </div>
 
+      <div className={subTab === "collector" ? "" : "hidden"}>
       {/* ============================= COLLECTOR ============================= */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -870,12 +905,21 @@ export default function AdminSocialPage() {
         )}
       </section>
 
+      </div>
+
+      <div className={subTab === "pipeline" ? "" : "hidden"}>
       <TopPostsBoard />
 
       <XImportBox />
 
       <FeedShareQueue />
+      </div>
 
+      <div className={subTab === "fanfav" ? "" : "hidden"}>
+      <FanFavSnapshot />
+      </div>
+
+      <div className={subTab === "drafts" ? "" : "hidden"}>
       {/* ============================= DIGEST ============================= */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -967,6 +1011,9 @@ export default function AdminSocialPage() {
         )}
       </section>
 
+      </div>
+
+      <div className={subTab === "bean" ? "" : "hidden"}>
       {/* ============================= BEAN BOT ============================= */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -1113,6 +1160,9 @@ export default function AdminSocialPage() {
         )}
       </section>
 
+      </div>
+
+      <div className={subTab === "drafts" ? "" : "hidden"}>
       {/* ============================= DRAFTS ============================= */}
       <section className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
@@ -1299,6 +1349,7 @@ export default function AdminSocialPage() {
           )}
         </div>
       </section>
+      </div>
     </div>
   );
 }
