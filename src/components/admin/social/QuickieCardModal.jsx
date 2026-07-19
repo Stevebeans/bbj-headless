@@ -167,6 +167,18 @@ export default function QuickieCardModal({ post, onClose }) {
     }
   };
 
+  const downloadCard = async () => {
+    try {
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `bbj-card-${(post.handle || "post").replace(/[^a-z0-9.-]/gi, "")}.png`;
+      a.click();
+    } catch (e) {
+      setStatus({ ok: false, msg: e.message || "Export failed" });
+    }
+  };
+
   const addToQueue = async () => {
     if (!pageId) return;
     setBusy(true);
@@ -385,6 +397,14 @@ export default function QuickieCardModal({ post, onClose }) {
             className="px-4 py-2 rounded-lg bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold disabled:opacity-50"
           >
             Add to queue
+          </button>
+          <button
+            type="button"
+            onClick={downloadCard}
+            disabled={!!post.image && !imageData}
+            className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-semibold disabled:opacity-50"
+          >
+            ⬇ Download
           </button>
         </div>
 
