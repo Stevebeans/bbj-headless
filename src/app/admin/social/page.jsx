@@ -10,6 +10,7 @@ import BeanFactsEditor from "@/components/admin/social/BeanFactsEditor";
 import XImportBox from "@/components/admin/social/XImportBox";
 import BeanPromptsViewer from "@/components/admin/social/BeanPromptsViewer";
 import FanFavSnapshot from "@/components/admin/social/FanFavSnapshot";
+import QueueList from "@/components/admin/content-engine/QueueList";
 
 const MODEL_OPTIONS = [
   { id: "claude-sonnet-5", label: "Sonnet 5 (default)" },
@@ -908,6 +909,8 @@ export default function AdminSocialPage() {
       </div>
 
       <div className={subTab === "pipeline" ? "" : "hidden"}>
+      <QueueList title="⏳ In Queue" />
+
       <TopPostsBoard />
 
       <XImportBox />

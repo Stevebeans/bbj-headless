@@ -271,6 +271,10 @@ export async function getContentQueue() {
   return adminFetch('/content-engine/queue');
 }
 
+export async function getContentQueueImage(id) {
+  return adminFetch(`/content-engine/queue/${id}/image`);
+}
+
 export async function rescheduleContent(id, scheduledAt) {
   return adminFetch(`/content-engine/queue/${id}/reschedule`, {
     method: 'POST',

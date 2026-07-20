@@ -159,7 +159,7 @@ export default function FeedShareQueue() {
       </div>
       <p className="mt-2 text-xs text-slate-400">
         Shares post as link posts from the next free queue slot.
-        Reschedule or delete from the Content Engine → Queue tab.
+        Review, edit, reschedule or delete them in the In Queue section above.
       </p>
     </section>
   );
