@@ -318,6 +318,7 @@ export default function AdminSocialPage() {
       handles: base.handles || [],
       poll_minutes: Number(base.poll_minutes) || 10,
       model: base.model || "claude-sonnet-5",
+      fan_nicknames: base.fan_nicknames || [],
     };
     // Only send the key when a new one is typed; empty leaves the stored key unchanged.
     if (apiKeyInput.trim()) payload.anthropic_api_key = apiKeyInput.trim();
@@ -703,6 +704,25 @@ export default function AdminSocialPage() {
             placeholder="handle.bsky.social then Enter"
             className="w-full max-w-md px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
+        </div>
+
+        {/* Fan nicknames glossary */}
+        <div className="mt-5">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            Fan nicknames
+          </label>
+          <textarea
+            value={(settings?.fan_nicknames || []).join("\n")}
+            onChange={(e) => patchSetting("fan_nicknames", e.target.value.split("\n"))}
+            rows={4}
+            placeholder={"Thog = Haley\nOne per line: Nickname = Real name"}
+            className="w-full max-w-md px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Community nicknames fans use on Bluesky. Fed to every AI prompt (drafts, digest,
+            Bean Bot, transcript) so posts always use real names instead of inventing a
+            second houseguest.
+          </p>
         </div>
 
         <div className="mt-5">
