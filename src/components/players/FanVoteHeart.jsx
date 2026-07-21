@@ -5,7 +5,7 @@ import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { getToken } from "@/lib/auth/cookies";
-import { getMyVote, castVote } from "@/lib/api/fanVotes";
+import { getMyVote, castVote, removeVote } from "@/lib/api/fanVotes";
 import { isFanVoteEligible } from "@/lib/fanVoteEligible";
 
 /**
@@ -13,8 +13,8 @@ import { isFanVoteEligible } from "@/lib/fanVoteEligible";
  * - Logged out: outline heart; clicking opens the login modal.
  * - Logged in: filled red heart when this player is the member's current vote,
  *   outline otherwise. Clicking a non-favorite casts (moves) the vote with an
- *   optimistic fill; clicking the current favorite is a no-op (v1: the vote is
- *   moved by hearting someone else, not un-hearted).
+ *   optimistic fill; clicking the current favorite removes the vote entirely —
+ *   having no favorite is a valid state.
  */
 export function FanVoteHeart({ player }) {
   const { isAuthenticated } = useAuth();
@@ -55,16 +55,25 @@ export function FanVoteHeart({ player }) {
       openLogin();
       return;
     }
-    if (isMine || saving) return;
+    if (saving) return;
 
     const previous = myVote;
-    setMyVote(player.id); // optimistic fill
-    setToast("Saved — you can change this anytime.");
+    const removing = isMine;
+    setMyVote(removing ? null : player.id); // optimistic toggle
+    setToast(
+      removing
+        ? "Favorite removed — you don't have to pick one."
+        : "Saved — you can change this anytime."
+    );
     setSaving(true);
     try {
-      await castVote(player.id);
+      if (removing) {
+        await removeVote();
+      } else {
+        await castVote(player.id);
+      }
     } catch {
-      setMyVote(previous); // revert on failure — don't strand a wrong filled state
+      setMyVote(previous); // revert on failure — don't strand a wrong state
       setToast("Something went wrong. Please try again.");
     } finally {
       setSaving(false);
@@ -77,7 +86,7 @@ export function FanVoteHeart({ player }) {
         onClick={handleClick}
         disabled={saving}
         aria-pressed={isMine}
-        title={isMine ? "Your favorite ♥" : "Make my favorite"}
+        title={isMine ? "Your favorite ♥ — click to remove" : "Make my favorite"}
         className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors disabled:opacity-60 ${
           isMine
             ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 border-red-200 dark:border-red-700"

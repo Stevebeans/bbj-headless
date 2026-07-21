@@ -32,6 +32,18 @@ export async function castVote(playerId) {
   return data;
 }
 
+export async function removeVote() {
+  const token = getToken();
+  if (!token) throw new Error("not-authenticated");
+  const res = await fetch(`${API_URL}/bbjd/v1/fan-vote`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || `Remove failed: ${res.status}`);
+  return data;
+}
+
 export async function saveMoverNote(playerId, note) {
   const token = getToken();
   const res = await fetch(`${API_URL}/bbjd/v1/fan-vote/note`, {
