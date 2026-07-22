@@ -19,6 +19,7 @@ import PlayerSearchDropdown from "@/components/settings/PlayerSearchDropdown";
 import EmailChangeModal from "@/components/settings/EmailChangeModal";
 import HelpTab from "@/components/settings/HelpTab";
 import BeanMemorySection from "@/components/settings/BeanMemorySection";
+import DmPrivacyPanel from "@/components/settings/DmPrivacyPanel";
 import RankBadge from "@/components/comments/RankBadge";
 // Push toggle parked 2026-06-07 with the PWA (native-app path TBD). Code kept.
 // import PushToggle from "@/components/notifications/PushToggle";
@@ -596,6 +597,9 @@ function ProfileTab({ settings, loading, onUpdate, showToast, refreshUser }) {
           </div>
         </div>
       </div>
+
+      {/* Private Messages: privacy + blocked members */}
+      <DmPrivacyPanel showToast={showToast} />
 
       {/* Save Button */}
       <div className="flex justify-end pt-4">

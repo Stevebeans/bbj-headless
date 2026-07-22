@@ -6,7 +6,18 @@ export const metadata = {
   description: "Your private conversations on Big Brother Junkies.",
 };
 
-export default function MessagesPage() {
+export default async function MessagesPage({ searchParams }) {
+  // Profile "Message" button deep-links here as ?to={userId}&name={username}.
+  // Read it server-side and hand MessagesClient a recipient to open compose on.
+  const sp = (await searchParams) || {};
+  const toId = parseInt(Array.isArray(sp.to) ? sp.to[0] : sp.to, 10);
+  const rawName = Array.isArray(sp.name) ? sp.name[0] : sp.name;
+  const name = typeof rawName === "string" ? rawName : "";
+  const initialRecipient =
+    Number.isFinite(toId) && toId > 0
+      ? { id: toId, username: name, name: name || "Member" }
+      : null;
+
   return (
     <Suspense
       fallback={
@@ -15,7 +26,7 @@ export default function MessagesPage() {
         </div>
       }
     >
-      <MessagesClient />
+      <MessagesClient initialRecipient={initialRecipient} />
     </Suspense>
   );
 }
