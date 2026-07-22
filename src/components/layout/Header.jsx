@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAds } from "@/context/AdContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import NotificationBell from "../notifications/NotificationBell";
+import MessagesIcon from "../messages/MessagesIcon";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBbTime } from "@/hooks/useBbTime";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
@@ -109,6 +110,7 @@ export function Header({ liveThread = null, feedsLive = true }) {
                       <PencilSquareIcon className="w-5 h-5" />
                     </Link>
                   )}
+                  <MessagesIcon />
                   <NotificationBell />
                   <Link href="/settings" className="flex items-center gap-2" aria-label="Account">
                     {user?.avatar ? (
