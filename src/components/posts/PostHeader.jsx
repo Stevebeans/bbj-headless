@@ -3,6 +3,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { ShareButtons } from "./ShareButtons";
 import { PostEditButton } from "./PostEditButton";
+import AuthorModalTrigger from "./AuthorModalTrigger";
 
 function calcReadTime(html) {
   const text = (html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -81,7 +82,7 @@ export function PostHeader({
 
       {/* Byline strip */}
       <div className="flex items-center justify-between gap-4 flex-wrap border-t border-b border-gray-200 dark:border-gray-700 py-4">
-        <div className="flex items-center gap-3 min-w-0">
+        <AuthorModalTrigger userId={author?.id || 0}>
           {author?.avatar && (
             <Image
               src={author.avatar}
@@ -120,7 +121,7 @@ export function PostHeader({
               )}
             </div>
           </div>
-        </div>
+        </AuthorModalTrigger>
 
         <ShareButtons url={shareUrl} title={(title || "").replace(/<[^>]*>/g, "")} />
       </div>
