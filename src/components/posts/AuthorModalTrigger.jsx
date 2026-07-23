@@ -11,11 +11,15 @@ import AuthorModal from "@/components/comments/AuthorModal";
  * interactive elements cannot nest inside a button. Clicks on inner links are
  * ignored so they keep their own behavior.
  */
-export default function AuthorModalTrigger({ userId, children }) {
+export default function AuthorModalTrigger({
+  userId,
+  children,
+  className = "flex items-center gap-3 min-w-0",
+}) {
   const [open, setOpen] = useState(false);
 
   if (!userId) {
-    return <div className="flex items-center gap-3 min-w-0">{children}</div>;
+    return <div className={className}>{children}</div>;
   }
 
   const activate = (e) => {
@@ -35,7 +39,7 @@ export default function AuthorModalTrigger({ userId, children }) {
             activate(e);
           }
         }}
-        className="flex items-center gap-3 min-w-0 text-left hover:opacity-80 transition-opacity cursor-pointer"
+        className={`${className} text-left hover:opacity-80 transition-opacity cursor-pointer`}
         aria-haspopup="dialog"
         title="View profile"
       >

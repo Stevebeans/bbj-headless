@@ -10,6 +10,7 @@ import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
 import { FeedUpdateVoting } from "./FeedUpdateVoting";
 import { getFeedUpdateBySlug, getFeedUpdates } from "@/lib/api/feedUpdates";
+import AuthorModalTrigger from "@/components/posts/AuthorModalTrigger";
 import { SITE_URL, ORG_LOGO, breadcrumbJsonLd } from "@/lib/seo";
 
 export const revalidate = false; // Pure webhook-driven — feed updates don't change after posting
@@ -124,7 +125,10 @@ export default async function FeedUpdatePage({ params }) {
 
             {/* Header with Author & Meta */}
             <div className="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-start gap-4">
+              <AuthorModalTrigger
+                userId={update.author?.is_bot ? 0 : update.author?.id || 0}
+                className="flex items-start gap-4"
+              >
                 {/* Author Avatar */}
                 {update.author?.avatar && (
                   <Image
@@ -167,7 +171,7 @@ export default async function FeedUpdatePage({ params }) {
                     )}
                   </time>
                 </div>
-              </div>
+              </AuthorModalTrigger>
               {update.author?.is_bot && <BeanBotNotice className="mt-3" />}
             </div>
 
