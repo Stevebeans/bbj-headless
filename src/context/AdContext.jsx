@@ -53,7 +53,15 @@ export function AdProvider({
   // Baseline roles union the admin-configured list — see lib/supporterRoles.js.
   const isSupporter = isSupporterUser(user, supporterRoles);
 
-  const shouldShowAds = initialShouldShowAds && !isSupporter && !AD_FREE_ROUTES.includes(pathname);
+  // Local dev never loads ads — Freestar has no business in XAMPP, and the
+  // units just get in the way of testing. Hostname check (not NODE_ENV) so
+  // `npm run start` prod-builds on localhost stay ad-free too.
+  const isLocalhost =
+    typeof window !== "undefined" &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+
+  const shouldShowAds =
+    initialShouldShowAds && !isSupporter && !isLocalhost && !AD_FREE_ROUTES.includes(pathname);
 
   // Preview mode: cookie present AND user is admin/editor.
   // Always false for logged-out, non-admin, or cookie-absent users.
