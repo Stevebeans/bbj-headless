@@ -140,9 +140,22 @@ export default function MessagesClient({ initialRecipient = null }) {
     return () => clearTimeout(t);
   }, [query, me]);
 
+  // Keep the URL in sync with the open conversation (?to=) so a refresh
+  // reopens it instead of dumping the member back at the empty inbox.
+  // history.replaceState avoids a server roundtrip; the ?to= deep-link
+  // path already handles restore on the next full load.
+  const syncUrl = (other) => {
+    if (typeof window === "undefined") return;
+    const url = other
+      ? `/messages?to=${other.id}&name=${encodeURIComponent(other.username || "")}`
+      : "/messages";
+    window.history.replaceState(window.history.state, "", url);
+  };
+
   const openExisting = (thread) => {
     setComposing(false);
     setActiveThread({ id: thread.id, other: thread.other });
+    syncUrl(thread.other);
     // Optimistically clear the unread dot in the inbox.
     if (thread.unread) {
       setThreads((prev) =>
@@ -152,19 +165,30 @@ export default function MessagesClient({ initialRecipient = null }) {
   };
 
   const pickSearchResult = (u) => {
-    setActiveThread({
-      id: null,
-      other: {
-        id: u.id,
-        username: u.username || "",
-        name: u.display_name || u.username || "Member",
-        avatar: u.avatar || "",
-      },
-    });
+    const other = {
+      id: u.id,
+      username: u.username || "",
+      name: u.display_name || u.username || "Member",
+      avatar: u.avatar || "",
+    };
+    setActiveThread({ id: null, other });
+    syncUrl(other);
     setComposing(false);
     setQuery("");
     setResults([]);
   };
+
+  // Deep-link/refresh restore: the ?to= effect opens a shell with id:null.
+  // Once the inbox arrives, upgrade it to the real thread (id + server-truth
+  // name/avatar) so the existing conversation loads instead of a blank compose.
+  useEffect(() => {
+    if (!activeThread || activeThread.id !== null) return;
+    const match = threads.find((t) => t.other?.id === activeThread.other?.id);
+    if (match) {
+      openExisting(match);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threads]);
 
   const handleThreadRead = useCallback((threadId) => {
     setThreads((prev) =>
@@ -182,7 +206,9 @@ export default function MessagesClient({ initialRecipient = null }) {
 
   const handleBlocked = useCallback(() => {
     setActiveThread(null);
+    syncUrl(null);
     fetchThreads();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchThreads]);
 
   // ---- Auth gate -----------------------------------------------------------
@@ -231,7 +257,11 @@ export default function MessagesClient({ initialRecipient = null }) {
 
       <div className="max-w-screen-xl mx-auto px-0 sm:px-4">
         <div className="bg-white dark:bg-gray-900 sm:rounded-xl shadow-sm border-y sm:border border-slate-200 dark:border-slate-800 overflow-hidden">
-          <div className="flex lg:h-[calc(100vh-8rem)] h-[calc(100vh-5rem)]">
+          {/* Height is a viewport fraction, not 100vh-minus-chrome: the chrome
+              above (ad banner, contact bar, header, nav) varies by page state,
+              and any hardcoded subtraction strands the composer below the
+              fold. 65-70dvh always leaves it on-screen. */}
+          <div className="flex h-[65dvh] lg:h-[70dvh] min-h-[420px]">
             {/* Inbox pane */}
             <aside
               className={`w-full lg:w-80 xl:w-96 shrink-0 border-r border-slate-200 dark:border-slate-800 flex-col ${
@@ -366,7 +396,10 @@ export default function MessagesClient({ initialRecipient = null }) {
                   key={activeThread.other.id}
                   thread={activeThread}
                   me={me}
-                  onBack={() => setActiveThread(null)}
+                  onBack={() => {
+                    setActiveThread(null);
+                    syncUrl(null);
+                  }}
                   onThreadRead={handleThreadRead}
                   onThreadEstablished={handleThreadEstablished}
                   onActivity={fetchThreads}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { getUserProfile, followUser, unfollowUser } from "@/lib/api/comments";
 import RankBadge from "./RankBadge";
@@ -215,19 +216,28 @@ export default function AuthorModal({ userId, isOpen, onClose }) {
                 Member since {profile.member_since_formatted}
               </p>
 
-              {/* Follow button */}
+              {/* Follow + Message */}
               {isAuthenticated && !profile.is_self && (
-                <button
-                  onClick={handleFollowToggle}
-                  disabled={followLoading}
-                  className={`w-full py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
-                    profile.is_following
-                      ? "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
-                      : "bg-primary-500 hover:bg-primary-600 text-white"
-                  }`}
-                >
-                  {followLoading ? "..." : profile.is_following ? "Following" : "Follow"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleFollowToggle}
+                    disabled={followLoading}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                      profile.is_following
+                        ? "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
+                        : "bg-primary-500 hover:bg-primary-600 text-white"
+                    }`}
+                  >
+                    {followLoading ? "..." : profile.is_following ? "Following" : "Follow"}
+                  </button>
+                  <Link
+                    href={`/messages?to=${userId}&name=${encodeURIComponent(profile.username || profile.name || "")}`}
+                    onClick={onClose}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium text-center bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                  >
+                    Message
+                  </Link>
+                </div>
               )}
 
               {followError && (
