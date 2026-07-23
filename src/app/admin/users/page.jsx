@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { listAdminUsers } from "@/lib/api/adminUsers";
 import { getRoles } from "@/lib/api/admin";
+import DmReportsCard from "@/components/admin/users/DmReportsCard";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -53,6 +54,8 @@ export default function AdminUsers() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white">User Management</h2>
       </div>
+
+      <DmReportsCard />
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-4">

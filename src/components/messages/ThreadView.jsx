@@ -38,9 +38,15 @@ export default function ThreadView({
   const [sending, setSending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [working, setWorking] = useState(false); // block/report in flight
+  const [hasMore, setHasMore] = useState(false); // older history beyond the first page
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const PAGE = 50; // server default page size for getMessages
 
   const scrollRef = useRef(null);
   const menuRef = useRef(null);
+  const loadedOnceRef = useRef(false);
+  const skipScrollRef = useRef(false); // suppress pin-to-bottom when prepending history
   const threadIdRef = useRef(threadId);
   threadIdRef.current = threadId;
 
@@ -66,6 +72,10 @@ export default function ThreadView({
     try {
       const res = await getMessages(id);
       const rows = res.messages || [];
+      if (!loadedOnceRef.current) {
+        loadedOnceRef.current = true;
+        setHasMore(rows.length === PAGE);
+      }
       let sawNewInbound = false;
       setMessages((prev) => {
         const pendingTmp = prev.filter(
@@ -74,7 +84,13 @@ export default function ThreadView({
         );
         const prevRealIds = new Set(prev.filter((m) => !String(m.id).startsWith("tmp-")).map((m) => m.id));
         sawNewInbound = rows.some((r) => !prevRealIds.has(r.id) && r.sender_id !== me);
-        return [...rows, ...pendingTmp];
+        // Polls fetch only the latest page; keep any older history the member
+        // paged in (ids below the fetched window) instead of dropping it.
+        const oldestFetched = rows.length ? rows[0].id : null;
+        const olderKept = oldestFetched
+          ? prev.filter((m) => !String(m.id).startsWith("tmp-") && m.id < oldestFetched)
+          : [];
+        return [...olderKept, ...rows, ...pendingTmp];
       });
       if (markOnNew && sawNewInbound && document.visibilityState === "visible") {
         markRead();
@@ -133,8 +149,39 @@ export default function ThreadView({
     };
   }, [threadId, loadMessages]);
 
-  // Keep the view pinned to the newest message.
+  // Load the page of history before the oldest visible message, keeping the
+  // member's scroll position anchored on what they were reading.
+  const loadOlder = async () => {
+    const id = threadIdRef.current;
+    const first = messages.find((m) => !String(m.id).startsWith("tmp-"));
+    if (!id || !first || loadingMore) return;
+    setLoadingMore(true);
+    const el = scrollRef.current;
+    const prevHeight = el ? el.scrollHeight : 0;
+    try {
+      const res = await getMessages(id, first.id);
+      const older = res.messages || [];
+      setHasMore(older.length === PAGE);
+      if (older.length) {
+        skipScrollRef.current = true;
+        setMessages((prev) => [...older, ...prev]);
+        requestAnimationFrame(() => {
+          if (el) el.scrollTop += el.scrollHeight - prevHeight;
+        });
+      }
+    } catch {
+      showToast?.("Could not load earlier messages.", "error");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // Keep the view pinned to the newest message (except history prepends).
   useEffect(() => {
+    if (skipScrollRef.current) {
+      skipScrollRef.current = false;
+      return;
+    }
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
@@ -298,6 +345,17 @@ export default function ThreadView({
           </div>
         ) : (
           <div className="min-h-full flex flex-col justify-end space-y-2">
+          {hasMore && (
+            <div className="flex justify-center pb-1">
+              <button
+                onClick={loadOlder}
+                disabled={loadingMore}
+                className="px-3 py-1 text-xs rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
+              >
+                {loadingMore ? "Loading..." : "Load earlier messages"}
+              </button>
+            </div>
+          )}
           {messages.map((m) => {
             const mine = m.sender_id === me;
             const pending = String(m.id).startsWith("tmp-");
