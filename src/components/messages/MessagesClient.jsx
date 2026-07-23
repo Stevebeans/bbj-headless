@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { getThreads } from "@/lib/api/dm";
 import { searchUsers } from "@/lib/api/comments";
 import ThreadView from "./ThreadView";
+import Avatar from "./Avatar";
 
 // Server timestamps are UTC 'Y-m-d H:i:s' with no zone marker; optimistic rows
 // carry a real ISO string. Normalize both before handing to the Date parser.
@@ -24,31 +24,6 @@ function fmtRelative(s) {
   const day = Math.floor(hr / 24);
   if (day < 7) return `${day}d`;
   return d.toLocaleDateString();
-}
-
-function Avatar({ src, name, size = 44 }) {
-  const initial = (name || "?").charAt(0).toUpperCase();
-  if (src) {
-    return (
-      <Image
-        src={src}
-        alt={name || "User"}
-        width={size}
-        height={size}
-        className="rounded-full object-cover shrink-0"
-        style={{ width: size, height: size }}
-        unoptimized
-      />
-    );
-  }
-  return (
-    <div
-      className="rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0"
-      style={{ width: size, height: size }}
-    >
-      <span className="font-bold text-primary-600 dark:text-primary-400">{initial}</span>
-    </div>
-  );
 }
 
 export default function MessagesClient({ initialRecipient = null }) {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import {
   getMessages,
   sendMessage,
@@ -9,6 +8,7 @@ import {
   blockUser,
   reportThread,
 } from "@/lib/api/dm";
+import Avatar from "./Avatar";
 
 // Server timestamps are UTC 'Y-m-d H:i:s' (no zone marker); optimistic rows use
 // a real ISO string. Normalize both before parsing so times render in the
@@ -18,31 +18,6 @@ function fmtTime(s) {
   const iso = s.includes("T") ? s : s.replace(" ", "T") + "Z";
   const d = new Date(iso);
   return isNaN(d.getTime()) ? "" : d.toLocaleString();
-}
-
-function Avatar({ src, name, size = 36 }) {
-  const initial = (name || "?").charAt(0).toUpperCase();
-  if (src) {
-    return (
-      <Image
-        src={src}
-        alt={name || "User"}
-        width={size}
-        height={size}
-        className="rounded-full object-cover shrink-0"
-        style={{ width: size, height: size }}
-        unoptimized
-      />
-    );
-  }
-  return (
-    <div
-      className="rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0"
-      style={{ width: size, height: size }}
-    >
-      <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{initial}</span>
-    </div>
-  );
 }
 
 export default function ThreadView({
@@ -307,8 +282,10 @@ export default function ThreadView({
         </div>
       </div>
 
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-4 space-y-2">
+      {/* Messages. The inner wrapper bottom-anchors short conversations
+          (justify-end) so the newest message always sits directly above the
+          composer instead of stranding it at the top of a tall empty pane. */}
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-4">
         {loading ? (
           <div className="h-full flex items-center justify-center">
             <div className="animate-spin w-6 h-6 border-2 border-slate-300 dark:border-slate-600 border-t-primary-500 rounded-full" />
@@ -320,7 +297,8 @@ export default function ThreadView({
             </p>
           </div>
         ) : (
-          messages.map((m) => {
+          <div className="min-h-full flex flex-col justify-end space-y-2">
+          {messages.map((m) => {
             const mine = m.sender_id === me;
             const pending = String(m.id).startsWith("tmp-");
             return (
@@ -341,7 +319,8 @@ export default function ThreadView({
                 </div>
               </div>
             );
-          })
+          })}
+          </div>
         )}
       </div>
 
