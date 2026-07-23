@@ -24,10 +24,10 @@ export default function DmReportsCard() {
   const [resolvingId, setResolvingId] = useState(null);
   const [error, setError] = useState(null);
 
-  const load = useCallback(async (which = status) => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await adminFetch(`/dm/reports?status=${which}`);
+      const res = await adminFetch(`/dm/reports?status=${status}`);
       setReports(res.reports || []);
       setError(null);
     } catch (err) {
@@ -38,7 +38,7 @@ export default function DmReportsCard() {
   }, [status]);
 
   useEffect(() => {
-    load(status);
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
