@@ -28,9 +28,13 @@
     @apply bg-paper text-gray-900 dark:bg-gray-900 dark:text-gray-100;
   }
 
+  /* Ad iframes (GPT ids start with google_ads_iframe) are excluded: forcing
+     height: auto on an iframe collapses it to the 150px CSS default, which
+     broke Freestar's mobile pushdown/sticky sizing (their email 2026-07-24).
+     Content embeds (YouTube, X) keep the responsive constraints. */
   img,
   video,
-  iframe,
+  iframe:not([id^="google_ads_iframe"]),
   table {
     max-width: 100%;
     height: auto;
