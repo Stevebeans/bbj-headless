@@ -275,6 +275,13 @@ export async function getContentSlots() {
   return adminFetch('/content-engine/slots');
 }
 
+// Day schedule: forward queue for future days, posted items + FB metrics for
+// past days. from/to are UTC 'Y-m-d H:i:s' bounds of a viewer-local day.
+export async function getSchedule(fromUtc, toUtc) {
+  const params = new URLSearchParams({ from: fromUtc, to: toUtc });
+  return adminFetch(`/content-engine/schedule?${params.toString()}`);
+}
+
 export async function getContentQueueImage(id) {
   return adminFetch(`/content-engine/queue/${id}/image`);
 }

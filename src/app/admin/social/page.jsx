@@ -10,6 +10,7 @@ import BeanFactsEditor from "@/components/admin/social/BeanFactsEditor";
 import XImportBox from "@/components/admin/social/XImportBox";
 import BeanPromptsViewer from "@/components/admin/social/BeanPromptsViewer";
 import FanFavSnapshot from "@/components/admin/social/FanFavSnapshot";
+import ScheduleView from "@/components/admin/social/ScheduleView";
 import QueueList from "@/components/admin/content-engine/QueueList";
 import DraftEditor from "@/components/admin/content-engine/DraftEditor";
 
@@ -549,6 +550,7 @@ export default function AdminSocialPage() {
   const SUB_TABS = [
     ["pipeline", "📤 FB Pipeline"],
     ["fanfav", "⭐ Fan Favorites"],
+    ["schedule", "📅 Schedule"],
     ["collector", "📡 Collector"],
     ["drafts", "📝 Digest & Drafts"],
     ["bean", "🫘 Bean"],
@@ -948,6 +950,10 @@ export default function AdminSocialPage() {
 
       <div className={subTab === "fanfav" ? "" : "hidden"}>
       <FanFavSnapshot />
+      </div>
+
+      <div className={subTab === "schedule" ? "" : "hidden"}>
+      <ScheduleView />
       </div>
 
       <div className={subTab === "drafts" ? "" : "hidden"}>
