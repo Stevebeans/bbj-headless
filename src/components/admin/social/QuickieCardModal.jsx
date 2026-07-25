@@ -149,7 +149,14 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
     setSlotsLoading(true);
     try {
       const res = await getContentSlots();
-      setSlots(res.slots || []);
+      const fresh = res.slots || [];
+      setSlots(fresh);
+      // Same guard as DraftEditor: a slot picked earlier may have been taken
+      // since - drop a selection that is no longer a free slot so a stale
+      // pick can never double-book.
+      setSelectedSlot((prev) =>
+        prev && fresh.some((s) => s.at === prev && !s.taken) ? prev : ""
+      );
     } catch {
       setSlots([]);
     } finally {
@@ -236,6 +243,10 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
           ? `Queued for ${fmtSlotLabel(res.scheduled_at || selectedSlot)} ✓`
           : `Queued for ${res.scheduled_at} (server time) ✓`;
         setStatus({ ok: true, msg });
+        // The modal stays open - clear the pick and refresh the grid so a
+        // second queue can't reuse the now-taken slot.
+        setSelectedSlot("");
+        fetchSlots();
       } else setStatus({ ok: false, msg: res.message || "Queue failed" });
     } catch (e) {
       setStatus({ ok: false, msg: e.message || "Card export failed" });
