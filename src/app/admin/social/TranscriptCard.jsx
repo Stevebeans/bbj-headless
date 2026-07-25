@@ -184,6 +184,9 @@ export function TranscriptCard({ currentSeason }) {
         ...blankDraft({
           quote_text: line.quote,
           speaker: line.speaker,
+          // The listener rides the existing context column to the public
+          // quote surfaces; editable before approval like everything else.
+          context: line.to ? `to ${line.to}` : "",
           said_on: date,
           source_count: 1,
         }),
@@ -204,6 +207,7 @@ export function TranscriptCard({ currentSeason }) {
         ...blankDraft({
           quote_text: candidate.quote,
           speaker: candidate.speaker,
+          context: candidate.to ? `to ${candidate.to}` : "",
           said_on: date,
           source_count: candidate.echo_count || 1,
         }),
@@ -319,7 +323,8 @@ export function TranscriptCard({ currentSeason }) {
                 >
                   <span className="block text-slate-700 dark:text-slate-300">&ldquo;{truncate(c.quote, 120)}&rdquo;</span>
                   <span className="text-xs text-slate-400">
-                    {c.speaker || "Unknown"} &middot; {c.echo_count || 1}x
+                    {c.speaker || "Unknown"}
+                    {c.to ? ` → ${c.to}` : ""} &middot; {c.echo_count || 1}x
                   </span>
                 </button>
               );
