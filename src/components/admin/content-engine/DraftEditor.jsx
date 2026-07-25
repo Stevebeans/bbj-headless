@@ -70,7 +70,14 @@ export default function DraftEditor({
     setSlotsError(false);
     try {
       const data = await getContentSlots();
-      setSlots(data?.slots || []);
+      const fresh = data?.slots || [];
+      setSlots(fresh);
+      // A slot picked earlier may have been taken since (or scrolled out of
+      // the grid) — clear a selection that is no longer a free slot so a
+      // stale pick can never submit into an occupied slot.
+      setSelectedSlot((prev) =>
+        prev && fresh.some((s) => s.at === prev && !s.taken) ? prev : ""
+      );
     } catch {
       // Never block scheduling — fall back to the custom-time input.
       setSlots([]);
@@ -137,7 +144,12 @@ export default function DraftEditor({
     if (usingCustomTime) {
       if (!scheduleDate) return;
       // datetime-local is local wall time — convert to UTC "Y-m-d H:i:s".
-      scheduledAt = new Date(scheduleDate).toISOString().slice(0, 19).replace("T", " ");
+      const parsed = new Date(scheduleDate);
+      if (isNaN(parsed.getTime())) {
+        showFeedback("error", "That date and time could not be read. Pick it again.");
+        return;
+      }
+      scheduledAt = parsed.toISOString().slice(0, 19).replace("T", " ");
     } else {
       if (!selectedSlot) return;
       // Slot "at" is already UTC "Y-m-d H:i:s" — send verbatim.
@@ -318,7 +330,11 @@ export default function DraftEditor({
             {action === "scheduling" ? "Scheduling..." : "Confirm Schedule"}
           </button>
           <button
-            onClick={() => setShowScheduler(false)}
+            onClick={() => {
+              setShowScheduler(false);
+              setSelectedSlot("");
+              setUseCustomTime(false);
+            }}
             className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
             Cancel
