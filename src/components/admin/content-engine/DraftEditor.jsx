@@ -6,7 +6,18 @@ import {
   postToFacebook,
   postPhotoToFacebook,
   createContentDraft,
+  getContentSlots,
 } from "@/lib/api/admin";
+
+// UTC "Y-m-d H:i:s" -> localized "Sat 6:30 PM"
+function formatSlotLabel(at) {
+  const d = new Date(at.replace(" ", "T") + "Z");
+  return d.toLocaleString([], {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export default function DraftEditor({
   initialBody = "",
@@ -22,6 +33,11 @@ export default function DraftEditor({
   const [alsoPublishBlog, setAlsoPublishBlog] = useState(false);
   const [scheduleDate, setScheduleDate] = useState("");
   const [showScheduler, setShowScheduler] = useState(false);
+  const [slots, setSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState("");
+  const [useCustomTime, setUseCustomTime] = useState(false);
   const [loading, setLoading] = useState(false);
   const [action, setAction] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -48,6 +64,26 @@ export default function DraftEditor({
     setFeedback({ type, message });
     setTimeout(() => setFeedback(null), 4000);
   }, []);
+
+  const loadSlots = useCallback(async () => {
+    setSlotsLoading(true);
+    setSlotsError(false);
+    try {
+      const data = await getContentSlots();
+      setSlots(data?.slots || []);
+    } catch {
+      // Never block scheduling — fall back to the custom-time input.
+      setSlots([]);
+      setSlotsError(true);
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, []);
+
+  // Fetch slots once each time the scheduler opens.
+  useEffect(() => {
+    if (showScheduler) loadSlots();
+  }, [showScheduler, loadSlots]);
 
   const handlePostNow = async () => {
     if (!body.trim()) return;
@@ -90,8 +126,24 @@ export default function DraftEditor({
     }
   };
 
+  // Custom-time input is used when the operator picks it, or as an automatic
+  // fallback if the slots endpoint failed.
+  const usingCustomTime = useCustomTime || slotsError;
+
   const handleSchedule = async () => {
-    if (!body.trim() || !scheduleDate) return;
+    if (!body.trim()) return;
+
+    let scheduledAt;
+    if (usingCustomTime) {
+      if (!scheduleDate) return;
+      // datetime-local is local wall time — convert to UTC "Y-m-d H:i:s".
+      scheduledAt = new Date(scheduleDate).toISOString().slice(0, 19).replace("T", " ");
+    } else {
+      if (!selectedSlot) return;
+      // Slot "at" is already UTC "Y-m-d H:i:s" — send verbatim.
+      scheduledAt = selectedSlot;
+    }
+
     setLoading(true);
     setAction("scheduling");
     try {
@@ -99,7 +151,7 @@ export default function DraftEditor({
         body,
         source,
         status: "scheduled",
-        scheduled_at: scheduleDate,
+        scheduled_at: scheduledAt,
         content_type: alsoPublishBlog ? "both" : "facebook_post",
         target_page: selectedPage,
         target_page_name: pages.find((p) => p.id === selectedPage)?.name || "",
@@ -110,12 +162,26 @@ export default function DraftEditor({
       setBody("");
       setImage(null);
       setScheduleDate("");
+      setSelectedSlot("");
+      setUseCustomTime(false);
       setShowScheduler(false);
     } catch (err) {
       showFeedback("error", err.message || "Failed to schedule");
     } finally {
       setLoading(false);
       setAction(null);
+    }
+  };
+
+  const canSchedule = usingCustomTime ? !!scheduleDate : !!selectedSlot;
+
+  const handleSlotChange = (value) => {
+    if (value === "__custom__") {
+      setUseCustomTime(true);
+      setSelectedSlot("");
+    } else {
+      setUseCustomTime(false);
+      setSelectedSlot(value);
     }
   };
 
@@ -202,16 +268,51 @@ export default function DraftEditor({
 
       {/* Schedule picker */}
       {showScheduler && (
-        <div className="flex items-center gap-3">
-          <input
-            type="datetime-local"
-            value={scheduleDate}
-            onChange={(e) => setScheduleDate(e.target.value)}
-            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          {!slotsError && (
+            <>
+              <select
+                value={useCustomTime ? "__custom__" : selectedSlot}
+                onChange={(e) => handleSlotChange(e.target.value)}
+                disabled={slotsLoading}
+                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white disabled:opacity-50"
+              >
+                <option value="">
+                  {slotsLoading ? "Loading slots..." : "Choose a time..."}
+                </option>
+                {slots.map((s) => (
+                  <option key={s.at} value={s.at} disabled={s.taken}>
+                    {s.taken
+                      ? `${formatSlotLabel(s.at)} - ${s.label || "taken"}`
+                      : `${formatSlotLabel(s.at)}${s.cbs_caution ? " (during episode)" : ""}`}
+                  </option>
+                ))}
+                <option value="__custom__">Custom time...</option>
+              </select>
+              <button
+                type="button"
+                onClick={loadSlots}
+                disabled={slotsLoading}
+                title="Refresh slots"
+                className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
+              >
+                {slotsLoading ? "..." : "↻"}
+              </button>
+            </>
+          )}
+
+          {usingCustomTime && (
+            <input
+              type="datetime-local"
+              value={scheduleDate}
+              onChange={(e) => setScheduleDate(e.target.value)}
+              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+            />
+          )}
+
           <button
             onClick={handleSchedule}
-            disabled={loading || !scheduleDate}
+            disabled={loading || !canSchedule}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium disabled:opacity-50"
           >
             {action === "scheduling" ? "Scheduling..." : "Confirm Schedule"}

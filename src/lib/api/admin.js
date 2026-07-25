@@ -271,6 +271,10 @@ export async function getContentQueue() {
   return adminFetch('/content-engine/queue');
 }
 
+export async function getContentSlots() {
+  return adminFetch('/content-engine/slots');
+}
+
 export async function getContentQueueImage(id) {
   return adminFetch(`/content-engine/queue/${id}/image`);
 }
