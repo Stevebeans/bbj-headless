@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import {
   generateQuickieCaption,
+  getContentSlots,
   getFacebookPages,
   postPhotoToFacebook,
   queueQuickie,
@@ -79,6 +80,18 @@ function useDataUrl(src) {
   return dataUrl;
 }
 
+// A slot's UTC 'Y-m-d H:i:s' -> viewer-local "Sat 6:30 PM".
+function fmtSlotLabel(utc) {
+  if (!utc) return "";
+  const d = new Date(utc.replace(" ", "T") + "Z");
+  if (Number.isNaN(d.getTime())) return utc;
+  return d.toLocaleString([], {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function fmtPostedAt(utc) {
   if (!utc) return "";
   const d = new Date(utc.replace(" ", "T") + "Z");
@@ -114,6 +127,10 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
   const [pageId, setPageId] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null); // {ok, msg}
+  // Optional schedule slot. "" = Auto (next free slot) = current behavior.
+  const [slots, setSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState("");
 
   // FB pages for the destination select (skipped while previewing).
   useEffect(() => {
@@ -126,6 +143,23 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
       })
       .catch(() => setStatus({ ok: false, msg: "Couldn't load Facebook pages" }));
   }, [previewMode]);
+
+  // Schedule slots for the optional slot picker (skipped while previewing).
+  const fetchSlots = useCallback(async () => {
+    setSlotsLoading(true);
+    try {
+      const res = await getContentSlots();
+      setSlots(res.slots || []);
+    } catch {
+      setSlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!previewMode) fetchSlots();
+  }, [previewMode, fetchSlots]);
 
   const fetchCaption = useCallback(async () => {
     setCaptionLoading(true);
@@ -195,9 +229,14 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
         page_name: page?.name || "",
         message: fullMessage(),
         image_data,
+        ...(selectedSlot ? { scheduled_at: selectedSlot } : {}),
       });
-      if (res.success) setStatus({ ok: true, msg: `Queued for ${res.scheduled_at} (server time) ✓` });
-      else setStatus({ ok: false, msg: res.message || "Queue failed" });
+      if (res.success) {
+        const msg = selectedSlot
+          ? `Queued for ${fmtSlotLabel(res.scheduled_at || selectedSlot)} ✓`
+          : `Queued for ${res.scheduled_at} (server time) ✓`;
+        setStatus({ ok: true, msg });
+      } else setStatus({ ok: false, msg: res.message || "Queue failed" });
     } catch (e) {
       setStatus({ ok: false, msg: e.message || "Card export failed" });
     } finally {
@@ -396,6 +435,44 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
           <p className="text-xs text-slate-400 mt-1">
             Posted as: caption + "- via {creditName} on {platform}"
           </p>
+        </div>
+        )}
+
+        {/* Schedule slot (optional) - default keeps auto next-free-slot */}
+        {!previewMode && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Schedule
+            </label>
+            <button
+              type="button"
+              onClick={fetchSlots}
+              disabled={slotsLoading}
+              className="text-xs text-primary-600 hover:underline disabled:opacity-50"
+            >
+              {slotsLoading ? "Loading…" : "↻ Refresh"}
+            </button>
+          </div>
+          <select
+            value={selectedSlot}
+            onChange={(e) => setSelectedSlot(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 p-2 text-sm text-slate-800 dark:text-slate-100"
+          >
+            <option value="">Auto (next free slot)</option>
+            {slots.map((s) => {
+              const caution = s.cbs_caution ? " (during episode)" : "";
+              return s.taken ? (
+                <option key={s.at} value={s.at} disabled>
+                  {fmtSlotLabel(s.at)} - taken{s.label ? ` (${s.label})` : ""}
+                </option>
+              ) : (
+                <option key={s.at} value={s.at}>
+                  {fmtSlotLabel(s.at)}{caution}
+                </option>
+              );
+            })}
+          </select>
         </div>
         )}
 
