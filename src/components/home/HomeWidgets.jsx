@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { toRelativeHref } from "@/lib/utils/url";
+import { playerPoints, pointsBreakdown } from "@/lib/bbPoints";
 
 /**
  * Social Follow Widget
@@ -50,6 +51,7 @@ export function SocialFollow() {
 
 /**
  * Houseboard Widget (HoH, PoV, Nominees, Have Nots)
+ * Stats table scoring lives in lib/bbPoints.js.
  */
 export function Houseboard({ houseboard, seasonName }) {
   const { hoh = [], pov = [], nominees = [], have_nots = [] } = houseboard || {};
@@ -178,11 +180,12 @@ export function SeasonStats({ season, players = [] }) {
         </div>
       </div>
 
-      {/* Player Stats Table */}
+      {/* Player Stats Table — active players first, then by points */}
       <div className="overflow-x-auto">
-        <div className="grid grid-cols-[minmax(80px,1fr)_repeat(5,32px)] gap-1 text-xs">
+        <div className="grid grid-cols-[minmax(80px,1fr)_38px_repeat(5,30px)] gap-1 text-xs">
           {/* Header */}
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 rounded-l">Player</div>
+          <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="Season Points">PTS</div>
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="HoH Wins">H</div>
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="Veto Wins">V</div>
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="Nominations">N</div>
@@ -190,13 +193,20 @@ export function SeasonStats({ season, players = [] }) {
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center rounded-r" title="Days in House">TD</div>
 
           {/* Players */}
-          {players.map((player) => (
-            <PlayerStatsRow key={player.id} player={player} />
-          ))}
+          {[...players]
+            .sort((a, b) =>
+              (a.is_evicted ? 1 : 0) - (b.is_evicted ? 1 : 0) ||
+              playerPoints(b.stats, b.is_evicted) - playerPoints(a.stats, a.is_evicted)
+            )
+            .map((player) => (
+              <PlayerStatsRow key={player.id} player={player} />
+            ))}
         </div>
 
         {/* Legend */}
         <div className="border-t border-gray-300 dark:border-gray-700 text-[10px] mt-3 pt-2 text-gray-500 dark:text-gray-400 italic grid grid-cols-[25px_1fr] gap-x-2">
+          <div className="text-center">PTS</div>
+          <div>Points: HoH 2.5, Veto 2, other comps 1, surviving the block 1, veto save 0.5, nomination -1</div>
           <div className="text-center">H</div>
           <div>Head of Household</div>
           <div className="text-center">V</div>
@@ -233,6 +243,12 @@ function PlayerStatsRow({ player }) {
         <Link href={player.permalink ? toRelativeHref(player.permalink) : "#"} className="truncate hover:underline py-0.5">
           {player.name}
         </Link>
+      </div>
+      <div
+        className={`text-center tabular-nums font-semibold ${textClass}`}
+        title={pointsBreakdown(player.stats, player.is_evicted)}
+      >
+        {playerPoints(player.stats, player.is_evicted)}
       </div>
       <div className={`text-center tabular-nums ${textClass}`}>{player.stats.hoh}</div>
       <div className={`text-center tabular-nums ${textClass}`}>{player.stats.pov}</div>
