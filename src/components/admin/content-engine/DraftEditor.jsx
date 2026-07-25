@@ -170,7 +170,9 @@ export default function DraftEditor({
         image_data: image || undefined,
       });
       showFeedback("success", "Scheduled successfully!");
-      onSave?.(result);
+      // Stamp the action onto the callback arg — the server response carries
+      // only {success, id}, and consumers need to tell schedule from draft.
+      onSave?.({ ...result, status: "scheduled" });
       setBody("");
       setImage(null);
       setScheduleDate("");
@@ -212,7 +214,7 @@ export default function DraftEditor({
         image_data: image || undefined,
       });
       showFeedback("success", "Draft saved!");
-      onSave?.(result);
+      onSave?.({ ...result, status: "draft" });
     } catch (err) {
       showFeedback("error", err.message || "Failed to save draft");
     } finally {

@@ -497,6 +497,11 @@ export default function AdminSocialPage() {
       const data = await adminFetch("/social/draft-batch", { method: "POST" });
       if (data && data.success && Array.isArray(data.posts) && data.posts.length) {
         setBatchPosts(data.posts);
+        // Fresh batch, fresh per-card state — chips are index-keyed and would
+        // otherwise carry over onto brand-new untouched posts.
+        setBatchQueued({});
+        setEditingBatchIdx(null);
+        setBatchCopiedIdx(null);
         setDraft(null); // batch cards replace the single-draft card
         if (historyKind === "facebook") loadHistory("facebook");
         else setHistoryKind("facebook");
@@ -1306,8 +1311,13 @@ export default function AdminSocialPage() {
                     <DraftEditor
                       initialBody={decodeEntities(post.content)}
                       source="batch"
-                      onSave={() => {
-                        setBatchQueued((m) => ({ ...m, [idx]: "Queued ✓" }));
+                      onSave={(result) => {
+                        // Save Draft fires this too — only a scheduled row is
+                        // actually in the drip.
+                        setBatchQueued((m) => ({
+                          ...m,
+                          [idx]: result?.status === "scheduled" ? "Queued ✓" : "Draft saved ✓",
+                        }));
                         setEditingBatchIdx(null);
                       }}
                       onPost={() => {
