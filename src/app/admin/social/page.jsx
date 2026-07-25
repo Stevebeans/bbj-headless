@@ -11,6 +11,7 @@ import XImportBox from "@/components/admin/social/XImportBox";
 import BeanPromptsViewer from "@/components/admin/social/BeanPromptsViewer";
 import FanFavSnapshot from "@/components/admin/social/FanFavSnapshot";
 import QueueList from "@/components/admin/content-engine/QueueList";
+import DraftEditor from "@/components/admin/content-engine/DraftEditor";
 
 const MODEL_OPTIONS = [
   { id: "claude-sonnet-5", label: "Sonnet 5 (default)" },
@@ -177,6 +178,8 @@ export default function AdminSocialPage() {
   const [draftBusy, setDraftBusy] = useState(null); // 'facebook' | 'blog' | 'batch'
   const [batchPosts, setBatchPosts] = useState([]);
   const [batchCopiedIdx, setBatchCopiedIdx] = useState(null);
+  const [editingBatchIdx, setEditingBatchIdx] = useState(null);
+  const [batchQueued, setBatchQueued] = useState({});
   const [draft, setDraft] = useState(null);
   const [draftError, setDraftError] = useState(null);
   const [draftCopied, setDraftCopied] = useState(false);
@@ -1255,8 +1258,9 @@ export default function AdminSocialPage() {
         {batchPosts.length > 0 && (
           <div className="mt-5 space-y-4">
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {batchPosts.length} post{batchPosts.length === 1 ? "" : "s"} — copy each into
-              Facebook&apos;s scheduler, spaced out however you like.
+              {batchPosts.length} post{batchPosts.length === 1 ? "" : "s"}. Hit Edit &amp; Queue to
+              drop each into the drip on a scheduled slot. Copy/paste into Facebook&apos;s scheduler
+              is still there as a fallback.
             </p>
             {batchPosts.map((post, idx) => (
               <div
@@ -1267,21 +1271,52 @@ export default function AdminSocialPage() {
                   <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                     Post {idx + 1}
                     {post.covers && <> &middot; covers {post.covers} PT</>}
+                    {batchQueued[idx] && (
+                      <span className="ml-2 text-emerald-600 dark:text-emerald-400">
+                        {batchQueued[idx]}
+                      </span>
+                    )}
                   </span>
-                  <button
-                    onClick={() =>
-                      copyToClipboard(decodeEntities(post.content), (on) =>
-                        setBatchCopiedIdx(on ? idx : null)
-                      )
-                    }
-                    className="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-                  >
-                    {batchCopiedIdx === idx ? "Copied" : "Copy"}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() =>
+                        setEditingBatchIdx(editingBatchIdx === idx ? null : idx)
+                      }
+                      className="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    >
+                      {editingBatchIdx === idx ? "Close" : "Edit & Queue"}
+                    </button>
+                    <button
+                      onClick={() =>
+                        copyToClipboard(decodeEntities(post.content), (on) =>
+                          setBatchCopiedIdx(on ? idx : null)
+                        )
+                      }
+                      className="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    >
+                      {batchCopiedIdx === idx ? "Copied" : "Copy"}
+                    </button>
+                  </div>
                 </div>
                 <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                   {decodeEntities(post.content)}
                 </div>
+                {editingBatchIdx === idx && (
+                  <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <DraftEditor
+                      initialBody={decodeEntities(post.content)}
+                      source="batch"
+                      onSave={() => {
+                        setBatchQueued((m) => ({ ...m, [idx]: "Queued ✓" }));
+                        setEditingBatchIdx(null);
+                      }}
+                      onPost={() => {
+                        setBatchQueued((m) => ({ ...m, [idx]: "Posted ✓" }));
+                        setEditingBatchIdx(null);
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
