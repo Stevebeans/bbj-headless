@@ -145,8 +145,8 @@ function PostedRow({ item, isWinner }) {
   );
 }
 
-function ScheduledRow({ row, now }) {
-  const cd = countdown(row.scheduled_at, now);
+function ScheduledRow({ row, now, showCountdown }) {
+  const cd = showCountdown ? countdown(row.scheduled_at, now) : "";
   return (
     <li className="border border-slate-200 dark:border-slate-700 rounded-lg p-4">
       <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -195,7 +195,9 @@ export default function ScheduleView() {
     setLoading(true);
     setError(null);
     const start = localMidnight(dayOffset);
-    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    // Next local midnight, NOT start+24h in ms: DST-transition days are 23 or
+    // 25 hours long, and fixed arithmetic would repeat or skip an hour.
+    const end = localMidnight(dayOffset + 1);
     try {
       const res = await getSchedule(toUtcString(start), toUtcString(end));
       setData(res);
@@ -335,7 +337,7 @@ export default function ScheduleView() {
               ) : (
                 <ul className="space-y-3">
                   {scheduled.map((row) => (
-                    <ScheduledRow key={row.id} row={row} now={now} />
+                    <ScheduledRow key={row.id} row={row} now={now} showCountdown={offset === 0} />
                   ))}
                 </ul>
               )}
