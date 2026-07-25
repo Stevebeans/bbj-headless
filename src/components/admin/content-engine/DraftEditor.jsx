@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   getFacebookPages,
   postToFacebook,
@@ -41,6 +41,37 @@ export default function DraftEditor({
   const [loading, setLoading] = useState(false);
   const [action, setAction] = useState(null);
   const [feedback, setFeedback] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Screenshots arrive two ways: the Attach button (file picker) or a straight
+  // Ctrl+V into the textarea. Stored as RAW base64 (no data: prefix) because
+  // the cron base64_decode()s image_data verbatim before the FB upload.
+  const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+  const acceptImageFile = useCallback((file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    if (file.size > MAX_IMAGE_BYTES) {
+      setFeedback({ type: "error", message: "Image is over 8 MB. Crop or compress it first." });
+      setTimeout(() => setFeedback(null), 4000);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+      if (base64) setImage(base64);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handlePaste = (e) => {
+    const item = Array.from(e.clipboardData?.items || []).find((i) =>
+      i.type.startsWith("image/")
+    );
+    if (item) {
+      e.preventDefault();
+      acceptImageFile(item.getAsFile());
+    }
+  };
 
   useEffect(() => {
     setBody(initialBody);
@@ -229,7 +260,8 @@ export default function DraftEditor({
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="Write your post content..."
+        onPaste={handlePaste}
+        placeholder="Write your post content... (paste a screenshot right here)"
         rows={4}
         className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-y"
       />
@@ -248,6 +280,30 @@ export default function DraftEditor({
           >
             x
           </button>
+        </div>
+      )}
+
+      {/* Image attach (button + hidden picker; paste works too) */}
+      {!image && (
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              acceptImageFile(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium"
+          >
+            📎 Attach image
+          </button>
+          <span className="ml-2 text-xs text-slate-400">or paste a screenshot into the text box</span>
         </div>
       )}
 
