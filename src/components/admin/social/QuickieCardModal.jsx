@@ -377,34 +377,9 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
                       }}
                     />
                   )}
-                  {post.is_video && imageData && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 54,
-                          height: 54,
-                          borderRadius: "50%",
-                          background: "rgba(0,0,0,0.55)",
-                          color: "#fff",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 22,
-                          paddingLeft: 4,
-                        }}
-                      >
-                        ▶
-                      </div>
-                    </div>
-                  )}
+                  {/* No play badge on the export: FB downranks static images
+                      that look playable. Video posts ship as plain thumbnail
+                      cards; the ▶ marker lives on the admin board row only. */}
                 </div>
               </>
             ) : post.quoted ? (
