@@ -104,6 +104,33 @@ function fmtPostedAt(utc) {
   });
 }
 
+// The quoted-post block rendered INSIDE the card (part of the exported PNG):
+// the reaction on top, what it's reacting to underneath. Neutral translucent
+// styling reads on every card theme, light or dark.
+function QuotedInset({ quoted, muted }) {
+  const text =
+    quoted.text.length > 220 ? quoted.text.slice(0, 220).trimEnd() + "…" : quoted.text;
+  return (
+    <div
+      style={{
+        border: `1px solid ${muted}`,
+        background: "rgba(127,127,127,0.12)",
+        borderRadius: 10,
+        padding: "10px 12px",
+        margin: "0 0 10px",
+        fontSize: 13.5,
+        lineHeight: 1.35,
+      }}
+    >
+      <div style={{ fontWeight: 700, fontSize: 12.5, marginBottom: 3 }}>
+        ↪ {quoted.author}{" "}
+        <span style={{ color: muted, fontWeight: 400 }}>@{quoted.handle}</span>
+      </div>
+      <div>{text}</div>
+    </div>
+  );
+}
+
 export default function QuickieCardModal({ post, onClose, preview = false }) {
   // Preview mode: render the exact card (avatar/image/backgrounds) but skip
   // the caption call and posting controls - a cheap look before committing.
@@ -335,7 +362,8 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
                 >
                   {post.text}
                 </p>
-                <div style={{ overflow: "hidden", borderRadius: 8, marginBottom: 10 }}>
+                {post.quoted && <QuotedInset quoted={post.quoted} muted={bg.muted} />}
+                <div style={{ position: "relative", overflow: "hidden", borderRadius: 8, marginBottom: 10 }}>
                   {imageData && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -349,8 +377,49 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
                       }}
                     />
                   )}
+                  {post.is_video && imageData && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 54,
+                          height: 54,
+                          borderRadius: "50%",
+                          background: "rgba(0,0,0,0.55)",
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 22,
+                          paddingLeft: 4,
+                        }}
+                      >
+                        ▶
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
+            ) : post.quoted ? (
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <p
+                  style={{
+                    fontSize: Math.min(fontSizeFor(post.text), 22),
+                    lineHeight: 1.4,
+                    margin: "12px 0 10px",
+                  }}
+                >
+                  {post.text}
+                </p>
+                <QuotedInset quoted={post.quoted} muted={bg.muted} />
+              </div>
             ) : (
               <p
                 style={{

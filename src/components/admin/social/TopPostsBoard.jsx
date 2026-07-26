@@ -38,11 +38,21 @@ function fmtTime(utc) {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-// Pull the first attached image (fullsize) per post from Bluesky's public
-// API, batched 25 URIs per getPosts call. The poller only stores text, so
-// meme/screenshot posts need this hydration pass to card properly.
-async function fetchEmbedImages(uris) {
+// Pull embed context per post from Bluesky's public API, batched 25 URIs per
+// getPosts call. The poller only stores text, so images, video thumbnails,
+// GIF/link cards, and quoted posts all need this hydration pass or the cards
+// lose the thing the post is reacting to.
+async function fetchEmbeds(uris) {
   const map = {};
+  const firstImage = (imgs) => (imgs?.length && imgs[0].fullsize) || null;
+  const quotedFrom = (rec) =>
+    rec && rec.value
+      ? {
+          author: rec.author?.displayName || rec.author?.handle || "",
+          handle: rec.author?.handle || "",
+          text: rec.value?.text || "",
+        }
+      : null;
   for (let i = 0; i < uris.length; i += 25) {
     const batch = uris.slice(i, i + 25);
     const qs = batch.map((u) => `uris=${encodeURIComponent(u)}`).join("&");
@@ -51,19 +61,46 @@ async function fetchEmbedImages(uris) {
       const data = await res.json();
       for (const post of data.posts || []) {
         const embed = post.embed || {};
-        const images =
-          embed.$type === "app.bsky.embed.images#view"
-            ? embed.images
-            : embed.$type === "app.bsky.embed.recordWithMedia#view" &&
-                embed.media?.$type === "app.bsky.embed.images#view"
-              ? embed.media.images
-              : null;
-        if (images?.length && images[0].fullsize) {
-          map[post.uri] = images[0].fullsize;
+        let img = null;
+        let isVideo = false;
+        let quoted = null;
+
+        if (embed.$type === "app.bsky.embed.images#view") {
+          img = firstImage(embed.images);
+        } else if (embed.$type === "app.bsky.embed.video#view") {
+          img = embed.thumbnail || null;
+          isVideo = true;
+        } else if (embed.$type === "app.bsky.embed.external#view") {
+          // Link cards and Tenor GIFs.
+          img = embed.external?.thumb || null;
+        } else if (embed.$type === "app.bsky.embed.recordWithMedia#view") {
+          const media = embed.media || {};
+          if (media.$type === "app.bsky.embed.images#view") {
+            img = firstImage(media.images);
+          } else if (media.$type === "app.bsky.embed.video#view") {
+            img = media.thumbnail || null;
+            isVideo = true;
+          }
+          quoted = quotedFrom(embed.record?.record);
+        } else if (embed.$type === "app.bsky.embed.record#view") {
+          // Pure quote post: the reaction's referent lives on the QUOTED
+          // post, so surface its text and its media.
+          quoted = quotedFrom(embed.record);
+          const qEmbed = embed.record?.embeds?.[0] || {};
+          if (qEmbed.$type === "app.bsky.embed.images#view") {
+            img = firstImage(qEmbed.images);
+          } else if (qEmbed.$type === "app.bsky.embed.video#view") {
+            img = qEmbed.thumbnail || null;
+            isVideo = true;
+          } else if (qEmbed.$type === "app.bsky.embed.external#view") {
+            img = qEmbed.external?.thumb || null;
+          }
         }
+
+        if (img || quoted) map[post.uri] = { img, isVideo, quoted };
       }
     } catch {
-      /* board still works without thumbnails */
+      /* board still works without embed context */
     }
   }
   return map;
@@ -78,8 +115,20 @@ export default function TopPostsBoard() {
   const [error, setError] = useState(null);
   const [cardPost, setCardPost] = useState(null);
   const [cardPreview, setCardPreview] = useState(false);
-  const [images, setImages] = useState({});
+  const [embeds, setEmbeds] = useState({});
   const [sort, setSort] = useState("top");
+
+  // A post's card payload including whatever embed context hydrated in.
+  const withEmbed = (p) => {
+    const emb = embeds[p.uri];
+    if (!emb) return p;
+    return {
+      ...p,
+      ...(emb.img ? { image: proxied(emb.img) } : {}),
+      ...(emb.isVideo ? { is_video: true } : {}),
+      ...(emb.quoted ? { quoted: emb.quoted } : {}),
+    };
+  };
 
   const displayed = useMemo(() => sortPosts(posts, sort), [posts, sort]);
 
@@ -94,8 +143,8 @@ export default function TopPostsBoard() {
       const res = await getTopSocialPosts(hours, 25, serverSort);
       const list = res.posts || [];
       setPosts(list);
-      // Hydrate attached images in the background; rows fill in as it lands.
-      fetchEmbedImages(list.map((p) => p.uri).filter(Boolean)).then(setImages);
+      // Hydrate embed context in the background; rows fill in as it lands.
+      fetchEmbeds(list.map((p) => p.uri).filter(Boolean)).then(setEmbeds);
     } catch (e) {
       setError(e.message || "Failed to load top posts");
     } finally {
@@ -190,6 +239,11 @@ export default function TopPostsBoard() {
               <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words">
                 {p.text}
               </p>
+              {embeds[p.uri]?.quoted && (
+                <p className="mt-0.5 text-xs text-slate-400 truncate">
+                  ↪ @{embeds[p.uri].quoted.handle}: {embeds[p.uri].quoted.text}
+                </p>
+              )}
               <div className="mt-1 text-xs text-slate-400">
                 ♥ {p.likes} · ↻ {p.reposts} · 💬 {p.replies} · Σ {totalOf(p)}
                 {sort === "trending" && p.velocity != null && (
@@ -197,20 +251,27 @@ export default function TopPostsBoard() {
                 )}
               </div>
             </div>
-            {images[p.uri] && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={proxied(images[p.uri])}
-                alt=""
-                className="shrink-0 h-12 w-12 rounded object-cover"
-              />
+            {embeds[p.uri]?.img && (
+              <div className="relative shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={proxied(embeds[p.uri].img)}
+                  alt=""
+                  className="h-12 w-12 rounded object-cover"
+                />
+                {embeds[p.uri].isVideo && (
+                  <span className="absolute inset-0 flex items-center justify-center text-white text-sm drop-shadow" aria-hidden="true">
+                    ▶
+                  </span>
+                )}
+              </div>
             )}
             <div className="shrink-0 flex flex-col gap-1.5">
               <button
                 type="button"
                 onClick={() => {
                   setCardPreview(false);
-                  setCardPost(images[p.uri] ? { ...p, image: proxied(images[p.uri]) } : p);
+                  setCardPost(withEmbed(p));
                 }}
                 className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
               >
@@ -220,7 +281,7 @@ export default function TopPostsBoard() {
                 type="button"
                 onClick={() => {
                   setCardPreview(true);
-                  setCardPost(images[p.uri] ? { ...p, image: proxied(images[p.uri]) } : p);
+                  setCardPost(withEmbed(p));
                 }}
                 className="px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
               >
