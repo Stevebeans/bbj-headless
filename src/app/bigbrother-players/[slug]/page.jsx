@@ -22,6 +22,7 @@ import {
   PlayerQuotes,
 } from "@/components/players";
 import { SITE_URL, ORG_LOGO, breadcrumbJsonLd } from "@/lib/seo";
+import { playerPoints } from "@/lib/bbPoints";
 import AskBeanPrompt from "@/components/bean/AskBeanPrompt";
 
 /**
@@ -129,6 +130,20 @@ export default async function PlayerPage({ params }) {
   const { player, related_posts, related_players } = data;
   const totals = derivePlayerTotals(player);
 
+  // Career points = sum of season points (same weights as the stats bar).
+  const careerPoints =
+    Math.round(
+      (player.seasons || []).reduce(
+        (sum, s) =>
+          sum +
+          playerPoints(
+            { hoh: s.hoh, pov: s.pov, nom: s.nom, misc: s.misc, saved: s.saved, on_block: s.on_block },
+            s.was_evicted
+          ),
+        0
+      ) * 10
+    ) / 10;
+
   // Check if player has social links
   const hasSocial =
     player.social?.twitter ||
@@ -186,7 +201,7 @@ export default async function PlayerPage({ params }) {
                 {/* Career Statistics (+ win rates where participation is tracked) */}
                 <section>
                   <h2 className="v2-primary-subheader mb-3">Career Statistics</h2>
-                  <PlayerStats stats={player.stats} advanced={totals} />
+                  <PlayerStats stats={player.stats} advanced={totals} points={careerPoints} />
                 </section>
 
                 {/* Social Links */}

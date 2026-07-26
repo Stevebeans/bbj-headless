@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { SeasonTable, ProgressCell, ResultCell } from "@/components/shared";
 import { GameTimeline } from "./GameTimeline";
+import { playerPoints, pointsBreakdown } from "@/lib/bbPoints";
+
+// bbPoints expects a stats bag; season rows carry the fields flat.
+function seasonStats(s) {
+  return { hoh: s.hoh, pov: s.pov, nom: s.nom, misc: s.misc, saved: s.saved, on_block: s.on_block };
+}
 
 /**
  * Season breakdown table for player profile
@@ -9,6 +15,11 @@ export function PlayerSeasons({ seasons, className = "" }) {
   if (!seasons || seasons.length === 0) {
     return null;
   }
+
+  const rows = seasons.map((s) => ({
+    ...s,
+    pts: playerPoints(seasonStats(s), s.was_evicted),
+  }));
 
   const columns = [
     {
@@ -35,6 +46,18 @@ export function PlayerSeasons({ seasons, className = "" }) {
       header: "Age",
       align: "center",
       className: "text-gray-600 dark:text-gray-400 tabular-nums",
+    },
+    {
+      key: "pts",
+      header: "PTS",
+      align: "center",
+      tooltip: "Season points: HoH 2.5, Veto 2, other comps 1, surviving the block 1, veto save 0.5, nomination -1",
+      className: "tabular-nums font-semibold",
+      render: (value, row) => (
+        <span title={row.season_id ? pointsBreakdown(seasonStats(row), row.was_evicted) : "Career total"}>
+          {value}
+        </span>
+      ),
     },
     {
       key: "hoh",
@@ -86,9 +109,10 @@ export function PlayerSeasons({ seasons, className = "" }) {
   ];
 
   // Calculate totals for footer
-  const totals = seasons.reduce(
+  const totals = rows.reduce(
     (acc, s) => ({
-      season_name: `Totals (${seasons.length} season${seasons.length > 1 ? "s" : ""})`,
+      season_name: `Totals (${rows.length} season${rows.length > 1 ? "s" : ""})`,
+      pts: Math.round((acc.pts + (s.pts || 0)) * 10) / 10,
       hoh: acc.hoh + (s.hoh || 0),
       pov: acc.pov + (s.pov || 0),
       nom: acc.nom + (s.nom || 0),
@@ -100,6 +124,7 @@ export function PlayerSeasons({ seasons, className = "" }) {
     }),
     {
       season_name: "",
+      pts: 0,
       hoh: 0,
       pov: 0,
       nom: 0,
@@ -115,8 +140,8 @@ export function PlayerSeasons({ seasons, className = "" }) {
     <div className={className}>
       <SeasonTable
         columns={columns}
-        data={seasons}
-        showFooter={seasons.length > 1}
+        data={rows}
+        showFooter={rows.length > 1}
         footerData={totals}
         emptyText="No season data available"
       />

@@ -5,7 +5,7 @@ import { StatCard, StatCardGrid } from "@/components/shared";
  * `advanced` = { hoh, pov, hohPlayed, vetoPlayed } career totals — win-rate
  * cards render only for seasons with comp-participation tracking (played > 0).
  */
-export function PlayerStats({ stats, advanced, className = "" }) {
+export function PlayerStats({ stats, advanced, points = null, className = "" }) {
   const {
     total_hoh = 0,
     total_pov = 0,
@@ -21,6 +21,14 @@ export function PlayerStats({ stats, advanced, className = "" }) {
 
   return (
     <StatCardGrid columns={6} className={className}>
+      {points !== null && (
+        <StatCard
+          label="Points"
+          value={points}
+          icon={<TrophyIcon />}
+          tooltip="Career points: HoH 2.5, Veto 2, other comps 1, surviving the block 1, veto save 0.5, nomination -1"
+        />
+      )}
       <StatCard
         label="Seasons"
         value={total_seasons}
@@ -78,6 +86,14 @@ export function PlayerStats({ stats, advanced, className = "" }) {
 }
 
 // Icons
+function TrophyIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21h8m-4-4v4m-5-9a5 5 0 0010 0V4H7v8zM7 6H4a1 1 0 00-1 1v1a4 4 0 004 4m10-6h3a1 1 0 011 1v1a4 4 0 01-4 4" />
+    </svg>
+  );
+}
+
 function CalendarIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
