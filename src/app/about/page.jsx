@@ -39,7 +39,7 @@ export default function AboutPage() {
             <p>
               Big Brother Junkies has covered Big Brother for over a decade,
               built around one thing: the live feeds. During the season we post{" "}
-              <Link href="/live-feed-updates" className="text-accent-red hover:underline">
+              <Link href="/live-feed-updates" className="text-primary-600 dark:text-primary-300 hover:underline">
                 live feed updates
               </Link>{" "}
               throughout the day, every day - who won the comps, who&apos;s on
@@ -53,11 +53,11 @@ export default function AboutPage() {
             <p>
               Beyond the daily spoilers, we maintain one of the deepest Big
               Brother databases anywhere:{" "}
-              <Link href="/directory" className="text-accent-red hover:underline">
+              <Link href="/directory" className="text-primary-600 dark:text-primary-300 hover:underline">
                 every player
               </Link>{" "}
               and{" "}
-              <Link href="/directory?tab=seasons" className="text-accent-red hover:underline">
+              <Link href="/directory?tab=seasons" className="text-primary-600 dark:text-primary-300 hover:underline">
                 every season
               </Link>{" "}
               with week-by-week results, competition wins, nominations, votes,
@@ -70,12 +70,12 @@ export default function AboutPage() {
             <h2 className="v2-primary-subheader mb-2">The community</h2>
             <p>
               The comments are the heart of this site. Junkies vote for their{" "}
-              <Link href="/fan-favorites" className="text-accent-red hover:underline">
+              <Link href="/fan-favorites" className="text-primary-600 dark:text-primary-300 hover:underline">
                 fan favorites
               </Link>
               , debate every eviction, and hang out in the daily threads all
               season long. You can also{" "}
-              <Link href="/search" className="text-accent-red hover:underline">
+              <Link href="/search" className="text-primary-600 dark:text-primary-300 hover:underline">
                 Ask the Bean
               </Link>{" "}
               - our resident know-it-all - anything about Big Brother history.
@@ -98,11 +98,11 @@ export default function AboutPage() {
             <p>
               Big Brother Junkies is reader-supported. If you want to ditch the
               ads and help keep the feeds watched, check out{" "}
-              <Link href="/become-supporter" className="text-accent-red hover:underline">
+              <Link href="/become-supporter" className="text-primary-600 dark:text-primary-300 hover:underline">
                 becoming a supporter
               </Link>
               . Questions or business inquiries?{" "}
-              <Link href="/contact" className="text-accent-red hover:underline">
+              <Link href="/contact" className="text-primary-600 dark:text-primary-300 hover:underline">
                 Get in touch
               </Link>
               .

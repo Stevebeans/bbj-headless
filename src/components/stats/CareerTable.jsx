@@ -84,7 +84,7 @@ export function CareerTable({ players }) {
                 <td className="py-1.5 pr-2 whitespace-nowrap">
                   <Link
                     href={`/bigbrother-players/${p.slug}`}
-                    className="hover:underline text-accent-red font-medium"
+                    className="hover:underline text-primary-600 dark:text-primary-300 font-medium"
                   >
                     {p.name}
                   </Link>

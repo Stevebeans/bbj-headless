@@ -24,6 +24,13 @@ const nextConfig = {
         destination: "/",
         permanent: true,
       },
+      // Old nav Stats target — edge-cached pages link it for up to 30 days.
+      {
+        source: "/directory",
+        has: [{ type: "query", key: "tab", value: "stats" }],
+        destination: "/stats",
+        permanent: false,
+      },
       {
         source: "/bigbrother-players",
         destination: "/directory",

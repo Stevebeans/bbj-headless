@@ -50,7 +50,7 @@ function TopList({ players, statKey, title, tip }) {
             </span>
             <Link
               href={`/bigbrother-players/${p.slug}`}
-              className="truncate hover:underline text-accent-red"
+              className="truncate hover:underline text-primary-600 dark:text-primary-300"
             >
               {p.name}
             </Link>
@@ -88,11 +88,11 @@ export default async function StatsPage() {
           <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             All-time records across every season - who really ran the house.
             Click any player for their full profile, or dig through the{" "}
-            <Link href="/directory" className="text-accent-red hover:underline">
+            <Link href="/directory" className="text-primary-600 dark:text-primary-300 hover:underline">
               player directory
             </Link>{" "}
             and{" "}
-            <Link href="/fan-favorites" className="text-accent-red hover:underline">
+            <Link href="/fan-favorites" className="text-primary-600 dark:text-primary-300 hover:underline">
               fan favorites tracker
             </Link>
             .

@@ -68,7 +68,7 @@ export default function AdvertisePage() {
             <p>
               Tell us what you have in mind and we&apos;ll send over current
               traffic numbers and options.{" "}
-              <Link href="/contact" className="text-accent-red hover:underline">
+              <Link href="/contact" className="text-primary-600 dark:text-primary-300 hover:underline">
                 Contact us here
               </Link>{" "}
               and choose business inquiry - we typically respond within a
