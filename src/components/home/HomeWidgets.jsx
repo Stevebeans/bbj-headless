@@ -182,13 +182,13 @@ export function SeasonStats({ season, players = [] }) {
 
       {/* Player Stats Table — active players first, then by points */}
       <div className="overflow-x-auto">
-        <div className="grid grid-cols-[minmax(76px,1fr)_33px_repeat(5,26px)] gap-1 text-xs">
+        <div className="grid grid-cols-[minmax(76px,1fr)_repeat(3,26px)_33px_repeat(2,26px)] gap-1 text-xs">
           {/* Header */}
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 rounded-l">Player</div>
-          <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="Season Points">PTS</div>
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="HoH Wins">H</div>
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="Veto Wins">V</div>
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="Nominations">N</div>
+          <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="Season Points">PTS</div>
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="Votes Received">VR</div>
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center rounded-r" title="Days in House">TD</div>
 
@@ -205,14 +205,14 @@ export function SeasonStats({ season, players = [] }) {
 
         {/* Legend */}
         <div className="border-t border-gray-300 dark:border-gray-700 text-[10px] mt-3 pt-2 text-gray-500 dark:text-gray-400 italic grid grid-cols-[25px_1fr] gap-x-2">
-          <div className="text-center">PTS</div>
-          <div>Points: HoH 2.5, Veto 2, other comps 1, surviving the block 1, veto save 0.5, nomination -1</div>
           <div className="text-center">H</div>
           <div>Head of Household</div>
           <div className="text-center">V</div>
           <div>Veto Wins</div>
           <div className="text-center">N</div>
           <div>Nominations</div>
+          <div className="text-center">PTS</div>
+          <div>Points: HoH 2.5, Veto 2, other comps 1, surviving the block 1, veto save 0.5, nomination -1</div>
           <div className="text-center">VR</div>
           <div>Votes Received</div>
           <div className="text-center">TD</div>
@@ -244,15 +244,15 @@ function PlayerStatsRow({ player }) {
           {player.name}
         </Link>
       </div>
+      <div className={`text-center tabular-nums ${textClass}`}>{player.stats.hoh}</div>
+      <div className={`text-center tabular-nums ${textClass}`}>{player.stats.pov}</div>
+      <div className={`text-center tabular-nums ${textClass}`}>{player.stats.nom}</div>
       <div
         className={`text-center tabular-nums font-semibold ${textClass}`}
         title={pointsBreakdown(player.stats, player.is_evicted)}
       >
         {playerPoints(player.stats, player.is_evicted)}
       </div>
-      <div className={`text-center tabular-nums ${textClass}`}>{player.stats.hoh}</div>
-      <div className={`text-center tabular-nums ${textClass}`}>{player.stats.pov}</div>
-      <div className={`text-center tabular-nums ${textClass}`}>{player.stats.nom}</div>
       <div className={`text-center tabular-nums ${textClass}`}>{player.stats.votes_received}</div>
       <div className={`text-center tabular-nums ${textClass}`}>{player.stats.days_in_house}</div>
     </>
