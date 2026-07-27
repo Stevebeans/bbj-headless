@@ -14,6 +14,7 @@ export { SeasonFeedUpdates } from "./SeasonFeedUpdates";
 export { SeasonFAQ } from "./SeasonFAQ";
 export { SeasonFAQSchema } from "./SeasonFAQSchema";
 export { SeasonWeeks } from "./SeasonWeeks";
+export { SeasonStats } from "./SeasonStats";
 export { SeasonPowerMap } from "./SeasonPowerMap";
 export { SeasonHero } from "./SeasonHero";
 export { SeasonSwitcher } from "./SeasonSwitcher";

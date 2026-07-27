@@ -20,6 +20,7 @@ import {
   SeasonFAQ,
   SeasonFAQSchema,
   SeasonWeeks,
+  SeasonStats,
   SeasonPowerMap,
   SeasonHero,
   SeasonSwitcher,
@@ -251,6 +252,7 @@ export default async function SeasonPage({ params }) {
     season.is_active && { id: "live", label: "Live Now" },
     { id: "cast", label: "Cast", count: count },
     weeks?.length && { id: "weekly-results", label: "Weekly Results" },
+    players.length > 0 && { id: "stats", label: "Stats" },
     { id: "evictions", label: "Evictions" },
     weeks?.some((w) => w.summary) && { id: "week-recap", label: "Week Recap" },
     feedUpdates?.length && { id: "memories", label: "Moments" },
@@ -304,6 +306,7 @@ export default async function SeasonPage({ params }) {
               <CastGrid players={players} season={season} />
               <SeasonPowerMap weeks={weeks} seasonLabel={season.name} />
               <SeasonWeeks weeks={weeks} />
+              <SeasonStats players={players} weeks={weeks} season={season} />
               <MemorableMoments updates={feedUpdates} />
               <EvictionOrder players={players} season={season} />
               <Leaderboards stats={leaderboardStats} />

@@ -4,8 +4,9 @@ import { StatCard, StatCardGrid } from "@/components/shared";
  * Career statistics grid for player profile.
  * `advanced` = { hoh, pov, hohPlayed, vetoPlayed } career totals — win-rate
  * cards render only for seasons with comp-participation tracking (played > 0).
+ * `extras` = { misc, saved, survived } points-input career totals.
  */
-export function PlayerStats({ stats, advanced, points = null, className = "" }) {
+export function PlayerStats({ stats, advanced, points = null, extras = null, className = "" }) {
   const {
     total_hoh = 0,
     total_pov = 0,
@@ -65,6 +66,28 @@ export function PlayerStats({ stats, advanced, points = null, className = "" }) 
         icon={<ClockIcon />}
         tooltip="Total days in the Big Brother house"
       />
+      {extras !== null && (
+        <>
+          <StatCard
+            label="Other Comps"
+            value={extras.misc}
+            icon={<BoltIcon />}
+            tooltip="Block Buster, AI Arena, and other recorded comp wins"
+          />
+          <StatCard
+            label="Survived Block"
+            value={extras.survived}
+            icon={<ShieldIcon />}
+            tooltip="Eviction nights survived while on the block"
+          />
+          <StatCard
+            label="Veto Saved"
+            value={extras.saved}
+            icon={<LifeRingIcon />}
+            tooltip="Times the veto pulled them off the block"
+          />
+        </>
+      )}
       {showHohRate && (
         <StatCard
           label="HoH Win Rate"
@@ -138,6 +161,32 @@ function ClockIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function BoltIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  );
+}
+
+function LifeRingIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" strokeWidth={2} />
+      <circle cx="12" cy="12" r="4" strokeWidth={2} />
+      <path strokeLinecap="round" strokeWidth={2} d="M5.6 5.6l3.5 3.5m5.8 0l3.5-3.5m0 12.8l-3.5-3.5m-5.8 0l-3.5 3.5" />
     </svg>
   );
 }

@@ -16,7 +16,7 @@ export const POINT_WEIGHTS = {
 // Noms that concluded with the player still in the house and not veto-saved.
 // An unresolved current nomination earns nothing yet in either direction...
 // except the -1 for the nomination itself, which is already real.
-function survivedCount(stats, isEvicted) {
+export function survivedCount(stats, isEvicted) {
   const s = stats || {};
   return Math.max(
     0,
