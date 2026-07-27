@@ -46,7 +46,7 @@ export default function FanFavoritesPage() {
               <ul className="list-disc pl-5 space-y-1">
                 <li>Your #1 pick earns 15 points, #2 earns 10, #3 earns 7, #4 earns 5, #5 earns 3.</li>
                 <li>Everyone else on your list earns 1 point.</li>
-                <li>The ♥ on a player&apos;s page adds a bonus 15-point top vote.</li>
+                <li>The ♥ on a player&apos;s page adds a 5-point bonus.</li>
                 <li>Supporter votes count 1.5x and Full Bean votes count 2x.</li>
               </ul>
             </div>
