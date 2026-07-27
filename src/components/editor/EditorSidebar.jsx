@@ -18,6 +18,10 @@ export default function EditorSidebar({
   onSave, onTitleChange, isEditMode,
   liveUpdates, liveStart, liveEnd, onLiveUpdatesChange,
 }) {
+  // SEO + checklist collapse so the action bar stays on screen while typing.
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const checklistDone = Object.values(checklist || {}).every(Boolean);
+
   return (
     <div className="p-4 space-y-5">
       <CategoryPicker
@@ -58,14 +62,40 @@ export default function EditorSidebar({
         </div>
       </div>
 
-      <SEOPanel
-        title={title}
-        slug={slug}
-        setSlug={setSlug}
-        onSave={onSave}
-      />
+      <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((o) => !o)}
+          className="w-full flex items-center justify-between text-xs font-semibold text-secondary-500 uppercase tracking-wider"
+        >
+          <span>SEO &amp; Checklist</span>
+          <span className="flex items-center gap-2">
+            {!checklistDone && (
+              <span className="normal-case tracking-normal text-[10px] font-bold text-amber-600">
+                incomplete
+              </span>
+            )}
+            <svg
+              className={`w-4 h-4 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </span>
+        </button>
 
-      <PublishChecklist checklist={checklist} />
+        {detailsOpen && (
+          <div className="mt-3 space-y-5">
+            <SEOPanel
+              title={title}
+              slug={slug}
+              setSlug={setSlug}
+              onSave={onSave}
+            />
+            <PublishChecklist checklist={checklist} />
+          </div>
+        )}
+      </div>
 
       {/* Review note (if returned from reviewer) */}
       {reviewNote && (
