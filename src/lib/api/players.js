@@ -127,6 +127,20 @@ export async function getPlayerBySlug(slug) {
 }
 
 /**
+ * All-time career totals for the /stats hub. Hourly revalidate — the
+ * endpoint is transient-cached WP-side and stats only move on weekly saves.
+ */
+export async function getCareerStats() {
+  try {
+    const data = await bbjdFetch(`/stats/career`, { revalidate: 3600 });
+    return data.players || [];
+  } catch (error) {
+    console.error("Failed to fetch career stats:", error);
+    return [];
+  }
+}
+
+/**
  * Get all player slugs for static generation
  *
  * @returns {Promise<string[]>} Array of player slugs

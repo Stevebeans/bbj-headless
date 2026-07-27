@@ -22,6 +22,7 @@ import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 import { FreestarSDKLoader } from "@/components/ads/FreestarSDKLoader";
 import { TopLeaderboard } from "@/components/ads/TopLeaderboard";
 import CountdownBanner from "@/components/CountdownBanner";
+import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { SITE_URL, IS_PROD } from "@/lib/seo";
 
 const roboto = Roboto({
@@ -201,6 +202,7 @@ export default async function RootLayout({ children }) {
           <BeanLauncher />
           {/* <InstallBanner /> parked — PWA on hold (see import note above) */}
           <FreestarSDKLoader />
+          <MetaPixel />
         </Providers>
         {/* Global scripts - deferred to not block rendering (analytics, etc.) */}
         {adScripts.global_header && extractInlineScript(adScripts.global_header) && (

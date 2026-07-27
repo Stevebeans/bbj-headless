@@ -12,7 +12,7 @@ export const NAV_ITEMS = [
   // Contact intentionally omitted — it already lives in the top utility header.
   { href: "/live-feed-updates", label: "Feed Updates" },
   { href: "/directory?tab=seasons", label: "Seasons" },
-  { href: "/directory?tab=stats", label: "Stats" },
+  { href: "/stats", label: "Stats" },
   { href: "/directory", label: "Players" },
   { href: "/fan-favorites", label: "Fan Favorites" },
   { href: "/search", label: "Ask the Bean" },

@@ -76,7 +76,12 @@ export function SeasonStats({ players, weeks, season }) {
     };
   });
 
-  rows.sort((a, b) => (a.isOut ? 1 : 0) - (b.isOut ? 1 : 0) || b.pts - a.pts);
+  // Dim/sort-below only mid-season; on finished seasons nearly everyone is
+  // "out" and the dimming reads as noise (imports even mark winners evicted).
+  const dimOut = Boolean(season?.is_active);
+  rows.sort((a, b) =>
+    dimOut ? (a.isOut ? 1 : 0) - (b.isOut ? 1 : 0) || b.pts - a.pts : b.pts - a.pts
+  );
 
   // Columns with no data season-wide just add noise — drop them.
   const showHavenot = rows.some((r) => r.havenot > 0);
@@ -119,7 +124,7 @@ export function SeasonStats({ players, weeks, season }) {
                 <tr
                   key={r.id}
                   className={`border-b border-slate-100 dark:border-slate-800 last:border-0 ${
-                    r.isOut ? "text-slate-400 dark:text-slate-500" : ""
+                    dimOut && r.isOut ? "text-slate-400 dark:text-slate-500" : ""
                   }`}
                 >
                   <td className="py-1.5 pr-2">
