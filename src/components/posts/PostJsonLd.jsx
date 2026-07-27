@@ -6,8 +6,10 @@ export function PostJsonLd({ post, siteUrl }) {
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: post.title?.replace(/<[^>]*>/g, "") || "",
+    // NewsArticle (not BlogPosting) is what Top Stories draws from; identical
+    // treatment in regular results. Headline capped at Google's 110-char limit.
+    "@type": "NewsArticle",
+    headline: (post.title?.replace(/<[^>]*>/g, "") || "").slice(0, 110),
     // ISO 8601 with timezone — WP `date` has no offset, so prefer `date_gmt`.
     datePublished: toIsoTz(post.date, post.dateGmt),
     dateModified: toIsoTz(post.modified || post.date, post.modifiedGmt || post.dateGmt),

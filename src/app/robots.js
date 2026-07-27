@@ -31,7 +31,7 @@ export default function robots() {
       // run up Vercel render cost for zero value to us. (These honor robots.txt.)
       ...BLOCKED_BOTS.map((bot) => ({ userAgent: bot, disallow: "/" })),
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: [`${SITE_URL}/sitemap.xml`, `${SITE_URL}/news-sitemap.xml`],
   };
 }
 
