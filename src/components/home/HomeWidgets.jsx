@@ -182,7 +182,7 @@ export function SeasonStats({ season, players = [] }) {
 
       {/* Player Stats Table — active players first, then by points */}
       <div className="overflow-x-auto">
-        <div className="grid grid-cols-[minmax(80px,1fr)_38px_repeat(5,30px)] gap-1 text-xs">
+        <div className="grid grid-cols-[minmax(76px,1fr)_33px_repeat(5,26px)] gap-1 text-xs">
           {/* Header */}
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 rounded-l">Player</div>
           <div className="font-semibold bg-gray-200 dark:bg-gray-700 p-1 text-center" title="Season Points">PTS</div>
