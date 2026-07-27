@@ -40,7 +40,7 @@ describe("weekToForm", () => {
     // No veto_played flags stored -> default to HoH + nominees (they always play).
     expect(form.vetoPlayed).toEqual([101, 103, 104]);
     expect(form.votes).toEqual({ 104: 103 });
-    expect(form.miscComps).toEqual([{ player_id: 106, comp_type_id: 9, notes: "AI Arena" }]);
+    expect(form.miscComps).toEqual([{ player_id: 106, comp_type_id: 9, notes: "AI Arena", saved: false }]);
     expect(form.summary).toBe("wk one");
     expect(form.startDate).toBe("2026-07-10");
     expect(form.endDate).toBe("");
@@ -87,7 +87,7 @@ describe("formToPayload", () => {
       veto_played: [101, 103, 104],
       hoh_played: [],
       votes: { 104: 103 },
-      misc_comps: [{ player_id: 106, comp_type_id: 9, notes: "AI Arena" }],
+      misc_comps: [{ player_id: 106, comp_type_id: 9, notes: "AI Arena", saved: 0 }],
       summary: "wk one", start_date: "2026-07-10", end_date: null,
     });
   });
