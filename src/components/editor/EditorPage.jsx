@@ -281,6 +281,14 @@ export default function EditorPage({ postId = null }) {
       }
     }
 
+    // Already published: this is an edit, not a (re)publish. Content is
+    // persisted by the manual save above (purge-on-edit rides the WP save
+    // hook), so just confirm in place instead of navigating to the post.
+    if (status === "publish") {
+      setNotice("Post updated");
+      return;
+    }
+
     const newStatus = canPublish ? "publish" : "pending_review";
     try {
       await changePostStatus(pid, newStatus);
@@ -382,9 +390,12 @@ export default function EditorPage({ postId = null }) {
     content: editor ? editor.getText().length >= 100 : false,
   };
   const canSubmit = Object.values(checklist).every(Boolean);
+  const publishLabel = !canPublish ? "Submit" : status === "publish" ? "Update" : "Publish";
 
   // Auto-hide toast after save
   const [toastVisible, setToastVisible] = useState(false);
+  // One-off toast text (e.g. "Post updated") that outranks the save-status label.
+  const [notice, setNotice] = useState(null);
   const toastTimerRef = useRef(null);
 
   useEffect(() => {
@@ -397,6 +408,16 @@ export default function EditorPage({ postId = null }) {
     }
     return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
   }, [saveStatus]);
+
+  useEffect(() => {
+    if (!notice) return;
+    setToastVisible(true);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setToastVisible(false);
+      setNotice(null);
+    }, 2500);
+  }, [notice]);
 
   if (isLoading) {
     return (
@@ -499,7 +520,7 @@ export default function EditorPage({ postId = null }) {
               disabled={!canSubmit}
               className="flex-1 px-4 py-1.5 bg-secondary-500 text-primary-600 text-sm font-bold rounded-lg hover:bg-secondary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {canPublish ? "Publish" : "Submit"}
+              {publishLabel}
             </button>
           </div>
           <EditorSidebar {...sidebarProps} />
@@ -528,29 +549,29 @@ export default function EditorPage({ postId = null }) {
           disabled={!canSubmit}
           className="px-4 py-1.5 bg-secondary-500 text-primary-600 text-sm font-bold rounded-full hover:bg-secondary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {canPublish ? "Publish" : "Submit"}
+          {publishLabel}
         </button>
       </div>
 
       {/* Save toast */}
       <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toastVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
         <div className={`px-4 py-2 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 ${
-          saveStatus === "error"
+          !notice && saveStatus === "error"
             ? "bg-red-600 text-white"
-            : saveStatus === "saving"
+            : !notice && saveStatus === "saving"
               ? "bg-gray-800 text-white"
               : "bg-green-600 text-white"
         }`}>
-          {saveStatus === "saving" && (
+          {!notice && saveStatus === "saving" && (
             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
           )}
-          {saveStatus === "saved" && (
+          {(notice || saveStatus === "saved") && (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
           )}
-          {saveStatus === "error" && (
+          {!notice && saveStatus === "error" && (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           )}
-          {saveStatus === "saving" ? "Saving..." : saveStatus === "error" ? "Save failed" : "Saved"}
+          {notice || (saveStatus === "saving" ? "Saving..." : saveStatus === "error" ? "Save failed" : "Saved")}
         </div>
       </div>
     </div>
