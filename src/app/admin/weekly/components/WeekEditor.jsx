@@ -139,9 +139,23 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
 
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h3 className="font-osw font-bold text-slate-800 dark:text-white">Week {week.week_num}</h3>
-        <button onClick={handleDelete} className="text-red-500 hover:text-red-700 text-xs font-medium">Delete week</button>
+        <div className="flex items-center gap-4">
+          <label
+            className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400"
+            title="Checked = a human went through this week by hand and confirmed the data is accurate"
+          >
+            <input
+              type="checkbox"
+              checked={!!form.verified}
+              onChange={(e) => set({ verified: e.target.checked })}
+              className="h-4 w-4 accent-emerald-600"
+            />
+            Verified
+          </label>
+          <button onClick={handleDelete} className="text-red-500 hover:text-red-700 text-xs font-medium">Delete week</button>
+        </div>
       </div>
 
       {errors.length > 0 && (

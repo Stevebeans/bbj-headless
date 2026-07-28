@@ -21,6 +21,7 @@ export function weekToForm(week) {
   const form = {
     hoh: 0, pov: 0, noms: [], vetoUsedOn: 0, evicted: [], havenot: [], vetoPlayed: [], hohPlayed: [], votes: {}, miscComps: [],
     summary: week.summary || "", startDate: week.start_date || "", endDate: week.end_date || "",
+    verified: week.verified === true,
     juryVotes: {},
   };
   for (const c of week.comps || []) {
@@ -82,6 +83,7 @@ export function formToPayload(form, activeIds) {
     summary: form.summary,
     start_date: form.startDate || null,
     end_date: form.endDate || null,
+    verified: form.verified ? 1 : 0,
   };
   for (const [voter, votedFor] of Object.entries(form.votes)) {
     if (Number(votedFor) > 0) payload.votes[voter] = Number(votedFor);

@@ -115,7 +115,14 @@ export default function AdminWeekly() {
                     : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
                 }`}
               >
-                <div className="font-medium text-sm text-gray-900 dark:text-gray-100">Week {w.week_num}</div>
+                <div className="flex items-center gap-2 font-medium text-sm text-gray-900 dark:text-gray-100">
+                  Week {w.week_num}
+                  {w.verified && (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                      ✓ verified
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{weekSummaryLine(w, rosterById)}</div>
               </button>
             ))}

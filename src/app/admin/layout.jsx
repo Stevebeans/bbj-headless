@@ -135,7 +135,7 @@ const TABS = [
   { id: "comments", label: "Comments", href: "/admin/comments", icon: ChatIcon, permission: "comment_moderation" },
   { id: "players", label: "Players", href: "/admin/players", icon: PlayerIcon, permission: "player_management" },
   { id: "seasons", label: "Seasons", href: "/admin/seasons", icon: SeasonIcon, permission: "season_management" },
-  { id: "weekly", label: "Weekly", href: "/admin/weekly", icon: WeekIcon, permission: "season_management" },
+  { id: "weekly", label: "Weekly", href: "/admin/weekly", icon: WeekIcon, permission: "weekly_editing" },
   // Bugs hidden 7/15: the public bug-report button is gone (was staging-only);
   // page still routable at /admin/bug-reports if ever needed.
   // Content hidden 7/15: superseded by Social Intel; page remains at /admin/content-engine.

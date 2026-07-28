@@ -89,6 +89,7 @@ describe("formToPayload", () => {
       votes: { 104: 103 },
       misc_comps: [{ player_id: 106, comp_type_id: 9, notes: "AI Arena", saved: 0 }],
       summary: "wk one", start_date: "2026-07-10", end_date: null,
+      verified: 0,
     });
   });
 
