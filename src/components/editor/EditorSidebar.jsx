@@ -333,6 +333,11 @@ function ConflictPrompt({ activeThread, onConfirm, onCancel }) {
     <div className="mb-3 p-3 rounded border-2 border-red-500 bg-red-50 text-sm">
       <div className="font-bold text-red-700 mb-1">A live thread is already active:</div>
       <div className="font-bold text-gray-800 mb-2">{activeThread.title}</div>
+      <p className="mb-2 text-[11px] leading-snug text-gray-600">
+        Nothing closes yet - the swap happens when this post actually
+        publishes. If you schedule it, the current thread stays live until
+        the scheduled time.
+      </p>
       <div className="flex gap-2">
         <button
           type="button"
