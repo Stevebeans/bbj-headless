@@ -23,7 +23,7 @@ export const metadata = {
 };
 
 const BOARDS = [
-  { key: "points", title: "Career Points", unit: "pts", tip: "HoH 2.5, Veto 2, other comps 1, surviving the block 1, veto save 0.5, nomination -1" },
+  { key: "points", title: "Career Points", unit: "pts", tip: "HoH 2.5, Veto 2, other comps 1, surviving a vote 1.5, saved off the block 1, nomination -1" },
   { key: "hoh", title: "Most HoH Wins", unit: "wins" },
   { key: "pov", title: "Most Veto Wins", unit: "wins" },
   { key: "nom", title: "Most Nominations", unit: "noms" },

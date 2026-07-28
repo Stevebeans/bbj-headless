@@ -1,16 +1,18 @@
 /**
- * Season points for the stats bar. Weights agreed 2026-07-25: HoH pays a
- * premium over the veto for wearing the target; a nomination costs a point
- * that surviving it earns back; votes received are deliberately excluded
- * (they double-count nominations and measure unanimity, not gameplay).
+ * Season points for the stats bar. Weights agreed 2026-07-25, rebalanced
+ * 2026-07-27: HoH pays a premium over the veto for wearing the target; a
+ * save (veto or eviction-safe comp) exactly cancels the nomination; actually
+ * facing the vote and surviving nets +0.5 on top of the nom. Votes received
+ * are deliberately excluded (they double-count nominations and measure
+ * unanimity, not gameplay).
  */
 export const POINT_WEIGHTS = {
   hoh: 2.5,
   pov: 2,
   misc: 1, // Block Buster / AI Arena and other recorded comp wins
   nom: -1,
-  survived: 1, // on the block at eviction, not evicted
-  saved: 0.5, // veto pulled them off the block
+  survived: 1.5, // on the block at eviction, not evicted
+  saved: 1, // pulled off the block (veto or eviction-safe comp)
 };
 
 // Noms that concluded with the player still in the house and not veto-saved.
@@ -45,7 +47,7 @@ export function pointsBreakdown(stats, isEvicted) {
   if (s.pov) parts.push(`${s.pov} Veto x2`);
   if (s.misc) parts.push(`${s.misc} comp x1`);
   if (s.nom) parts.push(`${s.nom} nom x-1`);
-  if (survived) parts.push(`${survived} survived x1`);
-  if (s.saved) parts.push(`${s.saved} saved x0.5`);
+  if (survived) parts.push(`${survived} survived x1.5`);
+  if (s.saved) parts.push(`${s.saved} saved x1`);
   return parts.length ? parts.join(", ") : "No scoring events yet";
 }

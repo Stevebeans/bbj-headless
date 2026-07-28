@@ -27,7 +27,7 @@ export function PlayerStats({ stats, advanced, points = null, extras = null, cla
           label="Points"
           value={points}
           icon={<TrophyIcon />}
-          tooltip="Career points: HoH 2.5, Veto 2, other comps 1, surviving the block 1, veto save 0.5, nomination -1"
+          tooltip="Career points: HoH 2.5, Veto 2, other comps 1, surviving a vote 1.5, saved off the block 1, nomination -1"
         />
       )}
       <StatCard

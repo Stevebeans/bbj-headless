@@ -212,7 +212,7 @@ export function SeasonStats({ season, players = [] }) {
           <div className="text-center">N</div>
           <div>Nominations</div>
           <div className="text-center">PTS</div>
-          <div>Points: HoH 2.5, Veto 2, other comps 1, surviving the block 1, veto save 0.5, nomination -1</div>
+          <div>Points: HoH 2.5, Veto 2, other comps 1, surviving a vote 1.5, saved off the block 1, nomination -1</div>
           <div className="text-center">VR</div>
           <div>Votes Received</div>
           <div className="text-center">TD</div>

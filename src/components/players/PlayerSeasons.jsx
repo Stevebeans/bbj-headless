@@ -51,7 +51,7 @@ export function PlayerSeasons({ seasons, className = "" }) {
       key: "pts",
       header: "PTS",
       align: "center",
-      tooltip: "Season points: HoH 2.5, Veto 2, other comps 1, surviving the block 1, veto save 0.5, nomination -1",
+      tooltip: "Season points: HoH 2.5, Veto 2, other comps 1, surviving a vote 1.5, saved off the block 1, nomination -1",
       className: "tabular-nums font-semibold",
       render: (value, row) => (
         <span title={row.season_id ? pointsBreakdown(seasonStats(row), row.was_evicted) : "Career total"}>

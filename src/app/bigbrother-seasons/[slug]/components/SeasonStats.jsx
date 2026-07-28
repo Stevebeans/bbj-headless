@@ -151,7 +151,7 @@ export function SeasonStats({ players, weeks, season }) {
           </table>
         </div>
         <p className="mt-3 text-[11px] text-slate-500 italic">
-          PTS: HoH 2.5, Veto 2, other comps 1, surviving the block 1, veto save 0.5, nomination -1.
+          PTS: HoH 2.5, Veto 2, other comps 1, surviving a vote 1.5, saved off the block 1, nomination -1.
           OC = other comp wins, SB = survived the block, VS = veto saves, VR = votes received
           {showHavenot ? ", HN = Have-Not weeks" : ""}{showDays ? ", TD = total days" : ""}.
         </p>

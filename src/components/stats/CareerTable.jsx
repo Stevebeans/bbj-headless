@@ -195,7 +195,7 @@ export function CareerTable({ players }) {
 
       <div className="flex flex-wrap gap-4 border-t border-gray-200 dark:border-gray-700 bg-[#F3F1EA] dark:bg-gray-900 px-5 py-3 font-plexMono text-[9.5px] uppercase tracking-[.07em] text-gray-500 dark:text-gray-400">
         <span>👑 = season winner</span>
-        <span>Pts: HoH 2.5 · Veto 2 · other comps 1 · survived block 1 · veto save 0.5 · nom -1</span>
+        <span>Pts: HoH 2.5 · Veto 2 · other comps 1 · survived a vote 1.5 · saved off the block 1 · nom -1</span>
         <span>Click any column to sort</span>
       </div>
     </section>
