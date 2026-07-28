@@ -31,10 +31,10 @@ export async function deletePost(postId) {
   });
 }
 
-export async function changePostStatus(postId, status) {
+export async function changePostStatus(postId, status, scheduleAt = null) {
   return adminFetch(`/editor/posts/${postId}/status`, {
     method: "PUT",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(scheduleAt ? { status, schedule_at: scheduleAt } : { status }),
   });
 }
 

@@ -17,6 +17,7 @@ export default function EditorSidebar({
   checklist, reviewNote,
   onSave, onTitleChange, isEditMode,
   liveUpdates, liveStart, liveEnd, onLiveUpdatesChange,
+  postStatus, scheduledFor, canSchedule, scheduleReady, onSchedule, onUnschedule,
 }) {
   // SEO + checklist collapse so the action bar stays on screen while typing.
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -24,6 +25,16 @@ export default function EditorSidebar({
 
   return (
     <div className="p-4 space-y-5">
+      {canSchedule && postStatus !== "publish" && postStatus !== "pending_review" && (
+        <ScheduleBlock
+          postStatus={postStatus}
+          scheduledFor={scheduledFor}
+          ready={scheduleReady}
+          onSchedule={onSchedule}
+          onUnschedule={onUnschedule}
+        />
+      )}
+
       <CategoryPicker
         categoryIds={categoryIds}
         setCategoryIds={setCategoryIds}
@@ -103,6 +114,87 @@ export default function EditorSidebar({
           <h4 className="text-xs font-semibold text-red-600 uppercase mb-1">Review Note</h4>
           <p className="text-sm text-red-700">{reviewNote}</p>
         </div>
+      )}
+    </div>
+  );
+}
+
+// Default = tomorrow 8 AM local: the write-tonight, post-in-the-morning case.
+function defaultScheduleValue() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(8, 0, 0, 0);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function ScheduleBlock({ postStatus, scheduledFor, ready, onSchedule, onUnschedule }) {
+  const [value, setValue] = useState(defaultScheduleValue);
+  const [busy, setBusy] = useState(false);
+
+  const run = async (fn) => {
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (postStatus === "future" && scheduledFor) {
+    // scheduledFor is UTC 'Y-m-d H:i:s' (or ISO) — render in local time.
+    const local = new Date(
+      scheduledFor.includes("T") ? scheduledFor : scheduledFor.replace(" ", "T") + "Z"
+    );
+    return (
+      <div className="rounded-lg border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 p-3">
+        <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+          Scheduled
+        </div>
+        <div className="mt-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+          {Number.isNaN(local.getTime())
+            ? scheduledFor
+            : local.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+        </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => run(onUnschedule)}
+          className="mt-2 text-xs font-medium text-red-500 hover:text-red-700 disabled:opacity-50"
+        >
+          Unschedule (back to draft)
+        </button>
+      </div>
+    );
+  }
+
+  const valid = value && new Date(value).getTime() > Date.now() + 60_000;
+
+  return (
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+      <label className="text-xs font-semibold uppercase tracking-wider text-secondary-500">
+        Schedule for later
+      </label>
+      <div className="mt-1.5 flex items-center gap-2">
+        <input
+          type="datetime-local"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="flex-1 min-w-0 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-800 dark:text-gray-200"
+        />
+        <button
+          type="button"
+          disabled={!valid || !ready || busy}
+          onClick={() => run(() => onSchedule(value))}
+          className="rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? "..." : "Schedule"}
+        </button>
+      </div>
+      {!ready && (
+        <p className="mt-1.5 text-[11px] text-amber-600">
+          Finish the publish checklist first (title, image, category, content).
+        </p>
       )}
     </div>
   );

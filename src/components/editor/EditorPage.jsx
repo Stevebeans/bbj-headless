@@ -31,6 +31,8 @@ export default function EditorPage({ postId = null }) {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [status, setStatus] = useState("draft");
+  // UTC 'Y-m-d H:i:s' when the post is scheduled (status "future").
+  const [scheduledFor, setScheduledFor] = useState(null);
   const [categoryIds, setCategoryIds] = useState([]);
   const [featuredImageId, setFeaturedImageId] = useState(null);
   const [featuredImageUrl, setFeaturedImageUrl] = useState(null);
@@ -170,6 +172,7 @@ export default function EditorPage({ postId = null }) {
       setLiveUpdates(!!data.live_updates);
       setLiveStart(Number(data.live_start) || 0);
       setLiveEnd(Number(data.live_end) || 0);
+      setScheduledFor(data.scheduled_for || null);
       if (editor && data.content) {
         editor.commands.setContent(data.content);
       } else if (data.content) {
@@ -322,6 +325,39 @@ export default function EditorPage({ postId = null }) {
     }
   }
 
+  // Schedule for later: saves, then flips the post to WP's "future" status.
+  // WP-cron (external on prod) publishes it at the chosen time; the plugin
+  // opens the live thread on that transition if Live Updates is checked.
+  async function handleSchedule(localDateTimeValue) {
+    await handleManualSave();
+    const pid = stateRef.current.currentPostId;
+    if (!pid) return;
+    const iso = new Date(localDateTimeValue).toISOString();
+    try {
+      const res = await changePostStatus(pid, "future", iso);
+      setStatus("future");
+      setScheduledFor(res.scheduled_for || iso);
+      setNotice("Post scheduled");
+    } catch (err) {
+      console.error("Schedule failed:", err);
+      setNotice(err.message || "Schedule failed");
+    }
+  }
+
+  async function handleUnschedule() {
+    const pid = stateRef.current.currentPostId;
+    if (!pid) return;
+    try {
+      await changePostStatus(pid, "draft");
+      setStatus("draft");
+      setScheduledFor(null);
+      setNotice("Schedule removed");
+    } catch (err) {
+      console.error("Unschedule failed:", err);
+      setNotice(err.message || "Unschedule failed");
+    }
+  }
+
   // Preview
   function handlePreview() {
     handleManualSave().then(() => {
@@ -390,7 +426,13 @@ export default function EditorPage({ postId = null }) {
     content: editor ? editor.getText().length >= 100 : false,
   };
   const canSubmit = Object.values(checklist).every(Boolean);
-  const publishLabel = !canPublish ? "Submit" : status === "publish" ? "Update" : "Publish";
+  const publishLabel = !canPublish
+    ? "Submit"
+    : status === "publish"
+      ? "Update"
+      : status === "future"
+        ? "Publish Now"
+        : "Publish";
 
   // Auto-hide toast after save
   const [toastVisible, setToastVisible] = useState(false);
@@ -428,6 +470,12 @@ export default function EditorPage({ postId = null }) {
   }
 
   const sidebarProps = {
+    postStatus: status,
+    scheduledFor,
+    canSchedule: canPublish,
+    scheduleReady: canSubmit,
+    onSchedule: handleSchedule,
+    onUnschedule: handleUnschedule,
     categoryIds,
     setCategoryIds,
     featuredImageId,
