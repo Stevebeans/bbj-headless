@@ -53,6 +53,12 @@ export function CareerTable({ players }) {
   const [sortDir, setSortDir] = useState(-1);
   const [filter, setFilter] = useState("");
   const [winnersOnly, setWinnersOnly] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+
+  // Soft cap keeps the initial page scannable; filtering or the winners
+  // toggle already produce small sets, so the cap only applies to the
+  // untouched full list.
+  const CAP = 100;
 
   const rows = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -67,6 +73,9 @@ export function CareerTable({ players }) {
       return d || a.name.localeCompare(b.name);
     });
   }, [players, sortKey, sortDir, filter, winnersOnly]);
+
+  const capped = !showAll && !filter.trim() && !winnersOnly && rows.length > CAP;
+  const visible = capped ? rows.slice(0, CAP) : rows;
 
   const onSort = (key) => {
     if (key === sortKey) {
@@ -92,7 +101,7 @@ export function CareerTable({ players }) {
           Every Houseguest
         </h2>
         <span className="font-plexMono text-[10px] uppercase tracking-[.08em] text-gray-500 dark:text-gray-400">
-          {rows.length} of {players.length} players
+          {capped ? `Top ${visible.length} of ${players.length}` : `${rows.length} of ${players.length}`} players
         </span>
         <span className="flex-1" />
         <button
@@ -134,7 +143,7 @@ export function CareerTable({ players }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((p) => (
+            {visible.map((p) => (
               <tr
                 key={p.id}
                 className="border-b border-gray-100 dark:border-gray-700/60 last:border-0 even:bg-[#FCFCFB] dark:even:bg-white/[.02] hover:bg-[#F4F7FB] dark:hover:bg-white/[.05]"
@@ -170,6 +179,17 @@ export function CareerTable({ players }) {
           <p className="px-5 py-8 text-center font-serifBody italic text-gray-500">
             No houseguest matches that filter.
           </p>
+        )}
+        {capped && (
+          <div className="border-t border-gray-200 dark:border-gray-700 p-3 text-center">
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="rounded-full border border-gray-300 dark:border-gray-600 bg-[#F3F1EA] dark:bg-gray-900 px-5 py-2 font-plexMono text-[10.5px] font-semibold uppercase tracking-[.07em] text-gray-700 dark:text-gray-300 transition-colors hover:border-primary-500 hover:text-primary-500"
+            >
+              Show all {rows.length} houseguests
+            </button>
+          </div>
         )}
       </div>
 
