@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 const COLUMNS = [
-  { key: "points", label: "PTS", title: "Career points" },
+  { key: "points", label: "Pts", title: "Career points" },
   { key: "seasons", label: "Seasons", title: "Seasons played" },
   { key: "hoh", label: "HoH", title: "Head of Household wins" },
   { key: "pov", label: "PoV", title: "Power of Veto wins" },
@@ -16,24 +16,57 @@ const COLUMNS = [
   { key: "days", label: "Days", title: "Days in the house" },
 ];
 
+export function Crown() {
+  return (
+    <svg
+      className="ml-1 inline-block h-[11px] w-[11px] shrink-0 opacity-90"
+      viewBox="0 0 24 24"
+      fill="#C97A16"
+      aria-label="Season winner"
+    >
+      <path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5L3 7z" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-gray-500 dark:text-gray-400"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
+}
+
 /**
- * Every-player sortable career table. Client-side sort + name filter over the
- * server-fetched list (~400 rows, no pagination needed).
+ * Every-player sortable career table (Claude Design "BBJ Stats Hub" look):
+ * mono numerics, sticky sortable headers, winners-only toggle, zero dimming.
  */
 export function CareerTable({ players }) {
   const [sortKey, setSortKey] = useState("points");
   const [sortDir, setSortDir] = useState(-1);
   const [filter, setFilter] = useState("");
+  const [winnersOnly, setWinnersOnly] = useState(false);
 
   const rows = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    const filtered = q
-      ? players.filter((p) => p.name.toLowerCase().includes(q))
-      : players;
-    return [...filtered].sort(
-      (a, b) => ((a[sortKey] || 0) - (b[sortKey] || 0)) * sortDir
+    const filtered = players.filter(
+      (p) =>
+        (!winnersOnly || p.is_winner) &&
+        (!q || p.name.toLowerCase().includes(q))
     );
-  }, [players, sortKey, sortDir, filter]);
+    return [...filtered].sort((a, b) => {
+      if (sortKey === "name") return a.name.localeCompare(b.name) * -sortDir;
+      const d = ((a[sortKey] || 0) - (b[sortKey] || 0)) * sortDir;
+      return d || a.name.localeCompare(b.name);
+    });
+  }, [players, sortKey, sortDir, filter, winnersOnly]);
 
   const onSort = (key) => {
     if (key === sortKey) {
@@ -44,33 +77,58 @@ export function CareerTable({ players }) {
     }
   };
 
+  const thClass = (key, first = false) =>
+    `sticky top-0 cursor-pointer select-none whitespace-nowrap border-b border-gray-300 dark:border-gray-600 bg-[#F3F1EA] dark:bg-gray-900 px-3 py-2.5 font-plexMono text-[9.5px] font-semibold uppercase tracking-[.08em] ${
+      first ? "pl-5 text-left" : "text-right"
+    } ${sortKey === key ? "text-primary-600 dark:text-secondary-400" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"}`;
+
+  const arrow = (key) =>
+    sortKey === key ? (sortDir === -1 ? " ↓" : " ↑") : "";
+
   return (
-    <div>
-      <input
-        type="search"
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        placeholder="Filter players..."
-        className="mb-3 w-full max-w-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm"
-      />
+    <section className="mt-5 overflow-hidden rounded-[10px] border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+      <div className="flex flex-wrap items-center gap-3.5 border-b border-gray-200 dark:border-gray-700 px-5 py-4">
+        <h2 className="font-osw text-[19px] font-semibold uppercase tracking-[.05em] text-gray-900 dark:text-gray-100">
+          Every Houseguest
+        </h2>
+        <span className="font-plexMono text-[10px] uppercase tracking-[.08em] text-gray-500 dark:text-gray-400">
+          {rows.length} of {players.length} players
+        </span>
+        <span className="flex-1" />
+        <button
+          type="button"
+          onClick={() => setWinnersOnly((w) => !w)}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 font-plexMono text-[10.5px] font-semibold uppercase tracking-[.07em] transition-colors ${
+            winnersOnly
+              ? "border-primary-500 bg-primary-500 text-white"
+              : "border-gray-300 dark:border-gray-600 bg-[#F3F1EA] dark:bg-gray-900 text-gray-700 dark:text-gray-300"
+          }`}
+        >
+          Winners only
+        </button>
+        <label className="relative flex items-center">
+          <SearchIcon />
+          <input
+            type="search"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter players..."
+            className="w-full rounded-full border border-gray-300 dark:border-gray-600 bg-[#F3F1EA] dark:bg-gray-900 py-2 pl-8 pr-3.5 text-[13.5px] text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:bg-white dark:focus:bg-gray-800 focus:outline-none sm:w-[210px]"
+          />
+        </label>
+      </div>
+
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full border-collapse">
           <thead>
-            <tr className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-2 pr-2">Player</th>
+            <tr>
+              <th className={thClass("name", true)} onClick={() => onSort("name")}>
+                Player{arrow("name")}
+              </th>
               {COLUMNS.map((c) => (
-                <th key={c.key} className="py-2 px-1.5 text-center">
-                  <button
-                    type="button"
-                    onClick={() => onSort(c.key)}
-                    title={c.title}
-                    className={`hover:text-primary-500 ${
-                      sortKey === c.key ? "text-primary-500" : ""
-                    }`}
-                  >
-                    {c.label}
-                    {sortKey === c.key ? (sortDir === -1 ? " ↓" : " ↑") : ""}
-                  </button>
+                <th key={c.key} className={thClass(c.key)} title={c.title} onClick={() => onSort(c.key)}>
+                  {c.label}
+                  {arrow(c.key)}
                 </th>
               ))}
             </tr>
@@ -79,24 +137,26 @@ export function CareerTable({ players }) {
             {rows.map((p) => (
               <tr
                 key={p.id}
-                className="border-b border-gray-100 dark:border-gray-800 last:border-0"
+                className="border-b border-gray-100 dark:border-gray-700/60 last:border-0 even:bg-[#FCFCFB] dark:even:bg-white/[.02] hover:bg-[#F4F7FB] dark:hover:bg-white/[.05]"
               >
-                <td className="py-1.5 pr-2 whitespace-nowrap">
+                <td className="whitespace-nowrap py-2.5 pl-5 pr-3 text-left text-sm">
                   <Link
                     href={`/bigbrother-players/${p.slug}`}
-                    className="hover:underline text-primary-600 dark:text-primary-300 font-medium"
+                    className="inline-flex items-center font-medium text-gray-900 dark:text-gray-100 hover:text-primary-500 dark:hover:text-secondary-400 hover:underline"
                   >
                     {p.name}
+                    {p.is_winner && <Crown />}
                   </Link>
-                  {p.is_winner && (
-                    <span className="ml-1" title="Season winner" aria-label="Season winner">👑</span>
-                  )}
                 </td>
                 {COLUMNS.map((c) => (
                   <td
                     key={c.key}
-                    className={`py-1.5 px-1.5 text-center tabular-nums ${
-                      c.key === "points" ? "font-semibold" : ""
+                    className={`whitespace-nowrap px-3 py-2.5 text-right font-plexMono text-[13px] ${
+                      c.key === "points"
+                        ? "text-[13.5px] font-semibold text-gray-900 dark:text-gray-100"
+                        : (p[c.key] || 0) === 0
+                          ? "text-gray-300 dark:text-gray-600"
+                          : "text-gray-700 dark:text-gray-300"
                     }`}
                   >
                     {p[c.key]}
@@ -107,9 +167,17 @@ export function CareerTable({ players }) {
           </tbody>
         </table>
         {rows.length === 0 && (
-          <p className="py-6 text-center text-sm text-gray-500">No players match.</p>
+          <p className="px-5 py-8 text-center font-serifBody italic text-gray-500">
+            No houseguest matches that filter.
+          </p>
         )}
       </div>
-    </div>
+
+      <div className="flex flex-wrap gap-4 border-t border-gray-200 dark:border-gray-700 bg-[#F3F1EA] dark:bg-gray-900 px-5 py-3 font-plexMono text-[9.5px] uppercase tracking-[.07em] text-gray-500 dark:text-gray-400">
+        <span>👑 = season winner</span>
+        <span>Pts: HoH 2.5 · Veto 2 · other comps 1 · survived block 1 · veto save 0.5 · nom -1</span>
+        <span>Click any column to sort</span>
+      </div>
+    </section>
   );
 }

@@ -18,6 +18,8 @@ module.exports = {
         display: ["var(--font-yanone)", "sans-serif"],
         mainHead: ["var(--font-yanone)", "sans-serif"],
         hand: ["var(--font-caveat)", "cursive"],
+        serifBody: ["var(--font-source-serif)", "Georgia", "serif"],
+        plexMono: ["var(--font-plex-mono)", "monospace"],
       },
       colors: {
         primary: {
