@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api/admin";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/context/AuthContext";
 import TopPostsBoard from "@/components/admin/social/TopPostsBoard";
 import FeedShareQueue from "@/components/admin/social/FeedShareQueue";
 import CbsSlotsEditor from "@/components/admin/social/CbsSlotsEditor";
@@ -21,7 +22,7 @@ const MODEL_OPTIONS = [
 ];
 
 const INTERVAL_OPTIONS = [5, 10, 15, 30];
-const BEANBOT_INTERVALS = [30, 45, 60];
+const BEANBOT_INTERVALS = [5, 10, 15, 30, 45, 60];
 const DRAFT_WINDOWS = [
   { id: "1h", label: "Last 1h" },
   { id: "today", label: "Today" },
@@ -134,6 +135,7 @@ function stripSources(text) {
 
 export default function AdminSocialPage() {
   const { hasPermission, loading: permLoading } = usePermissions();
+  const { user: authUser } = useAuth();
 
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -440,6 +442,7 @@ export default function AdminSocialPage() {
           interval_minutes: Number(beanbot.interval_minutes) || 30,
           max_per_day: Math.min(96, Math.max(1, Number(beanbot.max_per_day) || 1)),
           bluesky_enabled: !!beanbot.bluesky_enabled,
+          post_as_user_id: Number(beanbot.post_as_user_id) || 0,
         }),
       });
       setBeanbot(data.settings);
@@ -1104,6 +1107,35 @@ export default function AdminSocialPage() {
                   className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
                 <p className="text-xs text-slate-500 mt-1">Between 1 and 96.</p>
+              </div>
+
+              {/* Post under */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Post under
+                </label>
+                <select
+                  value={Number(beanbot.post_as_user_id) || 0}
+                  onChange={(e) => patchBeanbot("post_as_user_id", parseInt(e.target.value, 10))}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value={0}>Bean Bot</option>
+                  {authUser?.id ? (
+                    <option value={Number(authUser.id)}>
+                      Me ({authUser.user_display_name || authUser.name || "my account"})
+                    </option>
+                  ) : null}
+                  {/* Saved author who isn't the viewer (e.g. another admin set it) */}
+                  {Number(beanbot.post_as_user_id) > 0 &&
+                    Number(beanbot.post_as_user_id) !== Number(authUser?.id) && (
+                      <option value={Number(beanbot.post_as_user_id)}>
+                        User #{beanbot.post_as_user_id}
+                      </option>
+                    )}
+                </select>
+                <p className="text-xs text-slate-500 mt-1">
+                  Updates are bylined to this account. &ldquo;Me&rdquo; posts read as yours, no bot badge.
+                </p>
               </div>
             </div>
 
