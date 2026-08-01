@@ -18,7 +18,7 @@ function PlayerSelect({ value, onChange, players, allowEmpty = true }) {
   );
 }
 
-export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, onDeleted }) {
+export default function WeekEditor({ week, weeks, roster, compTypes, season, onSaved, onDeleted }) {
   const [form, setForm] = useState(() => {
     const f = weekToForm(week);
     // Weeks saved before HoH-played tracking: default to everyone active
@@ -29,7 +29,14 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
     }
     return f;
   });
-  const [showFinale, setShowFinale] = useState(() => Object.keys(collectJuryVotes(weeks)).length > 0);
+  // Finale checkbox: unchecked by default. Only the season's LAST week starts
+  // checked, and only when jury votes are actually recorded — otherwise every
+  // week's editor showed it checked (jury votes are stored season-wide).
+  const [initialShowFinale] = useState(() => {
+    const lastWeekNum = Math.max(...weeks.map((w) => Number(w.week_num)));
+    return Number(week.week_num) === lastWeekNum && Object.keys(collectJuryVotes(weeks)).length > 0;
+  });
+  const [showFinale, setShowFinale] = useState(initialShowFinale);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [errors, setErrors] = useState([]);
@@ -97,11 +104,30 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
   const handleSave = async () => {
     setSaving(true);
     setErrors([]);
+    // min/max on the inputs only constrain the picker; typed dates (e.g. a
+    // wrong year) still land in state, so hard-check against the season here.
+    const dateErrs = [];
+    for (const [label, v] of [["Start date", form.startDate], ["End date", form.endDate]]) {
+      if (v && season?.start_date && season?.end_date && (v < season.start_date || v > season.end_date)) {
+        dateErrs.push(`${label} ${v} is outside this season (${season.start_date} to ${season.end_date}).`);
+      }
+    }
+    if (dateErrs.length) {
+      setErrors(dateErrs);
+      setSaving(false);
+      return;
+    }
     try {
       const payload = formToPayload(
         showFinale ? form : { ...form, juryVotes: {} },
         activeIds
       );
+      // Replace-all jury semantics: whenever the finale UI is in play (checked
+      // now, or checked when the editor opened), send the key even if empty so
+      // the server clears stale votes. Untouched weeks omit it entirely.
+      if ((showFinale || initialShowFinale) && !payload.jury_votes) {
+        payload.jury_votes = {};
+      }
       await saveWeek(week.id, payload);
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 2000);
@@ -167,11 +193,11 @@ export default function WeekEditor({ week, weeks, roster, compTypes, onSaved, on
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>Start date</label>
-          <input type="date" value={form.startDate} onChange={(e) => set({ startDate: e.target.value })} className={inputCls} />
+          <input type="date" value={form.startDate} onChange={(e) => set({ startDate: e.target.value })} min={season?.start_date || undefined} max={season?.end_date || undefined} className={inputCls} />
         </div>
         <div>
           <label className={labelCls}>End date</label>
-          <input type="date" value={form.endDate} onChange={(e) => set({ endDate: e.target.value })} className={inputCls} />
+          <input type="date" value={form.endDate} onChange={(e) => set({ endDate: e.target.value })} min={season?.start_date || undefined} max={season?.end_date || undefined} className={inputCls} />
         </div>
       </div>
 

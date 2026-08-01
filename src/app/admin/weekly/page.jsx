@@ -136,6 +136,7 @@ export default function AdminWeekly() {
                 weeks={bundle.weeks}
                 roster={bundle.roster}
                 compTypes={bundle.comp_types}
+                season={seasons.find((s) => Number(s.id) === Number(seasonId)) || null}
                 onSaved={() => loadBundle(seasonId, selectedWeek.id)}
                 onDeleted={() => loadBundle(seasonId)}
               />
