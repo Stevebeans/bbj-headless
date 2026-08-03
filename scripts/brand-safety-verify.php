@@ -243,3 +243,176 @@ check(MediaUploader::getCommentMedia(999999) === null, 'quarantined media hidden
 $wpdb->delete($mtable, ['id' => $mid]);
 
 echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown)\n";
+
+// --- Task 6: Backfill + admin REST routes ---
+use BigBrotherJunkies\Data\Api\BrandSafetyRoutes;
+use BigBrotherJunkies\Data\BrandSafety\Backfill;
+use BigBrotherJunkies\Data\Permissions\PermissionChecker;
+
+$routes = new BrandSafetyRoutes();
+
+// --- settings GET/PUT ---
+$settings = $routes->getSettings()->get_data();
+check(isset($settings['enabled']) && is_array($settings['tiers']) && is_array($settings['watch_defaults']), 'settings GET shape');
+check(($settings['tiers']['bitch'] ?? '') === 'censor', 'settings tiers reflect blocklist');
+
+$req = new WP_REST_Request('PUT', '/bbjd/v1/brand-safety/settings');
+$req->set_param('tier_overrides', ['bitch' => 'off']);
+$updated = $routes->updateSettings($req)->get_data();
+check(($updated['tiers']['bitch'] ?? '') === 'off', 'settings PUT overrides tier');
+update_option('bbjd_brand_safety', []);
+Blocklist::flushCache();
+
+// --- posts: dry-run + apply ---
+$dirtyPost = wp_insert_post(['post_title' => 'x', 'post_content' => 'plain bullshit here', 'post_status' => 'publish', 'post_type' => 'post']);
+$cleanPost = wp_insert_post(['post_title' => 'clean title', 'post_content' => 'nothing to see here', 'post_status' => 'publish', 'post_type' => 'post']);
+$wpdb->update($wpdb->posts, ['post_content' => 'plain bullshit here'], ['ID' => $dirtyPost]);
+clean_post_cache($dirtyPost);
+delete_post_meta($dirtyPost, Hooks::META_ORIGINAL);
+$cleanModifiedBefore = get_post($cleanPost)->post_modified;
+
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/dry-run');
+$req->set_param('target', 'posts');
+$sum = $routes->dryRun($req)->get_data();
+check($sum['target'] === 'posts', 'dry-run posts target echoed');
+check($sum['hits_objects'] >= 1, 'dry-run finds dirty post');
+check($sum['scanned'] >= $sum['hits_objects'], 'scanned count covers hit objects');
+check(get_post($dirtyPost)->post_content === 'plain bullshit here', 'dry-run is read-only');
+
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/apply');
+$req->set_param('target', 'posts');
+$req->set_param('batch', 100);
+$loops = 0;
+do {
+    $r = $routes->apply($req)->get_data();
+    $loops++;
+} while (!$r['done'] && $loops < 1000);
+check($r['done'] === true, 'posts apply reaches done');
+check(strpos(get_post($dirtyPost)->post_content, 'bullshit') === false, 'apply censored legacy post');
+check(get_post($cleanPost)->post_modified === $cleanModifiedBefore, 'clean post NOT rewritten (post_modified unchanged)');
+
+$r2 = $routes->apply($req)->get_data();
+check($r2['processed'] === 0 && $r2['done'] === true, 'posts apply idempotent no-op re-run');
+
+wp_delete_post($dirtyPost, true);
+wp_delete_post($cleanPost, true);
+
+// --- comments: dry-run + apply ---
+$postForComment = wp_insert_post(['post_title' => 'bs-backfill-host', 'post_status' => 'publish']);
+$dirtyCommentId = wp_insert_comment([
+    'comment_post_ID' => $postForComment,
+    'comment_author' => 'legacy user',
+    'comment_content' => 'that was total bullshit back then',
+    'comment_approved' => 1,
+]);
+
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/dry-run');
+$req->set_param('target', 'comments');
+$sum = $routes->dryRun($req)->get_data();
+check($sum['hits_objects'] >= 1, 'dry-run finds dirty comment');
+check(get_comment($dirtyCommentId)->comment_content === 'that was total bullshit back then', 'comment dry-run is read-only');
+
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/apply');
+$req->set_param('target', 'comments');
+$req->set_param('batch', 500);
+$loops = 0;
+do {
+    $r = $routes->apply($req)->get_data();
+    $loops++;
+} while (!$r['done'] && $loops < 1000);
+check($r['done'] === true, 'comments apply reaches done');
+check(strpos(get_comment($dirtyCommentId)->comment_content, 'bullshit') === false, 'apply censored legacy comment');
+check(get_comment_meta($dirtyCommentId, '_bbjd_bs_original', true) !== '', 'legacy comment original preserved');
+
+$r2 = $routes->apply($req)->get_data();
+check($r2['processed'] === 0 && $r2['done'] === true, 'comments apply idempotent no-op re-run');
+
+wp_delete_comment($dirtyCommentId, true);
+wp_delete_post($postForComment, true);
+
+// --- quotes: dry-run + apply (real column is quote_text, not quote) ---
+$qtable = BigBrotherJunkies\Data\Social\SocialSchema::table(BigBrotherJunkies\Data\Social\SocialSchema::TABLE_QUOTES);
+$wpdb->insert($qtable, [
+    'season_id' => 0,
+    'player_id' => null,
+    'quote_text' => 'legacy bullshit quote',
+    'context' => '',
+    'said_on' => gmdate('Y-m-d'),
+    'source_count' => 1,
+    'created_at' => gmdate('Y-m-d H:i:s'),
+]);
+$dirtyQuoteId = (int) $wpdb->insert_id;
+
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/dry-run');
+$req->set_param('target', 'quotes');
+$sum = $routes->dryRun($req)->get_data();
+check($sum['hits_objects'] >= 1, 'dry-run finds dirty quote');
+$rawQuote = $wpdb->get_var($wpdb->prepare("SELECT quote_text FROM {$qtable} WHERE id = %d", $dirtyQuoteId));
+check($rawQuote === 'legacy bullshit quote', 'quote dry-run is read-only');
+
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/apply');
+$req->set_param('target', 'quotes');
+$req->set_param('batch', 500);
+$loops = 0;
+do {
+    $r = $routes->apply($req)->get_data();
+    $loops++;
+} while (!$r['done'] && $loops < 1000);
+check($r['done'] === true, 'quotes apply reaches done');
+$rawQuote = $wpdb->get_var($wpdb->prepare("SELECT quote_text FROM {$qtable} WHERE id = %d", $dirtyQuoteId));
+check(strpos($rawQuote, 'bullshit') === false, 'apply censored legacy quote');
+
+$r2 = $routes->apply($req)->get_data();
+check($r2['processed'] === 0 && $r2['done'] === true, 'quotes apply idempotent no-op re-run');
+
+$wpdb->delete($qtable, ['id' => $dirtyQuoteId]);
+
+// --- apply with no report file -> graceful, never fatal ---
+@unlink(WP_CONTENT_DIR . '/bbj-quarantine/reports/dry-run-posts.json');
+$noReport = Backfill::apply('posts', 25);
+check($noReport['processed'] === 0 && $noReport['remaining'] === 0 && $noReport['done'] === true && isset($noReport['error']), 'apply with no report file is graceful, not fatal');
+
+// --- flagged / override ---
+$flagPost = wp_insert_post(['post_title' => 'flag-me', 'post_content' => '<a href="https://example.com/bitch">x</a>', 'post_status' => 'publish', 'post_type' => 'post']);
+$flaggedList = $routes->flagged()->get_data();
+$found = null;
+foreach ($flaggedList as $row) {
+    if ($row['id'] === $flagPost) {
+        $found = $row;
+        break;
+    }
+}
+check($found !== null && $found['overridden'] === false, 'flagged endpoint lists unsafe post');
+
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/override');
+$req->set_param('post_id', $flagPost);
+$req->set_param('safe', true);
+$ov = $routes->override($req)->get_data();
+check($ov['overridden'] === true && $ov['ads_unsafe'] === false, 'override marks post safe');
+
+$req->set_param('safe', false);
+$ov = $routes->override($req)->get_data();
+check($ov['overridden'] === false && $ov['ads_unsafe'] === true, 'override removal restores unsafe flag');
+wp_delete_post($flagPost, true);
+
+// --- log ---
+$logReq = new WP_REST_Request('GET', '/bbjd/v1/brand-safety/log');
+$logReq->set_param('page', 1);
+$logResult = $routes->log($logReq)->get_data();
+check(isset($logResult['rows']) && isset($logResult['total']), 'log endpoint shape');
+
+// --- quarantine-media ---
+$mtable2 = $wpdb->prefix . 'bbj_comment_media';
+$tmp2 = tempnam(sys_get_temp_dir(), 'bsq2');
+file_put_contents($tmp2, 'x');
+$wpdb->insert($mtable2, ['user_id' => 1, 'comment_id' => 999998, 'media_type' => 'image', 'file_name' => 'bsq2.webp', 'file_path' => $tmp2, 'file_url' => 'http://x/bsq2.webp', 'file_size' => 1, 'mime_type' => 'image/webp', 'storage_type' => 'local']);
+$qmMediaId = $wpdb->insert_id;
+$qmResult = $routes->quarantineMedia()->get_data();
+check($qmResult['moved'] >= 1 && $qmResult['remaining_local'] === 0, 'quarantine-media route quarantines + reports remaining');
+$wpdb->delete($mtable2, ['id' => $qmMediaId]);
+
+// --- registration: brand_safety permission exists ---
+$perms = PermissionChecker::getPermissionConfig();
+check(isset($perms['brand_safety']), 'brand_safety permission registered');
+
+echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown + backfill/routes)\n";
