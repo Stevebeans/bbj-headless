@@ -149,3 +149,44 @@ try {
 }
 
 echo "ALL CHECKS PASS (matcher + log table + comment integration)\n";
+
+// --- Task 4: save_post hook, ads_unsafe flag, REST field, quote censoring ---
+use BigBrotherJunkies\Data\BrandSafety\Hooks;
+
+// save_post censors editorial text
+$pid = wp_insert_post(['post_title' => 'Recap', 'post_content' => '<p>total bullshit tonight</p>', 'post_status' => 'publish', 'post_type' => 'post']);
+$p = get_post($pid);
+check(strpos($p->post_content, 'bullshit') === false, 'editorial censored on save');
+check(get_post_meta($pid, Hooks::META_ORIGINAL, true) !== '', 'original preserved');
+check(get_post_meta($pid, Hooks::META_UNSAFE, true) === '', 'maskable-only page not flagged');
+
+// unmaskable hit -> flag; clean re-save -> flag clears
+wp_update_post(['ID' => $pid, 'post_content' => '<a href="https://example.com/bitch">x</a>']);
+check(get_post_meta($pid, Hooks::META_UNSAFE, true) === '1', 'unmaskable page flagged');
+wp_update_post(['ID' => $pid, 'post_content' => '<p>all clean now</p>']);
+check(get_post_meta($pid, Hooks::META_UNSAFE, true) === '', 'flag clears on clean save');
+
+// isAdsUnsafe() + override
+update_post_meta($pid, Hooks::META_UNSAFE, '1');
+check(Hooks::isAdsUnsafe($pid) === true, 'isAdsUnsafe true when flagged');
+update_post_meta($pid, Hooks::META_OVERRIDE, '1');
+check(Hooks::isAdsUnsafe($pid) === false, 'override wins');
+wp_delete_post($pid, true);
+
+// quotes are censored at insert (real QuoteStore::insert() field names: quote_text, said_on)
+$qid = BigBrotherJunkies\Data\Social\QuoteStore::insert([
+    'season_id'   => 0,
+    'player_id'   => 0,
+    'quote_text'  => 'that bullshit again',
+    'context'     => '',
+    'said_on'     => gmdate('Y-m-d'),
+]);
+check($qid > 0, 'quote inserted');
+global $wpdb;
+$qtable = BigBrotherJunkies\Data\Social\SocialSchema::table(BigBrotherJunkies\Data\Social\SocialSchema::TABLE_QUOTES);
+$qrow = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$qtable} WHERE id = %d", $qid));
+check($qrow !== null, 'quote row found by returned insert id');
+check(strpos($qrow->quote_text, 'bullshit') === false, 'quote censored at insert');
+BigBrotherJunkies\Data\Social\QuoteStore::delete($qid);
+
+echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes)\n";
