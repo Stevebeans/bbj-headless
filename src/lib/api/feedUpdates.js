@@ -77,7 +77,11 @@ export async function getFeedUpdateBySlug(slug) {
       tags: [`feed-update-${slug}`], // Granular — new feed updates don't invalidate old ones
       revalidate: false,
     });
-    return response?.update || null;
+    if (!response?.update) return null;
+    // Mirrors posts.js's hideAds/adsUnsafe camelCase mapping — this endpoint
+    // is hand-built (not the wp/v2 posts controller), so ads_unsafe arrives
+    // snake_case straight off the WP response.
+    return { ...response.update, adsUnsafe: response.update.ads_unsafe || false };
   } catch (error) {
     if (error.message?.includes("404") || error.status === 404) {
       return null;

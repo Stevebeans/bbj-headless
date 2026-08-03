@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
+import PageAdKill from "@/components/ads/PageAdKill";
 import { BeanBotNotice } from "@/components/home/BeanBotNotice";
 import AskBeanPrompt from "@/components/bean/AskBeanPrompt";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
@@ -62,6 +63,7 @@ export default async function FeedUpdatePage({ params }) {
     notFound();
   }
 
+  const showAds = !update.adsUnsafe;
   const url = `${SITE_URL}/live-feed-updates/${update.slug}`;
   const jsonLd = {
     "@context": "https://schema.org",
@@ -91,6 +93,7 @@ export default async function FeedUpdatePage({ params }) {
 
   return (
     <>
+      {update.adsUnsafe && <PageAdKill />}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -268,10 +271,12 @@ export default async function FeedUpdatePage({ params }) {
 
           {/* Static in-content unit — these pages are too short for dynamic
               insertion to place more than one ad (Freestar rec, 2026-07-17). */}
-          <FreestarSlot
-            placementName="bigbrotherjunkies_article_incontent_live_feed_updates"
-            slotId="live_feed_update_incontent"
-          />
+          {showAds && (
+            <FreestarSlot
+              placementName="bigbrotherjunkies_article_incontent_live_feed_updates"
+              slotId="live_feed_update_incontent"
+            />
+          )}
 
           {/* Comments Section — routes to today's live thread when this update
               belongs to one; otherwise the update's own comments (fallback). */}
@@ -295,7 +300,7 @@ export default async function FeedUpdatePage({ params }) {
         </section>
 
         {/* Sidebar */}
-        <Sidebar showAds={true}>
+        <Sidebar showAds={showAds}>
           <SubscribeWidget />
         </Sidebar>
       </div>

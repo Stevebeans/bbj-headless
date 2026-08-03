@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Cookies from "js-cookie";
 import { useAuth } from "@/context/AuthContext";
@@ -24,6 +24,8 @@ const AdContext = createContext({
   pwaSuppressed: [],
   previewMode: false,
   isSupporter: false,
+  pageAdKill: false,
+  setPageAdKill: () => {},
 });
 
 const SDK_TIMEOUT_MS = 5000;
@@ -41,6 +43,8 @@ export function AdProvider({
   const [isPWA, setIsPWA] = useState(false);
   const [isAdBlocked, setIsAdBlocked] = useState(false);
   const [previewCookie, setPreviewCookie] = useState(false);
+  const [pageAdKill, setPageAdKillState] = useState(false);
+  const setPageAdKill = useCallback((v) => setPageAdKillState(v), []);
   const pathname = usePathname();
   const isFirstRender = useRef(true);
   const { user } = useAuth();
@@ -61,7 +65,7 @@ export function AdProvider({
     ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
 
   const shouldShowAds =
-    initialShouldShowAds && !isSupporter && !isLocalhost && !AD_FREE_ROUTES.includes(pathname);
+    initialShouldShowAds && !isSupporter && !isLocalhost && !AD_FREE_ROUTES.includes(pathname) && !pageAdKill;
 
   // Preview mode: cookie present AND user is admin/editor.
   // Always false for logged-out, non-admin, or cookie-absent users.
@@ -83,8 +87,12 @@ export function AdProvider({
   // with the SDK live → hard-reload once; the fresh load never boots the SDK
   // (shouldShowAds is false from the first render). Session guard stops loops;
   // it re-arms on any clean ad-free load so later SPA re-entries reload too.
+  // Same mechanic covers a brand-safety-flagged page (pageAdKill) reached via
+  // SPA nav with the SDK already booted — PageAdKill's useLayoutEffect sets
+  // pageAdKill synchronously before paint, so by the time this passive effect
+  // runs it already sees the up-to-date value.
   useEffect(() => {
-    if (!AD_FREE_ROUTES.includes(pathname)) return;
+    if (!AD_FREE_ROUTES.includes(pathname) && !pageAdKill) return;
     if (typeof window === "undefined") return;
     if (window.freestar) {
       if (sessionStorage.getItem(ADFREE_RELOAD_KEY) !== "1") {
@@ -94,7 +102,19 @@ export function AdProvider({
     } else {
       sessionStorage.removeItem(ADFREE_RELOAD_KEY);
     }
-  }, [pathname]);
+  }, [pathname, pageAdKill]);
+
+  // No separate "clear pageAdKill on pathname change" effect here (the brief's
+  // Step 2 suggested one) — PageAdKill's own useLayoutEffect cleanup already
+  // resets the flag to false when it unmounts (leaving a flagged page), and
+  // that cleanup runs in the synchronous layout phase alongside the next
+  // page's mount effect. A separate passive useEffect keyed on [pathname]
+  // would run strictly AFTER that layout-phase settling (passive effects
+  // always run after paint, layout effects before), so it would stomp
+  // pageAdKill back to false right after PageAdKill just set it true — on
+  // every fresh load of a flagged page and every SPA-nav onto one, which is
+  // the exact scenario this feature needs to work for. Omitted as a
+  // deliberate deviation; see task-7 report.
 
   // Read preview-mode cookie on mount and whenever auth state changes
   useEffect(() => {
@@ -149,6 +169,8 @@ export function AdProvider({
         pwaSuppressed,
         previewMode,
         isSupporter,
+        pageAdKill,
+        setPageAdKill,
       }}
     >
       {children}

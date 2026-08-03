@@ -13,6 +13,7 @@ import { QuickLinks } from "@/components/posts/QuickLinks";
 import { RelatedPosts } from "@/components/posts/RelatedPosts";
 import { LiveUpdateTimeline } from "@/components/posts/LiveUpdateTimeline";
 import { ContentWithAds } from "@/components/posts/ContentWithAds";
+import PageAdKill from "@/components/ads/PageAdKill";
 import { EmbedHydrator } from "@/components/posts/EmbedHydrator";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { CommentSection } from "@/components/comments";
@@ -85,7 +86,7 @@ export default async function ContentPage({ params }) {
   }
 
   const isPage = content.type === "page";
-  const showAds = !isPage && !content.hideAds;
+  const showAds = !isPage && !content.hideAds && !content.adsUnsafe;
 
   // Only fetch related posts for posts (not pages)
   let relatedPosts = [];
@@ -142,6 +143,7 @@ export default async function ContentPage({ params }) {
 
   return (
     <>
+      {content.adsUnsafe && <PageAdKill />}
       {!isPage && <PostJsonLd post={content} siteUrl={SITE_URL} />}
       {!isPage && (
         <script

@@ -79,6 +79,7 @@ function transformPost(wpPost) {
     commentCount: wpPost.comment_count || 0,
     liveFeedThread: wpPost.live_feed_thread || false,
     hideAds: wpPost.hide_ads || false,
+    adsUnsafe: wpPost.ads_unsafe || false,
     // Live Update Thread fields — registered via register_rest_field in Task 7,
     // appear at the top level of the WP REST response as snake_case.
     liveUpdates: !!(wpPost.live_updates ?? wpPost.meta?.live_updates),
@@ -187,6 +188,7 @@ function transformPage(wpPage) {
     featuredImage: featuredMedia?.source_url || null,
     type: "page",
     hideAds: wpPage.hide_ads || false,
+    adsUnsafe: wpPage.ads_unsafe || false,
   };
 }
 
