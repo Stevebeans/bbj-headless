@@ -672,3 +672,52 @@ $optRestore2['apply_cursor_quotes'] = $origQuotesCursor2;
 update_option('bbjd_brand_safety', $optRestore2);
 
 echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown + backfill/routes + purge-on-apply + sliced dry-run)\n";
+
+// --- Fix round 3: quarantine-dir guard files must survive create-order ---
+// The bug: MediaUploader::quarantineAllLocal() only wrote .htaccess/index.php
+// inside `if (!file_exists($dir))`, while Backfill::dryRun created the same
+// dir via a bare wp_mkdir_p with no guards at all. Since dry-run runs first
+// in the real rollout, the dir already existed by the time quarantine ran ->
+// guards never got written -> report JSONs (flagged-content excerpts) and
+// quarantined images stayed web-accessible. Both callers now go through
+// QuarantineGuard, which writes guards whenever they're missing, not only on
+// directory creation, so it doesn't matter which caller runs first.
+$quarantineBaseDir = WP_CONTENT_DIR . '/bbj-quarantine';
+$quarantineReportsDir = $quarantineBaseDir . '/reports';
+$quotesReportFile3 = WP_CONTENT_DIR . '/bbj-quarantine/reports/dry-run-quotes.json';
+$origQuotesReport3 = @file_get_contents($quotesReportFile3);
+$origQuotesCursor3 = (int) (get_option('bbjd_brand_safety', [])['apply_cursor_quotes'] ?? 0);
+
+// Simulate the legacy state: directories already exist (from all the test
+// activity above), guard files do not.
+wp_mkdir_p($quarantineReportsDir);
+@unlink($quarantineBaseDir . '/.htaccess');
+@unlink($quarantineBaseDir . '/index.php');
+@unlink($quarantineReportsDir . '/.htaccess');
+@unlink($quarantineReportsDir . '/index.php');
+check(!file_exists($quarantineBaseDir . '/.htaccess'), 'legacy state simulated: base .htaccess removed');
+check(!file_exists($quarantineReportsDir . '/.htaccess'), 'legacy state simulated: reports/ .htaccess removed');
+
+// dry-run is the "runs first in the rollout" caller — must restore both dirs.
+Backfill::dryRun('quotes', 0);
+check(file_exists($quarantineBaseDir . '/.htaccess'), 'dry-run restores base dir .htaccess even though the dir pre-existed');
+check(file_exists($quarantineBaseDir . '/index.php'), 'dry-run restores base dir index.php even though the dir pre-existed');
+check(file_exists($quarantineReportsDir . '/.htaccess'), 'dry-run restores reports/ .htaccess even though the dir pre-existed');
+check(file_exists($quarantineReportsDir . '/index.php'), 'dry-run restores reports/ index.php even though the dir pre-existed');
+
+// quarantineAllLocal() running afterward must not disturb them.
+MediaUploader::quarantineAllLocal();
+check(file_exists($quarantineBaseDir . '/.htaccess'), 'quarantineAllLocal leaves base dir .htaccess in place');
+check(file_exists($quarantineBaseDir . '/index.php'), 'quarantineAllLocal leaves base dir index.php in place');
+
+// restore quotes report state disturbed by the dry-run call above
+if ($origQuotesReport3 !== false) {
+    file_put_contents($quotesReportFile3, $origQuotesReport3);
+} else {
+    @unlink($quotesReportFile3);
+}
+$optRestore3 = get_option('bbjd_brand_safety', []);
+$optRestore3['apply_cursor_quotes'] = $origQuotesCursor3;
+update_option('bbjd_brand_safety', $optRestore3);
+
+echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown + backfill/routes + purge-on-apply + sliced dry-run + quarantine dir guards)\n";
