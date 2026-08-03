@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Cookies from "js-cookie";
 import { getAdSettings, updateAdSettings } from "@/lib/api/ad-settings";
 import { getRoles } from "@/lib/api/admin";
+import BrandSafetySection from "@/components/admin/BrandSafetySection";
 
 const PREVIEW_COOKIE_NAME = "bbj_ad_preview";
 const PREVIEW_COOKIE_DAYS = 7;
@@ -565,6 +566,8 @@ export default function AdminAds() {
           {saving ? "Saving..." : "Save Settings"}
         </button>
       </div>
+
+      <BrandSafetySection />
     </div>
   );
 }
