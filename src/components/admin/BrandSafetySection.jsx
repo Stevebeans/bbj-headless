@@ -35,7 +35,7 @@ const ACTION_BADGE = {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function initialBackfillState() {
-  return { hasRun: false, applying: false, scanned: 0, hitsObjects: 0, hitsTotal: 0, report: [], initialRemaining: 0, remaining: 0, done: false, processed: 0, purged: 0, error: null, expanded: false };
+  return { hasRun: false, applying: false, dryRunning: false, scanned: 0, hitsObjects: 0, hitsTotal: 0, report: [], initialRemaining: 0, remaining: 0, done: false, processed: 0, purged: 0, error: null, expanded: false };
 }
 
 function TierBadge({ tier }) {
@@ -156,10 +156,23 @@ export default function BrandSafetySection() {
   };
 
   const handleDryRun = async (target) => {
-    setBackfill((prev) => ({ ...prev, [target]: { ...prev[target], applying: false, error: null } }));
+    setBackfill((prev) => ({
+      ...prev,
+      [target]: { ...initialBackfillState(), dryRunning: true },
+    }));
     setError(null);
     try {
-      const res = await runDryRun(target);
+      let res = await runDryRun(target);
+      while (!res.done) {
+        setBackfill((prev) => ({
+          ...prev,
+          [target]: { ...prev[target], scanned: res.scanned_so_far, hitsObjects: res.hits_objects_so_far },
+        }));
+        // Scan continuation spacing — a large table (e.g. comments) needs many
+        // slices; give the server a beat between them rather than hammering it.
+        await sleep(1000);
+        res = await runDryRun(target);
+      }
       setBackfill((prev) => ({
         ...prev,
         [target]: {
@@ -176,6 +189,7 @@ export default function BrandSafetySection() {
       }));
     } catch (err) {
       setError(err.message);
+      setBackfill((prev) => ({ ...prev, [target]: { ...prev[target], dryRunning: false } }));
     }
   };
 
@@ -375,14 +389,14 @@ export default function BrandSafetySection() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleDryRun(key)}
-                      disabled={state.applying}
+                      disabled={state.applying || state.dryRunning}
                       className="px-3 py-1.5 text-sm bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50"
                     >
-                      Dry run
+                      {state.dryRunning ? "Scanning..." : "Dry run"}
                     </button>
                     <button
                       onClick={() => handleApply(key, false)}
-                      disabled={!state.hasRun || state.applying || state.done}
+                      disabled={!state.hasRun || state.applying || state.dryRunning || state.done}
                       className="px-3 py-1.5 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {state.applying ? "Applying..." : "Apply"}
@@ -390,7 +404,7 @@ export default function BrandSafetySection() {
                     {key === "posts" && (
                       <button
                         onClick={() => handleApplyWithPurgeConfirm(key)}
-                        disabled={!state.hasRun || state.applying || state.done}
+                        disabled={!state.hasRun || state.applying || state.dryRunning || state.done}
                         className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Applies AND fires a live Cloudflare/ISR purge per post"
                       >
@@ -401,6 +415,12 @@ export default function BrandSafetySection() {
                 </div>
 
                 {state.error && <p className="mt-2 text-sm text-red-500">{state.error}</p>}
+
+                {state.dryRunning && (
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    Scanning… {state.scanned} objects scanned so far{state.hitsObjects > 0 ? `, ${state.hitsObjects} flagged so far` : ""}.
+                  </p>
+                )}
 
                 {state.hasRun && (
                   <div className="mt-3">
@@ -628,7 +648,7 @@ export default function BrandSafetySection() {
                 </thead>
                 <tbody>
                   {log.rows.map((row) => (
-                    <tr key={`${row.object_type}-${row.object_id}-${row.term}-${row.created_at}`} className="border-b border-slate-100 dark:border-slate-800">
+                    <tr key={row.id} className="border-b border-slate-100 dark:border-slate-800">
                       <td className="py-1.5 px-3 text-slate-600 dark:text-slate-400">{row.object_type}</td>
                       <td className="py-1.5 px-3 text-slate-600 dark:text-slate-400">#{row.object_id}</td>
                       <td className="py-1.5 px-3 font-mono text-slate-700 dark:text-slate-300">{row.term}</td>

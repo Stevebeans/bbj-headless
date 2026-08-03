@@ -251,6 +251,24 @@ use BigBrotherJunkies\Data\Permissions\PermissionChecker;
 
 $routes = new BrandSafetyRoutes();
 
+/**
+ * dry-run is now time-sliced (Fix round 1 follow-up): a single call may
+ * return done:false on a large table. Poll the route until it finishes and
+ * return the final (done:true) response, same shape callers used to get
+ * from a single call.
+ */
+function bsFullDryRun(BrandSafetyRoutes $routes, string $target, int $maxLoops = 2000): array
+{
+    $loops = 0;
+    do {
+        $req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/dry-run');
+        $req->set_param('target', $target);
+        $sum = $routes->dryRun($req)->get_data();
+        $loops++;
+    } while (!($sum['done'] ?? true) && $loops < $maxLoops);
+    return $sum;
+}
+
 // --- settings GET/PUT ---
 $settings = $routes->getSettings()->get_data();
 check(isset($settings['enabled']) && is_array($settings['tiers']) && is_array($settings['watch_defaults']), 'settings GET shape');
@@ -271,10 +289,9 @@ clean_post_cache($dirtyPost);
 delete_post_meta($dirtyPost, Hooks::META_ORIGINAL);
 $cleanModifiedBefore = get_post($cleanPost)->post_modified;
 
-$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/dry-run');
-$req->set_param('target', 'posts');
-$sum = $routes->dryRun($req)->get_data();
+$sum = bsFullDryRun($routes, 'posts');
 check($sum['target'] === 'posts', 'dry-run posts target echoed');
+check($sum['done'] === true, 'dry-run posts loop reaches done');
 check($sum['hits_objects'] >= 1, 'dry-run finds dirty post');
 check($sum['scanned'] >= $sum['hits_objects'], 'scanned count covers hit objects');
 check(get_post($dirtyPost)->post_content === 'plain bullshit here', 'dry-run is read-only');
@@ -306,9 +323,8 @@ $dirtyCommentId = wp_insert_comment([
     'comment_approved' => 1,
 ]);
 
-$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/dry-run');
-$req->set_param('target', 'comments');
-$sum = $routes->dryRun($req)->get_data();
+$sum = bsFullDryRun($routes, 'comments');
+check($sum['done'] === true, 'dry-run comments loop reaches done (was a single 503-prone call pre-slicing)');
 check($sum['hits_objects'] >= 1, 'dry-run finds dirty comment');
 check(get_comment($dirtyCommentId)->comment_content === 'that was total bullshit back then', 'comment dry-run is read-only');
 
@@ -343,9 +359,8 @@ $wpdb->insert($qtable, [
 ]);
 $dirtyQuoteId = (int) $wpdb->insert_id;
 
-$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/dry-run');
-$req->set_param('target', 'quotes');
-$sum = $routes->dryRun($req)->get_data();
+$sum = bsFullDryRun($routes, 'quotes');
+check($sum['done'] === true, 'dry-run quotes loop reaches done');
 check($sum['hits_objects'] >= 1, 'dry-run finds dirty quote');
 $rawQuote = $wpdb->get_var($wpdb->prepare("SELECT quote_text FROM {$qtable} WHERE id = %d", $dirtyQuoteId));
 check($rawQuote === 'legacy bullshit quote', 'quote dry-run is read-only');
@@ -571,3 +586,89 @@ delete_option('bbj_revalidation_secret');
 @unlink($postsReportFile);
 
 echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown + backfill/routes + purge-on-apply)\n";
+
+// --- Fix round 2: time-sliced, resumable dry-run ---
+// The comments dry-run 503'd on the full ~254k-row table under Apache/mod_php
+// (single request, no time budget). Verified here against the real (much
+// smaller) 'quotes' table so the resume/no-rescan/cursor-timing mechanics get
+// fully exercised without a multi-minute test run. sliceSeconds=0 forces
+// exactly one object processed per call, making the slicing deterministic.
+global $wpdb;
+$qtable3 = BigBrotherJunkies\Data\Social\SocialSchema::table(BigBrotherJunkies\Data\Social\SocialSchema::TABLE_QUOTES);
+$quotesReportFile2 = WP_CONTENT_DIR . '/bbj-quarantine/reports/dry-run-quotes.json';
+
+$origQuotesReport2 = @file_get_contents($quotesReportFile2);
+$origQuotesCursor2 = (int) (get_option('bbjd_brand_safety', [])['apply_cursor_quotes'] ?? 0);
+
+$baselineQuotes = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$qtable3}");
+$sliceQuoteIds = [];
+for ($i = 0; $i < 3; $i++) {
+    $wpdb->insert($qtable3, [
+        'season_id' => 0,
+        'player_id' => null,
+        'quote_text' => "slice-test bullshit quote {$i}",
+        'context' => '',
+        'said_on' => gmdate('Y-m-d'),
+        'source_count' => 1,
+        'created_at' => gmdate('Y-m-d H:i:s'),
+    ]);
+    $sliceQuoteIds[] = (int) $wpdb->insert_id;
+}
+$expectedTotal = $baselineQuotes + 3;
+
+@unlink($quotesReportFile2); // guarantee this run starts fresh, not resuming leftover state
+$opt = get_option('bbjd_brand_safety', []);
+$opt['apply_cursor_quotes'] = 42; // sentinel — must survive every in-progress slice untouched
+update_option('bbjd_brand_safety', $opt);
+
+$loops = 0;
+$done = false;
+$lastScanned = 0;
+while (!$done) {
+    $slice = Backfill::dryRun('quotes', 0);
+    $loops++;
+    check($slice['scanned_so_far'] > $lastScanned, 'slice scanned_so_far strictly advances (no rescan-from-zero)');
+    $lastScanned = $slice['scanned_so_far'];
+    $done = $slice['done'];
+    $cursorNow = (int) (get_option('bbjd_brand_safety', [])['apply_cursor_quotes'] ?? -1);
+    if (!$done) {
+        check($cursorNow === 42, 'apply cursor untouched mid-slice');
+    } else {
+        check($cursorNow === 0, 'apply cursor reset exactly on completion');
+    }
+    check($loops < $expectedTotal + 10, 'slice loop terminates within expected bound');
+}
+check($loops === $expectedTotal, 'sliced dry-run took exactly one call per object (sliceSeconds=0)');
+check($lastScanned === $expectedTotal, 'sliced dry-run scanned every object exactly once');
+
+$slicedReport = Backfill::readReport('quotes');
+check($slicedReport['done'] === true, 'final persisted report marked done');
+$slicedIds = array_column($slicedReport['rows'], 'id');
+check(count($slicedIds) === count(array_unique($slicedIds)), 'no duplicate report rows after resume');
+
+// Fresh single-pass run: the just-finished done:true report is now "stale" —
+// Backfill::dryRun deletes it and restarts from zero — should land on the
+// same object set, proving the sliced path and the single-pass path agree.
+$reference = Backfill::dryRun('quotes'); // default 20s slice; small table finishes in one call
+check($reference['done'] === true, 'reference single-pass run completes in one call');
+$referenceReport = Backfill::readReport('quotes');
+$referenceIds = array_column($referenceReport['rows'], 'id');
+sort($slicedIds);
+sort($referenceIds);
+check($slicedIds === $referenceIds, 'sliced run finds the identical object set as a single-pass run');
+check($slicedReport['scanned'] === $referenceReport['scanned'], 'sliced run scanned the same total as a single-pass run');
+
+// --- cleanup ---
+foreach ($sliceQuoteIds as $id) {
+    $wpdb->delete($qtable3, ['id' => $id]);
+}
+if ($origQuotesReport2 !== false) {
+    file_put_contents($quotesReportFile2, $origQuotesReport2);
+} else {
+    @unlink($quotesReportFile2);
+}
+$optRestore2 = get_option('bbjd_brand_safety', []);
+$optRestore2['apply_cursor_quotes'] = $origQuotesCursor2;
+update_option('bbjd_brand_safety', $optRestore2);
+
+echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown + backfill/routes + purge-on-apply + sliced dry-run)\n";
