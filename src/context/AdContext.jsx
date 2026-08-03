@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Cookies from "js-cookie";
 import { useAuth } from "@/context/AuthContext";
@@ -43,8 +43,7 @@ export function AdProvider({
   const [isPWA, setIsPWA] = useState(false);
   const [isAdBlocked, setIsAdBlocked] = useState(false);
   const [previewCookie, setPreviewCookie] = useState(false);
-  const [pageAdKill, setPageAdKillState] = useState(false);
-  const setPageAdKill = useCallback((v) => setPageAdKillState(v), []);
+  const [pageAdKill, setPageAdKill] = useState(false);
   const pathname = usePathname();
   const isFirstRender = useRef(true);
   const { user } = useAuth();
@@ -104,17 +103,11 @@ export function AdProvider({
     }
   }, [pathname, pageAdKill]);
 
-  // No separate "clear pageAdKill on pathname change" effect here (the brief's
-  // Step 2 suggested one) — PageAdKill's own useLayoutEffect cleanup already
-  // resets the flag to false when it unmounts (leaving a flagged page), and
-  // that cleanup runs in the synchronous layout phase alongside the next
-  // page's mount effect. A separate passive useEffect keyed on [pathname]
-  // would run strictly AFTER that layout-phase settling (passive effects
-  // always run after paint, layout effects before), so it would stomp
-  // pageAdKill back to false right after PageAdKill just set it true — on
-  // every fresh load of a flagged page and every SPA-nav onto one, which is
-  // the exact scenario this feature needs to work for. Omitted as a
-  // deliberate deviation; see task-7 report.
+  // Do NOT add a passive effect that clears pageAdKill on pathname change:
+  // PageAdKill's useLayoutEffect cleanup already resets it when it unmounts,
+  // in the layout phase. A passive effect keyed on [pathname] runs after that
+  // settles, so it would stomp pageAdKill back to false right after
+  // PageAdKill just set it true — on every load of a flagged page.
 
   // Read preview-mode cookie on mount and whenever auth state changes
   useEffect(() => {
