@@ -4,7 +4,6 @@ export { default as CommentForm } from "./CommentForm";
 export { default as VoteButtons } from "./VoteButtons";
 export { default as RankBadge, RankBadgeInline } from "./RankBadge";
 export { default as ReportModal } from "./ReportModal";
-export { default as MediaUploader } from "./MediaUploader";
 export { default as GiphyPicker } from "./GiphyPicker";
 export { default as EmojiPicker } from "./EmojiPicker";
 export { default as ReactionButtons } from "./ReactionButtons";

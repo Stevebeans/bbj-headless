@@ -5,7 +5,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { postComment } from "@/lib/api/comments";
 import Image from "next/image";
-import MediaUploader from "./MediaUploader";
 import GiphyPicker from "./GiphyPicker";
 import EmojiPicker from "./EmojiPicker";
 import MentionAutocomplete from "./MentionAutocomplete";
@@ -15,7 +14,6 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
   const { openLogin } = useAuthModal();
   const [content, setContent] = useState("");
   const [media, setMedia] = useState(null);
-  const [showMediaUploader, setShowMediaUploader] = useState(false);
   const [showGiphyPicker, setShowGiphyPicker] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,22 +25,13 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
   const [showMentionAutocomplete, setShowMentionAutocomplete] = useState(false);
   const textareaRef = useRef(null);
 
-  const handleMediaChange = (newMedia) => {
-    setMedia(newMedia);
-    if (!newMedia) {
-      setShowMediaUploader(false);
-    }
-  };
-
   const handleGiphySelect = (giphyMedia) => {
     setMedia(giphyMedia);
     setShowGiphyPicker(false);
-    setShowMediaUploader(false);
   };
 
   const handleRemoveMedia = () => {
     setMedia(null);
-    setShowMediaUploader(false);
     setShowGiphyPicker(false);
   };
 
@@ -122,7 +111,6 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
       const result = await postComment(postId, content, parentId, media?.id || null);
       setContent("");
       setMedia(null);
-      setShowMediaUploader(false);
       setShowGiphyPicker(false);
       setShowEmojiPicker(false);
       onSubmit?.(result.comment);
@@ -242,13 +230,6 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
             </div>
           )}
 
-          {/* Media uploader (for file uploads) */}
-          {showMediaUploader && !media && (
-            <div className="mt-2">
-              <MediaUploader onMediaChange={handleMediaChange} disabled={loading} />
-            </div>
-          )}
-
           {/* Giphy picker */}
           {showGiphyPicker && !media && (
             <div className="mt-2 relative">
@@ -273,45 +254,21 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
             {/* Media buttons */}
             <div className="flex items-center gap-1">
               {!media && (
-                <>
-                  {/* Image upload button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowMediaUploader(!showMediaUploader);
-                      setShowGiphyPicker(false);
-                      setShowEmojiPicker(false);
-                    }}
-                    className={`p-1.5 rounded transition-colors ${
-                      showMediaUploader
-                        ? "text-primary-500 bg-primary-50 dark:bg-primary-900/30"
-                        : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    }`}
-                    title="Add image"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </button>
-
-                  {/* GIF button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowGiphyPicker(!showGiphyPicker);
-                      setShowMediaUploader(false);
-                      setShowEmojiPicker(false);
-                    }}
-                    className={`p-1.5 rounded transition-colors ${
-                      showGiphyPicker
-                        ? "text-primary-500 bg-primary-50 dark:bg-primary-900/30"
-                        : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    }`}
-                    title="Add GIF"
-                  >
-                    <span className="text-xs font-bold">GIF</span>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowGiphyPicker(!showGiphyPicker);
+                    setShowEmojiPicker(false);
+                  }}
+                  className={`p-1.5 rounded transition-colors ${
+                    showGiphyPicker
+                      ? "text-primary-500 bg-primary-50 dark:bg-primary-900/30"
+                      : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                  }`}
+                  title="Add GIF"
+                >
+                  <span className="text-xs font-bold">GIF</span>
+                </button>
               )}
 
               {/* Emoji button - always visible */}
@@ -319,7 +276,6 @@ export default function CommentForm({ postId, parentId = 0, onSubmit, onCancel, 
                 type="button"
                 onClick={() => {
                   setShowEmojiPicker(!showEmojiPicker);
-                  setShowMediaUploader(false);
                   setShowGiphyPicker(false);
                 }}
                 className={`p-1.5 rounded transition-colors ${

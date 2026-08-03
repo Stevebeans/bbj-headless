@@ -217,3 +217,29 @@ check(strpos($p3->post_title, 'bullshit') === false, 'plain title still censored
 wp_delete_post($pid3, true);
 
 echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text)\n";
+
+// --- Task 5: comment media shutdown + quarantine ---
+use BigBrotherJunkies\Data\Comments\MediaRoutes;
+use BigBrotherJunkies\Data\Comments\MediaUploader;
+
+// upload endpoint is 410
+$req = new WP_REST_Request('POST', '/bbjd/v1/comments/media');
+$res = (new MediaRoutes())->uploadMedia($req);
+check($res->get_status() === 410 && $res->get_data()['code'] === 'uploads_disabled', 'upload endpoint gone');
+
+// quarantined media invisible
+global $wpdb;
+$mtable = $wpdb->prefix . 'bbj_comment_media';
+$tmp = tempnam(sys_get_temp_dir(), 'bsq');
+file_put_contents($tmp, 'x');
+$wpdb->insert($mtable, ['user_id' => 1, 'comment_id' => 999999, 'media_type' => 'image', 'file_name' => 'bsq.webp', 'file_path' => $tmp, 'file_url' => 'http://x/bsq.webp', 'file_size' => 1, 'mime_type' => 'image/webp', 'storage_type' => 'local']);
+$mid = $wpdb->insert_id;
+$r = MediaUploader::quarantineAllLocal();
+check($r['moved'] >= 1 && !$r['errors'], 'quarantine moved files');
+$row = $wpdb->get_row("SELECT * FROM {$mtable} WHERE id = {$mid}");
+check($row->storage_type === 'quarantined', 'row marked quarantined');
+check(file_exists(WP_CONTENT_DIR . '/bbj-quarantine/' . basename($row->file_path)), 'file in quarantine dir');
+check(MediaUploader::getCommentMedia(999999) === null, 'quarantined media hidden from comments');
+$wpdb->delete($mtable, ['id' => $mid]);
+
+echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown)\n";
