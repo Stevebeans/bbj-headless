@@ -371,6 +371,7 @@ $wpdb->delete($qtable, ['id' => $dirtyQuoteId]);
 @unlink(WP_CONTENT_DIR . '/bbj-quarantine/reports/dry-run-posts.json');
 $noReport = Backfill::apply('posts', 25);
 check($noReport['processed'] === 0 && $noReport['remaining'] === 0 && $noReport['done'] === true && isset($noReport['error']), 'apply with no report file is graceful, not fatal');
+check(($noReport['purged'] ?? -1) === 0, 'apply with no report file returns purged:0');
 
 // --- flagged / override ---
 $flagPost = wp_insert_post(['post_title' => 'flag-me', 'post_content' => '<a href="https://example.com/bitch">x</a>', 'post_status' => 'publish', 'post_type' => 'post']);
@@ -416,3 +417,157 @@ $perms = PermissionChecker::getPermissionConfig();
 check(isset($perms['brand_safety']), 'brand_safety permission registered');
 
 echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown + backfill/routes)\n";
+
+// --- Fix round 1: optional revalidation purge on backfill apply ---
+// Hooks::scanAndCensorPost() writes via a direct $wpdb->update, so it never
+// fires transition_post_status and the purge-on-edit webhook never runs;
+// without an explicit purge, applied posts would keep serving stale
+// CF/ISR-cached HTML (uncensored content, missing ads_unsafe) for up to the
+// edge TTL. Verified entirely offline via a pre_http_request short-circuit —
+// no real HTTP call ever leaves this process either way, default or opt-in.
+global $wpdb;
+
+$httpCallCount = 0;
+$interceptor = function ($preempt, $args, $url) use (&$httpCallCount) {
+    if (strpos((string) $url, '/api/revalidate') !== false) {
+        $httpCallCount++;
+        return [
+            'headers' => [],
+            'body' => '',
+            'response' => ['code' => 200, 'message' => 'OK'],
+            'cookies' => [],
+            'filename' => null,
+        ];
+    }
+    return $preempt;
+};
+add_filter('pre_http_request', $interceptor, 10, 3);
+update_option('bbj_revalidation_secret', 'verify-script-test-secret');
+
+$postsReportFile = WP_CONTENT_DIR . '/bbj-quarantine/reports/dry-run-posts.json';
+$commentsReportFile = WP_CONTENT_DIR . '/bbj-quarantine/reports/dry-run-comments.json';
+$quotesReportFile = WP_CONTENT_DIR . '/bbj-quarantine/reports/dry-run-quotes.json';
+
+function bsSetSingleRowReport(string $file, string $target, int $id, string $label, string $url): void
+{
+    file_put_contents($file, wp_json_encode([
+        'scanned' => 1,
+        'rows' => [['id' => $id, 'label' => $label, 'url' => $url, 'terms' => [['term' => 'bullshit', 'tier' => 'censor', 'action' => 'censored']]]],
+    ]));
+    $opt = get_option('bbjd_brand_safety', []);
+    $opt["apply_cursor_{$target}"] = 0;
+    update_option('bbjd_brand_safety', $opt);
+}
+
+// purge omitted (default false): zero HTTP calls even though the post has hits
+$purgePostA = wp_insert_post(['post_title' => 'purge-check-a', 'post_content' => 'plain bullshit here', 'post_status' => 'publish', 'post_type' => 'post']);
+$wpdb->update($wpdb->posts, ['post_content' => 'plain bullshit here'], ['ID' => $purgePostA]);
+clean_post_cache($purgePostA);
+delete_post_meta($purgePostA, Hooks::META_ORIGINAL);
+bsSetSingleRowReport($postsReportFile, 'posts', $purgePostA, 'purge-check-a', '/purge-check-a');
+
+// Reset the counter here, not before seeding: wp_insert_post(post_status=>publish)
+// above fires the pre-existing transition_post_status hook (Plugin.php) that
+// already calls Revalidation::revalidatePost() on its own, unrelated to Backfill's
+// purge param. The assertion below must measure only what apply() itself does.
+$httpCallCount = 0;
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/apply');
+$req->set_param('target', 'posts');
+$req->set_param('batch', 25);
+$rNoPurge = $routes->apply($req)->get_data();
+check($httpCallCount === 0, 'apply with purge omitted (default false) makes zero HTTP calls');
+check(($rNoPurge['purged'] ?? -1) === 0, 'apply with purge=false returns purged:0');
+check(strpos(get_post($purgePostA)->post_content, 'bullshit') === false, 'purge=false still censors the post content');
+wp_delete_post($purgePostA, true);
+
+// purge=true on a 1-post seeded report: exactly one HTTP call, purged:1
+$purgePostB = wp_insert_post(['post_title' => 'purge-check-b', 'post_content' => 'plain bullshit here', 'post_status' => 'publish', 'post_type' => 'post']);
+$wpdb->update($wpdb->posts, ['post_content' => 'plain bullshit here'], ['ID' => $purgePostB]);
+clean_post_cache($purgePostB);
+delete_post_meta($purgePostB, Hooks::META_ORIGINAL);
+bsSetSingleRowReport($postsReportFile, 'posts', $purgePostB, 'purge-check-b', '/purge-check-b');
+
+$httpCallCount = 0;
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/apply');
+$req->set_param('target', 'posts');
+$req->set_param('batch', 25);
+$req->set_param('purge', true);
+$rPurge = $routes->apply($req)->get_data();
+check($httpCallCount === 1, 'apply with purge=true makes exactly one HTTP call for a 1-post report');
+check(($rPurge['purged'] ?? -1) === 1, 'apply with purge=true returns purged:1');
+check(strpos(get_post($purgePostB)->post_content, 'bullshit') === false, 'purge=true still censors the post content');
+wp_delete_post($purgePostB, true);
+
+// purge is a no-op for comments/quotes targets (never counted, never called)
+$origCommentsReport = @file_get_contents($commentsReportFile);
+$origCommentsCursor = (int) (get_option('bbjd_brand_safety', [])['apply_cursor_comments'] ?? 0);
+
+$purgeCommentPost = wp_insert_post(['post_title' => 'purge-check-comment-host', 'post_status' => 'publish']);
+$purgeCommentId = wp_insert_comment([
+    'comment_post_ID' => $purgeCommentPost,
+    'comment_author' => 'purge check',
+    'comment_content' => 'that was total bullshit back then',
+    'comment_approved' => 1,
+]);
+bsSetSingleRowReport($commentsReportFile, 'comments', $purgeCommentId, 'comment #' . $purgeCommentId, '?p=' . $purgeCommentPost);
+
+$httpCallCount = 0;
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/apply');
+$req->set_param('target', 'comments');
+$req->set_param('batch', 500);
+$req->set_param('purge', true);
+$rPurgeComment = $routes->apply($req)->get_data();
+check($httpCallCount === 0, 'purge=true is a no-op for the comments target (zero HTTP calls)');
+check(($rPurgeComment['purged'] ?? -1) === 0, 'comments apply always returns purged:0');
+wp_delete_comment($purgeCommentId, true);
+wp_delete_post($purgeCommentPost, true);
+
+if ($origCommentsReport !== false) {
+    file_put_contents($commentsReportFile, $origCommentsReport);
+} else {
+    @unlink($commentsReportFile);
+}
+$optRestore = get_option('bbjd_brand_safety', []);
+$optRestore['apply_cursor_comments'] = $origCommentsCursor;
+update_option('bbjd_brand_safety', $optRestore);
+
+$origQuotesReport = @file_get_contents($quotesReportFile);
+$origQuotesCursor = (int) (get_option('bbjd_brand_safety', [])['apply_cursor_quotes'] ?? 0);
+
+$qtable2 = BigBrotherJunkies\Data\Social\SocialSchema::table(BigBrotherJunkies\Data\Social\SocialSchema::TABLE_QUOTES);
+$wpdb->insert($qtable2, [
+    'season_id' => 0,
+    'player_id' => null,
+    'quote_text' => 'purge check bullshit quote',
+    'context' => '',
+    'said_on' => gmdate('Y-m-d'),
+    'source_count' => 1,
+    'created_at' => gmdate('Y-m-d H:i:s'),
+]);
+$purgeQuoteId = (int) $wpdb->insert_id;
+bsSetSingleRowReport($quotesReportFile, 'quotes', $purgeQuoteId, 'quote #' . $purgeQuoteId, '');
+
+$httpCallCount = 0;
+$req = new WP_REST_Request('POST', '/bbjd/v1/brand-safety/apply');
+$req->set_param('target', 'quotes');
+$req->set_param('batch', 500);
+$req->set_param('purge', true);
+$rPurgeQuote = $routes->apply($req)->get_data();
+check($httpCallCount === 0, 'purge=true is a no-op for the quotes target (zero HTTP calls)');
+check(($rPurgeQuote['purged'] ?? -1) === 0, 'quotes apply always returns purged:0');
+$wpdb->delete($qtable2, ['id' => $purgeQuoteId]);
+
+if ($origQuotesReport !== false) {
+    file_put_contents($quotesReportFile, $origQuotesReport);
+} else {
+    @unlink($quotesReportFile);
+}
+$optRestore = get_option('bbjd_brand_safety', []);
+$optRestore['apply_cursor_quotes'] = $origQuotesCursor;
+update_option('bbjd_brand_safety', $optRestore);
+
+remove_filter('pre_http_request', $interceptor, 10);
+delete_option('bbj_revalidation_secret');
+@unlink($postsReportFile);
+
+echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown + backfill/routes + purge-on-apply)\n";
