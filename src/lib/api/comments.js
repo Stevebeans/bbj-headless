@@ -198,61 +198,6 @@ export async function getAllRanks() {
 }
 
 /**
- * Upload media for a comment
- * @param {File} file - The file to upload
- * @returns {Promise<{success: boolean, media: object}>}
- */
-export async function uploadCommentMedia(file) {
-  const token = getToken();
-  if (!token) {
-    throw new Error("You must be logged in to upload media");
-  }
-
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await fetch(`${API_URL}/bbjd/v1/comments/media`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || "Failed to upload media");
-  }
-
-  return response.json();
-}
-
-/**
- * Delete uploaded media
- * @param {number} mediaId - The media ID to delete
- */
-export async function deleteCommentMedia(mediaId) {
-  const token = getToken();
-  if (!token) {
-    throw new Error("You must be logged in to delete media");
-  }
-
-  const response = await fetch(`${API_URL}/bbjd/v1/comments/media/${mediaId}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || "Failed to delete media");
-  }
-
-  return response.json();
-}
-
-/**
  * Store a Giphy GIF reference
  */
 export async function storeGiphyMedia(giphyId, url, width, height) {
