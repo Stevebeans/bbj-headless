@@ -87,3 +87,65 @@ check($recent['total'] >= 1 && $recent['rows'][0]['term'] === 'bitch', 'recent()
 $wpdb->delete($table, ['object_id' => 123]);
 
 echo "ALL CHECKS PASS (matcher + log table)\n";
+
+// --- Comment save integration (REST dispatch, real wp_comments table) ---
+wp_set_current_user(1);
+$commentRoutes = new BigBrotherJunkies\Data\Api\CommentRoutes();
+$testPostId = wp_insert_post([
+    'post_title' => 'bs-verify',
+    'post_status' => 'publish',
+    'comment_status' => 'open',
+]);
+
+try {
+    // censor-tier word gets masked
+    $req = new WP_REST_Request('POST', '/bbjd/v1/comments');
+    $req->set_body_params(['post_id' => $testPostId, 'content' => 'that was total bullshit', 'parent_id' => 0]);
+    $res = $commentRoutes->postComment($req);
+    $data = $res->get_data();
+    check($res->get_status() === 201, 'censored comment accepted');
+    check($data['comment']['content'] === 'that was total b******t', 'response content censored');
+    $stored = get_comment($data['comment']['id']);
+    check(strpos($stored->comment_content, 'bullshit') === false, 'stored content censored');
+    wp_delete_comment($data['comment']['id'], true);
+
+    // watch-tier word untouched
+    $req = new WP_REST_Request('POST', '/bbjd/v1/comments');
+    $req->set_body_params(['post_id' => $testPostId, 'content' => 'I bet she wins', 'parent_id' => 0]);
+    $res = $commentRoutes->postComment($req);
+    $data = $res->get_data();
+    check($data['comment']['content'] === 'I bet she wins', 'watch term untouched in comment');
+    wp_delete_comment($data['comment']['id'], true);
+
+    // unmaskable (term in URL) -> rejected
+    $req = new WP_REST_Request('POST', '/bbjd/v1/comments');
+    $req->set_body_params(['post_id' => $testPostId, 'content' => '<a href="https://example.com/bitch">look</a>', 'parent_id' => 0]);
+    $res = $commentRoutes->postComment($req);
+    check($res->get_status() === 400 && $res->get_data()['code'] === 'content_blocked', 'unmaskable comment rejected');
+
+    // editComment: censor-tier word masked on edit
+    $req = new WP_REST_Request('POST', '/bbjd/v1/comments');
+    $req->set_body_params(['post_id' => $testPostId, 'content' => 'a clean comment', 'parent_id' => 0]);
+    $res = $commentRoutes->postComment($req);
+    $editCommentId = $res->get_data()['comment']['id'];
+
+    $req = new WP_REST_Request('PUT', "/bbjd/v1/comments/{$editCommentId}");
+    $req->set_body_params(['comment_id' => $editCommentId, 'content' => 'edited: total bullshit']);
+    $res = $commentRoutes->editComment($req);
+    check($res->get_status() === 200, 'edit with censor-tier word accepted');
+    check($res->get_data()['content'] === 'edited: total b******t', 'edit response content censored');
+    $stored = get_comment($editCommentId);
+    check(strpos($stored->comment_content, 'bullshit') === false, 'edited stored content censored');
+
+    // editComment: unmaskable content rejected
+    $req = new WP_REST_Request('PUT', "/bbjd/v1/comments/{$editCommentId}");
+    $req->set_body_params(['comment_id' => $editCommentId, 'content' => '<a href="https://example.com/bitch">look</a>']);
+    $res = $commentRoutes->editComment($req);
+    check($res->get_status() === 400 && $res->get_data()['code'] === 'content_blocked', 'unmaskable edit rejected');
+
+    wp_delete_comment($editCommentId, true);
+} finally {
+    wp_delete_post($testPostId, true);
+}
+
+echo "ALL CHECKS PASS (matcher + log table + comment integration)\n";
