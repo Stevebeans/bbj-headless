@@ -189,4 +189,31 @@ check($qrow !== null, 'quote row found by returned insert id');
 check(strpos($qrow->quote_text, 'bullshit') === false, 'quote censored at insert');
 BigBrotherJunkies\Data\Social\QuoteStore::delete($qid);
 
-echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes)\n";
+// --- Fix round 1: titles use a plain-text scan path (no HTML-tag semantics) ---
+$r = Scanner::censorText("5 < 10 > that's bullshit");
+check(strpos($r['html'], 'b******t') !== false, 'censorText masks censor-tier term');
+check($r['unmaskable'] === false, 'censorText never reports unmaskable');
+
+$pid2 = wp_insert_post([
+    'post_title' => "5 < 10 > total bullshit",
+    'post_content' => '<p>clean body</p>',
+    'post_status' => 'publish',
+    'post_type' => 'post',
+]);
+$p2 = get_post($pid2);
+check(strpos($p2->post_title, 'bullshit') === false, 'title with literal <> censored in storage');
+check(get_post_meta($pid2, Hooks::META_UNSAFE, true) === '', 'title with literal <> not flagged ads_unsafe');
+wp_delete_post($pid2, true);
+
+// Regression: plain title (no angle brackets) still censors as before.
+$pid3 = wp_insert_post([
+    'post_title' => 'total bullshit tonight',
+    'post_content' => '<p>clean body</p>',
+    'post_status' => 'publish',
+    'post_type' => 'post',
+]);
+$p3 = get_post($pid3);
+check(strpos($p3->post_title, 'bullshit') === false, 'plain title still censored (regression)');
+wp_delete_post($pid3, true);
+
+echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text)\n";
