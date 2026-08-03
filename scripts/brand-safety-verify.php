@@ -15,6 +15,7 @@ require_once $opts['wp'] ?? 'C:/xampp/htdocs/bbj/wp-load.php';
 
 use BigBrotherJunkies\Data\BrandSafety\Scanner;
 use BigBrotherJunkies\Data\BrandSafety\Blocklist;
+use BigBrotherJunkies\Data\BrandSafety\Log;
 
 function check(bool $ok, string $label): void
 {
@@ -70,3 +71,19 @@ delete_option('bbjd_brand_safety');
 Blocklist::flushCache();
 
 echo "ALL MATCHER CHECKS PASS\n";
+
+// --- Log table ---
+Log::ensureTable();
+global $wpdb;
+$table = $wpdb->prefix . 'bbj_brand_safety_log';
+check($wpdb->get_var("SHOW TABLES LIKE '{$table}'") === $table, 'log table exists');
+
+Log::record('comment', 123, [['term' => 'bitch', 'tier' => 'censor', 'action' => 'censored']]);
+$row = $wpdb->get_row("SELECT * FROM {$table} ORDER BY id DESC LIMIT 1");
+check($row->object_type === 'comment' && (int) $row->object_id === 123 && $row->term === 'bitch' && $row->action === 'censored', 'log row recorded');
+
+$recent = Log::recent(1, 10);
+check($recent['total'] >= 1 && $recent['rows'][0]['term'] === 'bitch', 'recent() pages rows');
+$wpdb->delete($table, ['object_id' => 123]);
+
+echo "ALL CHECKS PASS (matcher + log table)\n";
