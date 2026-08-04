@@ -465,13 +465,14 @@ $quotesReportFile = WP_CONTENT_DIR . '/bbj-quarantine/reports/dry-run-quotes.jso
 
 function bsSetSingleRowReport(string $file, string $target, int $id, string $label, string $url): void
 {
+    // Apply cursor lives IN the report file now (the 'applied' key), not in
+    // the bbjd_brand_safety option, so seeding a single-row report is just
+    // this one file write.
     file_put_contents($file, wp_json_encode([
         'scanned' => 1,
         'rows' => [['id' => $id, 'label' => $label, 'url' => $url, 'terms' => [['term' => 'bullshit', 'tier' => 'censor', 'action' => 'censored']]]],
+        'applied' => 0,
     ]));
-    $opt = get_option('bbjd_brand_safety', []);
-    $opt["apply_cursor_{$target}"] = 0;
-    update_option('bbjd_brand_safety', $opt);
 }
 
 // purge omitted (default false): zero HTTP calls even though the post has hits
@@ -515,7 +516,6 @@ wp_delete_post($purgePostB, true);
 
 // purge is a no-op for comments/quotes targets (never counted, never called)
 $origCommentsReport = @file_get_contents($commentsReportFile);
-$origCommentsCursor = (int) (get_option('bbjd_brand_safety', [])['apply_cursor_comments'] ?? 0);
 
 $purgeCommentPost = wp_insert_post(['post_title' => 'purge-check-comment-host', 'post_status' => 'publish']);
 $purgeCommentId = wp_insert_comment([
@@ -542,12 +542,8 @@ if ($origCommentsReport !== false) {
 } else {
     @unlink($commentsReportFile);
 }
-$optRestore = get_option('bbjd_brand_safety', []);
-$optRestore['apply_cursor_comments'] = $origCommentsCursor;
-update_option('bbjd_brand_safety', $optRestore);
 
 $origQuotesReport = @file_get_contents($quotesReportFile);
-$origQuotesCursor = (int) (get_option('bbjd_brand_safety', [])['apply_cursor_quotes'] ?? 0);
 
 $qtable2 = BigBrotherJunkies\Data\Social\SocialSchema::table(BigBrotherJunkies\Data\Social\SocialSchema::TABLE_QUOTES);
 $wpdb->insert($qtable2, [
@@ -577,9 +573,6 @@ if ($origQuotesReport !== false) {
 } else {
     @unlink($quotesReportFile);
 }
-$optRestore = get_option('bbjd_brand_safety', []);
-$optRestore['apply_cursor_quotes'] = $origQuotesCursor;
-update_option('bbjd_brand_safety', $optRestore);
 
 remove_filter('pre_http_request', $interceptor, 10);
 delete_option('bbj_revalidation_secret');
@@ -598,7 +591,6 @@ $qtable3 = BigBrotherJunkies\Data\Social\SocialSchema::table(BigBrotherJunkies\D
 $quotesReportFile2 = WP_CONTENT_DIR . '/bbj-quarantine/reports/dry-run-quotes.json';
 
 $origQuotesReport2 = @file_get_contents($quotesReportFile2);
-$origQuotesCursor2 = (int) (get_option('bbjd_brand_safety', [])['apply_cursor_quotes'] ?? 0);
 
 $baselineQuotes = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$qtable3}");
 $sliceQuoteIds = [];
@@ -616,10 +608,20 @@ for ($i = 0; $i < 3; $i++) {
 }
 $expectedTotal = $baselineQuotes + 3;
 
-@unlink($quotesReportFile2); // guarantee this run starts fresh, not resuming leftover state
-$opt = get_option('bbjd_brand_safety', []);
-$opt['apply_cursor_quotes'] = 42; // sentinel — must survive every in-progress slice untouched
-update_option('bbjd_brand_safety', $opt);
+// The apply cursor now lives in the report file's 'applied' key, not the
+// bbjd_brand_safety option (that option is read through Cloudways' Redis
+// object cache, which serves stale alloptions reads under rapid sequential
+// REST requests — the exact bug this fix removes). Seed a resumable
+// in-progress report with a sentinel 'applied' value, mirroring an apply()
+// that had progressed partway through a still-running scan, and confirm
+// dryRun() leaves it alone until the scan actually finishes.
+file_put_contents($quotesReportFile2, wp_json_encode([
+    'done' => false,
+    'offset' => 0,
+    'scanned' => 0,
+    'rows' => [],
+    'applied' => 42, // sentinel — must survive every in-progress slice untouched
+]));
 
 $loops = 0;
 $done = false;
@@ -630,11 +632,11 @@ while (!$done) {
     check($slice['scanned_so_far'] > $lastScanned, 'slice scanned_so_far strictly advances (no rescan-from-zero)');
     $lastScanned = $slice['scanned_so_far'];
     $done = $slice['done'];
-    $cursorNow = (int) (get_option('bbjd_brand_safety', [])['apply_cursor_quotes'] ?? -1);
+    $cursorNow = (int) (Backfill::readReport('quotes')['applied'] ?? -1);
     if (!$done) {
-        check($cursorNow === 42, 'apply cursor untouched mid-slice');
+        check($cursorNow === 42, 'apply cursor (report applied field) untouched mid-slice');
     } else {
-        check($cursorNow === 0, 'apply cursor reset exactly on completion');
+        check($cursorNow === 0, 'apply cursor (report applied field) reset exactly on completion');
     }
     check($loops < $expectedTotal + 10, 'slice loop terminates within expected bound');
 }
@@ -667,9 +669,6 @@ if ($origQuotesReport2 !== false) {
 } else {
     @unlink($quotesReportFile2);
 }
-$optRestore2 = get_option('bbjd_brand_safety', []);
-$optRestore2['apply_cursor_quotes'] = $origQuotesCursor2;
-update_option('bbjd_brand_safety', $optRestore2);
 
 echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown + backfill/routes + purge-on-apply + sliced dry-run)\n";
 
@@ -686,7 +685,6 @@ $quarantineBaseDir = WP_CONTENT_DIR . '/bbj-quarantine';
 $quarantineReportsDir = $quarantineBaseDir . '/reports';
 $quotesReportFile3 = WP_CONTENT_DIR . '/bbj-quarantine/reports/dry-run-quotes.json';
 $origQuotesReport3 = @file_get_contents($quotesReportFile3);
-$origQuotesCursor3 = (int) (get_option('bbjd_brand_safety', [])['apply_cursor_quotes'] ?? 0);
 
 // Simulate the legacy state: directories already exist (from all the test
 // activity above), guard files do not.
@@ -716,8 +714,5 @@ if ($origQuotesReport3 !== false) {
 } else {
     @unlink($quotesReportFile3);
 }
-$optRestore3 = get_option('bbjd_brand_safety', []);
-$optRestore3['apply_cursor_quotes'] = $origQuotesCursor3;
-update_option('bbjd_brand_safety', $optRestore3);
 
 echo "ALL CHECKS PASS (matcher + log table + comment integration + editorial/quotes + title plain-text + media shutdown + backfill/routes + purge-on-apply + sliced dry-run + quarantine dir guards)\n";
