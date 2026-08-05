@@ -283,12 +283,15 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+    // z-[60] sits above the global FAB dock + Bean launcher (z-50) so they dim
+    // under the scrim instead of floating over the Schedule controls on mobile.
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-6 pb-[max(2.5rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
+        {/* Sticky so ✕ stays reachable however far the card scrolls (mobile) */}
+        <div className="flex items-center justify-between mb-4 sticky top-0 z-10 -mx-6 -mt-6 px-6 pt-6 pb-3 bg-white dark:bg-slate-800 rounded-t-xl">
           <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
             {previewMode ? "Card Preview" : "FB Quickie Card"}
           </h3>
