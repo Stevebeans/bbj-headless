@@ -237,7 +237,7 @@ function PlayerStatsRow({ player }) {
             alt={player.name}
             width={16}
             height={16}
-            className="rounded-full w-4 h-4 flex-shrink-0"
+            className={`rounded-full w-4 h-4 flex-shrink-0 ${player.is_evicted ? "grayscale opacity-70" : ""}`}
           />
         )}
         <Link href={player.permalink ? toRelativeHref(player.permalink) : "#"} className="truncate hover:underline py-0.5">
