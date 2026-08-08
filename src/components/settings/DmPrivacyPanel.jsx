@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getDmPrivacy, saveDmPrivacy, getBlocked, unblockUser } from "@/lib/api/dm";
+import { getDmPrivacy, saveDmPrivacy, getBlocked, unblockUser, getMuted, unmuteUser } from "@/lib/api/dm";
 
 const PRIVACY_OPTIONS = [
   { value: "everyone", label: "Everyone" },
@@ -17,18 +17,21 @@ const PRIVACY_OPTIONS = [
 export default function DmPrivacyPanel({ showToast }) {
   const [privacy, setPrivacy] = useState("everyone");
   const [blocked, setBlocked] = useState([]);
+  const [muted, setMuted] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [unblocking, setUnblocking] = useState(null);
+  const [unmuting, setUnmuting] = useState(null);
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const [p, b] = await Promise.all([getDmPrivacy(), getBlocked()]);
+        const [p, b, m] = await Promise.all([getDmPrivacy(), getBlocked(), getMuted()]);
         if (!active) return;
         if (p?.privacy) setPrivacy(p.privacy);
         setBlocked(b?.blocked || []);
+        setMuted(m?.muted || []);
       } catch {
         // Leave defaults; a failed load just shows "Everyone" + empty list.
       } finally {
@@ -66,6 +69,19 @@ export default function DmPrivacyPanel({ showToast }) {
       showToast?.(err.message || "Could not unblock member", "error");
     } finally {
       setUnblocking(null);
+    }
+  };
+
+  const handleUnmute = async (userId) => {
+    setUnmuting(userId);
+    try {
+      await unmuteUser(userId);
+      setMuted((prev) => prev.filter((u) => u.user_id !== userId));
+      showToast?.("Member unmuted");
+    } catch (err) {
+      showToast?.(err.message || "Could not unmute member", "error");
+    } finally {
+      setUnmuting(null);
     }
   };
 
@@ -144,6 +160,55 @@ export default function DmPrivacyPanel({ showToast }) {
                   className="ml-3 px-3 py-1.5 text-sm font-medium text-primary-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors disabled:opacity-50"
                 >
                   {unblocking === u.user_id ? "Unblocking..." : "Unblock"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Muted members */}
+      <div className="mt-4">
+        <p className="font-medium text-gray-900 dark:text-white mb-2">Muted Members</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          Muted members&apos; comments are collapsed behind a placeholder — tap to reveal. Muting doesn&apos;t affect DMs.
+        </p>
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2].map((i) => (
+              <div key={i} className="animate-pulse flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="h-8 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
+              </div>
+            ))}
+          </div>
+        ) : muted.length === 0 ? (
+          <div className="text-center py-6 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              You haven&apos;t muted anyone.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {muted.map((u) => (
+              <div
+                key={u.user_id}
+                className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-900 dark:text-white truncate">
+                    {u.display_name || u.username}
+                  </p>
+                  {u.username && (
+                    <p className="text-xs text-gray-400 truncate">@{u.username}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleUnmute(u.user_id)}
+                  disabled={unmuting === u.user_id}
+                  className="ml-3 px-3 py-1.5 text-sm font-medium text-primary-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {unmuting === u.user_id ? "Unmuting..." : "Unmute"}
                 </button>
               </div>
             ))}
