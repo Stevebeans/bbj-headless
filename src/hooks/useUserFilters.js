@@ -13,7 +13,6 @@ import { getSocialFilters, muteUser, unmuteUser, blockUser, unblockUser } from "
 const store = {
   state: { ready: false, mutedIds: new Set(), blockedIds: new Set() },
   listeners: new Set(),
-  fetched: false,
   fetchPromise: null,
 };
 
@@ -33,12 +32,10 @@ const getSnapshot = () => store.state;
 
 async function ensureFetched() {
   if (store.fetchPromise) return store.fetchPromise;
-  if (store.fetched) return;
   if (!getToken()) {
     emit({ ready: true });
     return;
   }
-  store.fetched = true;
   store.fetchPromise = (async () => {
     try {
       const data = await getSocialFilters();
