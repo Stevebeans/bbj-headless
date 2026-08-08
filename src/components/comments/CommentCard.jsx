@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { FaReply, FaFlag, FaEllipsisV, FaEdit, FaTrash, FaLink, FaThumbtack } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
+import useUserFilters from "@/hooks/useUserFilters";
 import VoteButtons from "./VoteButtons";
 import RankBadge from "./RankBadge";
 import ReactionButtons from "./ReactionButtons";
@@ -33,6 +34,9 @@ function htmlToText(input) {
 
 export default function CommentCard({ comment, postId, depth = 0, onCommentAdded, onCommentDeleted, onLoginRequired, isHighlighted = false }) {
   const { user, isAuthenticated } = useAuth();
+  const { mutedIds } = useUserFilters();
+  const [muteRevealed, setMuteRevealed] = useState(false);
+  const isMuted = mutedIds.has(comment.author.id) && !muteRevealed;
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showAuthorModal, setShowAuthorModal] = useState(false);
@@ -233,7 +237,15 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
             </div>
 
             {/* Body */}
-            {isEditing ? (
+            {isMuted ? (
+              <button
+                onClick={() => setMuteRevealed(true)}
+                className="w-full text-left italic text-sm text-slate-400 dark:text-slate-500 py-2"
+                title="Tap to show this comment"
+              >
+                You have this person on mute
+              </button>
+            ) : isEditing ? (
               <div className="mb-2">
                 <textarea
                   value={editContent}
@@ -310,7 +322,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
             )}
 
             {/* Actions */}
-            {!isEditing && (
+            {!isEditing && !isMuted && (
               <div className="flex items-center gap-4 mt-2">
                 {/* Votes */}
                 <VoteButtons

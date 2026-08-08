@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getComments } from "@/lib/api/comments";
 import CommentForm from "./CommentForm";
 import CommentCard from "./CommentCard";
 import SubscribeBell from "../posts/SubscribeBell";
+import useUserFilters from "@/hooks/useUserFilters";
+import { pruneBlocked } from "@/lib/comments/filterTree";
 
 // Inner component that uses useSearchParams
 function CommentSectionInner({ postId, initialCommentCount = 0 }) {
@@ -18,6 +20,12 @@ function CommentSectionInner({ postId, initialCommentCount = 0 }) {
   const [error, setError] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [highlightedCommentId, setHighlightedCommentId] = useState(null);
+
+  const { blockedIds } = useUserFilters();
+  const visibleComments = useMemo(
+    () => pruneBlocked(comments, blockedIds),
+    [comments, blockedIds]
+  );
 
   const fetchComments = useCallback(async (page = 1) => {
     setLoading(true);
@@ -178,7 +186,7 @@ function CommentSectionInner({ postId, initialCommentCount = 0 }) {
       {/* Comments List */}
       {!loading && comments.length > 0 && (
         <div className="divide-y divide-slate-200 dark:divide-slate-700">
-          {comments.map((comment) => (
+          {visibleComments.map((comment) => (
             <CommentCard
               key={comment.id}
               comment={comment}
