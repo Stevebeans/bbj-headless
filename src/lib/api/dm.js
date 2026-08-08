@@ -41,3 +41,9 @@ export const reportThread = (threadId, messageId, note) =>
 export const getDmPrivacy = () => authed("/dm/privacy");
 export const saveDmPrivacy = (privacy) =>
   authed("/dm/privacy", { method: "POST", body: JSON.stringify({ privacy }) });
+export const getSocialFilters = () => authed("/social/filters");
+export const getMuted = () => authed("/social/mutes");
+export const muteUser = (userId) =>
+  authed("/social/mute", { method: "POST", body: JSON.stringify({ user_id: userId }) });
+export const unmuteUser = (userId) =>
+  authed("/social/mute", { method: "DELETE", body: JSON.stringify({ user_id: userId }) });
