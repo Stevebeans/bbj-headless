@@ -279,7 +279,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
             )}
 
             {/* Attached Media */}
-            {comment.media && (
+            {comment.media && !isMuted && (
               <div className="mt-2">
                 <div className="inline-block max-w-sm rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
                   {comment.media.type === "giphy" ? (
