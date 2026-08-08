@@ -60,7 +60,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
   const canReply = depth < 3;
   const isAuthor = isAuthenticated && user?.user_id === comment.author.id;
   const canModerate = comment.can_edit || comment.can_delete;
-  const canFilter = isAuthenticated && !isAuthor && comment.author.id > 0;
+  const canFilter = isAuthenticated && !isAuthor && comment.author.id > 0 && !comment.author.is_staff;
 
   const handleMuteToggle = async () => {
     setShowDropdown(false);
