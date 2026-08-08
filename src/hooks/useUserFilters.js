@@ -14,7 +14,10 @@ const store = {
   state: { ready: false, mutedIds: new Set(), blockedIds: new Set() },
   listeners: new Set(),
   fetched: false,
+  fetchPromise: null,
 };
+
+const inFlight = new Map();
 
 function emit(next) {
   store.state = { ...store.state, ...next };
@@ -29,22 +32,26 @@ function subscribe(listener) {
 const getSnapshot = () => store.state;
 
 async function ensureFetched() {
+  if (store.fetchPromise) return store.fetchPromise;
   if (store.fetched) return;
-  store.fetched = true;
   if (!getToken()) {
     emit({ ready: true });
     return;
   }
-  try {
-    const data = await getSocialFilters();
-    emit({
-      ready: true,
-      mutedIds: new Set(data.muted_ids || []),
-      blockedIds: new Set(data.blocked_ids || []),
-    });
-  } catch {
-    emit({ ready: true }); // fail open
-  }
+  store.fetched = true;
+  store.fetchPromise = (async () => {
+    try {
+      const data = await getSocialFilters();
+      emit({
+        ready: true,
+        mutedIds: new Set(data.muted_ids || []),
+        blockedIds: new Set(data.blocked_ids || []),
+      });
+    } catch {
+      emit({ ready: true }); // fail open
+    }
+  })();
+  return store.fetchPromise;
 }
 
 function withSet(setName, id, present) {
@@ -55,12 +62,25 @@ function withSet(setName, id, present) {
 }
 
 async function apply(setName, id, present, apiCall) {
-  withSet(setName, id, present); // optimistic
+  const key = `${setName}:${id}`;
+  if (inFlight.has(key)) return inFlight.get(key);
+
+  const promise = (async () => {
+    await ensureFetched();
+    withSet(setName, id, present); // optimistic
+    try {
+      await apiCall(id);
+    } catch (err) {
+      withSet(setName, id, !present); // roll back
+      throw err;
+    }
+  })();
+
+  inFlight.set(key, promise);
   try {
-    await apiCall(id);
-  } catch (err) {
-    withSet(setName, id, !present); // roll back
-    throw err;
+    return await promise;
+  } finally {
+    inFlight.delete(key);
   }
 }
 
