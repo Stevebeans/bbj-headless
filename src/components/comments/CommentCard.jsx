@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import { FaReply, FaFlag, FaEllipsisV, FaEdit, FaTrash, FaLink, FaThumbtack } from "react-icons/fa";
+import { FaReply, FaFlag, FaEllipsisV, FaEdit, FaTrash, FaLink, FaThumbtack, FaVolumeMute, FaBan } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import useUserFilters from "@/hooks/useUserFilters";
 import { pruneBlocked } from "@/lib/comments/filterTree";
@@ -15,6 +15,7 @@ import CommentForm from "./CommentForm";
 import ReportModal from "./ReportModal";
 import StaffPickBadge from "./StaffPickBadge";
 import { editComment, deleteComment, pinComment, unpinComment } from "@/lib/api/comments";
+import { blockUser } from "@/lib/api/dm";
 
 // Legacy WPDiscuz comments are stored as HTML (<p>, <br>); the React form stores
 // plain text. Normalize any markup to plain text so both render consistently in
@@ -35,7 +36,7 @@ function htmlToText(input) {
 
 export default function CommentCard({ comment, postId, depth = 0, onCommentAdded, onCommentDeleted, onLoginRequired, isHighlighted = false }) {
   const { user, isAuthenticated } = useAuth();
-  const { mutedIds, blockedIds } = useUserFilters();
+  const { mutedIds, blockedIds, mute, unmute, block } = useUserFilters();
   const [muteRevealed, setMuteRevealed] = useState(false);
   const isMuted = mutedIds.has(comment.author.id) && !muteRevealed;
   const [showReplyForm, setShowReplyForm] = useState(false);
@@ -59,6 +60,30 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
   const canReply = depth < 3;
   const isAuthor = isAuthenticated && user?.user_id === comment.author.id;
   const canModerate = comment.can_edit || comment.can_delete;
+  const canFilter = isAuthenticated && !isAuthor && comment.author.id > 0;
+
+  const handleMuteToggle = async () => {
+    setShowDropdown(false);
+    try {
+      await (mutedIds.has(comment.author.id) ? unmute(comment.author.id) : mute(comment.author.id));
+    } catch (err) {
+      showError(err.message || "Could not update mute");
+    }
+  };
+
+  // Same flow as AuthorModal: confirm, block via the raw API first (so a failure
+  // is reported before the optimistic prune unmounts this card), then sync the
+  // shared store — that second call is what actually hides the thread.
+  const handleBlockAuthor = async () => {
+    setShowDropdown(false);
+    if (!window.confirm(`Block ${comment.author.name}? Their comments disappear for you, and neither of you can DM the other.`)) return;
+    try {
+      await blockUser(comment.author.id);
+      block(comment.author.id).catch(() => {});
+    } catch (err) {
+      showError(err.message || "Could not block member");
+    }
+  };
 
   const handleSharePermalink = async () => {
     const url = `${window.location.origin}${window.location.pathname}?comment=${comment.id}#comment-${comment.id}`;
@@ -382,7 +407,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
                 </button>
 
                 {/* More actions dropdown */}
-                {canModerate && (
+                {(canModerate || canFilter) && (
                   <div className="relative">
                     <button
                       onClick={() => setShowDropdown(!showDropdown)}
@@ -433,6 +458,27 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
                               <FaTrash className="w-3 h-3" />
                               Delete
                             </button>
+                          )}
+                          {canFilter && (
+                            <>
+                              {canModerate && (
+                                <div className="my-1 border-t border-slate-200 dark:border-slate-600" />
+                              )}
+                              <button
+                                onClick={handleMuteToggle}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600"
+                              >
+                                <FaVolumeMute className="w-3 h-3" />
+                                {mutedIds.has(comment.author.id) ? "Unmute" : "Mute"} {comment.author.name}
+                              </button>
+                              <button
+                                onClick={handleBlockAuthor}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-600"
+                              >
+                                <FaBan className="w-3 h-3" />
+                                Block {comment.author.name}
+                              </button>
+                            </>
                           )}
                         </div>
                       </>
