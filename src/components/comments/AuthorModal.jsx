@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { getUserProfile, followUser, unfollowUser } from "@/lib/api/comments";
+import { blockUser } from "@/lib/api/dm";
 import useUserFilters from "@/hooks/useUserFilters";
 import RankBadge from "./RankBadge";
 import OnlineIndicator from "./OnlineIndicator";
@@ -42,7 +43,16 @@ export default function AuthorModal({ userId, isOpen, onClose }) {
     setFilterBusy(true);
     setFilterError(null);
     try {
-      await (isBlocked ? unblock(userId) : block(userId));
+      if (isBlocked) {
+        await unblock(userId);
+      } else {
+        // Blocking prunes this author's comments from the page, which can unmount
+        // this modal (and its inline filterError) before the shared store's
+        // optimistic update ever renders. Confirm the block on the server first,
+        // then sync the store — a failure here still has a mounted modal to show it in.
+        await blockUser(userId);
+        block(userId).catch(() => {});
+      }
     } catch (err) {
       setFilterError(err.message || "Action failed");
     } finally {

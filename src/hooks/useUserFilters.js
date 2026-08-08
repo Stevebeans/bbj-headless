@@ -33,7 +33,7 @@ const getSnapshot = () => store.state;
 async function ensureFetched() {
   if (store.fetchPromise) return store.fetchPromise;
   if (!getToken()) {
-    emit({ ready: true });
+    if (!store.state.ready) emit({ ready: true });
     return;
   }
   store.fetchPromise = (async () => {

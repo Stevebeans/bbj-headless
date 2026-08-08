@@ -163,7 +163,7 @@ function CommentSectionInner({ postId, initialCommentCount = 0 }) {
       )}
 
       {/* Empty State */}
-      {!loading && comments.length === 0 && !error && (
+      {!loading && visibleComments.length === 0 && !error && (
         <div className="text-center py-12 bg-slate-50 dark:bg-slate-800 rounded-lg">
           <svg
             className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4"
@@ -184,7 +184,7 @@ function CommentSectionInner({ postId, initialCommentCount = 0 }) {
       )}
 
       {/* Comments List */}
-      {!loading && comments.length > 0 && (
+      {!loading && visibleComments.length > 0 && (
         <div className="divide-y divide-slate-200 dark:divide-slate-700">
           {visibleComments.map((comment) => (
             <CommentCard

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import { FaReply, FaFlag, FaEllipsisV, FaEdit, FaTrash, FaLink, FaThumbtack } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import useUserFilters from "@/hooks/useUserFilters";
+import { pruneBlocked } from "@/lib/comments/filterTree";
 import VoteButtons from "./VoteButtons";
 import RankBadge from "./RankBadge";
 import ReactionButtons from "./ReactionButtons";
@@ -34,7 +35,7 @@ function htmlToText(input) {
 
 export default function CommentCard({ comment, postId, depth = 0, onCommentAdded, onCommentDeleted, onLoginRequired, isHighlighted = false }) {
   const { user, isAuthenticated } = useAuth();
-  const { mutedIds } = useUserFilters();
+  const { mutedIds, blockedIds } = useUserFilters();
   const [muteRevealed, setMuteRevealed] = useState(false);
   const isMuted = mutedIds.has(comment.author.id) && !muteRevealed;
   const [showReplyForm, setShowReplyForm] = useState(false);
@@ -46,6 +47,7 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
   const [currentContent, setCurrentContent] = useState(comment.content);
   const [loading, setLoading] = useState(false);
   const [replies, setReplies] = useState(comment.replies || []);
+  const visibleReplies = useMemo(() => pruneBlocked(replies, blockedIds), [replies, blockedIds]);
   const [isPinned, setIsPinned] = useState(comment.is_pinned || false);
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -459,9 +461,9 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
       </div>
 
       {/* Replies */}
-      {replies.length > 0 && (
+      {visibleReplies.length > 0 && (
         <div>
-          {replies.map((reply) => (
+          {visibleReplies.map((reply) => (
             <CommentCard
               key={reply.id}
               comment={reply}
