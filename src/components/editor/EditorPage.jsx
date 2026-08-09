@@ -156,34 +156,48 @@ export default function EditorPage({ postId = null }) {
     }
   }, [postId]);
 
+  function applyPostData(data) {
+    setTitle(data.title);
+    setSlug(data.slug);
+    setStatus(data.status === "pending" ? "pending_review" : data.status);
+    setCategoryIds(data.categories?.map((c) => c.id) || []);
+    setFeaturedImageId(data.featured_image?.id || null);
+    setFeaturedImageUrl(data.featured_image?.url || null);
+    setMetaDescription(data.meta_description);
+    setReviewNote(data.review_note);
+    setCropData(data.crop_data && Object.keys(data.crop_data).length > 0 ? data.crop_data : null);
+    setLiveUpdates(!!data.live_updates);
+    setLiveStart(Number(data.live_start) || 0);
+    setLiveEnd(Number(data.live_end) || 0);
+    setScheduledFor(data.scheduled_for || null);
+    if (editor && data.content) {
+      editor.commands.setContent(data.content);
+    } else if (data.content) {
+      // Editor not ready yet — store content for later
+      setPendingContent(data.content);
+    }
+  }
+
   async function loadPost(id) {
     setIsLoading(true);
     try {
       const data = await getPost(id);
-      setTitle(data.title);
-      setSlug(data.slug);
-      setStatus(data.status === "pending" ? "pending_review" : data.status);
-      setCategoryIds(data.categories?.map((c) => c.id) || []);
-      setFeaturedImageId(data.featured_image?.id || null);
-      setFeaturedImageUrl(data.featured_image?.url || null);
-      setMetaDescription(data.meta_description);
-      setReviewNote(data.review_note);
-      setCropData(data.crop_data && Object.keys(data.crop_data).length > 0 ? data.crop_data : null);
-      setLiveUpdates(!!data.live_updates);
-      setLiveStart(Number(data.live_start) || 0);
-      setLiveEnd(Number(data.live_end) || 0);
-      setScheduledFor(data.scheduled_for || null);
-      if (editor && data.content) {
-        editor.commands.setContent(data.content);
-      } else if (data.content) {
-        // Editor not ready yet — store content for later
-        setPendingContent(data.content);
-      }
+      applyPostData(data);
     } catch (err) {
       console.error("Failed to load post:", err);
     } finally {
       setIsLoading(false);
     }
+  }
+
+  // Restore from the History panel: kill any pending auto-save FIRST so a
+  // stale in-memory copy can't immediately overwrite the restore (the exact
+  // hazard from the 8/8 incident), then load the returned post state.
+  function handleRestoreRevision(data) {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    applyPostData(data);
+    setSaveStatus("saved");
+    setLastSaved(new Date());
   }
 
   // Auto-save logic — reads from refs to avoid stale closures
@@ -470,6 +484,8 @@ export default function EditorPage({ postId = null }) {
   }
 
   const sidebarProps = {
+    postId: currentPostId,
+    onRestoreRevision: handleRestoreRevision,
     postStatus: status,
     scheduledFor,
     canSchedule: canPublish,

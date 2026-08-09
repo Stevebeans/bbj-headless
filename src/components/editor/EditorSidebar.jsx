@@ -5,6 +5,7 @@ import CategoryPicker from "./CategoryPicker";
 import ImageUploader from "./ImageUploader";
 import SEOPanel from "./SEOPanel";
 import PublishChecklist from "./PublishChecklist";
+import HistoryPanel from "./HistoryPanel";
 
 export default function EditorSidebar({
   categoryIds, setCategoryIds,
@@ -18,6 +19,7 @@ export default function EditorSidebar({
   onSave, onTitleChange, isEditMode,
   liveUpdates, liveStart, liveEnd, onLiveUpdatesChange,
   postStatus, scheduledFor, canSchedule, scheduleReady, onSchedule, onUnschedule,
+  postId, onRestoreRevision,
 }) {
   // SEO + checklist collapse so the action bar stays on screen while typing.
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -107,6 +109,8 @@ export default function EditorSidebar({
           </div>
         )}
       </div>
+
+      {postId && <HistoryPanel postId={postId} onRestore={onRestoreRevision} />}
 
       {/* Review note (if returned from reviewer) */}
       {reviewNote && (
