@@ -22,6 +22,22 @@ import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { shouldBlockAutoSave } from "@/lib/editor/saveGuard";
 
+// Save-toast appearance, keyed by save status. Anything unrecognized (e.g.
+// "idle", which never shows a toast) falls back to the "saved" look.
+const TOAST_STYLE = {
+  saving: "bg-gray-800 text-white",
+  error: "bg-red-600 text-white",
+  paused: "bg-amber-600 text-white",
+  saved: "bg-green-600 text-white",
+};
+
+const TOAST_TEXT = {
+  saving: "Saving...",
+  error: "Save failed",
+  paused: "Auto-save paused — content shrank a lot. Click Save if that was intentional.",
+  saved: "Saved",
+};
+
 export default function EditorPage({ postId = null }) {
   const router = useRouter();
   const { user } = useAuth();
@@ -472,6 +488,8 @@ export default function EditorPage({ postId = null }) {
   // One-off toast text (e.g. "Post updated") that outranks the save-status label.
   const [notice, setNotice] = useState(null);
   const toastTimerRef = useRef(null);
+  // While a notice is showing it owns the toast, so it renders as a success.
+  const toastStatus = notice ? "saved" : saveStatus;
 
   useEffect(() => {
     if (saveStatus === "saving" || saveStatus === "error") {
@@ -638,30 +656,22 @@ export default function EditorPage({ postId = null }) {
         </button>
       </div>
 
-      {/* Save toast */}
+      {/* Save toast — a one-off notice outranks the save status and reads as success */}
       <div className={`fixed bottom-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toastVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
-        <div className={`px-4 py-2 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 ${
-          !notice && saveStatus === "error"
-            ? "bg-red-600 text-white"
-            : !notice && saveStatus === "saving"
-              ? "bg-gray-800 text-white"
-              : !notice && saveStatus === "paused"
-                ? "bg-amber-600 text-white"
-                : "bg-green-600 text-white"
-        }`}>
-          {!notice && saveStatus === "saving" && (
+        <div className={`px-4 py-2 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 ${TOAST_STYLE[toastStatus] || TOAST_STYLE.saved}`}>
+          {toastStatus === "saving" && (
             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
           )}
-          {(notice || saveStatus === "saved") && (
+          {toastStatus === "saved" && (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
           )}
-          {!notice && saveStatus === "error" && (
+          {toastStatus === "error" && (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           )}
-          {!notice && saveStatus === "paused" && (
+          {toastStatus === "paused" && (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
           )}
-          {notice || (saveStatus === "saving" ? "Saving..." : saveStatus === "error" ? "Save failed" : saveStatus === "paused" ? "Auto-save paused — content shrank a lot. Click Save if that was intentional." : "Saved")}
+          {notice || TOAST_TEXT[toastStatus] || TOAST_TEXT.saved}
         </div>
       </div>
     </div>
