@@ -20,6 +20,7 @@ import MobileSettingsSheet from "./MobileSettingsSheet";
 import { createPost, updatePost, changePostStatus, getPost, generateMeta } from "@/lib/api/editor";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { shouldBlockAutoSave } from "@/lib/editor/saveGuard";
 
 export default function EditorPage({ postId = null }) {
   const router = useRouter();
@@ -56,6 +57,8 @@ export default function EditorPage({ postId = null }) {
   const saveTimerRef = useRef(null);
   const isSavingRef = useRef(false);
   const isFirstSaveRef = useRef(!postId);
+  const lastSavedLenRef = useRef(0);       // content length at last successful save
+  const hasLoadedRef = useRef(!postId);    // existing posts must load before any save
   const stateRef = useRef({ title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData, liveUpdates, liveStart, liveEnd });
   const [pendingContent, setPendingContent] = useState(null); // For editor content loading timing (#4)
 
@@ -176,6 +179,8 @@ export default function EditorPage({ postId = null }) {
       // Editor not ready yet — store content for later
       setPendingContent(data.content);
     }
+    lastSavedLenRef.current = (data.content || "").length;
+    hasLoadedRef.current = true;
   }
 
   async function loadPost(id) {
@@ -215,8 +220,11 @@ export default function EditorPage({ postId = null }) {
   }
 
   // The actual save function reads from refs, not closured state
-  const doSave = useCallback(async () => {
+  const doSave = useCallback(async (isManual = false) => {
     if (isSavingRef.current || !editor) return;
+    // Never save an existing post before its content has loaded — a failed
+    // load + 5s timer is how the 8/8 wipe happened.
+    if (!hasLoadedRef.current) return;
     isSavingRef.current = true;
     setSaveStatus("saving");
 
@@ -235,6 +243,16 @@ export default function EditorPage({ postId = null }) {
       live_end: Number(le) || 0,
     };
 
+    if (shouldBlockAutoSave({
+      lastSavedLength: lastSavedLenRef.current,
+      nextLength: postData.content.length,
+      isManual,
+    })) {
+      isSavingRef.current = false;
+      setSaveStatus("paused");
+      return;
+    }
+
     try {
       if (isFirstSaveRef.current) {
         const result = await createPost(postData);
@@ -252,6 +270,7 @@ export default function EditorPage({ postId = null }) {
         if (result.slug) setSlug(result.slug);
       }
 
+      lastSavedLenRef.current = postData.content.length;
       setSaveStatus("saved");
       setLastSaved(new Date());
     } catch (err) {
@@ -265,7 +284,7 @@ export default function EditorPage({ postId = null }) {
   // Manual save
   async function handleManualSave() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    await doSave();
+    await doSave(true);
   }
 
   // Featured image upload. The immediate save reads from stateRef, which a
@@ -461,6 +480,8 @@ export default function EditorPage({ postId = null }) {
     } else if (saveStatus === "saved") {
       setToastVisible(true);
       toastTimerRef.current = setTimeout(() => setToastVisible(false), 2500);
+    } else if (saveStatus === "paused") {
+      setToastVisible(true); // sticky — no auto-hide; cleared by the next save attempt
     }
     return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
   }, [saveStatus]);
@@ -624,7 +645,9 @@ export default function EditorPage({ postId = null }) {
             ? "bg-red-600 text-white"
             : !notice && saveStatus === "saving"
               ? "bg-gray-800 text-white"
-              : "bg-green-600 text-white"
+              : !notice && saveStatus === "paused"
+                ? "bg-amber-600 text-white"
+                : "bg-green-600 text-white"
         }`}>
           {!notice && saveStatus === "saving" && (
             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -635,7 +658,10 @@ export default function EditorPage({ postId = null }) {
           {!notice && saveStatus === "error" && (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           )}
-          {notice || (saveStatus === "saving" ? "Saving..." : saveStatus === "error" ? "Save failed" : "Saved")}
+          {!notice && saveStatus === "paused" && (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
+          )}
+          {notice || (saveStatus === "saving" ? "Saving..." : saveStatus === "error" ? "Save failed" : saveStatus === "paused" ? "Auto-save paused — content shrank a lot. Click Save if that was intentional." : "Saved")}
         </div>
       </div>
     </div>
