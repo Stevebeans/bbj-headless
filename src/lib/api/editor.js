@@ -38,6 +38,22 @@ export async function changePostStatus(postId, status, scheduleAt = null) {
   });
 }
 
+// --- Revisions (history panel) ---
+
+export async function listRevisions(postId) {
+  return adminFetch(`/editor/posts/${postId}/revisions`);
+}
+
+export async function getRevision(postId, revId) {
+  return adminFetch(`/editor/posts/${postId}/revisions/${revId}`);
+}
+
+export async function restoreRevision(postId, revId) {
+  return adminFetch(`/editor/posts/${postId}/revisions/${revId}/restore`, {
+    method: "POST",
+  });
+}
+
 // --- Media ---
 
 export async function uploadMedia(file) {
