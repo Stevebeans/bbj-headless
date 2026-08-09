@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { listRevisions, getRevision, restoreRevision } from "@/lib/api/editor";
+import { listRevisions, getRevision } from "@/lib/api/editor";
 
 // Collapsible "History" section for the editor sidebar. Lazy: nothing is
 // fetched until the writer expands it. Preview + restore of WP revisions.
+// The restore round-trip itself belongs to EditorPage (onRestore) — it has to
+// disarm the pending auto-save before the request goes out.
 export default function HistoryPanel({ postId, onRestore }) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState(null); // null = not fetched yet
@@ -12,22 +14,28 @@ export default function HistoryPanel({ postId, onRestore }) {
   const [preview, setPreview] = useState(null); // { id, date, title, content }
   const [busy, setBusy] = useState(false);
 
-  async function toggle() {
-    const next = !open;
-    setOpen(next);
-    if (next && items === null) {
-      try {
-        const data = await listRevisions(postId);
-        setItems(data.revisions || []);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to load history:", err);
-        setError("Couldn't load history");
-      }
+  // Also called after a restore, which adds a snapshot — setItems(null) alone
+  // would leave the open panel stuck on "Loading…" with nothing fetching.
+  async function loadList() {
+    setError(null);
+    setItems(null);
+    try {
+      const data = await listRevisions(postId);
+      setItems(data.revisions || []);
+    } catch (err) {
+      console.error("Failed to load history:", err);
+      setError("Couldn't load history");
     }
   }
 
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && items === null) loadList();
+  }
+
   async function openPreview(revId) {
+    setError(null);
     try {
       setPreview(await getRevision(postId, revId));
     } catch (err) {
@@ -38,13 +46,14 @@ export default function HistoryPanel({ postId, onRestore }) {
 
   async function handleRestore() {
     if (!preview) return;
-    if (!window.confirm("Replace the current draft with this snapshot? Your current text is kept as a snapshot too.")) return;
+    // Honest copy: the *saved* state is what History holds. Keystrokes from the
+    // un-saved window are gone either way — don't promise them back.
+    if (!window.confirm("Replace the current draft with this snapshot? The last saved state stays in History.")) return;
     setBusy(true);
     try {
-      const fresh = await restoreRevision(postId, preview.id);
+      await onRestore?.(preview.id);
       setPreview(null);
-      setItems(null); // refetch on next expand — the list just changed
-      onRestore?.(fresh);
+      loadList(); // the list just changed — refresh it in place
     } catch (err) {
       console.error("Restore failed:", err);
       setError("Restore failed — the draft was not changed");

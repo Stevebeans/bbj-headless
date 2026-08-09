@@ -17,7 +17,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import EditorToolbar from "./EditorToolbar";
 import EditorSidebar from "./EditorSidebar";
 import MobileSettingsSheet from "./MobileSettingsSheet";
-import { createPost, updatePost, changePostStatus, getPost, generateMeta } from "@/lib/api/editor";
+import { createPost, updatePost, changePostStatus, getPost, generateMeta, restoreRevision } from "@/lib/api/editor";
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { shouldBlockAutoSave } from "@/lib/editor/saveGuard";
@@ -67,11 +67,13 @@ export default function EditorPage({ postId = null }) {
   const [lastSaved, setLastSaved] = useState(null);
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(!!postId);
+  const [loadError, setLoadError] = useState(null); // sticky toast text when getPost fails
 
   // Refs for auto-save — fixes stale closure bug (#3)
   // The timer-captured savePost always reads from refs, not stale state
   const saveTimerRef = useRef(null);
   const isSavingRef = useRef(false);
+  const isRestoringRef = useRef(false); // a revision restore owns the document — no saves
   const isFirstSaveRef = useRef(!postId);
   const lastSavedLenRef = useRef(0);       // content length at last successful save
   const hasLoadedRef = useRef(!postId);    // existing posts must load before any save
@@ -158,6 +160,9 @@ export default function EditorPage({ postId = null }) {
   useEffect(() => {
     if (editor && pendingContent) {
       editor.commands.setContent(pendingContent);
+      // Re-baseline against the editor's own serialization now that it exists
+      // — same reason as applyPostData below.
+      lastSavedLenRef.current = editor.getHTML().length;
       setPendingContent(null);
     }
   }, [editor, pendingContent]);
@@ -191,11 +196,18 @@ export default function EditorPage({ postId = null }) {
     setScheduledFor(data.scheduled_for || null);
     if (editor && data.content) {
       editor.commands.setContent(data.content);
+      // Baseline off the editor's own serialization, not the server HTML: the
+      // next auto-save measures editor.getHTML(), and TipTap's round-trip can
+      // differ enough on exotic markup to trip the shrink guard for no reason.
+      lastSavedLenRef.current = editor.getHTML().length;
     } else if (data.content) {
-      // Editor not ready yet — store content for later
+      // Editor not ready yet — store content for later. This length is a
+      // stand-in; the pendingContent effect re-baselines once the editor mounts.
       setPendingContent(data.content);
+      lastSavedLenRef.current = data.content.length;
+    } else {
+      lastSavedLenRef.current = 0;
     }
-    lastSavedLenRef.current = (data.content || "").length;
     hasLoadedRef.current = true;
   }
 
@@ -206,23 +218,54 @@ export default function EditorPage({ postId = null }) {
       applyPostData(data);
     } catch (err) {
       console.error("Failed to load post:", err);
+      // hasLoadedRef stays false, so both auto-save and the Save button are
+      // now inert by design. Say so — an empty editor that silently refuses
+      // to save looks like a working editor until the writer loses a session.
+      setLoadError("Couldn't load the post — reload the page before editing. Saving is disabled to protect your content.");
     } finally {
       setIsLoading(false);
     }
   }
 
-  // Restore from the History panel: kill any pending auto-save FIRST so a
-  // stale in-memory copy can't immediately overwrite the restore (the exact
-  // hazard from the 8/8 incident), then load the returned post state.
-  function handleRestoreRevision(data) {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    applyPostData(data);
-    setSaveStatus("saved");
-    setLastSaved(new Date());
+  // Restore from the History panel. EditorPage owns the whole round-trip so the
+  // pending auto-save can be disarmed BEFORE the POST goes out: a timer armed
+  // by typing (and held back by HistoryPanel's blocking confirm) would otherwise
+  // fire the moment we await, and that stale PUT lands after the restore and
+  // silently reverts it server-side (the 8/8 hazard). Returns the fresh post;
+  // throws so HistoryPanel can show its own error.
+  async function handleRestoreRevision(revId) {
+    const pid = stateRef.current.currentPostId;
+    if (!pid) throw new Error("No post to restore");
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    isRestoringRef.current = true;
+    try {
+      // A save that already cleared the guard and is awaiting its PUT can't be
+      // aborted, so wait it out — the restore has to be the last write. Capped
+      // at ~3s so a hung request can't wedge the Restore button forever.
+      for (let i = 0; i < 30 && isSavingRef.current; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      const fresh = await restoreRevision(pid, revId);
+      // setContent fires onUpdate synchronously, but scheduleSave is a no-op
+      // while isRestoringRef is set, so no timer survives this call.
+      applyPostData(fresh);
+      setSaveStatus("saved");
+      setLastSaved(new Date());
+      return fresh;
+    } finally {
+      isRestoringRef.current = false;
+    }
   }
 
   // Auto-save logic — reads from refs to avoid stale closures
   function scheduleSave() {
+    // Mid-restore the document isn't the writer's anymore: setContent's own
+    // onUpdate lands here, and arming a timer would re-save the replaced text.
+    if (isRestoringRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       doSave();
@@ -238,6 +281,9 @@ export default function EditorPage({ postId = null }) {
   // The actual save function reads from refs, not closured state
   const doSave = useCallback(async (isManual = false) => {
     if (isSavingRef.current || !editor) return;
+    // A restore is in flight (or is applying its content) — any save from here
+    // would write the pre-restore document straight back over it.
+    if (isRestoringRef.current) return;
     // Never save an existing post before its content has loaded — a failed
     // load + 5s timer is how the 8/8 wipe happened.
     if (!hasLoadedRef.current) return;
@@ -488,8 +534,9 @@ export default function EditorPage({ postId = null }) {
   // One-off toast text (e.g. "Post updated") that outranks the save-status label.
   const [notice, setNotice] = useState(null);
   const toastTimerRef = useRef(null);
-  // While a notice is showing it owns the toast, so it renders as a success.
-  const toastStatus = notice ? "saved" : saveStatus;
+  // A failed load outranks everything and stays red — nothing that follows it
+  // is trustworthy. Otherwise a notice owns the toast and reads as success.
+  const toastStatus = loadError ? "error" : notice ? "saved" : saveStatus;
 
   useEffect(() => {
     if (saveStatus === "saving" || saveStatus === "error") {
@@ -503,6 +550,14 @@ export default function EditorPage({ postId = null }) {
     }
     return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
   }, [saveStatus]);
+
+  // Sticky, no auto-hide: the writer has to see this before typing into a
+  // void, and only a reload clears it.
+  useEffect(() => {
+    if (!loadError) return;
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastVisible(true);
+  }, [loadError]);
 
   useEffect(() => {
     if (!notice) return;
@@ -671,7 +726,7 @@ export default function EditorPage({ postId = null }) {
           {toastStatus === "paused" && (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
           )}
-          {notice || TOAST_TEXT[toastStatus] || TOAST_TEXT.saved}
+          {loadError || notice || TOAST_TEXT[toastStatus] || TOAST_TEXT.saved}
         </div>
       </div>
     </div>
