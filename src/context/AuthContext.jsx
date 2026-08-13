@@ -162,6 +162,11 @@ export function AuthProvider({ children }) {
         // Sliding refresh: if the token is past ~half its life, re-mint it now
         // (and re-arm the cookie / reset Safari's ITP clock). Non-blocking.
         maybeRefreshToken();
+        // Detect mid-session cookie blocking too — checkCookiePersistence()
+        // previously ran only at login, so a member whose cookies get wiped
+        // AFTER logging in (security suites, per-site blocks) cycled through
+        // silent logouts without ever seeing the CookieBlockedBanner.
+        checkCookiePersistence();
         // Cache cookie wiped but token survived: repaint avatar + rebuild cache.
         // Also refresh when the cache is stale so avatar/name/role changes made
         // on another device propagate here within the TTL (non-blocking).
@@ -177,6 +182,9 @@ export function AuthProvider({ children }) {
     if (getSessionHint()) {
       forceRefreshToken().then((result) => {
         const recovered = typeof result === "string" && applyToken(result);
+        // Anchor recovery re-minted via setToken() — verify the browser
+        // actually persisted it, else the session dies again next load.
+        if (recovered) checkCookiePersistence();
         if (recovered && (!hadProfileCache || profileCacheStale)) {
           // Recovered session has no avatar (JWT carries none, cache was wiped
           // with the JS token) — one background /auth/me repaints it.

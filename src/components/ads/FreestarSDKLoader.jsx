@@ -10,6 +10,10 @@ export function FreestarSDKLoader() {
 
   if (loading) return null;
   if (!shouldShowAds) return null;
+  // Pre-paint gate (AdGateScript): cached supporter — never boot the SDK.
+  // Beyond the visual flash, booting it churns dozens of ad cookies that can
+  // evict auth cookies from the per-domain jar on non-Chromium browsers.
+  if (typeof window !== "undefined" && window.__bbjAdFree === true) return null;
 
   return (
     <>

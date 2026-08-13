@@ -121,6 +121,17 @@
     @apply border-0;
   }
 
+  /* Pre-paint supporter ad gate (AdGateScript): the blocking head script tags
+     <html> with .bbj-adfree for cached supporters BEFORE first paint. React
+     unmounts these properly at hydration; this covers the gap so paying
+     members never see ad chrome flash. bbj-ad-chrome = wrappers (e.g. the
+     TopLeaderboard "Advertisement" label) that live outside the slot markup. */
+  html.bbj-adfree .ad-branded-container,
+  html.bbj-adfree .freestar-slot,
+  html.bbj-adfree .bbj-ad-chrome {
+    display: none !important;
+  }
+
   /* Freestar slot responsive heights */
   .freestar-slot {
     min-height: var(--ad-h);

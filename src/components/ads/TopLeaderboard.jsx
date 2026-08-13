@@ -36,7 +36,7 @@ export function TopLeaderboard() {
   if (!show) return null;
 
   return (
-    <div className="flex w-full flex-col items-center px-2 py-2">
+    <div className="bbj-ad-chrome flex w-full flex-col items-center px-2 py-2">
       <span className="mb-1 text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500">
         Advertisement
       </span>

@@ -20,6 +20,7 @@ import { DEFAULT_PWA_SUPPRESSED } from "@/config/ads";
 import { getActiveLiveThread } from "@/lib/api/liveThread";
 import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 import { FreestarSDKLoader } from "@/components/ads/FreestarSDKLoader";
+import { AdGateScript } from "@/components/ads/AdGateScript";
 import { TopLeaderboard } from "@/components/ads/TopLeaderboard";
 import CountdownBanner from "@/components/CountdownBanner";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
@@ -171,6 +172,9 @@ export default async function RootLayout({ children }) {
     >
       <head>
         <ThemeScript />
+        {/* Pre-paint supporter ad gate — must run before paint so paying
+            members never flash ads while AuthContext hydrates. */}
+        <AdGateScript supporterRoles={supporterRoles} />
         <SelfHealScript />
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col bg-paper dark:bg-gray-900">
