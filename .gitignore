@@ -56,3 +56,6 @@ nul
 
 # Terminal Paste Image folder
 .cp-images/
+
+# generated docs site (source = the .md files)
+docs/architecture/site/
