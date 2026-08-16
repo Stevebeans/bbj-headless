@@ -848,7 +848,7 @@ function MapTab({ seasons }) {
           ) : (
             <span className="inline-flex items-center gap-1 text-xs text-slate-400">
               <FaLock className="w-3 h-3" />
-              <Link href="/become-supporter" className="hover:text-secondary-500">Premium filters</Link>
+              <Link href="/become-supporter" prefetch={false} className="hover:text-secondary-500">Premium filters</Link>
             </span>
           )}
         </div>

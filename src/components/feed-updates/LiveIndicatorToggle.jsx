@@ -31,6 +31,7 @@ export function LiveIndicatorToggle({ isPremium, live, onToggle, pulse = false }
       {!isPremium && (
         <Link
           href="/become-supporter"
+          prefetch={false}
           className="text-primary-500 dark:text-primary-300 underline"
         >
           Upgrade

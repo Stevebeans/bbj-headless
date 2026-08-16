@@ -312,6 +312,7 @@ export function FeedUpdateCard({ update }) {
                 Quick reply is a premium feature.
                 <Link
                   href="/become-supporter"
+                  prefetch={false}
                   className="block mt-1 text-secondary-400 hover:text-secondary-300"
                   onClick={(e) => e.stopPropagation()}
                 >

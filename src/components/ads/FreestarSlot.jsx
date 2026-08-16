@@ -57,6 +57,7 @@ export function FreestarSlot({
           </p>
           <Link
             href="/premium"
+            prefetch={false}
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -99,8 +100,13 @@ export function FreestarSlot({
       </div>
       {slotDiv}
       <div className="flex items-center justify-center py-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30">
+        {/* prefetch={false}: this link renders under every ad slot on every page,
+            and viewport prefetch of /premium (an uncacheable 308) + its
+            /become-supporter follow-up was ~25% of ALL edge requests
+            (47K/12h, 2026-08-16). A conversion page can afford a full click. */}
         <Link
           href="/premium"
+          prefetch={false}
           className="group flex items-center gap-1.5 text-xs text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
         >
           <svg

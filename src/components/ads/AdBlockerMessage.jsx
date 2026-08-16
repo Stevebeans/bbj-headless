@@ -20,6 +20,7 @@ function BlockerMessage() {
       </p>
       <Link
         href="/premium"
+        prefetch={false}
         className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
