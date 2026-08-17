@@ -1,10 +1,21 @@
+import { Fragment } from "react";
 import { getThreadUpdates } from "@/lib/api/liveThread";
 import { LiveUpdateSortToggle } from "./LiveUpdateSortToggle";
 import { LiveUpdatePoller } from "./LiveUpdatePoller";
 import { JumpToLatestPill } from "./JumpToLatestPill";
 import { isFreshUpdate } from "@/lib/feedUpdatesLive";
+import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import Image from "next/image";
 import Link from "next/link";
+
+// Timeline in-content ads: one slot after every AD_INTERVAL-th update, up to
+// AD_MAX_SLOTS per thread, and only when the thread is long enough that the
+// slots sit between real content (short threads keep the clean layout).
+// Rationale: the daily-thread timeline is the site's longest-dwell surface and
+// previously carried zero in-content display (2026-08-16 CPM/density review).
+const AD_INTERVAL = 12;
+const AD_MAX_SLOTS = 5;
+const AD_MIN_UPDATES = 14;
 
 /**
  * Server component: renders the timeline of feed-updates for a live thread.
@@ -71,8 +82,20 @@ export async function LiveUpdateTimeline({ postId, liveState, closedAt, closingS
             const isNewest = idx === updates.length - 1 && state === "live";
             const fresh = isFreshUpdate(u.modified || u.date);
             const body = u.content || u.raw_content;
+            // In-content slot woven in every AD_INTERVAL updates (capped, and
+            // only on threads long enough to carry them). Rendered as its own
+            // <li> with the preceding update's data-ts so the client sort
+            // toggle keeps it adjacent in either direction. FreestarSlot
+            // self-gates for supporters/ad-free (plus the pre-paint ad gate).
+            const adNumber = (idx + 1) / AD_INTERVAL;
+            const showAdAfter =
+              updateCount >= AD_MIN_UPDATES &&
+              (idx + 1) % AD_INTERVAL === 0 &&
+              adNumber <= AD_MAX_SLOTS &&
+              idx < updates.length - 1;
             return (
-              <li key={u.id} data-ts={updateTs(u)} className="list-none">
+              <Fragment key={u.id}>
+              <li data-ts={updateTs(u)} className="list-none">
                 {/* Mirrors the homepage FeedUpdateCard layout: time rail + dot + card */}
                 <article id={u.slug} className="group flex gap-4 py-4">
                   <div className="hidden sm:block w-20 shrink-0 text-right">
@@ -147,6 +170,17 @@ export async function LiveUpdateTimeline({ postId, liveState, closedAt, closingS
                   </div>
                 </article>
               </li>
+              {showAdAfter && (
+                <li data-ts={updateTs(u)} className="list-none" data-ad>
+                  <div className="py-2 sm:ml-28">
+                    <FreestarSlot
+                      placementName="bigbrotherjunkies_incontent_reusable"
+                      slotId={`feed_timeline_incontent_${adNumber}`}
+                    />
+                  </div>
+                </li>
+              )}
+              </Fragment>
             );
           })}
         </ol>
