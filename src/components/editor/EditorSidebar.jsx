@@ -6,6 +6,7 @@ import ImageUploader from "./ImageUploader";
 import SEOPanel from "./SEOPanel";
 import PublishChecklist from "./PublishChecklist";
 import HistoryPanel from "./HistoryPanel";
+import { EDITOR_SNIPPETS } from "@/config/editorSnippets";
 
 export default function EditorSidebar({
   categoryIds, setCategoryIds,
@@ -20,6 +21,7 @@ export default function EditorSidebar({
   liveUpdates, liveStart, liveEnd, onLiveUpdatesChange,
   postStatus, scheduledFor, canSchedule, scheduleReady, onSchedule, onUnschedule,
   postId, onRestoreRevision,
+  onInsertSnippet,
 }) {
   // SEO + checklist collapse so the action bar stays on screen while typing.
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -44,6 +46,8 @@ export default function EditorSidebar({
         onSave={onSave}
         isEditMode={isEditMode}
       />
+
+      {onInsertSnippet && <SnippetsBlock onInsert={onInsertSnippet} />}
 
       <LiveUpdatesBlock
         liveUpdates={liveUpdates || false}
@@ -327,6 +331,38 @@ function LiveUpdatesBlock({
             Feed updates posted in this window stream into the post chronologically.
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+function SnippetsBlock({ onInsert }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between text-sm font-medium text-slate-700 dark:text-slate-200"
+      >
+        <span>Insert snippet</span>
+        <span className="text-slate-400">{open ? "−" : "+"}</span>
+      </button>
+      {open && (
+        <div className="mt-2 space-y-1.5">
+          {EDITOR_SNIPPETS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => onInsert(s.html)}
+              title={s.description}
+              className="w-full text-left px-2.5 py-1.5 text-sm rounded-md bg-slate-50 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors"
+            >
+              {s.label}
+            </button>
+          ))}
+          <p className="text-[11px] text-slate-400 pt-1">Inserts at the cursor position.</p>
+        </div>
       )}
     </div>
   );

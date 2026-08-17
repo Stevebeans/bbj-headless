@@ -580,6 +580,8 @@ export default function EditorPage({ postId = null }) {
   const sidebarProps = {
     postId: currentPostId,
     onRestoreRevision: handleRestoreRevision,
+    // Snippets panel: insert reusable content blocks at the cursor
+    onInsertSnippet: (html) => editor?.chain().focus().insertContent(html).run(),
     postStatus: status,
     scheduledFor,
     canSchedule: canPublish,
