@@ -1,6 +1,6 @@
 # 00 — Orientation: The Mental Map
 
-*Verified against commit `de29d15` (2026-08-15)*
+_Verified against commit `de29d15` (2026-08-15)_
 
 Before any chapter traces a specific flow, you need the big shape in your head. This is two pages. Read it twice; everything else in this series hangs off it.
 
@@ -47,22 +47,22 @@ If you internalize a single sentence from this whole series, make it that one. C
 
 ## Freshness without re-rendering
 
-Pages cache "forever" (`revalidate: false`), so how does new content appear? **Purge-on-edit:** when you save a post in WP, a webhook calls `/api/revalidate` on the Next app, which invalidates the right cache *tags* on Vercel and targeted-purges the affected URLs on Cloudflare. Fresh content in seconds, zero background re-render churn. Chapter 01 traces it.
+Pages cache "forever" (`revalidate: false`), so how does new content appear? **Purge-on-edit:** when you save a post in WP, a webhook calls `/api/revalidate` on the Next app, which invalidates the right cache _tags_ on Vercel and targeted-purges the affected URLs on Cloudflare. Fresh content in seconds, zero background re-render churn. Chapter 01 traces it.
 
 ## Where things live
 
-| Thing | Place |
-|---|---|
-| Pages & routing | `src/app/**` (App Router — folder = URL) |
-| Reusable UI | `src/components/**` |
-| Data clients | `src/lib/api/**` (`wpFetch` family for server; `adminFetch` etc. for client) |
-| React contexts | `src/context/` (Auth, Ad, AuthModal) |
-| Hooks | `src/hooks/` |
-| Edge middleware | `src/middleware.js` (admin/editor routes ONLY — on purpose) |
+| Thing               | Place                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------ |
+| Pages & routing     | `src/app/**` (App Router — folder = URL)                                                         |
+| Reusable UI         | `src/components/**`                                                                              |
+| Data clients        | `src/lib/api/**` (`wpFetch` family for server; `adminFetch` etc. for client)                     |
+| React contexts      | `src/context/` (Auth, Ad, AuthModal)                                                             |
+| Hooks               | `src/hooks/`                                                                                     |
+| Edge middleware     | `src/middleware.js` (admin/editor routes ONLY — on purpose)                                      |
 | WP plugin (the API) | `C:\xampp\htdocs\bbj\wp-content\plugins\bigbrotherjunkies-data\src\` — routes in `src/Api/*.php` |
 
 ## Your index-page question, answered
 
 You asked if the index is shaped like `<AppContainer><Header/><Page/><Footer/></AppContainer>`. Close — App Router does it with **nested files instead of one wrapper component**: `src/app/layout.jsx` renders `<html><body><Providers><Header/>{children}<Footer/></Providers></body></html>`, and whatever `page.jsx` matches the URL becomes `{children}`. The layout renders ONCE and persists across client-side navigation; only the page slot swaps. Chapter 01 walks the real file.
 
-*Glossary terms added: headless, App Router, edge cache, ISR, purge-on-edit, client island.*
+_Glossary terms added: headless, App Router, edge cache, ISR, purge-on-edit, client island._
