@@ -10,6 +10,7 @@ import { postComment } from "@/lib/api/comments";
 import { quickReplyPrefix, threadCta } from "@/lib/feedUpdates/threadComments";
 import { isFreshUpdate } from "@/lib/feedUpdatesLive";
 import { BeanBotNotice } from "./BeanBotNotice";
+import { FeedUpdateManage } from "@/components/feed-updates/FeedUpdateManage";
 
 function slugify(s) {
   return (s || "")
@@ -44,6 +45,13 @@ export function FeedUpdateCard({ update }) {
   const [recentComments, setRecentComments] = useState(() =>
     [...(update.recent_comments || [])].reverse()
   );
+  // Owner edit/delete (FeedUpdateManage): saved edits override the cached
+  // payload; a deleted update unmounts the card without reloading the list.
+  const [edited, setEdited] = useState(null);
+  const [isDeleted, setIsDeleted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const displayTitle = edited?.title ?? update.title;
+  const displayContent = edited?.content ?? update.content;
 
   // Supporter status from AdContext — baseline roles + the admin-configured list
   const { isSupporter } = useAds();
@@ -73,7 +81,7 @@ export function FeedUpdateCard({ update }) {
     document.fonts?.ready?.then(measure);
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, []);
+  }, [displayContent, isEditing]);
 
   const handleQuickReply = async (e) => {
     e.preventDefault();
@@ -128,6 +136,8 @@ export function FeedUpdateCard({ update }) {
     }
   };
 
+  if (isDeleted) return null;
+
   return (
     <article id={update.slug} className="group flex gap-4 py-4">
       {/* Left rail: time + relative (desktop only) */}
@@ -156,21 +166,30 @@ export function FeedUpdateCard({ update }) {
 
       {/* Card */}
       <div className="flex-1 min-w-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
-        <h3 className="font-display text-lg md:text-xl leading-snug mb-2 text-primary-500 dark:text-secondary-500">
-          <Link
-            href={permalink}
-            className="hover:text-primary-600 dark:hover:text-secondary-400"
-          >
-            {update.title}
-          </Link>
-        </h3>
+        <FeedUpdateManage
+          update={update}
+          onSaved={setEdited}
+          onDeleted={() => setIsDeleted(true)}
+          onEditingChange={setIsEditing}
+        />
 
-        {update.content && (
+        {!isEditing && (
+          <h3 className="font-display text-lg md:text-xl leading-snug mb-2 text-primary-500 dark:text-secondary-500">
+            <Link
+              href={permalink}
+              className="hover:text-primary-600 dark:hover:text-secondary-400"
+            >
+              {displayTitle}
+            </Link>
+          </h3>
+        )}
+
+        {!isEditing && displayContent && (
           <>
             <div
               ref={contentRef}
               className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-3 feed-content"
-              dangerouslySetInnerHTML={{ __html: update.content }}
+              dangerouslySetInnerHTML={{ __html: displayContent }}
             />
             {isTruncated && (
               <Link
@@ -198,7 +217,7 @@ export function FeedUpdateCard({ update }) {
           <div className="mb-3 w-[90%] md:max-w-[75%] mx-auto">
             <Image
               src={update.thumbnail}
-              alt={update.title || "Big Brother feed update"}
+              alt={displayTitle || "Big Brother feed update"}
               width={800}
               height={533}
               sizes="(min-width: 768px) 45vw, 90vw"

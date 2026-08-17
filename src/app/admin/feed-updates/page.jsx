@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   listFeedUpdates,
   updateFeedUpdate,
@@ -28,6 +30,8 @@ function formatBbTime(iso) {
 }
 
 export default function AdminFeedUpdates() {
+  const { user } = useAuth();
+  const { hasPermission } = usePermissions();
   const [updates, setUpdates] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -111,6 +115,13 @@ export default function AdminFeedUpdates() {
       setSaving(false);
     }
   };
+
+  // Mirror the API's ownership rule: authors manage their own updates, staff
+  // with comment_moderation manage anyone's. Without this a plain updater
+  // would see buttons that just 403.
+  const canManage = (u) =>
+    hasPermission("comment_moderation") ||
+    (user?.id && u.author?.id && Number(user.id) === Number(u.author.id));
 
   const handleDelete = async (id) => {
     if (deletingId) return;
@@ -230,46 +241,48 @@ export default function AdminFeedUpdates() {
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2 shrink-0">
-                    {confirmDeleteId === u.id ? (
-                      <>
-                        <span className="text-xs text-red-600 dark:text-red-400 self-center">
-                          Delete permanently?
-                        </span>
-                        <button
-                          onClick={() => handleDelete(u.id)}
-                          disabled={deletingId === u.id}
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-                        >
-                          {deletingId === u.id ? "Deleting..." : "Yes, delete"}
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(null)}
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => startEdit(u)}
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => {
-                            setConfirmDeleteId(u.id);
-                            cancelEdit();
-                          }}
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  {canManage(u) && (
+                    <div className="flex gap-2 shrink-0">
+                      {confirmDeleteId === u.id ? (
+                        <>
+                          <span className="text-xs text-red-600 dark:text-red-400 self-center">
+                            Delete permanently?
+                          </span>
+                          <button
+                            onClick={() => handleDelete(u.id)}
+                            disabled={deletingId === u.id}
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                          >
+                            {deletingId === u.id ? "Deleting..." : "Yes, delete"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEdit(u)}
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              setConfirmDeleteId(u.id);
+                              cancelEdit();
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </li>

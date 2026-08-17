@@ -21,3 +21,10 @@ export async function deleteFeedUpdate(id) {
     method: "DELETE",
   });
 }
+
+// Fresh copy of one update for the inline edit form. The public card payloads
+// are ISR-cached and omit raw_content, so editing starts from a live read.
+export async function getFeedUpdateForEdit(slug) {
+  const data = await adminFetch(`/feed-updates/single/${slug}`);
+  return data.update;
+}

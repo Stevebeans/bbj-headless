@@ -8,12 +8,20 @@ import { voteFeedUpdate } from "@/lib/api/feedUpdates";
 import { threadCta } from "@/lib/feedUpdates/threadComments";
 import { isFreshUpdate } from "@/lib/feedUpdatesLive";
 import { BeanBotNotice } from "@/components/home/BeanBotNotice";
+import { FeedUpdateManage } from "@/components/feed-updates/FeedUpdateManage";
 
 // One update row in the editorial thread. Client component (real voting).
 export function FeedHubUpdateCard({ update }) {
   const { user, isAuthenticated } = useAuth();
   const [votes, setVotes] = useState(update.votes || { total: 0, user_vote: 0 });
   const [isVoting, setIsVoting] = useState(false);
+  // Owner edit/delete (FeedUpdateManage): saved edits override the cached
+  // payload; a deleted update unmounts the row without reloading the thread.
+  const [edited, setEdited] = useState(null);
+  const [isDeleted, setIsDeleted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const displayTitle = edited?.title ?? update.title;
+  const displayExcerpt = edited?.excerpt ?? update.excerpt;
   const href = `/live-feed-updates/${update.slug}`;
   const init = (update.author?.name || "BBJ").slice(0, 2).toUpperCase();
   // Route the comment link to today's live thread when this update belongs to one.
@@ -33,6 +41,8 @@ export function FeedHubUpdateCard({ update }) {
     }
   };
 
+  if (isDeleted) return null;
+
   return (
     <article className="fuh-upd" data-mode={update.mode}>
       <div className="fuh-vote">
@@ -51,8 +61,14 @@ export function FeedHubUpdateCard({ update }) {
           {update.mode && <span className="fuh-cat">{update.mode === "show" ? "Show" : "Feed"}</span>}
           <span className={`fuh-t${isFreshUpdate(update.modified) ? " fuh-fresh" : ""}`} data-nosnippet><b>{update.time_ago}</b></span>
         </div>
-        <h3><Link href={href}>{update.title}</Link></h3>
-        {update.excerpt && <p>{update.excerpt}</p>}
+        <FeedUpdateManage
+          update={update}
+          onSaved={setEdited}
+          onDeleted={() => setIsDeleted(true)}
+          onEditingChange={setIsEditing}
+        />
+        {!isEditing && <h3><Link href={href}>{displayTitle}</Link></h3>}
+        {!isEditing && displayExcerpt && <p>{displayExcerpt}</p>}
         {update.video?.url ? (
           <div className="fuh-thumb">
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
