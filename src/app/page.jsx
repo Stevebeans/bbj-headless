@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
+import { BelowHeaderLeaderboard } from "@/components/ads/BelowHeaderLeaderboard";
 import { SpoilerBarWrapper } from "@/components/spoiler-bar/SpoilerBarWrapper";
 import { SubscribeWidget } from "@/components/email/SubscribeWidget";
 import { getHomepageData } from "@/lib/api/home";
@@ -173,6 +174,9 @@ export default async function HomePage() {
         <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">
           <section id="main-left" className="flex-grow space-y-4">
             <LiveThreadBanner />
+            {/* Old-design leaderboard spot: below faces strip + live banner,
+                above the hero (Steve's circled position, 8/17). */}
+            <BelowHeaderLeaderboard onHomepage />
             {data.hero.post && (
               <Hero post={data.hero.post} season={seo.season} />
             )}

@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { Fragment, useState, useCallback, useRef, useEffect } from "react";
 import { getFeedUpdates } from "@/lib/api/feedUpdates";
 import { FeedHubUpdateCard } from "./FeedHubUpdateCard";
+import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { dateKey, dayLabel, shortDate } from "./feedHubName";
 import { LiveIndicatorToggle } from "@/components/feed-updates/LiveIndicatorToggle";
 import { useLiveFeedUpdates } from "@/hooks/useLiveFeedUpdates";
 import { mergeUpdates } from "@/lib/feedUpdatesLive";
 
 const PER_PAGE = 20;
+// In-thread ad weave: the old theme monetized this surface (between-feed-updates
+// slot + Freestar's comments_dynamic injector at 1-per-4 cards); the hub shipped
+// with zero. One slot per AD_EVERY cards, capped — counted across day groups.
+const AD_EVERY = 8;
+const AD_MAX = 4;
 const TABS = [
   { value: "", label: "All" },
   { value: "feed", label: "Feed" },
@@ -99,6 +105,23 @@ export function FeedHubThread({ initial }) {
     group.rows.push(row);
   }
 
+  // Number the woven ad slots in render order — group order, then row order,
+  // which can differ from `rows` order when same-day rows are non-consecutive.
+  // Counting ignores group boundaries. Recomputed fresh every render, so the
+  // same rows always produce the same slots.
+  const adNumberByRowId = new Map();
+  let cardCount = 0;
+  let adCount = 0;
+  for (const group of groups) {
+    for (const row of group.rows) {
+      cardCount += 1;
+      if (cardCount % AD_EVERY === 0 && adCount < AD_MAX) {
+        adCount += 1;
+        adNumberByRowId.set(row.id, adCount);
+      }
+    }
+  }
+
   return (
     <>
       <LiveIndicatorToggle isPremium={isPremium} live={live} onToggle={setLive} />
@@ -139,7 +162,21 @@ export function FeedHubThread({ initial }) {
               <span className="fuh-count"><b>{g.rows.length}</b> updates</span>
             </div>
             <div className="fuh-thread">
-              {g.rows.map((row) => <FeedHubUpdateCard key={row.id} update={row} />)}
+              {g.rows.map((row) => {
+                const adNumber = adNumberByRowId.get(row.id);
+                return (
+                  <Fragment key={row.id}>
+                    <FeedHubUpdateCard update={row} />
+                    {adNumber !== undefined && (
+                      <FreestarSlot
+                        placementName="bigbrotherjunkies_incontent_reusable"
+                        slotId={`hub_incontent_${adNumber}`}
+                        className="my-3"
+                      />
+                    )}
+                  </Fragment>
+                );
+              })}
             </div>
           </div>
         ))

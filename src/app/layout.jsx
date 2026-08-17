@@ -22,6 +22,7 @@ import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 import { FreestarSDKLoader } from "@/components/ads/FreestarSDKLoader";
 import { AdGateScript } from "@/components/ads/AdGateScript";
 import { TopLeaderboard } from "@/components/ads/TopLeaderboard";
+import { BelowHeaderLeaderboard } from "@/components/ads/BelowHeaderLeaderboard";
 import CountdownBanner from "@/components/CountdownBanner";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { SITE_URL, IS_PROD } from "@/lib/seo";
@@ -191,6 +192,9 @@ export default async function RootLayout({ children }) {
           <Header liveThread={liveThread} feedsLive={feedsLive} />
           {/* Event countdown — under the nav, above the page's spoiler bar; self-hides when target passes. */}
           <CountdownBanner enabled={countdownEnabled} label={countdownLabel} target={countdownTarget} />
+          {/* Below-header leaderboard — the old theme's leaderboard_atf spot
+              (#5 earner last season); in-flow, so no stack with the pushdown. */}
+          <BelowHeaderLeaderboard />
           <RoleSimulationBanner />
           <main id="main-content" className="flex-1">
             {children}
