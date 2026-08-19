@@ -46,7 +46,7 @@ export function AdProvider({
   const [pageAdKill, setPageAdKill] = useState(false);
   const pathname = usePathname();
   const isFirstRender = useRef(true);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const userEmail = user?.user_email;
 
   // Supporter detection runs client-side against hydrated auth state.
@@ -78,6 +78,23 @@ export function AdProvider({
   useEffect(() => {
     setIsPWA(detectPWA());
   }, []);
+
+  // Mirror the pre-paint gate's class once React knows the answer. AdGateScript
+  // sets .bbj-adfree only from the profile-cache cookie, so members recovered
+  // via the HttpOnly anchor (cookie wiped) never got it. It also covers any
+  // pubfig auto units that booted before we knew the visitor was a supporter —
+  // those can't be un-injected (see the ad-free-route reload above), so the
+  // CSS hides them. Never lifted while auth is still loading: that would
+  // re-expose ads for exactly the cached supporters the gate protects.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (!shouldShowAds && !previewMode) {
+      root.classList.add("bbj-adfree");
+    } else if (!authLoading) {
+      root.classList.remove("bbj-adfree");
+    }
+  }, [shouldShowAds, previewMode, authLoading]);
 
   // Ad-free routes only stay clean on a FRESH load — if the fan browsed other
   // pages first, the Freestar SDK is already booted and its auto-managed units

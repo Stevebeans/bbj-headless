@@ -132,6 +132,19 @@
     display: none !important;
   }
 
+  /* Safety net for pubfig's AUTO units (sticky footer, pushdown, interstitial).
+     They attach outside our markup, so the selectors above never covered them —
+     a supporter who lost the hydration race kept seeing all three while their
+     own slots stayed hidden (tomtomtom, 2026-08-18). Under .bbj-adfree nothing
+     ad-related should be visible at all, so hide anything pubfig/GPT injects. */
+  html.bbj-adfree [id^="freestar"],
+  html.bbj-adfree [class^="fs-"],
+  html.bbj-adfree [id^="google_ads_iframe"],
+  html.bbj-adfree iframe[id*="google_ads"],
+  html.bbj-adfree [id^="gpt-"] {
+    display: none !important;
+  }
+
   /* Freestar slot responsive heights */
   .freestar-slot {
     min-height: var(--ad-h);

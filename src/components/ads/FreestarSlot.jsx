@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useAds } from "@/context/AdContext";
+import { useAuth } from "@/context/AuthContext";
 import { getSlotConfig } from "@/config/ads";
 import { AdPlaceholder } from "./AdPlaceholder";
 
@@ -19,6 +20,18 @@ export function FreestarSlot({
   targeting,
 }) {
   const { shouldShowAds, isPWA, isAdBlocked, disabledPlacements, pwaSuppressed, previewMode } = useAds();
+  const { loading: authLoading } = useAuth();
+
+  // Hold the SDK until auth resolves. The Freestar React component self-injects
+  // pubfig (createElement("script") → a.pub.network/…/pubfig.min.js) the moment
+  // it mounts, which bypasses FreestarSDKLoader's auth gate. Before hydration
+  // `user` is null, so shouldShowAds is true for everyone — a supporter whose
+  // hydration loses that race boots the SDK, and pubfig's auto units (sticky
+  // footer, pushdown, interstitial) attach outside our markup where the
+  // .bbj-adfree CSS can't reach them (tomtomtom, 2026-08-18). The wrapper still
+  // renders so the CLS height reservation stays in the SSR HTML.
+  const holdSdk =
+    authLoading || (typeof window !== "undefined" && window.__bbjAdFree === true);
 
   const config = getSlotConfig(placementName);
   const desktopHeight = config.desktop?.height || 250;
@@ -80,12 +93,14 @@ export function FreestarSlot({
         "--ad-h-desktop": `${desktopHeight}px`,
       }}
     >
-      <FreestarAdSlot
-        publisher="bigbrotherjunkies-com"
-        placementName={placementName}
-        slotId={slotId}
-        targeting={targeting}
-      />
+      {!holdSdk && (
+        <FreestarAdSlot
+          publisher="bigbrotherjunkies-com"
+          placementName={placementName}
+          slotId={slotId}
+          targeting={targeting}
+        />
+      )}
     </div>
   );
 
