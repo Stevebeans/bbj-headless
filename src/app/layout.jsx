@@ -98,8 +98,14 @@ export const metadata = {
     card: "summary_large_image",
   },
   manifest: "/manifest.webmanifest",
+  // Explicit sizes/type so Google's favicon picker never has to guess.
+  // app/favicon.ico is a REAL multi-layer ICO (16/32/48 incl. the 48px Google
+  // requires) as of 2026-08-24 — the old file was a PNG renamed to .ico, which
+  // browsers sniff-forgive but Google's parser rejects (= the SERP globe).
   icons: {
-    icon: "/icons/icon-192.png",
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
     apple: "/icons/apple-touch-icon.png",
   },
   // Staging/preview/localhost are publicly reachable AND emit self-referential
