@@ -171,12 +171,12 @@ export default async function HomePage() {
             This is the staging server, so things may load slower than the real site. If something seems off, try refreshing a couple times to clear stale data. Performance won't be an issue on the live site.
           </div>
         )}
+        {/* Full container width (not inside main-left): leaderboard_top serves
+            up to 970x90, which would clip in the sidebar-constrained column. */}
+        <BelowHeaderLeaderboard onHomepage />
         <div className="flex w-full flex-col lg:flex-row lg:gap-4 dark:text-gray-200">
           <section id="main-left" className="flex-grow space-y-4">
             <LiveThreadBanner />
-            {/* Old-design leaderboard spot: below faces strip + live banner,
-                above the hero (Steve's circled position, 8/17). */}
-            <BelowHeaderLeaderboard onHomepage />
             {data.hero.post && (
               <Hero post={data.hero.post} season={seo.season} />
             )}

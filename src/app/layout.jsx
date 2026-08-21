@@ -21,7 +21,6 @@ import { getActiveLiveThread } from "@/lib/api/liveThread";
 import { RoleSimulationBanner } from "@/components/admin/RoleSimulationBanner";
 import { FreestarSDKLoader } from "@/components/ads/FreestarSDKLoader";
 import { AdGateScript } from "@/components/ads/AdGateScript";
-import { TopLeaderboard } from "@/components/ads/TopLeaderboard";
 import { BelowHeaderLeaderboard } from "@/components/ads/BelowHeaderLeaderboard";
 import CountdownBanner from "@/components/CountdownBanner";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
@@ -192,9 +191,10 @@ export default async function RootLayout({ children }) {
           pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
         >
           <SelfHealBeacon />
-          {/* Above-header leaderboard — replaces the removed Freestar pushdown.
-              Global (like the sticky footer); self-gates for ad-free users. */}
-          <TopLeaderboard />
+          {/* TopLeaderboard (above header) retired 8/22: same leaderboard_top
+              placement now renders BELOW the header via BelowHeaderLeaderboard —
+              in page flow, so no stack with the pushdown overlay. One mount per
+              page: this layout instance skips the homepage (see the component). */}
           <Header liveThread={liveThread} feedsLive={feedsLive} />
           {/* Event countdown — under the nav, above the page's spoiler bar; self-hides when target passes. */}
           <CountdownBanner enabled={countdownEnabled} label={countdownLabel} target={countdownTarget} />

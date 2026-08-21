@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useAds } from "@/context/AdContext";
 import { FreestarSlot } from "./FreestarSlot";
 
-const PLACEMENT = "bigbrotherjunkies_leaderboard_atf";
+const PLACEMENT = "bigbrotherjunkies_leaderboard_top";
 
 /**
  * Site-wide leaderboard BELOW the header, in page flow — the old theme's
@@ -48,7 +48,7 @@ export function BelowHeaderLeaderboard({ onHomepage = false }) {
         key={pathname}
         placementName={PLACEMENT}
         showBranding={false}
-        className="w-full max-w-3xl"
+        className="w-full max-w-5xl"
       />
     </div>
   );
