@@ -1,6 +1,7 @@
 // src/app/api/bean/chat/route.js
 // Ask the Bean — login-gated streaming chat endpoint with tier-based metering.
 import Anthropic from "@anthropic-ai/sdk";
+import { currentGameStateBlock } from "@/lib/bean/gameState";
 import { cookies } from "next/headers";
 import { after } from "next/server";
 import { verifyAuth } from "@/lib/api/verifyAuth";
@@ -189,10 +190,11 @@ export async function POST(request) {
   // Grounding is best-effort: if the vector store or card lookups fail (e.g. Upstash
   // misconfigured/unreachable), Bean still answers — just without site context —
   // instead of dying with the "nap" error. Logged so the degradation is visible.
-  const [matches, seasonCard, sharedData] = await Promise.all([
+  const [matches, seasonCard, sharedData, gameState] = await Promise.all([
     retrieve(question, { withText: true }).catch((e) => { console.error("bean grounding (retrieve) failed:", e); return []; }),
     buildAnswerCard(question).catch(() => null),
     beanFactsGet(token),
+    currentGameStateBlock(),
   ]);
   const card = seasonCard || (await buildPlayerCard(question, matches).catch(() => null));
   const grounding = card
@@ -223,6 +225,7 @@ export async function POST(request) {
     memorySummary,
     sharedFacts: sharedData.facts,
     justSavedSharedFact,
+    gameState,
   });
   const SOURCE_MIN_SCORE = 0.82;
   const sources =

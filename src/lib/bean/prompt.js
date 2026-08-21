@@ -23,7 +23,7 @@ function formatSource(m, i) {
  * @returns {{ system: Array, messages: Array }}
  */
 export function buildChatPrompt(question, matches = [], history = [], guide = VOICE_GUIDE, now = null, opts = {}) {
-  const { userName = "", memorySummary = "", sharedFacts = "", justSavedSharedFact = false } = opts;
+  const { userName = "", memorySummary = "", sharedFacts = "", justSavedSharedFact = false, gameState = "" } = opts;
   const firstName = (userName || "").trim().split(/\s+/)[0] || "";
 
   const system = [
@@ -35,7 +35,7 @@ export function buildChatPrompt(question, matches = [], history = [], guide = VO
     : "(no matching context found in the archive)";
 
   const guidance = matches.length
-    ? "The CONTEXT above is private background — the fan can't see it, so never mention it. Use it for factual claims, weave facts in as if you already knew them, and if it's irrelevant to what they said, ignore it and just talk."
+    ? "The CONTEXT above is private background — the fan can't see it, so never mention it. Use it for factual claims, weave facts in as if you already knew them, and if it's irrelevant to what they said, ignore it and just talk. Sources can be from PAST seasons — check each one's season/date before leaning on it, and NEVER answer a question about the current season's game (comp winners, votes, who's in the house) from a past-season source. For this week's results the CURRENT GAME STATE block is the authority; if neither it nor a current-season source has the answer, say you're not sure rather than guessing."
     : "No background notes for this one. Don't invent site facts — answer from general knowledge if you can, flag uncertainty in voice, or just say you don't have it. If they're only chatting, just chat.";
 
   // Greetings are a first-message thing only — mid-conversation the Bean should
@@ -67,12 +67,20 @@ export function buildChatPrompt(question, matches = [], history = [], guide = VO
     ? `You're talking to the real Steve (site owner). He just asked you to save a note for everyone, and it HAS been saved to your notes — briefly confirm it's saved for everyone (in voice, one line), then carry on.\n\n`
     : "";
 
+  const gameStateBlock = gameState
+    ? `CURRENT GAME STATE (authoritative — trust this over any retrieved source for this week's game):
+${gameState}
+
+`
+    : "";
+
   const content =
     timeLine +
     identityLine +
     savedLine +
     sharedBlock +
     memoryBlock +
+    gameStateBlock +
     `CONTEXT:\n${context}\n\n` +
     `${guidance}\n\n` +
     `FAN'S MESSAGE: ${question}`;

@@ -17,22 +17,7 @@ import StaffPickBadge from "./StaffPickBadge";
 import { editComment, deleteComment, pinComment, unpinComment } from "@/lib/api/comments";
 import { blockUser } from "@/lib/api/dm";
 
-// Legacy WPDiscuz comments are stored as HTML (<p>, <br>); the React form stores
-// plain text. Normalize any markup to plain text so both render consistently in
-// the plain-text (whitespace-pre-wrap) comment body. Pure string ops — SSR-safe.
-function htmlToText(input) {
-  if (typeof input !== "string" || !input.includes("<")) return input;
-  const text = input
-    .replace(/<\s*br\s*\/?\s*>/gi, "\n")
-    .replace(/<\/p\s*>\s*<p[^>]*>/gi, "\n\n")
-    .replace(/<\/?[^>]+>/g, "")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
-    .replace(/&(amp|lt|gt|quot|apos|nbsp);/gi, (_, e) =>
-      ({ amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " }[e.toLowerCase()])
-    );
-  return text.replace(/\n{3,}/g, "\n\n").trim();
-}
+import { htmlToText } from "@/lib/comments/htmlToText";
 
 export default function CommentCard({ comment, postId, depth = 0, onCommentAdded, onCommentDeleted, onLoginRequired, isHighlighted = false }) {
   const { user, isAuthenticated } = useAuth();
