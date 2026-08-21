@@ -944,6 +944,20 @@ export default function AdminSocialPage() {
       <div className={subTab === "pipeline" ? "" : "hidden"}>
       <QueueList title="⏳ In Queue" />
 
+      {/* ============================= PHOTO POST ============================= */}
+      {/* Gap filler: attach any image + a caption, post now or drop it into a
+          drip slot. Same DraftEditor the batch flow uses, mounted standalone. */}
+      <section className="rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-5">
+        <h2 className="text-base font-osw font-bold text-slate-800 dark:text-white mb-1">
+          Photo post
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+          Quick gap filler: paste or attach a picture from the day, add a caption, and either
+          post it now or drop it into the next open drip slot.
+        </p>
+        <DraftEditor source="manual_photo" />
+      </section>
+
       <TopPostsBoard />
 
       <XImportBox />
@@ -1314,6 +1328,15 @@ export default function AdminSocialPage() {
                   <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                     Post {idx + 1}
                     {post.covers && <> &middot; covers {post.covers} PT</>}
+                    {post.opener && (
+                      <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
+                        post.opener === "tease"
+                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                          : "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"
+                      }`}>
+                        {post.opener}
+                      </span>
+                    )}
                     {batchQueued[idx] && (
                       <span className="ml-2 text-emerald-600 dark:text-emerald-400">
                         {batchQueued[idx]}
@@ -1349,6 +1372,7 @@ export default function AdminSocialPage() {
                     <DraftEditor
                       initialBody={decodeEntities(post.content)}
                       source="batch"
+                      title={post.opener ? `AB:${post.opener}` : ""}
                       onSave={(result) => {
                         // Save Draft fires this too — only a scheduled row is
                         // actually in the drip.

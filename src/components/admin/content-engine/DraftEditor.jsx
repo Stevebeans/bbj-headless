@@ -23,6 +23,9 @@ export default function DraftEditor({
   initialBody = "",
   initialImage = null,
   source = "manual",
+  // Optional queue-row title. Batch posts pass their A/B opener tag
+  // ("AB:tease" / "AB:recap") so exports can join fb_post_id -> style.
+  title = "",
   onSave,
   onPost,
 }) {
@@ -145,6 +148,7 @@ export default function DraftEditor({
       await createContentDraft({
         body,
         source,
+        ...(title ? { title } : {}),
         status: "posted",
         content_type: alsoPublishBlog ? "both" : "facebook_post",
         target_page: selectedPage,
@@ -193,6 +197,7 @@ export default function DraftEditor({
       const result = await createContentDraft({
         body,
         source,
+        ...(title ? { title } : {}),
         status: "scheduled",
         scheduled_at: scheduledAt,
         content_type: alsoPublishBlog ? "both" : "facebook_post",
@@ -238,6 +243,7 @@ export default function DraftEditor({
       const result = await createContentDraft({
         body,
         source,
+        ...(title ? { title } : {}),
         status: "draft",
         content_type: alsoPublishBlog ? "both" : "facebook_post",
         target_page: selectedPage,
