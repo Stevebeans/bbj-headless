@@ -36,8 +36,11 @@ export const blockUser = (userId) =>
   authed("/dm/blocks", { method: "POST", body: JSON.stringify({ user_id: userId }) });
 export const unblockUser = (userId) =>
   authed("/dm/blocks", { method: "DELETE", body: JSON.stringify({ user_id: userId }) });
-export const reportThread = (threadId, messageId, note) =>
-  authed("/dm/report", { method: "POST", body: JSON.stringify({ thread_id: threadId, message_id: messageId, note }) });
+export const reportThread = (threadId, messageId, reason, note) =>
+  authed("/dm/report", {
+    method: "POST",
+    body: JSON.stringify({ thread_id: threadId, message_id: messageId, reason, note }),
+  });
 export const getDmPrivacy = () => authed("/dm/privacy");
 export const saveDmPrivacy = (privacy) =>
   authed("/dm/privacy", { method: "POST", body: JSON.stringify({ privacy }) });

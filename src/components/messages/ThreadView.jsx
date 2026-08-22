@@ -9,6 +9,7 @@ import {
   reportThread,
 } from "@/lib/api/dm";
 import Avatar from "./Avatar";
+import DmReportModal from "./DmReportModal";
 
 // Server timestamps are UTC 'Y-m-d H:i:s' (no zone marker); optimistic rows use
 // a real ISO string. Normalize both before parsing so times render in the
@@ -37,7 +38,8 @@ export default function ThreadView({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [working, setWorking] = useState(false); // block/report in flight
+  const [working, setWorking] = useState(false); // block in flight
+  const [reportTarget, setReportTarget] = useState(null); // null | { messageId: number|null }
   const [hasMore, setHasMore] = useState(false); // older history beyond the first page
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -259,23 +261,17 @@ export default function ThreadView({
     }
   };
 
-  const handleReport = async () => {
+  const openReport = (messageId) => {
     setMenuOpen(false);
     if (!threadIdRef.current) {
       showToast?.("Send a message first, then you can report.", "error");
       return;
     }
-    const note = prompt("Add a note for Steve (optional):", "");
-    if (note === null) return; // cancelled
-    setWorking(true);
-    try {
-      await reportThread(threadIdRef.current, null, note);
-      showToast?.("Reported. Steve will take a look.");
-    } catch (err) {
-      showToast?.(err.message || "Could not report", "error");
-    } finally {
-      setWorking(false);
-    }
+    setReportTarget({ messageId });
+  };
+
+  const submitReport = async (reason, note) => {
+    await reportThread(threadIdRef.current, reportTarget?.messageId ?? null, reason, note);
   };
 
   return (
@@ -313,7 +309,7 @@ export default function ThreadView({
           {menuOpen && (
             <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 z-20 overflow-hidden">
               <button
-                onClick={handleReport}
+                onClick={() => openReport(null)}
                 className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-slate-700"
               >
                 Report conversation
@@ -328,6 +324,14 @@ export default function ThreadView({
           )}
         </div>
       </div>
+
+      <DmReportModal
+        isOpen={reportTarget !== null}
+        onClose={() => setReportTarget(null)}
+        messageId={reportTarget?.messageId ?? null}
+        otherName={other?.name}
+        onSubmit={submitReport}
+      />
 
       {/* Messages. The inner wrapper bottom-anchors short conversations
           (justify-end) so the newest message always sits directly above the
@@ -360,7 +364,7 @@ export default function ThreadView({
             const mine = m.sender_id === me;
             const pending = String(m.id).startsWith("tmp-");
             return (
-              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+              <div key={m.id} className={`group flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[78%] sm:max-w-[70%] ${mine ? "items-end" : "items-start"} flex flex-col`}>
                   <div
                     className={`px-3.5 py-2 rounded-2xl whitespace-pre-wrap break-words text-sm ${
@@ -375,6 +379,16 @@ export default function ThreadView({
                     {pending ? "Sending..." : fmtTime(m.created_at)}
                   </span>
                 </div>
+                {!mine && !pending && (
+                  <button
+                    onClick={() => openReport(m.id)}
+                    className="self-center ml-1 p-1.5 rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 transition-opacity"
+                    aria-label="Report this message"
+                    title="Report to moderators"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M3 2a1 1 0 0 1 1 1v14a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Zm3 1h9.5a.5.5 0 0 1 .4.8L14 7l1.9 3.2a.5.5 0 0 1-.4.8H6V3Z"/></svg>
+                  </button>
+                )}
               </div>
             );
           })}
