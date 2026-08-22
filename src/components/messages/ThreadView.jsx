@@ -326,6 +326,7 @@ export default function ThreadView({
       </div>
 
       <DmReportModal
+        key={reportTarget ? (reportTarget.messageId ?? "thread") : "closed"}
         isOpen={reportTarget !== null}
         onClose={() => setReportTarget(null)}
         messageId={reportTarget?.messageId ?? null}
