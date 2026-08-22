@@ -128,11 +128,20 @@ function SocialIcon({ className }) {
   );
 }
 
+function ShieldIcon({ className }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "Overview", href: "/admin", icon: HomeIcon, permission: null },
   { id: "posts", label: "Posts", href: "/admin/posts", icon: DocumentTextIcon, permission: "blog_review" },
   { id: "feed-updates", label: "Feed Updates", href: "/admin/feed-updates", icon: FeedIcon, permission: "feed_updates" },
   { id: "comments", label: "Comments", href: "/admin/comments", icon: ChatIcon, permission: "comment_moderation" },
+  { id: "conduct", label: "Conduct", href: "/admin/conduct", icon: ShieldIcon, permission: "conduct_moderation" },
   { id: "players", label: "Players", href: "/admin/players", icon: PlayerIcon, permission: "player_management" },
   { id: "seasons", label: "Seasons", href: "/admin/seasons", icon: SeasonIcon, permission: "season_management" },
   { id: "weekly", label: "Weekly", href: "/admin/weekly", icon: WeekIcon, permission: "weekly_editing" },
