@@ -62,6 +62,9 @@ export default function EditorPage({ postId = null }) {
   const [liveStart, setLiveStart] = useState(0);
   const [liveEnd, setLiveEnd] = useState(0);
 
+  // Ghost byline (admin-only): publish under the BennyBronx account.
+  const [ghostAuthor, setGhostAuthor] = useState(false);
+
   // UI state
   const [saveStatus, setSaveStatus] = useState("idle");
   const [lastSaved, setLastSaved] = useState(null);
@@ -77,15 +80,18 @@ export default function EditorPage({ postId = null }) {
   const isFirstSaveRef = useRef(!postId);
   const lastSavedLenRef = useRef(0);       // content length at last successful save
   const hasLoadedRef = useRef(!postId);    // existing posts must load before any save
-  const stateRef = useRef({ title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData, liveUpdates, liveStart, liveEnd });
+  const stateRef = useRef({ title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData, liveUpdates, liveStart, liveEnd, ghostAuthor });
   const [pendingContent, setPendingContent] = useState(null); // For editor content loading timing (#4)
 
   // Keep stateRef in sync with latest state values
   useEffect(() => {
-    stateRef.current = { title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData, liveUpdates, liveStart, liveEnd };
-  }, [title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData, liveUpdates, liveStart, liveEnd]);
+    stateRef.current = { title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData, liveUpdates, liveStart, liveEnd, ghostAuthor };
+  }, [title, slug, categoryIds, featuredImageId, metaDescription, currentPostId, cropData, liveUpdates, liveStart, liveEnd, ghostAuthor]);
 
   const canPublish = hasPermission("blog_publishing") || hasPermission("blog_review");
+  // Server enforces this independently (manage_options); admin_settings is the
+  // admin-only permission key, so in practice this is Steve.
+  const canGhost = hasPermission("admin_settings");
 
   // editorProps callbacks are captured once at editor creation — route paste/
   // drop images through refs so they always hit the latest handler/editor.
@@ -193,6 +199,7 @@ export default function EditorPage({ postId = null }) {
     setLiveUpdates(!!data.live_updates);
     setLiveStart(Number(data.live_start) || 0);
     setLiveEnd(Number(data.live_end) || 0);
+    setGhostAuthor(!!data.ghost_author);
     setScheduledFor(data.scheduled_for || null);
     if (editor && data.content) {
       editor.commands.setContent(data.content);
@@ -290,7 +297,7 @@ export default function EditorPage({ postId = null }) {
     isSavingRef.current = true;
     setSaveStatus("saving");
 
-    const { title: t, slug: s, categoryIds: cats, featuredImageId: imgId, metaDescription: meta, currentPostId: pid, cropData: cd, liveUpdates: lu, liveStart: ls, liveEnd: le } = stateRef.current;
+    const { title: t, slug: s, categoryIds: cats, featuredImageId: imgId, metaDescription: meta, currentPostId: pid, cropData: cd, liveUpdates: lu, liveStart: ls, liveEnd: le, ghostAuthor: ga } = stateRef.current;
 
     const postData = {
       title: t || "Untitled Draft",
@@ -303,6 +310,7 @@ export default function EditorPage({ postId = null }) {
       live_updates: !!lu,
       live_start: Number(ls) || 0,
       live_end: Number(le) || 0,
+      ...(canGhost ? { ghost_author: ga ? 1 : 0 } : {}),
     };
 
     if (shouldBlockAutoSave({
@@ -341,7 +349,7 @@ export default function EditorPage({ postId = null }) {
     } finally {
       isSavingRef.current = false;
     }
-  }, [editor, router]);
+  }, [editor, router, canGhost]);
 
   // Manual save
   async function handleManualSave() {
@@ -619,6 +627,12 @@ export default function EditorPage({ postId = null }) {
       setLiveUpdates(!!lu);
       setLiveStart(Number(ls) || 0);
       setLiveEnd(Number(le) || 0);
+      scheduleSave();
+    },
+    canGhost,
+    ghostAuthor,
+    onGhostChange: (next) => {
+      setGhostAuthor(!!next);
       scheduleSave();
     },
   };

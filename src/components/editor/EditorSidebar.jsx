@@ -19,6 +19,7 @@ export default function EditorSidebar({
   checklist, reviewNote,
   onSave, onTitleChange, isEditMode,
   liveUpdates, liveStart, liveEnd, onLiveUpdatesChange,
+  canGhost, ghostAuthor, onGhostChange,
   postStatus, scheduledFor, canSchedule, scheduleReady, onSchedule, onUnschedule,
   postId, onRestoreRevision,
   onInsertSnippet,
@@ -57,6 +58,10 @@ export default function EditorSidebar({
           onLiveUpdatesChange?.(next);
         }}
       />
+
+      {canGhost && (
+        <GhostBylineBlock checked={ghostAuthor || false} onChange={onGhostChange} />
+      )}
 
       <div>
         <label className="text-xs font-semibold text-secondary-500 uppercase tracking-wider">
@@ -332,6 +337,34 @@ function LiveUpdatesBlock({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Admin-only ghost byline: the post publishes under the BennyBronx account
+ * instead of the logged-in author (AI-drafted posts Steve reviewed but
+ * didn't write). The swap happens server-side at publish time.
+ */
+function GhostBylineBlock({ checked, onChange }) {
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+      <label className="flex items-start gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={!!checked}
+          onChange={(e) => onChange?.(e.target.checked)}
+          className="mt-0.5 rounded border-slate-300"
+        />
+        <span>
+          <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+            Publish as BennyBronx
+          </span>
+          <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            Ghost byline. The author swaps when the post goes live; uncheck and update to take it back.
+          </span>
+        </span>
+      </label>
     </div>
   );
 }
