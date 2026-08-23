@@ -1045,16 +1045,18 @@ function PremiumTab({ settings, loading, showToast }) {
   };
 
   // Which switches to offer for the member's current (tier, plan_type).
+  // Season Pass (annual) is hidden mid-season: existing annual subs keep it,
+  // but it's no longer offered as a switch target (server rejects it too).
   const switchTargetsFor = (sub) => {
     if (!sub) return [];
     const tier = sub.tier || "supporter";
     if (tier === "full_bean") {
       return sub.plan_type === "monthly"
         ? ["full_bean_annual", "monthly"]
-        : ["full_bean_monthly", "annual"];
+        : ["full_bean_monthly"];
     }
     return sub.plan_type === "monthly"
-      ? ["annual", "full_bean_monthly", "full_bean_annual"]
+      ? ["full_bean_monthly", "full_bean_annual"]
       : ["monthly", "full_bean_annual"];
   };
 
