@@ -54,12 +54,19 @@ export async function generateMetadata({ params }) {
         modifiedTime: content.modified || content.date,
         authors: [content.author?.name || "Big Brother Junkies"],
       }),
+      // Declare the image's REAL dimensions, never a hardcoded guess: a wrong
+      // ratio makes Facebook/X mis-crop the card. When WP doesn't report them,
+      // omit the fields entirely and let crawlers measure the file themselves.
       images: content.featuredImage
         ? [
             {
               url: content.featuredImage,
-              width: 1200,
-              height: 630,
+              ...(content.featuredImageWidth && content.featuredImageHeight
+                ? {
+                    width: content.featuredImageWidth,
+                    height: content.featuredImageHeight,
+                  }
+                : {}),
               alt: cleanTitle,
             },
           ]

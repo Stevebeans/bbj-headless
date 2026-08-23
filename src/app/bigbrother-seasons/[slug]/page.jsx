@@ -59,12 +59,13 @@ export async function generateMetadata({ params }) {
       description,
       url: `${SITE_URL}/bigbrother-seasons/${slug}`,
       type: "website",
+      // No width/height: the season API doesn't report the cover's real pixel
+      // size, and declaring a guessed ratio makes social cards mis-crop.
+      // Crawlers measure the file themselves when the fields are absent.
       images: season.cover_image
         ? [
             {
               url: season.cover_image,
-              width: 1200,
-              height: 630,
               alt: season.name,
             },
           ]

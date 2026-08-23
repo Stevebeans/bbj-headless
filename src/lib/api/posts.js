@@ -74,6 +74,10 @@ function transformPost(wpPost) {
       avatar: author?.avatar_urls?.["96"] || "",
     },
     featuredImage: featuredMedia?.source_url || null,
+    // Real pixel dimensions from WP. og:image:width/height must describe the
+    // actual file — a wrong ratio makes Facebook/X mis-crop the share card.
+    featuredImageWidth: featuredMedia?.media_details?.width || null,
+    featuredImageHeight: featuredMedia?.media_details?.height || null,
     categories: categories?.map((cat) => cat.name) || [],
     categoryIds: categories?.map((cat) => cat.id) || [],
     commentCount: wpPost.comment_count || 0,
@@ -186,6 +190,8 @@ function transformPage(wpPage) {
       avatar: author?.avatar_urls?.["96"] || "",
     },
     featuredImage: featuredMedia?.source_url || null,
+    featuredImageWidth: featuredMedia?.media_details?.width || null,
+    featuredImageHeight: featuredMedia?.media_details?.height || null,
     type: "page",
     hideAds: wpPage.hide_ads || false,
     adsUnsafe: wpPage.ads_unsafe || false,
