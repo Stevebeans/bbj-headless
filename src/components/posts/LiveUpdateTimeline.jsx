@@ -13,8 +13,12 @@ import Link from "next/link";
 // slots sit between real content (short threads keep the clean layout).
 // Rationale: the daily-thread timeline is the site's longest-dwell surface and
 // previously carried zero in-content display (2026-08-16 CPM/density review).
-const AD_INTERVAL = 12;
-const AD_MAX_SLOTS = 5;
+// 2026-08-24: interval 12→4 per Freestar Yield's own cadence recommendation
+// ("every 4-5 updates on desktop, 3-4 on mobile") — this weave becomes the
+// single in-content unit on live-feed templates; Freestar is disabling their
+// auto-injected articles_dynamic here so ads stop rendering back-to-back.
+const AD_INTERVAL = 4;
+const AD_MAX_SLOTS = 12;
 const AD_MIN_UPDATES = 14;
 
 /**

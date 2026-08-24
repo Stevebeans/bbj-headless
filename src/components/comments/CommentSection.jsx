@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getComments } from "@/lib/api/comments";
 import CommentForm from "./CommentForm";
@@ -8,6 +8,18 @@ import CommentCard from "./CommentCard";
 import SubscribeBell from "../posts/SubscribeBell";
 import useUserFilters from "@/hooks/useUserFilters";
 import { pruneBlocked } from "@/lib/comments/filterTree";
+import { FreestarSlot } from "@/components/ads/FreestarSlot";
+
+// Comment in-content ads: one slot after every AD_INTERVAL-th top-level
+// comment, capped per page, and only when the page has enough comments that
+// slots sit between real conversation. This placement was auto-injected by
+// Freestar's SDK on the old WPDiscuz markup (every ~4th comment); the React
+// rebuild broke their injector's target so it served nothing all season —
+// now it's a manual weave we control (2026-08-24 yield review). Comments are
+// ~70% of page text, so this is the site's largest in-content surface.
+const AD_INTERVAL = 4;
+const AD_MIN_COMMENTS = 8;
+const AD_MAX_SLOTS = 8;
 
 // Inner component that uses useSearchParams
 function CommentSectionInner({ postId, initialCommentCount = 0 }) {
@@ -186,17 +198,37 @@ function CommentSectionInner({ postId, initialCommentCount = 0 }) {
       {/* Comments List */}
       {!loading && visibleComments.length > 0 && (
         <div className="divide-y divide-slate-200 dark:divide-slate-700">
-          {visibleComments.map((comment) => (
-            <CommentCard
-              key={comment.id}
-              comment={comment}
-              postId={postId}
-              onCommentAdded={handleNewComment}
-              onCommentDeleted={handleCommentDeleted}
-              onLoginRequired={handleLoginRequired}
-              isHighlighted={highlightedCommentId === comment.id}
-            />
-          ))}
+          {visibleComments.map((comment, idx) => {
+            // Slot after every AD_INTERVAL-th top-level comment (replies live
+            // inside CommentCard and don't count). Never after the last one.
+            // FreestarSlot self-gates for supporters/ad-free members.
+            const adNumber = (idx + 1) / AD_INTERVAL;
+            const showAdAfter =
+              visibleComments.length >= AD_MIN_COMMENTS &&
+              (idx + 1) % AD_INTERVAL === 0 &&
+              adNumber <= AD_MAX_SLOTS &&
+              idx < visibleComments.length - 1;
+            return (
+              <Fragment key={comment.id}>
+                <CommentCard
+                  comment={comment}
+                  postId={postId}
+                  onCommentAdded={handleNewComment}
+                  onCommentDeleted={handleCommentDeleted}
+                  onLoginRequired={handleLoginRequired}
+                  isHighlighted={highlightedCommentId === comment.id}
+                />
+                {showAdAfter && (
+                  <div className="py-4" data-ad>
+                    <FreestarSlot
+                      placementName="bigbrotherjunkies_comments_dynamic_incontent"
+                      slotId={`comments_incontent_${adNumber}`}
+                    />
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
         </div>
       )}
 

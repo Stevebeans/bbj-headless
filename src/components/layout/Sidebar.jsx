@@ -97,11 +97,15 @@ export function Sidebar({ showAds = true, sticky = true, children }) {
         )}
       </div>
 
+      {/* Sticky Rail Ad — ABOVE the widgets on purpose. The whole aside is
+          sticky, so anything below tall widgets sits permanently under the
+          fold of the sticky container and never enters the viewport
+          (Freestar Yield finding, 2026-08-24: siderail_right_2 was the rail's
+          last child and earned $0.60 CPM for exactly that reason). */}
+      {showAds && <StickyAdSlot />}
+
       {/* Injected children (e.g. home page widgets) */}
       {children}
-
-      {/* Sticky Rail Ad */}
-      {showAds && <StickyAdSlot />}
     </aside>
   );
 }

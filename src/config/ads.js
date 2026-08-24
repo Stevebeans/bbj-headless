@@ -6,9 +6,11 @@
  */
 
 // Placements that Freestar auto-manages (SDK injects these — no divs from us)
+// NOTE: comments_dynamic_incontent moved to a MANUAL weave in CommentSection
+// on 2026-08-24 — Freestar's injector never found the React comment DOM and
+// the placement served nothing all season. Freestar notified; don't re-add.
 export const AUTO_MANAGED_PLACEMENTS = [
   "bigbrotherjunkies_articles_dynamic_incontent",
-  "bigbrotherjunkies_comments_dynamic_incontent",
   "bigbrotherjunkies_sticky_footer",
   "bigbrotherjunkies_sticky_pushdown",
   "bigbrotherjunkies_google_interstitial",
@@ -34,6 +36,13 @@ export const adSlots = {
     desktop: { width: 728, height: 90 },
     mobile: { width: 320, height: 100 },
     label: "Leaderboard ATF",
+  },
+  bigbrotherjunkies_comments_dynamic_incontent: {
+    // Woven between top-level comments (CommentSection). Same footprint as
+    // incontent_reusable so CLS reservation matches what pubOS serves.
+    desktop: { width: 336, height: 280 },
+    mobile: { width: 300, height: 250 },
+    label: "Comments In-Content",
   },
   bigbrotherjunkies_incontent_reusable: {
     desktop: { width: 336, height: 280 },
