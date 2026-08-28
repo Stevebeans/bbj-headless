@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePremium } from "@/hooks/usePremium";
 import { fetchRecentFeedUpdates } from "@/lib/api/feedUpdates";
 
-const POLL_INTERVAL_MS = 30_000;
+const POLL_INTERVAL_MS = 60_000;
 
 /**
  * Premium live-feed polling + optimistic composer inserts.

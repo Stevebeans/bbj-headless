@@ -12,7 +12,7 @@ import { maybeRefreshToken } from "@/lib/auth/refresh";
  *
  * @param {number} intervalMs - Heartbeat interval in milliseconds (default: 2 minutes)
  */
-export function useSessionHeartbeat(intervalMs = 2 * 60 * 1000) {
+export function useSessionHeartbeat(intervalMs = 5 * 60 * 1000) {
   const { isAuthenticated } = useAuth();
   const intervalRef = useRef(null);
 

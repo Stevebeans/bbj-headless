@@ -27,7 +27,7 @@ export default function MessagesIcon() {
   // visible, and refresh once on refocus so the badge is fresh the moment the
   // user looks. See CLAUDE.md "Caching Comes First". (Anonymous users never
   // reach the server — no token.)
-  const POLL_INTERVAL_MS = 60000; // 60s while visible
+  const POLL_INTERVAL_MS = 180000; // 3 min while visible (widened 8/28, eviction-night load shed)
   useEffect(() => {
     if (!isAuthenticated) return;
 
