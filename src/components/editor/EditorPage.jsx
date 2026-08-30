@@ -21,6 +21,7 @@ import { createPost, updatePost, changePostStatus, getPost, generateMeta, restor
 import { useAuth } from "@/context/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { shouldBlockAutoSave } from "@/lib/editor/saveGuard";
+import { consumePrefill } from "@/lib/editor/draftHandoff";
 
 // Save-toast appearance, keyed by save status. Anything unrecognized (e.g.
 // "idle", which never shows a toast) falls back to the "saved" look.
@@ -185,6 +186,20 @@ export default function EditorPage({ postId = null }) {
       loadPost(postId);
     }
   }, [postId]);
+
+  // New-post prefill from the Social page's "Open in editor" handoff
+  // (blog recap → title + body). One-shot: consumePrefill deletes the
+  // payload, so a refresh lands on a normal blank editor.
+  useEffect(() => {
+    if (postId) return;
+    const prefill = consumePrefill();
+    if (!prefill) return;
+    if (prefill.title) setTitle(prefill.title);
+    // The pendingContent effect applies this once the editor exists and
+    // re-baselines the save guard, same as loading an existing post.
+    setPendingContent(prefill.html);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function applyPostData(data) {
     setTitle(data.title);

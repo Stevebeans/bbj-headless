@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { adminFetch } from "@/lib/api/admin";
+import { splitBlogDraft, draftBodyToHtml, storePrefill } from "@/lib/editor/draftHandoff";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import TopPostsBoard from "@/components/admin/social/TopPostsBoard";
@@ -186,6 +188,19 @@ export default function AdminSocialPage() {
   const [draft, setDraft] = useState(null);
   const [draftError, setDraftError] = useState(null);
   const [draftCopied, setDraftCopied] = useState(false);
+  const router = useRouter();
+
+  const draftText = draft ? decodeEntities(draft.content) : "";
+
+  // Blog drafts lead with a "Big Brother N Spoilers:" headline (BLOG_PROMPT);
+  // split it off so the card shows it as a title and the editor handoff can
+  // prefill both fields. Non-blog drafts pass through with title "".
+  const blogSplit = draft?.kind === "blog" ? splitBlogDraft(draftText) : { title: "", body: draftText };
+
+  function openDraftInEditor() {
+    const ok = storePrefill({ title: blogSplit.title, html: draftBodyToHtml(blogSplit.body) });
+    if (ok) router.push("/editor/new");
+  }
 
   // Summary history (Digest / Facebook / Blog), lives in the Drafts card
   const [historyKind, setHistoryKind] = useState("digest");
@@ -1401,15 +1416,28 @@ export default function AdminSocialPage() {
                 {draft.kind} &middot; {fmtTime(draft.window_from)} &rarr; {fmtTime(draft.window_to)} &middot;{" "}
                 {draft.post_count} posts
               </span>
-              <button
-                onClick={() => copyToClipboard(decodeEntities(draft.content), setDraftCopied)}
-                className="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                {draftCopied ? "Copied" : "Copy"}
-              </button>
+              <div className="flex items-center gap-2">
+                {draft.kind === "blog" && (
+                  <button
+                    onClick={openDraftInEditor}
+                    className="px-2 py-1 text-xs font-medium rounded-lg bg-primary-500 text-white hover:bg-primary-600"
+                  >
+                    Open in editor
+                  </button>
+                )}
+                <button
+                  onClick={() => copyToClipboard(decodeEntities(draft.content), setDraftCopied)}
+                  className="px-2 py-1 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  {draftCopied ? "Copied" : "Copy"}
+                </button>
+              </div>
             </div>
+            {blogSplit.title && (
+              <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">{blogSplit.title}</div>
+            )}
             <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-              {renderBold(decodeEntities(draft.content))}
+              {renderBold(blogSplit.title ? blogSplit.body : draftText)}
             </div>
           </div>
         )}
