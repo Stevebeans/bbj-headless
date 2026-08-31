@@ -64,7 +64,6 @@ export function SeasonEditForm({ season, players: initialPlayers, slug, showHead
     abbreviation: season.abbreviation || "",
     start_date: season.start_date || "",
     end_date: season.end_date || "",
-    total_days: season.total_days || "",
     banner_image: season.banner_image || "",
     cover_image: season.cover_image || "",
     winner_id: season.winner_id || "",

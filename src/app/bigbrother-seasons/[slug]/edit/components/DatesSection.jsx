@@ -3,7 +3,19 @@
 import { FormField, FormSection } from "@/components/forms";
 
 /**
- * Season dates: start, end, total days
+ * Inclusive day count, matching the API's convention everywhere on the site
+ * (premiere = Day 1, so July 7 -> Oct 1 is 87, not 86). Returns "" until both
+ * dates are set and valid.
+ */
+function totalDaysBetween(start, end) {
+  if (!start || !end) return "";
+  const ms = new Date(end) - new Date(start);
+  if (Number.isNaN(ms) || ms < 0) return "";
+  return Math.round(ms / 86400000) + 1;
+}
+
+/**
+ * Season dates: start, end, auto-calculated total days
  */
 export function DatesSection({ values, errors, getFieldProps }) {
   return (
@@ -26,13 +38,17 @@ export function DatesSection({ values, errors, getFieldProps }) {
           {...getFieldProps("end_date")}
         />
 
+        {/* Display-only: every API response derives total_days from the
+            dates (inclusive), so this field is never stored or submitted. */}
         <FormField
           label="Total Days"
           type="number"
-          error={errors.total_days}
-          {...getFieldProps("total_days")}
-          placeholder="99"
-          helpText="Expected season length"
+          name="total_days_display"
+          value={totalDaysBetween(values.start_date, values.end_date)}
+          onChange={() => {}}
+          disabled
+          placeholder="—"
+          helpText="Auto-calculated: premiere = Day 1"
         />
       </div>
     </FormSection>
