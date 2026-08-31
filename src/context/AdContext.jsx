@@ -159,7 +159,26 @@ export function AdProvider({
     }).catch(() => {
       // SDK not loaded (ad-blocker or network issue) — non-critical
     });
-  }, [pathname, shouldShowAds]);
+
+    // High-impact unit re-init (Freestar PSM, 8/31): the SDK does not reload
+    // Sticky Footer / Pushdown on virtual page changes, so both went dead
+    // after the first client-side navigation. Per their docs, delete + new
+    // per placement on every route change. Queue survives the SDK not being
+    // booted yet, and delete of a not-yet-rendered unit is a no-op.
+    const fs = (window.freestar = window.freestar || {});
+    fs.queue = fs.queue || [];
+    fs.queue.push(function () {
+      [
+        ["bigbrotherjunkies_sticky_footer", "StickyFooter"],
+        ["bigbrotherjunkies_sticky_pushdown", "Pushdown"],
+      ].forEach(([placement, kind]) => {
+        if (disabledPlacements.includes(placement)) return;
+        if (isPWA && pwaSuppressed.includes(placement)) return;
+        window.freestar[`delete${kind}`]?.(placement);
+        window.freestar[`new${kind}`]?.(placement);
+      });
+    });
+  }, [pathname, shouldShowAds, isPWA, disabledPlacements, pwaSuppressed]);
 
   // HEM email passthrough — pass logged-in user's email to Freestar for identity matching
   useEffect(() => {
