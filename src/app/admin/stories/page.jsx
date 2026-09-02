@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getStoriesSettings } from "@/lib/api/stories";
@@ -15,6 +15,14 @@ const VIEWS = [
 ];
 
 export default function StoriesAdminPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-slate-500">Loading…</div>}>
+      <StoriesAdminPageInner />
+    </Suspense>
+  );
+}
+
+function StoriesAdminPageInner() {
   const { hasPermission, loading: permLoading } = usePermissions();
   const router = useRouter();
   const params = useSearchParams();

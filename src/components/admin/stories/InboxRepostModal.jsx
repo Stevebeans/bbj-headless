@@ -7,6 +7,7 @@ import { getFacebookPages, getContentSlots } from "@/lib/api/admin";
 export default function InboxRepostModal({ item, onClose, onQueued }) {
   const [caption, setCaption] = useState("");
   const [credit, setCredit] = useState("");
+  const [creditHandle, setCreditHandle] = useState("");
   const [pages, setPages] = useState([]);
   const [pageId, setPageId] = useState("");
   const [slots, setSlots] = useState([]);
@@ -15,7 +16,7 @@ export default function InboxRepostModal({ item, onClose, onQueued }) {
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
-    getInboxPrefill(item.id).then((res) => { setCaption(res.caption || ""); setCredit(res.credit || ""); }).catch((e) => setStatus({ ok: false, msg: e.message }));
+    getInboxPrefill(item.id).then((res) => { setCaption(res.caption || ""); setCredit(res.credit || ""); setCreditHandle(res.credit_handle || ""); }).catch((e) => setStatus({ ok: false, msg: e.message }));
     getFacebookPages().then((res) => {
       const withToken = (res.pages || []).filter((p) => p.has_token);
       setPages(withToken);
@@ -24,8 +25,7 @@ export default function InboxRepostModal({ item, onClose, onQueued }) {
     getContentSlots().then((res) => setSlots(res.slots || [])).catch(() => setSlots([]));
   }, [item.id]);
 
-  const creditHandle = credit.match(/@[\w.]+|u\/[\w-]+/)?.[0] || "";
-  const hasCredit = creditHandle ? caption.toLowerCase().includes(creditHandle.toLowerCase()) : true;
+  const hasCredit = creditHandle ? caption.toLowerCase().includes(creditHandle.toLowerCase()) : false;
 
   const queue = async () => {
     if (!pageId || !hasCredit) return;
