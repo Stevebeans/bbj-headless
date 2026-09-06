@@ -1,8 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   findOwnBuildAsset,
-  probeUrl,
-  isBuildGone,
+  isNewerBuildLive,
   installStaleHandlers,
 } from "./buildWatchdog";
 
@@ -33,30 +32,28 @@ describe("findOwnBuildAsset", () => {
   });
 });
 
-describe("probeUrl", () => {
-  it("adds a unique cache-busting param so Cloudflare cannot answer from cache", () => {
-    const url = probeUrl(WEBPACK_SRC, 1000);
-    expect(url.startsWith(WEBPACK_SRC + "&bbjprobe=")).toBe(true);
-    expect(probeUrl(WEBPACK_SRC, 1000)).not.toBe(probeUrl(WEBPACK_SRC, 2000));
-  });
-});
+describe("isNewerBuildLive", () => {
+  const html = (dpl) => `<html><script src="/_next/static/chunks/webpack-abc.js?dpl=${dpl}"></script></html>`;
 
-describe("isBuildGone", () => {
-  it("is true only when the origin answers 404 for our own runtime", async () => {
-    const fetchFn = vi.fn(async () => ({ status: 404 }));
-    expect(await isBuildGone(fetchFn, WEBPACK_SRC, 5)).toBe(true);
+  it("is true when the homepage now carries a different deployment id", async () => {
+    const fetchFn = vi.fn(async () => ({ ok: true, text: async () => html("dpl_NEW999") }));
+    expect(await isNewerBuildLive(fetchFn, "dpl_OLD123")).toBe(true);
     const [url, init] = fetchFn.mock.calls[0];
-    expect(url).toContain("bbjprobe=");
-    expect(init.cache).toBe("no-store");
+    expect(url).toBe("/");
+    expect(init.credentials).toBe("omit");
+    // Must ride Cloudflare's cached copy (zero Vercel cost) - never cache-bust.
+    expect(init.cache).not.toBe("no-store");
+    expect(url).not.toContain("?");
   });
 
-  it("is false while the build is still served", async () => {
-    expect(await isBuildGone(async () => ({ status: 200 }), WEBPACK_SRC, 5)).toBe(false);
+  it("is false while the homepage still serves our build", async () => {
+    expect(await isNewerBuildLive(async () => ({ ok: true, text: async () => html("dpl_OLD123") }), "dpl_OLD123")).toBe(false);
   });
 
-  it("treats network failures and other statuses as not-stale (never reload on a blip)", async () => {
-    expect(await isBuildGone(async () => { throw new Error("offline"); }, WEBPACK_SRC, 5)).toBe(false);
-    expect(await isBuildGone(async () => ({ status: 503 }), WEBPACK_SRC, 5)).toBe(false);
+  it("treats network failures, errors, and pages without a deployment id as not-stale", async () => {
+    expect(await isNewerBuildLive(async () => { throw new Error("offline"); }, "dpl_OLD123")).toBe(false);
+    expect(await isNewerBuildLive(async () => ({ ok: false, text: async () => html("dpl_NEW999") }), "dpl_OLD123")).toBe(false);
+    expect(await isNewerBuildLive(async () => ({ ok: true, text: async () => "<html>maintenance</html>" }), "dpl_OLD123")).toBe(false);
   });
 });
 

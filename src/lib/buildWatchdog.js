@@ -7,37 +7,38 @@
 // 2026-09-05: homepage tab open for days — the feed poller keeps it fresh, so
 // nothing ever prompted a reload).
 //
-// Instead of waiting for the crash, probe our own webpack runtime with a
-// cache-busting param every few minutes. Vercel keeps serving it while our
-// deployment is inside the skew window and answers 404 once it is not. From
-// then on, same-origin link clicks become full navigations (fresh HTML + JS)
-// and the tab reloads itself the next time it is hidden. Zero function
-// invocations: the probe is a static asset.
+// Skew protection cannot save such a tab: Cloudflare caches the RSC
+// navigation payloads by URL and ignores the deployment id, so an old tab can
+// be handed a newer build's payload from the edge. Instead of waiting for the
+// crash, re-read the (Cloudflare-cached) homepage every few minutes and
+// compare its deployment id with ours. Once a newer build is live, same-origin
+// link clicks become full navigations (fresh HTML + JS) and the tab reloads
+// itself the next time it is hidden.
 
-const PROBE_PARAM = "bbjprobe";
+const DPL_RE = /[?&]dpl=([^&#"'\s]+)/;
 
 /** The page's own webpack runtime URL + deployment id, or null (no dpl = not on Vercel). */
 export function findOwnBuildAsset(doc) {
   const script = doc?.querySelector?.('script[src*="/_next/static/chunks/webpack-"]');
   const src = script?.src;
   if (!src) return null;
-  const dpl = /[?&]dpl=([^&#]+)/.exec(src)?.[1];
+  const dpl = DPL_RE.exec(src)?.[1];
   return dpl ? { src, dpl } : null;
 }
 
-export function probeUrl(src, now) {
-  return `${src}${src.includes("?") ? "&" : "?"}${PROBE_PARAM}=${now.toString(36)}`;
-}
-
-/** True only on a definitive 404 — blips and other statuses never count. */
-export async function isBuildGone(fetchFn, src, now = Date.now()) {
+/**
+ * True only when the homepage HTML now carries a DIFFERENT deployment id than
+ * ours. The homepage is served from Cloudflare's 10-minute cache, so this
+ * costs Vercel nothing (an earlier version probed a cache-busted static asset,
+ * which missed Cloudflare every time and could never 404 under 30-day skew).
+ * Any failure, or a page without a deployment id, counts as not-stale.
+ */
+export async function isNewerBuildLive(fetchFn, ownDpl) {
   try {
-    const res = await fetchFn(probeUrl(src, now), {
-      method: "GET",
-      cache: "no-store",
-      credentials: "omit",
-    });
-    return res?.status === 404;
+    const res = await fetchFn("/", { credentials: "omit" });
+    if (!res?.ok) return false;
+    const live = DPL_RE.exec(await res.text())?.[1];
+    return Boolean(live) && live !== ownDpl;
   } catch {
     return false;
   }
