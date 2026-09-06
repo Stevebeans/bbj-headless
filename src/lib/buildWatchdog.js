@@ -43,15 +43,17 @@ export async function isBuildGone(fetchFn, src, now = Date.now()) {
   }
 }
 
-function isPlainSameOriginClick(event, location) {
-  if (event.defaultPrevented || event.button !== 0) return false;
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+/** The href a plain same-origin click is headed to, or null to leave the click alone. */
+function fullNavigationHref(event, location) {
+  if (event.defaultPrevented || event.button !== 0) return null;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
   const anchor = event.target?.closest?.("a[href]");
   if (!anchor || (anchor.target && anchor.target !== "_self") || anchor.hasAttribute?.("download")) {
-    return false;
+    return null;
   }
   const href = anchor.href || "";
-  return href.startsWith(location.origin + "/") || href === location.origin;
+  if (href === location.origin || href.startsWith(location.origin + "/")) return href;
+  return null;
 }
 
 /**
@@ -60,9 +62,10 @@ function isPlainSameOriginClick(event, location) {
  */
 export function installStaleHandlers({ doc, location }) {
   const onClick = (event) => {
-    if (!isPlainSameOriginClick(event, location)) return;
+    const href = fullNavigationHref(event, location);
+    if (!href) return;
     event.preventDefault();
-    location.assign(event.target.closest("a[href]").href);
+    location.assign(href);
   };
   const onVisibility = () => {
     if (doc.visibilityState === "hidden") location.reload();
