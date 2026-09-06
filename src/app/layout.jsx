@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { ThemeScript } from "@/components/layout/ThemeScript";
 import { SelfHealScript } from "@/components/layout/SelfHealScript";
 import { SelfHealBeacon } from "@/components/layout/SelfHealBeacon";
+import { BuildWatchdog } from "@/components/layout/BuildWatchdog";
 import { Providers } from "@/components/Providers";
 import { FloatingUpdater } from "@/components/feed-updates/FloatingUpdater";
 import { BackToTop } from "@/components/layout/BackToTop";
@@ -191,6 +192,7 @@ export default async function RootLayout({ children }) {
           pwaSuppressed={adSettings.pwa_suppressed || DEFAULT_PWA_SUPPRESSED}
         >
           <SelfHealBeacon />
+          <BuildWatchdog />
           {/* TopLeaderboard (above header) retired 8/22: same leaderboard_top
               placement now renders BELOW the header via BelowHeaderLeaderboard —
               in page flow, so no stack with the pushdown overlay. One mount per
