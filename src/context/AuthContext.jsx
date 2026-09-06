@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth/cookies";
 import { isTokenExpired, decodeUserFromToken, normalizeRoles } from "@/lib/auth/token";
 import { maybeRefreshToken, forceRefreshToken } from "@/lib/auth/refresh";
+import { normalizeUserData } from "@/lib/auth/user";
 
 const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || "https://bigbrotherjunkies.com/wp-json";
 
@@ -89,15 +90,12 @@ export function AuthProvider({ children }) {
   // Update user state and cache profile (cache is read back on next mount)
   const setUserAndCache = useCallback((userData) => {
     if (userData) {
-      // Normalize roles before storing - PHP can send objects instead of arrays
-      userData = { ...userData, user_roles: normalizeRoles(userData.user_roles) };
-      // Ensure display name is always a string (WP can return objects)
-      const displayName = userData.user_display_name || userData.display_name || "";
-      userData.user_display_name = typeof displayName === "string" ? displayName : String(displayName?.name || displayName || "");
-      const avatar = userData.user_avatar || userData.avatar;
+      // Roles (PHP may send objects), display name (WP may send objects) and
+      // avatar (/auth/me uses user_avatar) all normalized in one place.
+      userData = normalizeUserData(userData);
       setUserCache({
         name: userData.user_display_name,
-        avatar: avatar || "",
+        avatar: userData.avatar,
         roles: userData.user_roles,
       });
     }
