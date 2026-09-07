@@ -457,6 +457,7 @@ export default function AdminSocialPage() {
           interval_minutes: Number(beanbot.interval_minutes) || 30,
           max_per_day: Math.min(96, Math.max(1, Number(beanbot.max_per_day) || 1)),
           bluesky_enabled: !!beanbot.bluesky_enabled,
+          context_blocks: !!beanbot.context_blocks,
           post_as_user_id: Number(beanbot.post_as_user_id) || 0,
         }),
       });
@@ -1179,6 +1180,17 @@ export default function AdminSocialPage() {
                 />
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Cross-post to Bluesky
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!beanbot.context_blocks}
+                  onChange={(e) => patchBeanbot("context_blocks", e.target.checked)}
+                  className="w-4 h-4 text-primary-500 border-slate-300 rounded focus:ring-primary-500"
+                />
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Include date and game state in Bean Bot prompts
                 </span>
               </label>
             </div>
