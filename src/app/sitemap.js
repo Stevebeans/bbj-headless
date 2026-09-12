@@ -42,6 +42,8 @@ export default async function sitemap() {
     { path: "/directory", changeFrequency: "weekly", priority: 0.8 },
     { path: "/stats", changeFrequency: "weekly", priority: 0.7 },
     { path: "/become-supporter", changeFrequency: "monthly", priority: 0.6 },
+    { path: "/shows", changeFrequency: "daily", priority: 0.8 },
+    { path: "/shows/survivor", changeFrequency: "hourly", priority: 0.8 },
     { path: "/about", changeFrequency: "monthly", priority: 0.5 },
     { path: "/advertise", changeFrequency: "monthly", priority: 0.4 },
     { path: "/contact", changeFrequency: "yearly", priority: 0.4 },

@@ -15,19 +15,23 @@ export const NAV_ITEMS = [
   { href: "/stats", label: "Stats" },
   { href: "/directory", label: "Players" },
   { href: "/fan-favorites", label: "Fan Favorites" },
+  { href: "/shows", label: "Shows" },
   { href: "/search", label: "Ask the Bean" },
   { href: "/directory?tab=map", label: "Map" },
 ];
 
+// px-2 (not px-4) — with 9 items + Log In/Register, px-4 wraps text onto a
+// second/third line at the md/lg breakpoints (~768-1024px) once the "Shows"
+// link was added; px-2 keeps every label on one line through that range.
 const navLinkClass = (active) =>
-  `relative inline-flex items-center px-4 py-3 font-osw uppercase tracking-wider text-sm text-white transition-colors hover:bg-primary-600 ${
+  `relative inline-flex items-center px-2 py-3 font-osw uppercase tracking-wider text-sm text-white transition-colors hover:bg-primary-600 ${
     active
-      ? "bg-primary-600 after:content-[''] after:absolute after:left-4 after:right-4 after:bottom-0 after:h-[3px] after:bg-secondary-500"
+      ? "bg-primary-600 after:content-[''] after:absolute after:left-2 after:right-2 after:bottom-0 after:h-[3px] after:bg-secondary-500"
       : ""
   }`;
 
 const authLinkClass =
-  "inline-flex items-center px-4 py-3 font-osw uppercase tracking-wider text-sm text-secondary-500 transition-colors hover:bg-primary-600 hover:text-white";
+  "inline-flex items-center px-2 py-3 font-osw uppercase tracking-wider text-sm text-secondary-500 transition-colors hover:bg-primary-600 hover:text-white";
 
 /**
  * Desktop primary navigation. Uses useSearchParams to resolve the active
