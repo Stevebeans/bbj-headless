@@ -2,6 +2,14 @@
 
 import { founderState } from "@/lib/billing/founders";
 
+// Why the server would refuse this member a Lifetime spot, keyed by the
+// reason the page works out from their subscription.
+const LIFETIME_BLOCKED_COPY = {
+  annual: "You're on an annual plan. Lifetime upgrades for annual members are coming.",
+  full_bean: "Lifetime doesn't include Full Bean. Message Steve if you want to switch.",
+  other: "You already have an active subscription.",
+};
+
 /**
  * The Founders window: $5 Founding Junkie badge + $99 Lifetime plan capped
  * at a fixed spot count. Purely presentational — data comes from the
@@ -15,7 +23,7 @@ export default function FoundersSection({
   hasBadge = false,
   isLifetime = false,
   isStaff = false,
-  lifetimeBlocked = false,
+  lifetimeBlockedReason = "",
   processing = false,
 }) {
   const state = founderState(founders);
@@ -25,10 +33,13 @@ export default function FoundersSection({
   // A Lifetime spot is capped and publicly counted. Someone who already holds
   // it has nothing to buy, and a staff account is premium by role rather than
   // by purchase, so neither gets the card. The badge card stays for both.
-  // `lifetimeBlocked` is the annual-member case: the server refuses those
-  // until the proration question is settled. Monthly members buy normally -
-  // completing the purchase cancels their monthly plan.
+  // `lifetimeBlockedReason` names why the server would refuse this member, so
+  // the card can say the true thing instead of a generic error. Supporter
+  // monthly members are not blocked at all: completing the purchase cancels
+  // their monthly plan.
   const showLifetime = !isLifetime && !isStaff;
+
+  const blockedCopy = LIFETIME_BLOCKED_COPY[lifetimeBlockedReason] || "";
 
   const { spotsLeft, cap, soldOut, closesAtMs } = state;
   const closesLabel = closesAtMs
@@ -89,10 +100,8 @@ export default function FoundersSection({
               >
                 SOLD OUT
               </button>
-            ) : lifetimeBlocked ? (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                You&apos;re on an annual plan. Lifetime upgrades for annual members are coming.
-              </p>
+            ) : blockedCopy ? (
+              <p className="text-sm text-gray-600 dark:text-gray-400">{blockedCopy}</p>
             ) : (
               <div className="space-y-3">
                 <button

@@ -293,14 +293,24 @@ export default function BecomeSupporterPage() {
 
   // Mirrors SubscriptionManager::hasBlockingSubscriptionFor(userId, 'lifetime'):
   // /billing/subscription only ever returns an active-or-lifetime row, a
-  // pending cancellation stops blocking, and a live MONTHLY plan is no longer
-  // a blocker because completing the Lifetime purchase cancels it. Annual
-  // members are still refused by the server, so the card says so rather than
-  // handing them a button that always 400s.
+  // pending cancellation stops blocking, and a live SUPPORTER monthly plan is
+  // not a blocker because completing the Lifetime purchase cancels it. The
+  // tier check matters: full_bean_monthly carries the same plan_type, and
+  // Lifetime is a supporter product, so buying it would downgrade them.
   const hasBlockingSubscription = hasSubscription && !subscription?.cancel_at_period_end;
   const monthlyUpgrader =
-    subscription?.status === "active" && subscription?.plan_type === "monthly";
+    subscription?.status === "active" &&
+    subscription?.plan_type === "monthly" &&
+    (subscription?.tier ?? "supporter") === "supporter";
   const lifetimeUpgradeBlocked = hasBlockingSubscription && !monthlyUpgrader;
+  // Why the card is blocked, so it can say the true thing.
+  const lifetimeBlockedReason = !lifetimeUpgradeBlocked
+    ? ""
+    : subscription?.tier === "full_bean"
+      ? "full_bean"
+      : subscription?.plan_type === "annual"
+        ? "annual"
+        : "other";
 
   // The Founders window has to reach existing members, not just the logged-out
   // storefront: an established supporter is exactly who buys the $5 badge, and
@@ -316,7 +326,7 @@ export default function BecomeSupporterPage() {
       hasBadge={hasBadge}
       isLifetime={roles.includes("lifetime")}
       isStaff={staffOnlyPremium}
-      lifetimeBlocked={lifetimeUpgradeBlocked}
+      lifetimeBlockedReason={lifetimeBlockedReason}
       processing={processing}
     />
   );
