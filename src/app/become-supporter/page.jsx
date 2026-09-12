@@ -8,11 +8,13 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import { usePremium } from "@/hooks/usePremium";
 import { resolveSupporterView } from "@/lib/billing/memberState";
 import UpgradeToFullBean from "@/components/premium/UpgradeToFullBean";
+import FoundersSection from "@/components/premium/FoundersSection";
 import {
   getPlans,
   getSubscription,
   createStripeCheckout,
   createPayPalSubscription,
+  createPayPalOrder,
 } from "@/lib/api/billing";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
@@ -67,11 +69,14 @@ function Feature({ children }) {
 }
 
 export default function BecomeSupporterPage() {
-  const { isAuthenticated, loading: authLoading, refreshUser } = useAuth();
+  const { isAuthenticated, loading: authLoading, refreshUser, user } = useAuth();
   const { openLogin } = useAuthModal();
   const { roles } = usePremium();
 
+  const hasBadge = Boolean(user?.founding_badge);
+
   const [plans, setPlans] = useState([]);
+  const [founders, setFounders] = useState(null);
   // One billing toggle drives both cards (annual default, SaaS-style)
   const [billing, setBilling] = useState("year"); // 'month' | 'year'
   const [selectedPlan, setSelectedPlan] = useState("annual");
@@ -148,6 +153,7 @@ export default function BecomeSupporterPage() {
       try {
         const plansResult = await getPlans();
         setPlans(plansResult.plans || []);
+        setFounders(plansResult.founders || null);
 
         if (isAuthenticated) {
           try {
@@ -184,6 +190,70 @@ export default function BecomeSupporterPage() {
       const cancelUrl = `${SITE_URL}/checkout/cancel`;
       const result = await createStripeCheckout(selectedPlan, successUrl, cancelUrl);
       window.location.href = result.checkout_url;
+    } catch (err) {
+      setError(err.message);
+      setProcessing(false);
+    }
+  };
+
+  // Founding Junkie badge: Stripe one-time checkout only.
+  const handleBuyBadge = async () => {
+    if (!isAuthenticated) {
+      openLogin();
+      return;
+    }
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const successUrl = `${SITE_URL}/checkout/success?sku=founding_badge`;
+      const cancelUrl = `${SITE_URL}/checkout/cancel`;
+      const result = await createStripeCheckout("founding_badge", successUrl, cancelUrl);
+      window.location.href = result.checkout_url;
+    } catch (err) {
+      setError(err.message);
+      setProcessing(false);
+    }
+  };
+
+  // Founders Lifetime via Stripe: same one-time checkout flow as the badge.
+  const handleBuyLifetimeStripe = async () => {
+    if (!isAuthenticated) {
+      openLogin();
+      return;
+    }
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const successUrl = `${SITE_URL}/checkout/success`;
+      const cancelUrl = `${SITE_URL}/checkout/cancel`;
+      const result = await createStripeCheckout("lifetime", successUrl, cancelUrl);
+      window.location.href = result.checkout_url;
+    } catch (err) {
+      setError(err.message);
+      setProcessing(false);
+    }
+  };
+
+  // Founders Lifetime via PayPal: server-created order + redirect, matching
+  // the existing PayPal checkout style.
+  const handleBuyLifetimePayPal = async () => {
+    if (!isAuthenticated) {
+      openLogin();
+      return;
+    }
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const returnUrl = `${SITE_URL}/checkout/success?processor=paypal`;
+      const cancelUrl = `${SITE_URL}/checkout/cancel`;
+      const result = await createPayPalOrder(returnUrl, cancelUrl);
+      window.location.href = result.approve_url;
     } catch (err) {
       setError(err.message);
       setProcessing(false);
@@ -496,6 +566,15 @@ export default function BecomeSupporterPage() {
               </article>
             )}
           </div>
+
+          <FoundersSection
+            founders={founders}
+            onBuyBadge={handleBuyBadge}
+            onBuyLifetimeStripe={handleBuyLifetimeStripe}
+            onBuyLifetimePayPal={handleBuyLifetimePayPal}
+            hasBadge={hasBadge}
+            isLifetime={roles.includes("lifetime")}
+          />
 
           {/* Compare table */}
           <section className="mb-14">

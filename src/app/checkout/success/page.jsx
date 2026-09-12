@@ -29,6 +29,7 @@ function SuccessContent() {
   const token = searchParams.get("token"); // order id (lifetime) OR EC token (subscription)
   const payerId = searchParams.get("PayerID"); // only present on one-time ORDER approvals
   const subscriptionId = searchParams.get("subscription_id"); // only present on SUBSCRIPTION approvals
+  const sku = searchParams.get("sku"); // "founding_badge" for the $5 Stripe one-time buy
 
   // A PayPal *order* (one-time lifetime) needs an explicit capture. A PayPal
   // *subscription* (monthly/annual) must NOT be captured — it's activated by the
@@ -36,6 +37,11 @@ function SuccessContent() {
   // what produced the "could not be performed" (PayPal 422 ORDER_NOT_APPROVED).
   const isPayPalOrder =
     processor === "paypal" && !!token && !!payerId && !subscriptionId;
+
+  // The $5 Founding Junkie badge is a Stripe one-time buy with no subscription
+  // row — the webhook grants it directly on the user, so there's nothing to
+  // poll for. Skip the subscription flow entirely for this sku.
+  const isBadgePurchase = sku === "founding_badge";
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -46,6 +52,15 @@ function SuccessContent() {
     let cancelled = false;
 
     const run = async () => {
+      if (isBadgePurchase) {
+        try {
+          await refreshUser();
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
+        return;
+      }
+
       try {
         // One-time lifetime order → capture (this activates immediately server-side).
         if (isPayPalOrder) {
@@ -139,6 +154,10 @@ function SuccessContent() {
 
           {error ? (
             <p className="text-amber-600 dark:text-amber-400 mb-6">{error}</p>
+          ) : isBadgePurchase ? (
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Founding Junkie badge unlocked — thanks for being day one. It&apos;s already on your profile.
+            </p>
           ) : activated ? (
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               {subscription?.tier === "full_bean"
