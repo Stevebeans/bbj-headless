@@ -332,6 +332,21 @@ export default function AdminSocialPage() {
     }));
   };
 
+  // Per-show Bluesky sources (Survivor first) alongside the default BB
+  // tag/handles above. One card per show; each row keyed by its slug.
+  const getShowSource = (slug) =>
+    (settings?.show_sources || []).find((s) => s.show === slug) || { show: slug, tag: "", handles: [] };
+
+  const patchShowSource = (slug, patch) => {
+    setSettings((prev) => {
+      const list = prev.show_sources || [];
+      const idx = list.findIndex((s) => s.show === slug);
+      const merged = { show: slug, tag: "", handles: [], ...(idx >= 0 ? list[idx] : {}), ...patch };
+      const next = idx >= 0 ? list.map((s, i) => (i === idx ? merged : s)) : [...list, merged];
+      return { ...prev, show_sources: next };
+    });
+  };
+
   const buildConfigPayload = (base) => {
     const payload = {
       enabled: !!base.enabled,
@@ -340,6 +355,7 @@ export default function AdminSocialPage() {
       poll_minutes: Number(base.poll_minutes) || 10,
       model: base.model || "claude-sonnet-5",
       fan_nicknames: base.fan_nicknames || [],
+      show_sources: base.show_sources || [],
     };
     // Only send the key when a new one is typed; empty leaves the stored key unchanged.
     if (apiKeyInput.trim()) payload.anthropic_api_key = apiKeyInput.trim();
@@ -751,6 +767,47 @@ export default function AdminSocialPage() {
             Community nicknames fans use on Bluesky. Fed to every AI prompt (drafts, digest,
             Bean Bot, transcript) so posts always use real names instead of inventing a
             second houseguest.
+          </p>
+        </div>
+
+        {/* Survivor sources (per-show Bluesky sources beyond the default BB tag/handles above) */}
+        <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700">
+          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+            Survivor sources
+          </h4>
+          <div className="grid gap-5 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Search tag
+              </label>
+              <input
+                value={getShowSource("survivor").tag}
+                onChange={(e) => patchShowSource("survivor", { tag: e.target.value })}
+                placeholder="#Survivor"
+                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              <p className="text-xs text-slate-500 mt-1">Hashtag polled from Bluesky search, tagged to Survivor.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Trusted handles
+              </label>
+              <textarea
+                value={(getShowSource("survivor").handles || []).join("\n")}
+                onChange={(e) =>
+                  patchShowSource("survivor", {
+                    handles: e.target.value.split("\n").map((h) => h.trim()).filter(Boolean),
+                  })
+                }
+                rows={4}
+                placeholder={"survivorcbs.bsky.social\nOne handle per line"}
+                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 mt-2">
+            Polled on the same schedule as the BB monitor above; Survivor posts land in the
+            same feed tagged separately, filterable on the Top Posts board.
           </p>
         </div>
 

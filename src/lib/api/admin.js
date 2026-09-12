@@ -359,8 +359,10 @@ export async function enhanceTemplate(templateText) {
 // SOCIAL QUICKIES (FB pipeline)
 // ========================================
 
-export async function getTopSocialPosts(hours = 24, limit = 25, sort = 'top') {
-  return adminFetch(`/social/top-posts?hours=${hours}&limit=${limit}&sort=${sort}`);
+export async function getTopSocialPosts(hours = 24, limit = 25, sort = 'top', show = '') {
+  const params = new URLSearchParams({ hours, limit, sort });
+  if (show) params.set('show', show);
+  return adminFetch(`/social/top-posts?${params.toString()}`);
 }
 
 export async function generateQuickieCaption(text, handle) {

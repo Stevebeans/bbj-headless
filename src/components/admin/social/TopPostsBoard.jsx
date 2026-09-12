@@ -10,6 +10,12 @@ const WINDOWS = [
   { hours: 24, label: "24h" },
 ];
 
+// '' = the default BB feed; add more as show_sources grow beyond Survivor.
+const SHOWS = [
+  { id: "", label: "All BB" },
+  { id: "survivor", label: "Survivor" },
+];
+
 // Row totals; wpdb serializes counts as strings, so coerce.
 const totalOf = (p) =>
   Number(p.likes || 0) + Number(p.reposts || 0) + Number(p.replies || 0) + Number(p.quotes || 0);
@@ -110,6 +116,7 @@ const proxied = (src) => `/api/social/img?src=${encodeURIComponent(src)}`;
 
 export default function TopPostsBoard() {
   const [hours, setHours] = useState(24);
+  const [show, setShow] = useState("");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -140,7 +147,7 @@ export default function TopPostsBoard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await getTopSocialPosts(hours, 25, serverSort);
+      const res = await getTopSocialPosts(hours, 25, serverSort, show);
       const list = res.posts || [];
       setPosts(list);
       // Hydrate embed context in the background; rows fill in as it lands.
@@ -150,7 +157,7 @@ export default function TopPostsBoard() {
     } finally {
       setLoading(false);
     }
-  }, [hours, serverSort]);
+  }, [hours, serverSort, show]);
 
   useEffect(() => {
     load();
@@ -163,6 +170,17 @@ export default function TopPostsBoard() {
           🔥 Top Posts
         </h2>
         <div className="flex items-center gap-2">
+          <select
+            value={show}
+            onChange={(e) => setShow(e.target.value)}
+            className="px-2.5 py-1 rounded-full text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-0"
+          >
+            {SHOWS.map((s) => (
+              <option key={s.id || "bb"} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
           {WINDOWS.map((w) => (
             <button
               key={w.hours}
