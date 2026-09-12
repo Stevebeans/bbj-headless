@@ -18,3 +18,14 @@ export async function getSubscriptionStats() {
 export async function cancelSubscription(id) {
   return adminFetch(`/admin/subscriptions/${id}/cancel`, { method: "POST" });
 }
+
+export async function getFounders() {
+  return adminFetch("/admin/founders");
+}
+
+export async function saveFounders(patch) {
+  return adminFetch("/admin/founders", {
+    method: "POST",
+    body: JSON.stringify(patch),
+  });
+}

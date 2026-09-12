@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getSubscriptions, getSubscriptionStats, cancelSubscription } from "@/lib/api/adminSubscriptions";
+import { getSubscriptions, getSubscriptionStats, cancelSubscription, getFounders, saveFounders } from "@/lib/api/adminSubscriptions";
 
 const STATUS_FILTERS = [
   { key: "", label: "All" },
@@ -52,6 +52,11 @@ export default function AdminPremium() {
   const [cancelingId, setCancelingId] = useState(null);
   const [notice, setNotice] = useState(null); // { ok: bool, text: string }
 
+  const [founders, setFounders] = useState(null); // last-fetched /admin/founders payload
+  const [foundersForm, setFoundersForm] = useState({ enabled: false, closes_at: "", lifetime_cap: 50 });
+  const [foundersSaving, setFoundersSaving] = useState(false);
+  const [foundersNotice, setFoundersNotice] = useState(null); // { ok: bool, text: string }
+
   const fetchSubs = useCallback(async (pageNum = 1, status = statusFilter) => {
     setLoading(true);
     try {
@@ -75,6 +80,46 @@ export default function AdminPremium() {
       })
       .catch(() => {});
   }, []);
+
+  const loadFounders = useCallback(() => {
+    return getFounders().then((data) => {
+      setFounders(data);
+      setFoundersForm({
+        enabled: !!data.settings.enabled,
+        closes_at: data.settings.closes_at || "",
+        lifetime_cap: data.settings.lifetime_cap,
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    loadFounders().catch(() => {});
+  }, [loadFounders]);
+
+  const handleSaveFounders = async () => {
+    setFoundersSaving(true);
+    setFoundersNotice(null);
+    try {
+      const data = await saveFounders({
+        enabled: foundersForm.enabled,
+        closes_at: foundersForm.closes_at,
+        lifetime_cap: Number(foundersForm.lifetime_cap) || 1,
+      });
+      setFounders(data);
+      setFoundersForm({
+        enabled: !!data.settings.enabled,
+        closes_at: data.settings.closes_at || "",
+        lifetime_cap: data.settings.lifetime_cap,
+      });
+      setFoundersNotice({ ok: true, text: "Saved." });
+    } catch (err) {
+      setFoundersNotice({ ok: false, text: err.message || "Save failed" });
+    } finally {
+      setFoundersSaving(false);
+    }
+  };
+
+  const foundersCap = founders?.settings?.lifetime_cap ?? foundersForm.lifetime_cap;
 
   useEffect(() => {
     fetchSubs(1, statusFilter);
@@ -108,9 +153,18 @@ export default function AdminPremium() {
 
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
-          <StatTile label="Active recurring" value={stats.active} sub={`${stats.monthly} monthly · ${stats.annual} annual`} />
-          <StatTile label="Lifetime" value={stats.lifetime} />
+          <StatTile
+            label="Active recurring"
+            value={stats.active}
+            sub={`${stats.monthly} monthly · ${stats.annual} annual`}
+          />
+          <StatTile
+            label="Lifetime"
+            value={stats.lifetime}
+            sub={stats.founders ? `${stats.founders.spots_sold} of ${foundersCap} window spots sold` : undefined}
+          />
           <StatTile label="Full Bean" value={stats.full_bean} sub={`${stats.supporter_tier} supporter tier`} />
+          <StatTile label="Founding badges" value={stats.founders ? stats.founders.badge_count : "—"} />
           <StatTile label="Stripe / PayPal" value={`${stats.stripe_total} / ${stats.paypal_total}`} sub="all time" />
           <StatTile label="New joins" value={trends ? trends.joins_30d : "—"} sub={trends ? `${trends.joins_7d} in last 7d · 30d shown` : ""} />
           <StatTile label="Cancels (30d)" value={trends ? trends.cancels_30d : "—"} />
@@ -142,6 +196,65 @@ export default function AdminPremium() {
           )}
         </div>
       )}
+
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-5">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-osw font-bold text-slate-800 dark:text-white">Founders window</h3>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {founders
+              ? founders.window_open
+                ? `Open · ${founders.spots_sold} of ${foundersCap} sold · ${founders.badge_count} badges`
+                : "Closed"
+              : "—"}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              checked={foundersForm.enabled}
+              onChange={(e) => setFoundersForm((f) => ({ ...f, enabled: e.target.checked }))}
+              className="h-4 w-4"
+            />
+            Window open
+          </label>
+          <label className="text-sm text-gray-700 dark:text-gray-300">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Closes at (UTC)</div>
+            <input
+              type="text"
+              value={foundersForm.closes_at}
+              onChange={(e) => setFoundersForm((f) => ({ ...f, closes_at: e.target.value }))}
+              placeholder="YYYY-MM-DD HH:MM:SS or blank"
+              className="w-full px-2 py-1.5 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            />
+          </label>
+          <label className="text-sm text-gray-700 dark:text-gray-300">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Lifetime cap</div>
+            <input
+              type="number"
+              min="1"
+              max="500"
+              value={foundersForm.lifetime_cap}
+              onChange={(e) => setFoundersForm((f) => ({ ...f, lifetime_cap: e.target.value }))}
+              className="w-full px-2 py-1.5 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            />
+          </label>
+        </div>
+        <div className="flex items-center gap-3 mt-3">
+          <button
+            onClick={handleSaveFounders}
+            disabled={foundersSaving}
+            className="px-3 py-1.5 rounded-lg bg-primary-500 text-white text-xs font-medium disabled:opacity-50"
+          >
+            {foundersSaving ? "Saving…" : "Save"}
+          </button>
+          {foundersNotice && (
+            <span className={`text-xs ${foundersNotice.ok ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>
+              {foundersNotice.text}
+            </span>
+          )}
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
         {STATUS_FILTERS.map((f) => (
