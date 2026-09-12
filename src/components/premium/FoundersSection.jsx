@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { founderState } from "@/lib/billing/founders";
 
 /**
@@ -27,6 +25,9 @@ export default function FoundersSection({
   // A Lifetime spot is capped and publicly counted. Someone who already holds
   // it has nothing to buy, and a staff account is premium by role rather than
   // by purchase, so neither gets the card. The badge card stays for both.
+  // `lifetimeBlocked` is the annual-member case: the server refuses those
+  // until the proration question is settled. Monthly members buy normally -
+  // completing the purchase cancels their monthly plan.
   const showLifetime = !isLifetime && !isStaff;
 
   const { spotsLeft, cap, soldOut, closesAtMs } = state;
@@ -90,10 +91,7 @@ export default function FoundersSection({
               </button>
             ) : lifetimeBlocked ? (
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Lifetime is a separate one-time purchase, so it can&apos;t stack on a running plan.
-                Cancel your current plan in{" "}
-                <Link href="/settings?tab=premium" className="text-primary-500 font-semibold hover:underline">Settings</Link>
-                {" "}first, then come back for it.
+                You&apos;re on an annual plan. Lifetime upgrades for annual members are coming.
               </p>
             ) : (
               <div className="space-y-3">

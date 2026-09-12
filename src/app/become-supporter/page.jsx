@@ -291,11 +291,16 @@ export default function BecomeSupporterPage() {
     (roles.includes("administrator") || roles.includes("editor")) &&
     !roles.some((r) => ["supporter", "lifetime", "full_bean"].includes(r));
 
-  // Mirrors SubscriptionManager::hasBlockingSubscription(): /billing/subscription
-  // only ever returns an active-or-lifetime row, and a pending cancellation
-  // stops blocking. createCheckout('lifetime') refuses these members, so the
-  // card says so rather than handing them a button that always 400s.
+  // Mirrors SubscriptionManager::hasBlockingSubscriptionFor(userId, 'lifetime'):
+  // /billing/subscription only ever returns an active-or-lifetime row, a
+  // pending cancellation stops blocking, and a live MONTHLY plan is no longer
+  // a blocker because completing the Lifetime purchase cancels it. Annual
+  // members are still refused by the server, so the card says so rather than
+  // handing them a button that always 400s.
   const hasBlockingSubscription = hasSubscription && !subscription?.cancel_at_period_end;
+  const monthlyUpgrader =
+    subscription?.status === "active" && subscription?.plan_type === "monthly";
+  const lifetimeUpgradeBlocked = hasBlockingSubscription && !monthlyUpgrader;
 
   // The Founders window has to reach existing members, not just the logged-out
   // storefront: an established supporter is exactly who buys the $5 badge, and
@@ -311,7 +316,7 @@ export default function BecomeSupporterPage() {
       hasBadge={hasBadge}
       isLifetime={roles.includes("lifetime")}
       isStaff={staffOnlyPremium}
-      lifetimeBlocked={hasBlockingSubscription}
+      lifetimeBlocked={lifetimeUpgradeBlocked}
       processing={processing}
     />
   );
