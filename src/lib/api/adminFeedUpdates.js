@@ -5,7 +5,9 @@ import { adminFetch } from "./admin";
 // and the updater PUT/DELETE routes.
 
 export async function listFeedUpdates({ perPage = 20, offset = 0 } = {}) {
-  const params = new URLSearchParams({ per_page: perPage, offset });
+  // show=all = BB + every show together, so Survivor (etc.) updates are
+  // visible/editable here even though public surfaces default to BB-only.
+  const params = new URLSearchParams({ per_page: perPage, offset, show: "all" });
   return adminFetch(`/feed-updates?${params}`);
 }
 

@@ -234,6 +234,11 @@ export default function AdminFeedUpdates() {
                   <div className="min-w-0">
                     <h3 className="font-medium text-slate-800 dark:text-white leading-snug">
                       {u.title}
+                      {u.show && (
+                        <span className="ml-2 inline-block align-middle px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                          {u.show}
+                        </span>
+                      )}
                     </h3>
                     {u.excerpt && (
                       <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">

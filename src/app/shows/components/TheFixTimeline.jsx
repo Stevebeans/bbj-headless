@@ -25,6 +25,7 @@ export function TheFixTimeline({ show }) {
   const [rows, setRows] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const reqId = useRef(0);
 
   const fetchPage = useCallback(async (offset) => {
@@ -33,8 +34,11 @@ export function TheFixTimeline({ show }) {
     try {
       const data = await getFeedUpdates({ perPage: PER_PAGE, offset, sort: "newest", show });
       if (id !== reqId.current) return; // stale response guard
+      setError(false);
       setRows((prev) => (offset === 0 ? data.updates || [] : [...prev, ...(data.updates || [])]));
       setHasMore(!!data.has_more);
+    } catch {
+      if (id === reqId.current) setError(true);
     } finally {
       if (id === reqId.current) setLoading(false);
     }
@@ -43,6 +47,7 @@ export function TheFixTimeline({ show }) {
   // Initial fetch + re-fetch from the top whenever `show` changes.
   useEffect(() => {
     setRows([]);
+    setError(false);
     fetchPage(0);
   }, [fetchPage]);
 
@@ -77,6 +82,14 @@ export function TheFixTimeline({ show }) {
         adNumberByRowId.set(row.id, adCount);
       }
     }
+  }
+
+  if (!loading && error && groups.length === 0) {
+    return (
+      <p className="fuh-empty">
+        Couldn&apos;t load The Fix. Refresh to try again.
+      </p>
+    );
   }
 
   if (!loading && groups.length === 0) {
