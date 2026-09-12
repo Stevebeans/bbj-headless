@@ -11,6 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL;
  * @param {string} options.dateRange - Filter: all, today, yesterday, week, month, year
  * @param {string} options.search - Search query
  * @param {string} options.mode - Filter by mode: feed, show
+ * @param {string} options.show - Filter by show: '' (BB only, default), 'any' (every non-BB show), or a show slug e.g. 'survivor'
  * @returns {Promise<Object>} Feed updates with pagination info
  */
 export async function getFeedUpdates(options = {}) {
@@ -22,6 +23,7 @@ export async function getFeedUpdates(options = {}) {
   if (options.dateRange) params.append("date_range", options.dateRange);
   if (options.search) params.append("search", options.search);
   if (options.mode) params.append("mode", options.mode);
+  if (options.show) params.append("show", options.show);
 
   const queryString = params.toString();
   const endpoint = `/feed-updates${queryString ? "?" + queryString : ""}`;
