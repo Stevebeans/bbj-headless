@@ -10,6 +10,7 @@ import {
 } from "@/lib/api/dm";
 import Avatar from "./Avatar";
 import DmReportModal from "./DmReportModal";
+import { FoundingBadgeInline } from "@/components/users/FoundingBadge";
 
 // Server timestamps are UTC 'Y-m-d H:i:s' (no zone marker); optimistic rows use
 // a real ISO string. Normalize both before parsing so times render in the
@@ -289,7 +290,10 @@ export default function ThreadView({
         </button>
         <Avatar src={other.avatar} name={other.name} size={40} />
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-gray-900 dark:text-white truncate">{other.name}</p>
+          <p className="font-semibold text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+            <span className="truncate">{other.name}</span>
+            {other.founding_badge && <FoundingBadgeInline />}
+          </p>
           {other.username && (
             <p className="text-xs text-gray-400 truncate">@{other.username}</p>
           )}

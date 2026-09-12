@@ -7,6 +7,7 @@ import { getThreads } from "@/lib/api/dm";
 import { searchUsers } from "@/lib/api/comments";
 import ThreadView from "./ThreadView";
 import Avatar from "./Avatar";
+import { FoundingBadgeInline } from "@/components/users/FoundingBadge";
 
 // Server timestamps are UTC 'Y-m-d H:i:s' with no zone marker; optimistic rows
 // carry a real ISO string. Normalize both before handing to the Date parser.
@@ -353,13 +354,14 @@ export default function MessagesClient({ initialRecipient = null }) {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
                             <span
-                              className={`truncate ${
+                              className={`truncate flex items-center gap-1.5 ${
                                 unread
                                   ? "font-bold text-gray-900 dark:text-white"
                                   : "font-medium text-gray-800 dark:text-gray-200"
                               }`}
                             >
-                              {t.other?.name || "Member"}
+                              <span className="truncate">{t.other?.name || "Member"}</span>
+                              {t.other?.founding_badge && <FoundingBadgeInline />}
                             </span>
                             <span className="text-xs text-gray-400 shrink-0">
                               {fmtRelative(t.last_message_at)}

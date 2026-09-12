@@ -9,6 +9,7 @@ import { blockUser } from "@/lib/api/dm";
 import useUserFilters from "@/hooks/useUserFilters";
 import RankBadge from "./RankBadge";
 import OnlineIndicator from "./OnlineIndicator";
+import FoundingBadge from "@/components/users/FoundingBadge";
 
 export default function AuthorModal({ userId, isOpen, onClose }) {
   const { isAuthenticated } = useAuth();
@@ -223,6 +224,11 @@ export default function AuthorModal({ userId, isOpen, onClose }) {
               {profile.rank && (
                 <div className="flex justify-center mt-2">
                   <RankBadge rank={profile.rank} size="sm" />
+                </div>
+              )}
+              {profile.founding_badge && (
+                <div className="flex justify-center mt-2">
+                  <FoundingBadge size="sm" />
                 </div>
               )}
             </div>
