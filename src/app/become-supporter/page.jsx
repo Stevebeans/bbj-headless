@@ -39,7 +39,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "I had a Season Pass — what happened to it?",
-    a: "The Season Pass grew up and became the annual Supporter plan. Same idea, but now it covers a full year instead of one season.",
+    a: "The Season Pass grew up twice: it's now the All-Access Pass, and it covers every show we add to the site — Big Brother, Survivor, and whatever comes next — through BB29.",
   },
   {
     q: "Where does the money go?",

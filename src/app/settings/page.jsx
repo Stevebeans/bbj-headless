@@ -1039,24 +1039,22 @@ function PremiumTab({ settings, loading, showToast }) {
   // plugin's StripeService::PLANS checkout keys.
   const PLAN_OPTIONS = {
     monthly: { label: "Monthly Supporter", price: "$6.95/mo", blurb: "Flexible monthly billing" },
-    annual: { label: "Season Pass", price: "$35/yr", blurb: "Save over 58% vs monthly" },
+    annual: { label: "All-Access Pass", price: "$45/yr", blurb: "About 46% off vs monthly" },
     full_bean_monthly: { label: "Full Bean Monthly", price: "$14.99/mo", blurb: "Unlimited Bean, smartest model, memory" },
     full_bean_annual: { label: "Full Bean Annual", price: "$119/yr", blurb: "A full year of the smartest Bean" },
   };
 
   // Which switches to offer for the member's current (tier, plan_type).
-  // Season Pass (annual) is hidden mid-season: existing annual subs keep it,
-  // but it's no longer offered as a switch target (server rejects it too).
   const switchTargetsFor = (sub) => {
     if (!sub) return [];
     const tier = sub.tier || "supporter";
     if (tier === "full_bean") {
       return sub.plan_type === "monthly"
         ? ["full_bean_annual", "monthly"]
-        : ["full_bean_monthly"];
+        : ["full_bean_monthly", "annual"];
     }
     return sub.plan_type === "monthly"
-      ? ["full_bean_monthly", "full_bean_annual"]
+      ? ["annual", "full_bean_monthly", "full_bean_annual"]
       : ["monthly", "full_bean_annual"];
   };
 
