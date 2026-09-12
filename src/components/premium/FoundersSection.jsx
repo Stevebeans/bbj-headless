@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { founderState } from "@/lib/billing/founders";
 
 /**
@@ -14,11 +16,18 @@ export default function FoundersSection({
   onBuyLifetimePayPal,
   hasBadge = false,
   isLifetime = false,
+  isStaff = false,
+  lifetimeBlocked = false,
   processing = false,
 }) {
   const state = founderState(founders);
 
   if (!state.open) return null;
+
+  // A Lifetime spot is capped and publicly counted. Someone who already holds
+  // it has nothing to buy, and a staff account is premium by role rather than
+  // by purchase, so neither gets the card. The badge card stays for both.
+  const showLifetime = !isLifetime && !isStaff;
 
   const { spotsLeft, cap, soldOut, closesAtMs } = state;
   const closesLabel = closesAtMs
@@ -30,7 +39,7 @@ export default function FoundersSection({
       <h2 className="text-2xl font-display font-bold uppercase tracking-wide text-gray-900 dark:text-white text-center mb-1">
         The Founding Era — one time only
       </h2>
-      <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto mt-6">
+      <div className={`grid gap-5 mx-auto mt-6 ${showLifetime ? "sm:grid-cols-2 max-w-3xl" : "max-w-md"}`}>
         {/* Founding Junkie badge */}
         <article className="relative flex flex-col rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-7">
           <h3 className="text-xl font-display font-bold uppercase tracking-wide text-gray-900 dark:text-white">
@@ -63,50 +72,51 @@ export default function FoundersSection({
         </article>
 
         {/* Lifetime */}
-        <article className="relative flex flex-col rounded-xl border-2 border-primary-500 bg-white dark:bg-slate-800 p-7 shadow-lg">
-          <h3 className="text-xl font-display font-bold uppercase tracking-wide text-gray-900 dark:text-white">
-            Lifetime
-          </h3>
-          <p className="text-sm italic text-gray-500 dark:text-gray-400 mt-0.5 mb-5">
-            $99 · {spotsLeft} of {cap} spots left
-          </p>
-          {isLifetime ? (
-            <button
-              type="button"
-              disabled
-              className="w-full py-3 border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-display font-semibold uppercase tracking-wider text-sm rounded-full cursor-default"
-            >
-              You&apos;re a Lifetime member ✓
-            </button>
-          ) : soldOut ? (
-            <button
-              type="button"
-              disabled
-              className="w-full py-3 border-2 border-slate-300 dark:border-slate-600 text-gray-400 dark:text-gray-500 font-display font-semibold uppercase tracking-wider text-sm rounded-full cursor-not-allowed"
-            >
-              SOLD OUT
-            </button>
-          ) : (
-            <div className="space-y-3">
+        {showLifetime && (
+          <article className="relative flex flex-col rounded-xl border-2 border-primary-500 bg-white dark:bg-slate-800 p-7 shadow-lg">
+            <h3 className="text-xl font-display font-bold uppercase tracking-wide text-gray-900 dark:text-white">
+              Lifetime
+            </h3>
+            <p className="text-sm italic text-gray-500 dark:text-gray-400 mt-0.5 mb-5">
+              $99 · {spotsLeft} of {cap} spots left
+            </p>
+            {soldOut ? (
               <button
                 type="button"
-                onClick={onBuyLifetimeStripe}
-                disabled={processing}
-                className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled
+                className="w-full py-3 border-2 border-slate-300 dark:border-slate-600 text-gray-400 dark:text-gray-500 font-display font-semibold uppercase tracking-wider text-sm rounded-full cursor-not-allowed"
               >
-                {processing ? "Processing…" : "Lifetime — Stripe"}
+                SOLD OUT
               </button>
-              <button
-                type="button"
-                onClick={onBuyLifetimePayPal}
-                disabled={processing}
-                className="w-full py-3 border-2 border-gray-900 dark:border-white text-gray-900 dark:text-white hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-gray-900 font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {processing ? "Processing…" : "Lifetime — PayPal"}
-              </button>
-            </div>
-          )}
-        </article>
+            ) : lifetimeBlocked ? (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Lifetime is a separate one-time purchase, so it can&apos;t stack on a running plan.
+                Cancel your current plan in{" "}
+                <Link href="/settings?tab=premium" className="text-primary-500 font-semibold hover:underline">Settings</Link>
+                {" "}first, then come back for it.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={onBuyLifetimeStripe}
+                  disabled={processing}
+                  className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {processing ? "Processing…" : "Lifetime — Stripe"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onBuyLifetimePayPal}
+                  disabled={processing}
+                  className="w-full py-3 border-2 border-gray-900 dark:border-white text-gray-900 dark:text-white hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-gray-900 font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {processing ? "Processing…" : "Lifetime — PayPal"}
+                </button>
+              </div>
+            )}
+          </article>
+        )}
       </div>
       {closesLabel && (
         <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-5">

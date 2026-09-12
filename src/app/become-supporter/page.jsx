@@ -284,6 +284,38 @@ export default function BecomeSupporterPage() {
     }
   };
 
+  // Staff are premium by role, not by purchase. They should still be able to
+  // buy the badge, but a Lifetime spot is capped and publicly counted, so an
+  // editor/admin account with no paid role does not get that card.
+  const staffOnlyPremium =
+    (roles.includes("administrator") || roles.includes("editor")) &&
+    !roles.some((r) => ["supporter", "lifetime", "full_bean"].includes(r));
+
+  // Mirrors SubscriptionManager::hasBlockingSubscription(): /billing/subscription
+  // only ever returns an active-or-lifetime row, and a pending cancellation
+  // stops blocking. createCheckout('lifetime') refuses these members, so the
+  // card says so rather than handing them a button that always 400s.
+  const hasBlockingSubscription = hasSubscription && !subscription?.cancel_at_period_end;
+
+  // The Founders window has to reach existing members, not just the logged-out
+  // storefront: an established supporter is exactly who buys the $5 badge, and
+  // the badge branch in createCheckout() is deliberately ahead of the blocking
+  // -subscription guard for that reason. One helper so the member views and
+  // the checkout view cannot drift apart on props.
+  const renderFounders = () => (
+    <FoundersSection
+      founders={founders}
+      onBuyBadge={handleBuyBadge}
+      onBuyLifetimeStripe={handleBuyLifetimeStripe}
+      onBuyLifetimePayPal={handleBuyLifetimePayPal}
+      hasBadge={hasBadge}
+      isLifetime={roles.includes("lifetime")}
+      isStaff={staffOnlyPremium}
+      lifetimeBlocked={hasBlockingSubscription}
+      processing={processing}
+    />
+  );
+
   if (loading || authLoading) {
     return (
       <main className="v2-primary-container">
@@ -307,6 +339,11 @@ export default function BecomeSupporterPage() {
   if (view !== "checkout") {
     return (
       <main className="v2-primary-container">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-center max-w-2xl mx-auto">
+            {error}
+          </div>
+        )}
         <div className="rounded-xl bg-white p-8 shadow dark:bg-gray-900 dark:border dark:border-slate-800 max-w-2xl mx-auto">
           {view === "upgrade" ? (
             <div className="pt-6">
@@ -375,6 +412,7 @@ export default function BecomeSupporterPage() {
             </div>
           )}
         </div>
+        <div className="mt-10">{renderFounders()}</div>
       </main>
     );
   }
@@ -567,15 +605,7 @@ export default function BecomeSupporterPage() {
             )}
           </div>
 
-          <FoundersSection
-            founders={founders}
-            onBuyBadge={handleBuyBadge}
-            onBuyLifetimeStripe={handleBuyLifetimeStripe}
-            onBuyLifetimePayPal={handleBuyLifetimePayPal}
-            hasBadge={hasBadge}
-            isLifetime={roles.includes("lifetime")}
-            processing={processing}
-          />
+          {renderFounders()}
 
           {/* Compare table */}
           <section className="mb-14">
