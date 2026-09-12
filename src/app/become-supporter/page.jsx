@@ -574,6 +574,7 @@ export default function BecomeSupporterPage() {
             onBuyLifetimePayPal={handleBuyLifetimePayPal}
             hasBadge={hasBadge}
             isLifetime={roles.includes("lifetime")}
+            processing={processing}
           />
 
           {/* Compare table */}

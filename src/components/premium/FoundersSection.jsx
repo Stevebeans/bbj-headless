@@ -14,6 +14,7 @@ export default function FoundersSection({
   onBuyLifetimePayPal,
   hasBadge = false,
   isLifetime = false,
+  processing = false,
 }) {
   const state = founderState(founders);
 
@@ -53,9 +54,10 @@ export default function FoundersSection({
             <button
               type="button"
               onClick={onBuyBadge}
-              className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors"
+              disabled={processing}
+              className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Get the badge — $5
+              {processing ? "Processing…" : "Get the badge — $5"}
             </button>
           )}
         </article>
@@ -89,16 +91,18 @@ export default function FoundersSection({
               <button
                 type="button"
                 onClick={onBuyLifetimeStripe}
-                className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors"
+                disabled={processing}
+                className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Lifetime — Stripe
+                {processing ? "Processing…" : "Lifetime — Stripe"}
               </button>
               <button
                 type="button"
                 onClick={onBuyLifetimePayPal}
-                className="w-full py-3 border-2 border-gray-900 dark:border-white text-gray-900 dark:text-white hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-gray-900 font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors"
+                disabled={processing}
+                className="w-full py-3 border-2 border-gray-900 dark:border-white text-gray-900 dark:text-white hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-gray-900 font-display font-semibold uppercase tracking-wider text-sm rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Lifetime — PayPal
+                {processing ? "Processing…" : "Lifetime — PayPal"}
               </button>
             </div>
           )}
