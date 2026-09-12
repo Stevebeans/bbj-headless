@@ -100,6 +100,7 @@ export async function getFeedUpdateBySlug(slug) {
  * @param {File} data.video - Optional video clip
  * @param {string} data.mode - Update mode: feed or show
  * @param {boolean} data.postToBluesky - Post to Bluesky
+ * @param {string} data.show - Show slug ("" = Big Brother, "survivor" = Survivor)
  * @param {string} token - JWT auth token
  * @returns {Promise<Object>} Created update
  */
@@ -118,6 +119,10 @@ export async function createFeedUpdate(data, token) {
 
   if (data.postToBluesky !== undefined) {
     formData.append("post_to_bluesky", data.postToBluesky ? "1" : "0");
+  }
+
+  if (data.show) {
+    formData.append("show", data.show);
   }
 
 

@@ -23,6 +23,11 @@ const VIDEO_MAX_MB = 80;
 const VIDEO_MAX_SECONDS = 180;
 const VIDEO_ACCEPT = "video/mp4,video/x-m4v,video/quicktime,video/webm";
 
+// Show picker options (Phase 1, hardcoded). Empty selection ("") = Big
+// Brother, the unchanged default every existing caller already gets. The
+// picker only renders while this list is non-empty.
+const SHOWS = [{ slug: "survivor", label: "Survivor" }];
+
 /** Resolve a video File's duration in seconds (null when unreadable). */
 function getVideoDuration(file) {
   return new Promise((resolve) => {
@@ -60,6 +65,7 @@ export function FloatingUpdater() {
   // Form state
   const [content, setContent] = useState("");
   const [mode, setModeState] = useState("feed"); // feed or show
+  const [showSlug, setShowSlug] = useState(""); // "" = Big Brother, else a SHOWS slug
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [videoFile, setVideoFile] = useState(null);
@@ -206,6 +212,7 @@ export function FloatingUpdater() {
           image: upload,
           video: videoFile,
           postToBluesky,
+          show: showSlug,
         },
         user.token
       );
@@ -248,6 +255,7 @@ export function FloatingUpdater() {
 
       // Reset form
       setContent("");
+      setShowSlug("");
       setImageFile(null);
       setImagePreview(null);
       setVideoFile(null);
@@ -314,12 +322,32 @@ export function FloatingUpdater() {
             <span className="font-semibold">
               {mode === "feed" ? "Feed Update" : "Show Update"}
             </span>
-            <button
-              onClick={handleModeToggle}
-              className="text-xs px-2 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors"
-            >
-              Switch to {mode === "feed" ? "Show" : "Feed"}
-            </button>
+            <div className="flex items-center gap-2">
+              {SHOWS.length > 0 && (
+                <label className="flex items-center gap-1 text-xs text-white/80">
+                  Show
+                  <select
+                    aria-label="Show"
+                    value={showSlug}
+                    onChange={(e) => setShowSlug(e.target.value)}
+                    className="text-xs px-1.5 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors text-white [&>option]:text-gray-900"
+                  >
+                    <option value="">Big Brother</option>
+                    {SHOWS.map((s) => (
+                      <option key={s.slug} value={s.slug}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <button
+                onClick={handleModeToggle}
+                className="text-xs px-2 py-1 rounded bg-white/20 hover:bg-white/30 transition-colors"
+              >
+                Switch to {mode === "feed" ? "Show" : "Feed"}
+              </button>
+            </div>
           </div>
 
           {/* Form */}
