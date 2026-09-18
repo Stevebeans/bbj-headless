@@ -107,6 +107,7 @@ export default function ConductMember() {
               <option value="24h">24 hours</option>
               <option value="72h">72 hours</option>
               <option value="7d">7 days</option>
+              <option value="season">Until end of season (Oct 5)</option>
             </select>
             <button disabled={busy} onClick={() => act("timeout")}
               className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium disabled:opacity-50">

@@ -11,6 +11,11 @@ export async function getConductMember(userId) {
   return adminFetch(`/admin/conduct/members/${userId}`);
 }
 
+/** One-click timeout (comments + DMs) through end of season; comment mods can call this. */
+export async function seasonTimeout(userId) {
+  return adminFetch(`/admin/conduct/members/${userId}/season-timeout`, { method: "POST" });
+}
+
 export async function conductAction(userId, payload) {
   return adminFetch(`/admin/conduct/members/${userId}/action`, {
     method: "POST",
