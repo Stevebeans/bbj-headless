@@ -6,6 +6,7 @@ import Cookies from "js-cookie";
 import { useAuth } from "@/context/AuthContext";
 import { isStandalone } from "@/lib/pwa";
 import { isSupporterUser } from "@/lib/supporterRoles";
+import { isArticlePath } from "@/lib/ads/routes";
 
 const PREVIEW_COOKIE_NAME = "bbj_ad_preview";
 const PREVIEW_ADMIN_ROLES = ["administrator", "editor"];
@@ -165,12 +166,18 @@ export function AdProvider({
     // after the first client-side navigation. Per their docs, delete + new
     // per placement on every route change. Queue survives the SDK not being
     // booted yet, and delete of a not-yet-rendered unit is a no-op.
+    //
+    // Video Ad Slider (Primis outstream) added to the same rebuild (Freestar
+    // PSM, Sep 8/15 2026): same virtual-navigation problem, same delete+new
+    // fix. deleteVideo/newVideo are harmless no-ops until Freestar flips the
+    // unit to "on-call" on their side after staging QA.
     const fs = (window.freestar = window.freestar || {});
     fs.queue = fs.queue || [];
     fs.queue.push(function () {
       [
         ["bigbrotherjunkies_sticky_footer", "StickyFooter"],
         ["bigbrotherjunkies_sticky_pushdown", "Pushdown"],
+        ["FreeStarVideoAdContainer_Slider", "Video"],
       ].forEach(([placement, kind]) => {
         if (disabledPlacements.includes(placement)) return;
         if (isPWA && pwaSuppressed.includes(placement)) return;
@@ -178,6 +185,21 @@ export function AdProvider({
         window.freestar[`new${kind}`]?.(placement);
       });
     });
+
+    // Articles Dynamic In-Content re-arm (Freestar PSM, Sep 8/15 2026): their
+    // auto-injected in-content unit is wired to full page loads, not virtual
+    // SPA navigations, so it goes dark after the first client-side route
+    // change on article pages. A fresh newAd() call re-arms the injector; no
+    // delete call needed per their instructions. Harmless no-op until
+    // Freestar flips the unit to "on-call" on their side.
+    if (
+      isArticlePath(pathname) &&
+      !disabledPlacements.includes("bigbrotherjunkies_articles_dynamic_incontent")
+    ) {
+      fs.queue.push(function () {
+        window.freestar.newAd?.("bigbrotherjunkies_articles_dynamic_incontent");
+      });
+    }
   }, [pathname, shouldShowAds, isPWA, disabledPlacements, pwaSuppressed]);
 
   // HEM email passthrough — pass logged-in user's email to Freestar for identity matching
