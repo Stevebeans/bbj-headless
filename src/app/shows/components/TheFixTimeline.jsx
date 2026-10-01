@@ -95,7 +95,7 @@ export function TheFixTimeline({ show }) {
   if (!loading && groups.length === 0) {
     return (
       <p className="fuh-empty">
-        The Fix starts flowing when Survivor 49 premieres Sept 24. Bookmark this page.
+        No updates yet. Check back soon, and bookmark this page.
       </p>
     );
   }
