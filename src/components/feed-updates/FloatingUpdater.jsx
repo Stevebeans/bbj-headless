@@ -125,6 +125,18 @@ export function FloatingUpdater() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
+  // Shows pages' "Post a <Show> update" button opens the panel with that show
+  // pre-picked (PostShowUpdateButton dispatches this).
+  useEffect(() => {
+    const onOpen = (e) => {
+      const slug = e.detail?.show;
+      if (SHOWS.some((s) => s.slug === slug)) setShowSlug(slug);
+      setIsOpen(true);
+    };
+    window.addEventListener("bbjd:open-updater", onOpen);
+    return () => window.removeEventListener("bbjd:open-updater", onOpen);
+  }, []);
+
   // Don't render if user can't post
   if (!canPost) return null;
 

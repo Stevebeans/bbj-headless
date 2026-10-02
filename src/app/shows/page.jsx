@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PrimarySidebarWidgets } from "@/components/layout/PrimarySidebarWidgets";
 import { TheFixTimeline } from "./components/TheFixTimeline";
+import { ShowHero } from "./components/ShowHero";
+import { Torch, Candle } from "./components/ShowArt";
+import "./shows.css";
 import { SITE_URL, breadcrumbJsonLd } from "@/lib/seo";
 
 // Pure static shell — zero server-side data fetching. All Fix data is
@@ -37,35 +40,47 @@ export default function ShowsHubPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="flex w-full flex-col mb-4 lg:flex-row lg:gap-4 dark:text-gray-200">
         {/* Main Content */}
-        <section id="main-left" className="flex-grow space-y-4">
+        <section id="main-left" className="flex-grow min-w-0 space-y-4">
+          <ShowHero
+            show="hub"
+            kicker="Reality TV, mainlined"
+            title={<em>The Fix</em>}
+            tagline="Every reality show we're watching, in one feed. Spoilers, blindsides and the buzz, all season long."
+          >
+            <div className="shw-ticker" aria-label="Now airing">
+              <span><b className="shw-live">● On air</b> Survivor 49 · Wednesdays on CBS</span>
+              <span><b>Next up</b> The Traitors · January</span>
+            </div>
+          </ShowHero>
+
           <article className="v2-primary-container-inner p-5 md:p-[22px]">
-            {/* Hero band */}
-            <div className="mb-5 pb-4 border-b border-gray-200 dark:border-gray-700">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary-500 dark:text-primary-400">
-                Reality TV, mainlined — every show except the one on the front page
-              </p>
-              <h1 className="font-display text-3xl md:text-4xl mt-1 text-gray-900 dark:text-gray-100">
-                The Fix
-              </h1>
+            {/* Season-card tiles */}
+            <div className="shw-tiles mb-7">
+              <Link href="/shows/survivor" className="shw-tile" data-show="survivor">
+                <span className="shw-badge">On air</span>
+                <span className="shw-tile-art"><Torch /></span>
+                <h2>Survivor</h2>
+                <p>Season 49 spoilers, boots and blindsides.</p>
+                <span className="shw-go">Enter the island →</span>
+              </Link>
+              <div className="shw-tile is-locked" data-show="traitors" aria-disabled="true">
+                <span className="shw-badge is-soon">Coming January</span>
+                <Candle className="shw-tile-art" />
+                <h2>The Traitors</h2>
+                <p>The round table opens in the new year.</p>
+                <span className="shw-go">Sharpen your suspicions</span>
+              </div>
+              <Link href="/contact" className="shw-tile is-ask">
+                <h2>Pick our next show</h2>
+                <p>Which reality show should we cover next? Tell us.</p>
+                <span className="shw-go">Make your pitch →</span>
+              </Link>
             </div>
 
-            {/* Show-card row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-              <Link
-                href="/shows/survivor"
-                className="block rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-primary-500 dark:hover:border-primary-400 transition-colors"
-              >
-                <h2 className="font-display text-xl text-gray-900 dark:text-gray-100">Survivor</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Survivor 49 spoilers and updates
-                </p>
-              </Link>
-              <div
-                className="block rounded-lg border border-dashed border-gray-200 dark:border-gray-700 p-4 opacity-50 cursor-default"
-                aria-disabled="true"
-              >
-                <h2 className="font-display text-xl text-gray-900 dark:text-gray-100">The Traitors</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Coming January</p>
+            <div className="shw-sec-h">
+              <div>
+                <h2>The <em>latest</em></h2>
+                <p className="shw-sub">Every show, newest first</p>
               </div>
             </div>
 

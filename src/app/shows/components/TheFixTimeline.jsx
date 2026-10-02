@@ -5,6 +5,7 @@ import { getFeedUpdates } from "@/lib/api/feedUpdates";
 import { FeedHubUpdateCard } from "@/app/live-feed-updates/components/FeedHubUpdateCard";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
 import { dateKey, dayLabel, shortDate } from "@/app/live-feed-updates/components/feedHubName";
+import { Torch } from "./ShowArt";
 import "../../live-feed-updates/feed-hub.css";
 
 const PER_PAGE = 20;
@@ -51,6 +52,18 @@ export function TheFixTimeline({ show }) {
     fetchPage(0);
   }, [fetchPage]);
 
+  // The poster's own new update shows up instantly (FloatingUpdater fires this).
+  // "any" = the cross-show hub: any show-tagged update; else an exact show match.
+  useEffect(() => {
+    const onCreated = (e) => {
+      const u = e.detail;
+      if (!u?.id || !u.show || (show !== "any" && u.show !== show)) return;
+      setRows((prev) => (prev.some((r) => r.id === u.id) ? prev : [u, ...prev]));
+    };
+    window.addEventListener("bbjd:feed-update-created", onCreated);
+    return () => window.removeEventListener("bbjd:feed-update-created", onCreated);
+  }, [show]);
+
   const loadMore = () => {
     if (loading) return;
     fetchPage(rows.length);
@@ -94,14 +107,16 @@ export function TheFixTimeline({ show }) {
 
   if (!loading && groups.length === 0) {
     return (
-      <p className="fuh-empty">
-        No updates yet. Check back soon, and bookmark this page.
-      </p>
+      <div className="shw-empty">
+        <Torch lit={false} />
+        <h3>The tribe hasn&apos;t spoken yet</h3>
+        <p>No updates yet. Check back soon, and bookmark this page.</p>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="shw-rail">
       {groups.map((g) => (
         <div key={g.key}>
           <div className="fuh-daybar">
@@ -115,7 +130,7 @@ export function TheFixTimeline({ show }) {
               const adNumber = adNumberByRowId.get(row.id);
               return (
                 <Fragment key={row.id}>
-                  <FeedHubUpdateCard update={row} />
+                  <FeedHubUpdateCard update={row} showPill={show === "any"} />
                   {adNumber !== undefined && (
                     <FreestarSlot
                       placementName="bigbrotherjunkies_incontent_reusable"
@@ -137,6 +152,6 @@ export function TheFixTimeline({ show }) {
           </a>
         </div>
       )}
-    </>
+    </div>
   );
 }

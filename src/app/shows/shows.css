@@ -1,0 +1,166 @@
+/* Shows pages (/shows hub + /shows/[show]). Scoped under .shw- so nothing leaks.
+   Same editorial vocabulary as the Feed Hub (feed-hub.css): Oswald heads, Plex
+   Mono kickers, Source Serif body, BBJ navy #35546e / gold #FFBF0F / ink #15181E.
+   Each show layers its own accent on top via [data-show]. */
+
+.shw-hero{
+  --shw-glow:#FFBF0F; --shw-glow2:#FA910A; --shw-base:#15181E; --shw-base2:#1E3448;
+  position:relative;overflow:hidden;border-radius:10px;color:#fff;
+  padding:26px 22px 22px;isolation:isolate;
+  background:
+    radial-gradient(120% 90% at 85% 120%,color-mix(in srgb,var(--shw-glow2) 55%,transparent),transparent 60%),
+    radial-gradient(80% 70% at 10% -10%,rgba(255,255,255,.10),transparent 60%),
+    linear-gradient(160deg,var(--shw-base) 0%,var(--shw-base2) 100%);
+}
+@media (min-width:768px){.shw-hero{padding:34px 34px 28px}}
+/* fine weave texture, the "thatch" over everything */
+.shw-hero::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.5;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.035) 0 2px,transparent 2px 9px)}
+/* ember edge along the bottom */
+.shw-hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--shw-glow2) 20%,var(--shw-glow) 50%,var(--shw-glow2) 80%,transparent)}
+
+.shw-hero[data-show="survivor"]{--shw-glow:#FFBF0F;--shw-glow2:#E8590C;--shw-base:#12161B;--shw-base2:#24343A}
+.shw-hero[data-show="hub"]{--shw-glow:#FFBF0F;--shw-glow2:#35546e;--shw-base:#15181E;--shw-base2:#2D4B65}
+
+.shw-hero-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;align-items:end}
+@media (min-width:640px){.shw-hero-grid{grid-template-columns:minmax(0,1fr) auto}}
+
+.shw-kicker{font-family:var(--font-plex-mono),monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--shw-glow);font-weight:600;display:inline-flex;align-items:center;gap:8px}
+.shw-kicker .shw-dot{width:8px;height:8px;border-radius:50%;background:#D23B2B;box-shadow:0 0 0 4px rgba(210,59,43,.25);animation:shw-blink 1.4s infinite}
+@keyframes shw-blink{50%{opacity:.35}}
+
+.shw-title{font-family:var(--font-oswald),sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.01em;
+  line-height:.9;margin:10px 0 0;font-size:52px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+@media (min-width:768px){.shw-title{font-size:76px}}
+.shw-title .shw-num{font-family:var(--font-yanone),sans-serif;font-weight:700;font-size:1.15em;line-height:.8;
+  color:transparent;-webkit-text-stroke:2px var(--shw-glow);text-shadow:0 0 28px color-mix(in srgb,var(--shw-glow2) 60%,transparent)}
+.shw-title em{font-style:normal;border-bottom:4px solid var(--shw-glow);padding-bottom:2px}
+
+.shw-tagline{font-family:var(--font-source-serif),Georgia,serif;font-size:16px;line-height:1.45;color:rgba(255,255,255,.85);
+  margin-top:12px;max-width:46ch;text-wrap:pretty}
+@media (min-width:768px){.shw-tagline{font-size:18px}}
+
+.shw-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.shw-chip{font-family:var(--font-plex-mono),monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;
+  padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:rgba(255,255,255,.9)}
+.shw-chip b{color:var(--shw-glow);font-weight:700}
+
+/* Torches: pure SVG, flames flicker on staggered timers */
+.shw-torches{display:flex;gap:14px;align-items:flex-end;justify-self:end;padding-right:4px}
+.shw-torch{width:22px;height:84px;overflow:visible}
+.shw-torch:nth-child(2){height:100px;width:26px}
+.shw-torch .shw-flame{transform-origin:50% 100%;transform-box:fill-box;animation:shw-flicker 1.6s ease-in-out infinite}
+.shw-torch .shw-flame-in{transform-origin:50% 100%;transform-box:fill-box;animation:shw-flicker 1.1s ease-in-out infinite reverse}
+.shw-torch:nth-child(2) .shw-flame{animation-duration:1.9s;animation-delay:-.4s}
+.shw-torch:nth-child(3) .shw-flame{animation-duration:1.4s;animation-delay:-.8s}
+.shw-torch .shw-halo{animation:shw-halo 2.2s ease-in-out infinite}
+@keyframes shw-flicker{0%,100%{transform:scale(1,1) skewX(0)}25%{transform:scale(.92,1.08) skewX(-3deg)}50%{transform:scale(1.04,.94) skewX(2deg)}75%{transform:scale(.96,1.05) skewX(-1deg)}}
+@keyframes shw-halo{50%{opacity:.55}}
+.shw-torch.is-out .shw-flame,.shw-torch.is-out .shw-flame-in,.shw-torch.is-out .shw-halo{display:none}
+
+/* Sub-nav pills under the hero */
+.shw-subnav{display:flex;gap:6px;flex-wrap:wrap;margin-top:18px}
+.shw-subnav a,.shw-subnav span{font-family:var(--font-oswald),sans-serif;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  padding:7px 13px;border-radius:999px;color:rgba(255,255,255,.85);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);transition:background .15s,color .15s}
+.shw-subnav a:hover{background:rgba(255,255,255,.16);color:#fff}
+.shw-subnav a.on{background:var(--shw-glow);border-color:var(--shw-glow);color:#15181E}
+.shw-subnav span{opacity:.5;cursor:default}
+
+/* "Now airing" ticker (hub) */
+.shw-ticker{margin-top:18px;border-top:1px dashed rgba(255,255,255,.18);padding-top:12px;display:flex;gap:10px 22px;flex-wrap:wrap;
+  font-family:var(--font-plex-mono),monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.shw-ticker b{color:#fff;font-weight:600}
+.shw-ticker .shw-live{color:var(--shw-glow)}
+
+/* Season-card tiles (hub) */
+.shw-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.shw-tile{--t1:#24343A;--t2:#12161B;--ta:#FFBF0F;position:relative;overflow:hidden;border-radius:10px;min-height:168px;padding:16px;color:#fff;
+  display:flex;flex-direction:column;justify-content:flex-end;isolation:isolate;
+  background:linear-gradient(165deg,var(--t1),var(--t2));box-shadow:0 1px 0 rgba(0,0,0,.04),0 8px 22px -14px rgba(21,24,30,.55);
+  transition:transform .18s ease,box-shadow .18s ease}
+a.shw-tile:hover{transform:translateY(-3px);box-shadow:0 1px 0 rgba(0,0,0,.04),0 16px 30px -14px rgba(21,24,30,.6)}
+.shw-tile::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.5;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.04) 0 2px,transparent 2px 9px)}
+.shw-tile[data-show="survivor"]{--t1:#3A2A1A;--t2:#12161B;--ta:#FFBF0F;
+  background:radial-gradient(90% 80% at 80% 110%,rgba(232,89,12,.65),transparent 60%),linear-gradient(165deg,#24343A,#12161B)}
+.shw-tile[data-show="traitors"]{--ta:#C9A6E8;
+  background:radial-gradient(70% 60% at 85% 0%,rgba(201,166,232,.22),transparent 60%),linear-gradient(165deg,#3B2340,#17111C)}
+.shw-tile .shw-tile-art{position:absolute;top:14px;right:14px;width:46px;height:72px;opacity:.95}
+.shw-tile .shw-badge{position:absolute;top:14px;left:14px;font-family:var(--font-plex-mono),monospace;font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;font-weight:700;padding:4px 8px;border-radius:3px;background:#D23B2B;color:#fff}
+.shw-tile .shw-badge.is-soon{background:transparent;color:var(--ta);border:1px solid var(--ta);transform:rotate(-4deg)}
+.shw-tile h2{font-family:var(--font-oswald),sans-serif;font-weight:700;text-transform:uppercase;font-size:30px;line-height:1;letter-spacing:.01em;margin:0}
+.shw-tile p{font-family:var(--font-source-serif),Georgia,serif;font-size:14px;color:rgba(255,255,255,.78);margin-top:6px;line-height:1.35}
+.shw-tile .shw-go{font-family:var(--font-plex-mono),monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ta);
+  font-weight:700;margin-top:10px}
+.shw-tile.is-locked{cursor:default}
+.shw-tile.is-ask{background:transparent;color:#15181E;border:2px dashed #CBD2DA;box-shadow:none;justify-content:center;text-align:center}
+.shw-tile.is-ask::before{display:none}
+.shw-tile.is-ask h2{font-size:22px;color:#35546e}
+.shw-tile.is-ask p{color:#4B5563}
+.shw-tile.is-ask .shw-go{color:#35546e}
+a.shw-tile.is-ask:hover{border-color:#FFBF0F;box-shadow:none}
+.dark .shw-tile.is-ask{color:#E5E7EB;border-color:#4B5563}
+.dark .shw-tile.is-ask h2,.dark .shw-tile.is-ask .shw-go{color:#ffd970}
+.dark .shw-tile.is-ask p{color:#9CA3AF}
+
+/* Section header inside the content card */
+.shw-sec-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding-bottom:10px;margin-bottom:14px;border-bottom:2px solid #15181E}
+.dark .shw-sec-h{border-bottom-color:#E5E7EB}
+.shw-sec-h h2{font-family:var(--font-oswald),sans-serif;font-weight:600;font-size:26px;line-height:1;text-transform:uppercase;letter-spacing:.01em;margin:0}
+.shw-sec-h h2 em{font-style:normal;color:#35546e;border-bottom:3px solid #FFBF0F}
+.dark .shw-sec-h h2 em{color:#ffd970}
+.shw-sec-h .shw-sub{font-family:var(--font-plex-mono),monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#6B7280;margin-top:6px}
+
+/* Staff "post an update" button */
+.shw-post-btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-oswald),sans-serif;font-weight:600;font-size:13px;
+  letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;border-radius:999px;background:#15181E;color:#FFBF0F;
+  border:1px solid #15181E;transition:background .15s,color .15s}
+.shw-post-btn:hover{background:#FFBF0F;color:#15181E;border-color:#FFBF0F}
+.dark .shw-post-btn{background:#FFBF0F;color:#15181E;border-color:#FFBF0F}
+
+/* Timeline rail: a vertical torch line with an ember node per card */
+.shw-rail .fuh-thread{position:relative;padding-left:22px}
+.shw-rail .fuh-thread::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;border-radius:2px;
+  background:linear-gradient(180deg,#FA910A,#FFBF0F 40%,rgba(255,191,15,.15))}
+.shw-rail .fuh-thread > .fuh-upd{position:relative}
+.shw-rail .fuh-thread > .fuh-upd::before{content:"";position:absolute;left:-21px;top:18px;width:12px;height:12px;border-radius:50%;
+  background:#FFBF0F;border:2px solid #fff;box-shadow:0 0 0 2px #FA910A,0 0 10px rgba(250,145,10,.6)}
+.dark .shw-rail .fuh-thread > .fuh-upd::before{border-color:#1f2937}
+
+/* Show pill on cards in the cross-show feed */
+.fuh-show{font-family:var(--font-plex-mono),monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;
+  padding:2px 7px;border-radius:3px;background:#15181E;color:#FFBF0F}
+.fuh-show[data-show="survivor"]{background:linear-gradient(90deg,#E8590C,#FA910A);color:#fff}
+
+/* Empty state: the unlit torch */
+.shw-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:34px 12px 26px}
+.shw-empty .shw-torch{width:30px;height:110px}
+.shw-empty h3{font-family:var(--font-oswald),sans-serif;font-weight:600;text-transform:uppercase;font-size:22px;letter-spacing:.02em;margin:0;color:#15181E}
+.dark .shw-empty h3{color:#F3F4F6}
+.shw-empty p{font-family:var(--font-source-serif),Georgia,serif;font-size:15px;color:#6B7280;max-width:38ch}
+
+/* Footer card: recaps */
+.shw-more{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;margin-top:22px;padding:16px 18px;
+  border-radius:10px;background:#FBFAF6;border:1px solid #E5E7EB;transition:border-color .15s}
+.shw-more:hover{border-color:#FFBF0F}
+.dark .shw-more{background:rgba(255,255,255,.03);border-color:#374151}
+.shw-more .shw-more-ic{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;background:#15181E;color:#FFBF0F;
+  font-family:var(--font-oswald),sans-serif;font-weight:700;font-size:18px}
+.shw-more h3{font-family:var(--font-oswald),sans-serif;font-weight:600;text-transform:uppercase;font-size:18px;margin:0;color:#15181E}
+.dark .shw-more h3{color:#F3F4F6}
+.shw-more p{font-size:13.5px;color:#6B7280;margin-top:2px}
+.shw-more .shw-arrow{font-family:var(--font-plex-mono),monospace;font-size:12px;color:#35546e;font-weight:700}
+.dark .shw-more .shw-arrow{color:#ffd970}
+
+@media (prefers-reduced-motion:reduce){
+  .shw-torch .shw-flame,.shw-torch .shw-flame-in,.shw-torch .shw-halo,.shw-kicker .shw-dot{animation:none}
+  a.shw-tile:hover{transform:none}
+}
+.shw-tile .shw-tile-art .shw-torch{width:20px;height:72px}
+.shw-tile .shw-tile-art{display:flex;justify-content:center}
+.shw-more .shw-more-ic .shw-torch{width:12px;height:32px}
+@media (min-width:768px){.shw-hero .shw-torch{width:28px;height:110px}.shw-hero .shw-torch:nth-child(2){width:32px;height:132px}}

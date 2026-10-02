@@ -9,9 +9,10 @@ import { threadCta } from "@/lib/feedUpdates/threadComments";
 import { isFreshUpdate } from "@/lib/feedUpdatesLive";
 import { BeanBotNotice } from "@/components/home/BeanBotNotice";
 import { FeedUpdateManage } from "@/components/feed-updates/FeedUpdateManage";
+import { showLabel } from "@/lib/shows";
 
 // One update row in the editorial thread. Client component (real voting).
-export function FeedHubUpdateCard({ update }) {
+export function FeedHubUpdateCard({ update, showPill = false }) {
   const { user, isAuthenticated } = useAuth();
   const [votes, setVotes] = useState(update.votes || { total: 0, user_vote: 0 });
   const [isVoting, setIsVoting] = useState(false);
@@ -58,7 +59,8 @@ export function FeedHubUpdateCard({ update }) {
             <span className="fuh-av">{init}</span>
           )}
           <span className="fuh-by">{update.author?.name}</span>
-          {update.mode && <span className="fuh-cat">{update.mode === "show" ? "Show" : "Feed"}</span>}
+          {showPill && update.show && <span className="fuh-show" data-show={update.show}>{showLabel(update.show)}</span>}
+          {update.mode && !update.show && <span className="fuh-cat">{update.mode === "show" ? "Show" : "Feed"}</span>}
           <span className={`fuh-t${isFreshUpdate(update.modified) ? " fuh-fresh" : ""}`} data-nosnippet><b>{update.time_ago}</b></span>
         </div>
         <FeedUpdateManage

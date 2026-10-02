@@ -31,7 +31,8 @@ export function useLiveFeedUpdates({ enabled = true, onNewUpdates }) {
   // Optimistic insert — all tiers, independent of the premium gate.
   useEffect(() => {
     const onCreated = (event) => {
-      if (event.detail?.id) handlerRef.current?.([event.detail]);
+      // Show-tagged (Survivor, etc.) updates never belong in the BB lists.
+      if (event.detail?.id && !event.detail.show) handlerRef.current?.([event.detail]);
     };
     window.addEventListener("bbjd:feed-update-created", onCreated);
     return () => window.removeEventListener("bbjd:feed-update-created", onCreated);
