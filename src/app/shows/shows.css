@@ -33,6 +33,7 @@
 
 .shw-title{font-family:var(--font-oswald),sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.01em;
   line-height:.9;margin:10px 0 0;font-size:52px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+@media (max-width:639px){.shw-title{font-size:46px}}
 @media (min-width:768px){.shw-title{font-size:76px}}
 .shw-title .shw-num{font-family:var(--font-yanone),sans-serif;font-weight:700;font-size:1.15em;line-height:.8;
   color:transparent;-webkit-text-stroke:2px var(--shw-glow);text-shadow:0 0 28px color-mix(in srgb,var(--shw-glow2) 60%,transparent)}
@@ -51,6 +52,16 @@
 .shw-torches{display:flex;gap:14px;align-items:flex-end;justify-self:end;padding-right:4px}
 .shw-torch{width:22px;height:84px;overflow:visible}
 .shw-torch:nth-child(2){height:100px;width:26px}
+@media (min-width:768px){
+  .shw-hero .shw-torch{width:28px;height:110px}
+  .shw-hero .shw-torch:nth-child(2){width:32px;height:132px}
+}
+/* Phones: torches become a faint corner accent instead of stacking under the text */
+@media (max-width:639px){
+  .shw-torches{position:absolute;top:16px;right:14px;opacity:.5;gap:8px;z-index:-1}
+  .shw-hero .shw-torch{width:14px;height:58px}
+  .shw-hero .shw-torch:nth-child(2){width:16px;height:70px}
+}
 .shw-torch .shw-flame{transform-origin:50% 100%;transform-box:fill-box;animation:shw-flicker 1.6s ease-in-out infinite}
 .shw-torch .shw-flame-in{transform-origin:50% 100%;transform-box:fill-box;animation:shw-flicker 1.1s ease-in-out infinite reverse}
 .shw-torch:nth-child(2) .shw-flame{animation-duration:1.9s;animation-delay:-.4s}
@@ -83,11 +94,12 @@
 a.shw-tile:hover{transform:translateY(-3px);box-shadow:0 1px 0 rgba(0,0,0,.04),0 16px 30px -14px rgba(21,24,30,.6)}
 .shw-tile::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.5;
   background:repeating-linear-gradient(115deg,rgba(255,255,255,.04) 0 2px,transparent 2px 9px)}
-.shw-tile[data-show="survivor"]{--t1:#3A2A1A;--t2:#12161B;--ta:#FFBF0F;
+.shw-tile[data-show="survivor"]{
   background:radial-gradient(90% 80% at 80% 110%,rgba(232,89,12,.65),transparent 60%),linear-gradient(165deg,#24343A,#12161B)}
 .shw-tile[data-show="traitors"]{--ta:#C9A6E8;
   background:radial-gradient(70% 60% at 85% 0%,rgba(201,166,232,.22),transparent 60%),linear-gradient(165deg,#3B2340,#17111C)}
-.shw-tile .shw-tile-art{position:absolute;top:14px;right:14px;width:46px;height:72px;opacity:.95}
+.shw-tile .shw-tile-art{position:absolute;top:14px;right:14px;width:46px;height:72px;opacity:.95;display:flex;justify-content:center}
+.shw-tile .shw-tile-art .shw-torch{width:20px;height:72px}
 .shw-tile .shw-badge{position:absolute;top:14px;left:14px;font-family:var(--font-plex-mono),monospace;font-size:9.5px;letter-spacing:.14em;
   text-transform:uppercase;font-weight:700;padding:4px 8px;border-radius:3px;background:#D23B2B;color:#fff}
 .shw-tile .shw-badge.is-soon{background:transparent;color:var(--ta);border:1px solid var(--ta);transform:rotate(-4deg)}
@@ -150,6 +162,7 @@ a.shw-tile.is-ask:hover{border-color:#FFBF0F;box-shadow:none}
 .dark .shw-more{background:rgba(255,255,255,.03);border-color:#374151}
 .shw-more .shw-more-ic{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;background:#15181E;color:#FFBF0F;
   font-family:var(--font-oswald),sans-serif;font-weight:700;font-size:18px}
+.shw-more .shw-more-ic .shw-torch{width:12px;height:32px}
 .shw-more h3{font-family:var(--font-oswald),sans-serif;font-weight:600;text-transform:uppercase;font-size:18px;margin:0;color:#15181E}
 .dark .shw-more h3{color:#F3F4F6}
 .shw-more p{font-size:13.5px;color:#6B7280;margin-top:2px}
@@ -159,15 +172,4 @@ a.shw-tile.is-ask:hover{border-color:#FFBF0F;box-shadow:none}
 @media (prefers-reduced-motion:reduce){
   .shw-torch .shw-flame,.shw-torch .shw-flame-in,.shw-torch .shw-halo,.shw-kicker .shw-dot{animation:none}
   a.shw-tile:hover{transform:none}
-}
-.shw-tile .shw-tile-art .shw-torch{width:20px;height:72px}
-.shw-tile .shw-tile-art{display:flex;justify-content:center}
-.shw-more .shw-more-ic .shw-torch{width:12px;height:32px}
-@media (min-width:768px){.shw-hero .shw-torch{width:28px;height:110px}.shw-hero .shw-torch:nth-child(2){width:32px;height:132px}}
-/* Phones: torches become a faint corner accent instead of stacking under the text */
-@media (max-width:639px){
-  .shw-torches{position:absolute;top:16px;right:14px;opacity:.5;gap:8px;z-index:-1}
-  .shw-hero .shw-torch{width:14px;height:58px}
-  .shw-hero .shw-torch:nth-child(2){width:16px;height:70px}
-  .shw-title{font-size:46px}
 }

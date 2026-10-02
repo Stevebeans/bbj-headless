@@ -12,15 +12,17 @@ import { SITE_URL, breadcrumbJsonLd } from "@/lib/seo";
 // site's webhook-ISR cache tags (see CLAUDE.md COST RULES / fan-favorites pattern).
 export const revalidate = false;
 
+const TITLE = "Shows — The Fix";
+const DESCRIPTION =
+  "Every reality show we cover, one timeline. Survivor spoilers and updates now, The Traitors in January.";
+
 export const metadata = {
-  title: "Shows — The Fix",
-  description:
-    "Every reality show we cover, one timeline. Survivor spoilers and updates now, The Traitors in January.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: `${SITE_URL}/shows` },
   openGraph: {
-    title: "Shows — The Fix",
-    description:
-      "Every reality show we cover, one timeline. Survivor spoilers and updates now, The Traitors in January.",
+    title: TITLE,
+    description: DESCRIPTION,
     url: `${SITE_URL}/shows`,
     type: "website",
   },

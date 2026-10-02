@@ -13,15 +13,17 @@ import { SITE_URL, breadcrumbJsonLd } from "@/lib/seo";
 // site's webhook-ISR cache tags (see CLAUDE.md COST RULES / fan-favorites pattern).
 export const revalidate = false;
 
+const TITLE = "Survivor 49 Spoilers & Updates";
+const DESCRIPTION =
+  "Survivor 49 spoilers, live updates, and the buzz from the fandom — The Fix, filtered to Survivor.";
+
 export const metadata = {
-  title: "Survivor 49 Spoilers & Updates",
-  description:
-    "Survivor 49 spoilers, live updates, and the buzz from the fandom — The Fix, filtered to Survivor.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: `${SITE_URL}/shows/survivor` },
   openGraph: {
-    title: "Survivor 49 Spoilers & Updates",
-    description:
-      "Survivor 49 spoilers, live updates, and the buzz from the fandom — The Fix, filtered to Survivor.",
+    title: TITLE,
+    description: DESCRIPTION,
     url: `${SITE_URL}/shows/survivor`,
     type: "website",
   },
