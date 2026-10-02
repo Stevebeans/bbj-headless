@@ -164,3 +164,10 @@ a.shw-tile.is-ask:hover{border-color:#FFBF0F;box-shadow:none}
 .shw-tile .shw-tile-art{display:flex;justify-content:center}
 .shw-more .shw-more-ic .shw-torch{width:12px;height:32px}
 @media (min-width:768px){.shw-hero .shw-torch{width:28px;height:110px}.shw-hero .shw-torch:nth-child(2){width:32px;height:132px}}
+/* Phones: torches become a faint corner accent instead of stacking under the text */
+@media (max-width:639px){
+  .shw-torches{position:absolute;top:16px;right:14px;opacity:.5;gap:8px;z-index:-1}
+  .shw-hero .shw-torch{width:14px;height:58px}
+  .shw-hero .shw-torch:nth-child(2){width:16px;height:70px}
+  .shw-title{font-size:46px}
+}
