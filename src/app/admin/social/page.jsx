@@ -30,12 +30,21 @@ const DRAFT_WINDOWS = [
   { id: "today", label: "Today" },
   { id: "12h", label: "Last 12h" },
   { id: "24h", label: "Last 24h" },
+  // Survivor airs weekly, so its recap window can span the whole week.
+  { id: "7d", label: "Last 7 days", survivorOnly: true },
+];
+// Blog drafts only: "" = Big Brother (BLOG_PROMPT), "survivor" = SURVIVOR_BLOG_PROMPT.
+const DRAFT_SHOWS = [
+  { id: "", label: "Big Brother" },
+  { id: "survivor", label: "Survivor" },
 ];
 const HISTORY_KINDS = [
   { id: "digest", label: "Digest" },
   { id: "facebook", label: "Facebook" },
   { id: "blog", label: "Blog" },
+  { id: "blog_surv", label: "Survivor blog" },
 ];
+const BLOG_KINDS = ["blog", "blog_surv"];
 const PER_PAGE = 50;
 
 // Bluesky post text arrives emoji-entity-encoded (utf8mb3 storage). Decode for display.
@@ -180,6 +189,7 @@ export default function AdminSocialPage() {
 
   // Drafts
   const [draftWindow, setDraftWindow] = useState("today");
+  const [draftShow, setDraftShow] = useState("");
   const [draftBusy, setDraftBusy] = useState(null); // 'facebook' | 'blog' | 'batch'
   const [batchPosts, setBatchPosts] = useState([]);
   const [batchCopiedIdx, setBatchCopiedIdx] = useState(null);
@@ -192,10 +202,11 @@ export default function AdminSocialPage() {
 
   const draftText = draft ? decodeEntities(draft.content) : "";
 
-  // Blog drafts lead with a "Big Brother N Spoilers:" headline (BLOG_PROMPT);
-  // split it off so the card shows it as a title and the editor handoff can
-  // prefill both fields. Non-blog drafts pass through with title "".
-  const blogSplit = draft?.kind === "blog" ? splitBlogDraft(draftText) : { title: "", body: draftText };
+  // Blog drafts lead with a "Big Brother N Spoilers:" / "Survivor N Spoilers:"
+  // headline; split it off so the card shows it as a title and the editor
+  // handoff can prefill both fields. Non-blog drafts pass through with title "".
+  const isBlogDraft = BLOG_KINDS.includes(draft?.kind);
+  const blogSplit = isBlogDraft ? splitBlogDraft(draftText) : { title: "", body: draftText };
 
   function openDraftInEditor() {
     const ok = storePrefill({ title: blogSplit.title, html: draftBodyToHtml(blogSplit.body) });
@@ -507,13 +518,14 @@ export default function AdminSocialPage() {
     try {
       const data = await adminFetch("/social/draft", {
         method: "POST",
-        body: JSON.stringify({ kind, window: draftWindow }),
+        body: JSON.stringify({ kind, window: draftWindow, ...(kind === "blog" && draftShow ? { show: draftShow } : {}) }),
       });
       if (data && data.success && data.draft) {
         setDraft(data.draft);
-        // Surface the new item in history for its kind.
-        if (kind === historyKind) loadHistory(kind);
-        else setHistoryKind(kind);
+        // Surface the new item in history for its stored kind (Survivor = blog_surv).
+        const storedKind = data.draft.kind || kind;
+        if (storedKind === historyKind) loadHistory(storedKind);
+        else setHistoryKind(storedKind);
       } else {
         setDraftError((data && data.message) || "Draft returned no content.");
       }
@@ -1336,11 +1348,34 @@ export default function AdminSocialPage() {
           <h3 className="text-base font-osw font-bold text-slate-800 dark:text-white">Drafts</h3>
         </div>
 
+        {/* Show chips (blog recap only) */}
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <span className="text-sm text-slate-500 dark:text-slate-400">Show</span>
+          <div className="flex gap-1">
+            {DRAFT_SHOWS.map((chip) => (
+              <button
+                key={chip.id || "bb"}
+                onClick={() => {
+                  setDraftShow(chip.id);
+                  if (!chip.id && draftWindow === "7d") setDraftWindow("today");
+                }}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                  draftShow === chip.id
+                    ? "bg-primary-500 border-primary-500 text-white"
+                    : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Window chips */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <span className="text-sm text-slate-500 dark:text-slate-400">Window</span>
-          <div className="flex gap-1">
-            {DRAFT_WINDOWS.map((chip) => (
+          <div className="flex flex-wrap gap-1">
+            {DRAFT_WINDOWS.filter((chip) => !chip.survivorOnly || draftShow === "survivor").map((chip) => (
               <button
                 key={chip.id}
                 onClick={() => setDraftWindow(chip.id)}
@@ -1359,7 +1394,8 @@ export default function AdminSocialPage() {
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => handleDraft("facebook")}
-            disabled={!!draftBusy}
+            disabled={!!draftBusy || !!draftShow}
+            title={draftShow ? "Facebook drafts are Big Brother only" : undefined}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {draftBusy === "facebook" && (
@@ -1375,13 +1411,13 @@ export default function AdminSocialPage() {
             {draftBusy === "blog" && (
               <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
             )}
-            {draftBusy === "blog" ? "Generating..." : "Blog recap"}
+            {draftBusy === "blog" ? "Generating..." : draftShow ? "Survivor blog recap" : "Blog recap"}
           </button>
           <button
             onClick={handleDraftBatch}
-            disabled={!!draftBusy}
+            disabled={!!draftBusy || !!draftShow}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-secondary-500 hover:bg-secondary-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title="Splits everything since the last batch into 1-5 queueable FB posts"
+            title={draftShow ? "FB batches are Big Brother only" : "Splits everything since the last batch into 1-5 queueable FB posts"}
           >
             {draftBusy === "batch" && (
               <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -1486,7 +1522,7 @@ export default function AdminSocialPage() {
                 {draft.post_count} posts
               </span>
               <div className="flex items-center gap-2">
-                {draft.kind === "blog" && (
+                {isBlogDraft && (
                   <button
                     onClick={openDraftInEditor}
                     className="px-2 py-1 text-xs font-medium rounded-lg bg-primary-500 text-white hover:bg-primary-600"
