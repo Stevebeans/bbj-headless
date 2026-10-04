@@ -3,7 +3,7 @@
  *
  * The Bean Bot blog recap's first line is a headline in the fixed format
  * "Big Brother 28 Spoilers: <event>" (BLOG_PROMPT) or
- * "Survivor 49 Spoilers: <event>" (SURVIVOR_BLOG_PROMPT). The Social admin page
+ * "Survivor 51 Spoilers: <event>" (SURVIVOR_BLOG_PROMPT). The Social admin page
  * splits that off, converts the body to editor HTML, and parks both in
  * sessionStorage; /editor/new consumes the payload exactly once.
  */

@@ -8,8 +8,8 @@ describe("splitBlogDraft", () => {
   });
 
   it("splits a Survivor headline off the body", () => {
-    const out = splitBlogDraft("Survivor 49 Spoilers: An Idol Goes Unplayed\n\nBody text.");
-    expect(out).toEqual({ title: "Survivor 49 Spoilers: An Idol Goes Unplayed", body: "Body text." });
+    const out = splitBlogDraft("Survivor 51 Spoilers: An Idol Goes Unplayed\n\nBody text.");
+    expect(out).toEqual({ title: "Survivor 51 Spoilers: An Idol Goes Unplayed", body: "Body text." });
   });
 
   it("leaves drafts without a known headline untouched", () => {
