@@ -6,6 +6,7 @@ import { ShowHero } from "../components/ShowHero";
 import { PostShowUpdateButton } from "../components/PostShowUpdateButton";
 import { Torch } from "../components/ShowArt";
 import "../shows.css";
+import { SURVIVOR_SEASON } from "@/lib/shows";
 import { SITE_URL, breadcrumbJsonLd } from "@/lib/seo";
 
 // Pure static shell — zero server-side data fetching. All Fix data is
@@ -13,9 +14,9 @@ import { SITE_URL, breadcrumbJsonLd } from "@/lib/seo";
 // site's webhook-ISR cache tags (see CLAUDE.md COST RULES / fan-favorites pattern).
 export const revalidate = false;
 
-const TITLE = "Survivor 49 Spoilers & Updates";
+const TITLE = `Survivor ${SURVIVOR_SEASON} Spoilers & Updates`;
 const DESCRIPTION =
-  "Survivor 49 spoilers, live updates, and the buzz from the fandom — The Fix, filtered to Survivor.";
+  `Survivor ${SURVIVOR_SEASON} spoilers, live updates, and the buzz from the fandom — The Fix, filtered to Survivor.`;
 
 export const metadata = {
   title: TITLE,
@@ -49,11 +50,11 @@ export default function SurvivorShowPage() {
             show="survivor"
             live
             kicker="On air · The Fix"
-            title={<>Survivor <span className="shw-num">49</span></>}
+            title={<>Survivor <span className="shw-num">{SURVIVOR_SEASON}</span></>}
             tagline="Spoilers, boots and blindsides. Updated all season."
             chips={[
               { strong: "Wed", label: "8/7c on CBS" },
-              { label: "Season 49" },
+              { label: `Season ${SURVIVOR_SEASON}` },
               { label: "Spoilers inside" },
             ]}
             torches={3}
@@ -85,7 +86,7 @@ export default function SurvivorShowPage() {
               <span className="shw-more-ic" aria-hidden="true"><Torch /></span>
               <div>
                 <h3>Read the recaps</h3>
-                <p>Survivor 49 episode recaps, articles and analysis</p>
+                <p>Survivor {SURVIVOR_SEASON} episode recaps, articles and analysis</p>
               </div>
               <span className="shw-arrow" aria-hidden="true">→</span>
             </Link>

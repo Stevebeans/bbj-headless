@@ -5,6 +5,7 @@ import { TheFixTimeline } from "./components/TheFixTimeline";
 import { ShowHero } from "./components/ShowHero";
 import { Torch, Candle } from "./components/ShowArt";
 import "./shows.css";
+import { SURVIVOR_SEASON } from "@/lib/shows";
 import { SITE_URL, breadcrumbJsonLd } from "@/lib/seo";
 
 // Pure static shell — zero server-side data fetching. All Fix data is
@@ -50,7 +51,7 @@ export default function ShowsHubPage() {
             tagline="Every reality show we're watching, in one feed. Spoilers, blindsides and the buzz, all season long."
           >
             <div className="shw-ticker" aria-label="Now airing">
-              <span><b className="shw-live">● On air</b> Survivor 49 · Wednesdays on CBS</span>
+              <span><b className="shw-live">● On air</b> Survivor {SURVIVOR_SEASON} · Wednesdays on CBS</span>
               <span><b>Next up</b> The Traitors · January</span>
             </div>
           </ShowHero>
@@ -62,7 +63,7 @@ export default function ShowsHubPage() {
                 <span className="shw-badge">On air</span>
                 <span className="shw-tile-art"><Torch /></span>
                 <h2>Survivor</h2>
-                <p>Season 49 spoilers, boots and blindsides.</p>
+                <p>Season {SURVIVOR_SEASON} spoilers, boots and blindsides.</p>
                 <span className="shw-go">Enter the island →</span>
               </Link>
               <div className="shw-tile is-locked" data-show="traitors" aria-disabled="true">
