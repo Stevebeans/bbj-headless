@@ -2,7 +2,8 @@
  * Blog-draft → editor handoff.
  *
  * The Bean Bot blog recap's first line is a headline in the fixed format
- * "Big Brother 28 Spoilers: <event>" (BLOG_PROMPT). The Social admin page
+ * "Big Brother 28 Spoilers: <event>" (BLOG_PROMPT) or
+ * "Survivor 49 Spoilers: <event>" (SURVIVOR_BLOG_PROMPT). The Social admin page
  * splits that off, converts the body to editor HTML, and parks both in
  * sessionStorage; /editor/new consumes the payload exactly once.
  */
@@ -12,7 +13,7 @@ export const PREFILL_KEY = "bbjd_editor_prefill";
 // new-post session later.
 export const PREFILL_MAX_AGE_MS = 60 * 60 * 1000;
 
-const TITLE_RE = /^big brother \d+ spoilers:/i;
+const TITLE_RE = /^(big brother|survivor) \d+ spoilers:/i;
 
 /** Split a blog draft into { title, body }. Missing headline → title "". */
 export function splitBlogDraft(content) {
