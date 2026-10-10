@@ -42,6 +42,61 @@ const BACKGROUNDS = [
   },
 ];
 
+// Headline text laid over the photo itself. Editorial, not camouflage: it says
+// why the photo matters. Styles rotate so the page doesn't look templated.
+const OVERLAY_STYLES = [
+  { id: "bottom", label: "Bottom band" },
+  { id: "top", label: "Top band" },
+  { id: "sticker", label: "Sticker" },
+];
+
+function overlayFontSize(text) {
+  const len = (text || "").length;
+  if (len < 30) return 30;
+  if (len < 60) return 24;
+  return 19;
+}
+
+function overlayBoxStyle(styleId, text) {
+  const base = {
+    position: "absolute",
+    fontFamily: "Impact, 'Arial Black', Arial, sans-serif",
+    fontSize: overlayFontSize(text),
+    lineHeight: 1.15,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  };
+  if (styleId === "sticker") {
+    return {
+      ...base,
+      top: 14,
+      left: 14,
+      maxWidth: "72%",
+      padding: "8px 12px",
+      background: "#facc15",
+      color: "#111827",
+      borderRadius: 6,
+      transform: "rotate(-3deg)",
+      boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
+    };
+  }
+  return {
+    ...base,
+    left: 0,
+    right: 0,
+    [styleId === "top" ? "top" : "bottom"]: 0,
+    padding: "12px 16px",
+    background: "rgba(10,14,25,0.78)",
+    color: "#ffffff",
+    textAlign: "center",
+  };
+}
+
+const pickOther = (list, current) => {
+  const rest = list.filter((x) => x.id !== current.id);
+  return rest[Math.floor(Math.random() * rest.length)];
+};
+
 // Scale the card text down as posts get longer so everything fits 16:9.
 function fontSizeFor(text) {
   const len = (text || "").length;
@@ -131,7 +186,7 @@ function QuotedInset({ quoted, muted }) {
   );
 }
 
-export default function QuickieCardModal({ post, onClose, preview = false }) {
+export default function QuickieCardModal({ post, onClose, onDone, preview = false }) {
   // Preview mode: render the exact card (avatar/image/backgrounds) but skip
   // the caption call and posting controls - a cheap look before committing.
   const [previewMode, setPreviewMode] = useState(preview);
@@ -141,6 +196,8 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
   const platform = post.platform || "Bluesky";
   const creditName = post.display_name || `@${post.handle}`;
   const [bg, setBg] = useState(BACKGROUNDS[0]);
+  const [overlayText, setOverlayText] = useState("");
+  const [overlayStyle, setOverlayStyle] = useState(OVERLAY_STYLES[0]);
   // Data-URL image sources: fully loaded before export, or initials fallback.
   const avatarData = useDataUrl(
     platform === "Bluesky"
@@ -219,9 +276,10 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
   }, []);
 
   const fullMessage = useCallback(() => {
-    const credit = `- via ${creditName} on ${platform}`;
+    // Instagram credits link the creator's profile (Steve, 10/3).
+    const credit = `- via ${creditName} on ${platform}${post.profile_url ? `\n${post.profile_url}` : ""}`;
     return caption.trim() ? `${caption.trim()}\n\n${credit}` : credit;
-  }, [caption, creditName, platform]);
+  }, [caption, creditName, platform, post.profile_url]);
 
   const postNow = async () => {
     if (!pageId) return;
@@ -230,8 +288,10 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
     try {
       const image_data = await exportPng();
       const res = await postPhotoToFacebook({ page_id: pageId, message: fullMessage(), image_data });
-      if (res.success) setStatus({ ok: true, msg: "Posted to Facebook ✓" });
-      else setStatus({ ok: false, msg: res.error || "Facebook rejected the post" });
+      if (res.success) {
+        setStatus({ ok: true, msg: "Posted to Facebook ✓" });
+        onDone?.();
+      } else setStatus({ ok: false, msg: res.error || "Facebook rejected the post" });
     } catch (e) {
       setStatus({ ok: false, msg: e.message || "Card export failed" });
     } finally {
@@ -270,6 +330,7 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
           ? `Queued for ${fmtSlotLabel(res.scheduled_at || selectedSlot)} ✓`
           : `Queued for ${res.scheduled_at} (server time) ✓`;
         setStatus({ ok: true, msg });
+        onDone?.();
         // The modal stays open - clear the pick and refresh the grid so a
         // second queue can't reuse the now-taken slot.
         setSelectedSlot("");
@@ -380,6 +441,9 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
                       }}
                     />
                   )}
+                  {imageData && overlayText.trim() && (
+                    <div style={overlayBoxStyle(overlayStyle.id, overlayText)}>{overlayText.trim()}</div>
+                  )}
                   {/* No play badge on the export: FB downranks static images
                       that look playable. Video posts ship as plain thumbnail
                       cards; the ▶ marker lives on the admin board row only. */}
@@ -445,7 +509,53 @@ export default function QuickieCardModal({ post, onClose, preview = false }) {
               {b.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              setBg((cur) => pickOther(BACKGROUNDS, cur));
+              setOverlayStyle((cur) => pickOther(OVERLAY_STYLES, cur));
+            }}
+            title="Random background + headline style, so the feed doesn't look templated"
+            className="ml-auto px-3 py-1 rounded-full text-xs font-medium border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-primary-600"
+          >
+            🎲 Shuffle look
+          </button>
         </div>
+
+        {/* Photo headline: text laid over the image itself */}
+        {post.image && (
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Photo headline (optional)
+              </label>
+              <div className="flex gap-1">
+                {OVERLAY_STYLES.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setOverlayStyle(s)}
+                    className={`px-2 py-0.5 rounded-full text-xs border ${
+                      overlayStyle.id === s.id
+                        ? "border-primary-500 text-primary-600"
+                        : "border-slate-200 dark:border-slate-600 text-slate-500"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <input
+              type="text"
+              value={overlayText}
+              onChange={(e) => setOverlayText(e.target.value)}
+              maxLength={90}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 p-2 text-sm text-slate-800 dark:text-slate-100"
+              placeholder="e.g. First post since the finale 👀"
+            />
+          </div>
+        )}
 
         {/* Preview footer: like it -> flip into the full composer. */}
         {previewMode && (

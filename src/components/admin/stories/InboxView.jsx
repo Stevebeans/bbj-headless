@@ -3,8 +3,24 @@
 import { useCallback, useEffect, useState } from "react";
 import { getInbox, dismissInboxItem, restoreInboxItem } from "@/lib/api/stories";
 import InboxRepostModal from "./InboxRepostModal";
+import QuickieCardModal from "@/components/admin/social/QuickieCardModal";
 
 const SOURCES = ["", "instagram", "reddit", "rss"];
+// An IG inbox item as a card-composer post: the photo goes inside a BBJ card
+// (frame + headline + caption) instead of posting the raw image.
+const toCardPost = (it) => {
+  const handle = (it.source_key || it.author || "").replace(/^@/, "");
+  return {
+    handle,
+    display_name: it.author || handle,
+    text: it.excerpt || it.title || "",
+    image: `/api/social/img?src=${encodeURIComponent(it.thumbnail_url)}`,
+    platform: "Instagram",
+    posted_at: it.published_at,
+    profile_url: `https://www.instagram.com/${handle}/`,
+  };
+};
+
 const fmt = (utc) => new Date(utc.replace(" ", "T") + "Z").toLocaleString();
 
 export default function InboxView({ settings }) {
@@ -13,6 +29,7 @@ export default function InboxView({ settings }) {
   const [data, setData] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(null);
+  const [cardItem, setCardItem] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,7 +69,10 @@ export default function InboxView({ settings }) {
                 <span className="text-slate-500">score {it.score}</span>
                 <a href={it.url} target="_blank" rel="noreferrer" className="underline">open</a>
                 {it.inbox_status === "new" && <>
-                  <button type="button" onClick={() => setActive(it)} className="rounded bg-slate-900 px-2 py-1 text-white">Make quickie</button>
+                  {it.source === "instagram" && it.thumbnail_url ? <>
+                    <button type="button" onClick={() => setCardItem(it)} className="rounded bg-slate-900 px-2 py-1 text-white">Make card</button>
+                    <button type="button" onClick={() => setActive(it)} className="rounded border px-2 py-1" title="Posts the raw photo with a caption. Use sparingly: bare reposts risk Meta's unoriginal-content penalty.">Raw repost</button>
+                  </> : <button type="button" onClick={() => setActive(it)} className="rounded bg-slate-900 px-2 py-1 text-white">Make quickie</button>}
                   <button type="button" onClick={() => dismiss(it.id)} className="rounded border px-2 py-1">Dismiss</button>
                 </>}
                 {it.inbox_status === "used" && <span className="text-green-700">queued #{it.used_queue_id}</span>}
@@ -71,6 +91,14 @@ export default function InboxView({ settings }) {
         </div>
       )}
 
+      {cardItem && (
+        <QuickieCardModal
+          post={toCardPost(cardItem)}
+          onClose={() => { setCardItem(null); load(); }}
+          // No "used" route for client-built cards; dismissing moves it out of New.
+          onDone={() => dismissInboxItem(cardItem.id).catch(() => {})}
+        />
+      )}
       {active && <InboxRepostModal item={active} onClose={() => setActive(null)} onQueued={() => { setActive(null); load(); }} />}
     </div>
   );

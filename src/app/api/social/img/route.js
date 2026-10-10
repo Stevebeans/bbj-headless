@@ -11,6 +11,13 @@ const ALLOWED_HOSTS = new Set([
   "wp.bigbrotherjunkies.com",
   "bigbrotherjunkies.com",
 ]);
+// Instagram media (Stories inbox cards) is served from per-region subdomains
+// like scontent-iad3-1.cdninstagram.com / scontent.xx.fbcdn.net. Meta-owned
+// suffixes only - still not an open proxy.
+const ALLOWED_SUFFIXES = [".cdninstagram.com", ".fbcdn.net"];
+
+const isAllowedHost = (host) =>
+  ALLOWED_HOSTS.has(host) || ALLOWED_SUFFIXES.some((s) => host.endsWith(s));
 
 export async function GET(request) {
   const src = request.nextUrl.searchParams.get("src") || "";
@@ -20,7 +27,7 @@ export async function GET(request) {
   } catch {
     return new NextResponse(null, { status: 400 });
   }
-  if (target.protocol !== "https:" || !ALLOWED_HOSTS.has(target.hostname)) {
+  if (target.protocol !== "https:" || !isAllowedHost(target.hostname)) {
     return new NextResponse(null, { status: 400 });
   }
   try {
