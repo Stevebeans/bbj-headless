@@ -14,7 +14,6 @@ import AuthorModal from "./AuthorModal";
 import CommentForm from "./CommentForm";
 import ReportModal from "./ReportModal";
 import StaffPickBadge from "./StaffPickBadge";
-import { FoundingBadgeInline } from "@/components/users/FoundingBadge";
 import { editComment, deleteComment, pinComment, unpinComment } from "@/lib/api/comments";
 import { blockUser } from "@/lib/api/dm";
 import { seasonTimeout } from "@/lib/api/adminConduct";
@@ -261,7 +260,6 @@ export default function CommentCard({ comment, postId, depth = 0, onCommentAdded
               {comment.author.rank && (
                 <RankBadge rank={comment.author.rank} size="xs" />
               )}
-              {comment.author?.founding_badge && <FoundingBadgeInline />}
               {isPinned && <StaffPickBadge />}
               <span className="text-xs text-slate-500" title={comment.date}>
                 {comment.time_ago}

@@ -8,7 +8,6 @@ import { followUser, unfollowUser } from "@/lib/api/users";
 import RankBadge from "@/components/comments/RankBadge";
 import OnlineIndicator from "@/components/comments/OnlineIndicator";
 import SupporterBadge from "./SupporterBadge";
-import FoundingBadge from "./FoundingBadge";
 import { FaUserPlus, FaUserCheck, FaSpinner, FaComments } from "react-icons/fa";
 
 /**
@@ -134,7 +133,6 @@ export default function UserProfileHero({ profile }) {
           {profile.supporter_type && (
             <SupporterBadge type={profile.supporter_type} size="md" />
           )}
-          {profile.founding_badge && <FoundingBadge size="sm" />}
         </div>
 
         {/* Stats row */}

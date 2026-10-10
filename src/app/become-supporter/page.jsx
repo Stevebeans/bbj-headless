@@ -8,13 +8,11 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import { usePremium } from "@/hooks/usePremium";
 import { resolveSupporterView } from "@/lib/billing/memberState";
 import UpgradeToFullBean from "@/components/premium/UpgradeToFullBean";
-import FoundersSection from "@/components/premium/FoundersSection";
 import {
   getPlans,
   getSubscription,
   createStripeCheckout,
   createPayPalSubscription,
-  createPayPalOrder,
 } from "@/lib/api/billing";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://bigbrotherjunkies.com";
@@ -41,7 +39,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "I had a Season Pass — what happened to it?",
-    a: "The Season Pass grew up twice: it's now the All-Access Pass, and it covers every show we add to the site — Big Brother, Survivor, and whatever comes next — through BB29.",
+    a: "The Season Pass grew up: it's now the All-Access Pass, a full year of ad-free everything on every show we cover. Big Brother, Survivor, and whatever comes next.",
   },
   {
     q: "Where does the money go?",
@@ -69,14 +67,11 @@ function Feature({ children }) {
 }
 
 export default function BecomeSupporterPage() {
-  const { isAuthenticated, loading: authLoading, refreshUser, user } = useAuth();
+  const { isAuthenticated, loading: authLoading, refreshUser } = useAuth();
   const { openLogin } = useAuthModal();
   const { roles } = usePremium();
 
-  const hasBadge = Boolean(user?.founding_badge);
-
   const [plans, setPlans] = useState([]);
-  const [founders, setFounders] = useState(null);
   // One billing toggle drives both cards (annual default, SaaS-style)
   const [billing, setBilling] = useState("year"); // 'month' | 'year'
   const [selectedPlan, setSelectedPlan] = useState("annual");
@@ -153,7 +148,6 @@ export default function BecomeSupporterPage() {
       try {
         const plansResult = await getPlans();
         setPlans(plansResult.plans || []);
-        setFounders(plansResult.founders || null);
 
         if (isAuthenticated) {
           try {
@@ -196,70 +190,6 @@ export default function BecomeSupporterPage() {
     }
   };
 
-  // Founding Junkie badge: Stripe one-time checkout only.
-  const handleBuyBadge = async () => {
-    if (!isAuthenticated) {
-      openLogin();
-      return;
-    }
-
-    setProcessing(true);
-    setError(null);
-
-    try {
-      const successUrl = `${SITE_URL}/checkout/success?sku=founding_badge`;
-      const cancelUrl = `${SITE_URL}/checkout/cancel`;
-      const result = await createStripeCheckout("founding_badge", successUrl, cancelUrl);
-      window.location.href = result.checkout_url;
-    } catch (err) {
-      setError(err.message);
-      setProcessing(false);
-    }
-  };
-
-  // Founders Lifetime via Stripe: same one-time checkout flow as the badge.
-  const handleBuyLifetimeStripe = async () => {
-    if (!isAuthenticated) {
-      openLogin();
-      return;
-    }
-
-    setProcessing(true);
-    setError(null);
-
-    try {
-      const successUrl = `${SITE_URL}/checkout/success`;
-      const cancelUrl = `${SITE_URL}/checkout/cancel`;
-      const result = await createStripeCheckout("lifetime", successUrl, cancelUrl);
-      window.location.href = result.checkout_url;
-    } catch (err) {
-      setError(err.message);
-      setProcessing(false);
-    }
-  };
-
-  // Founders Lifetime via PayPal: server-created order + redirect, matching
-  // the existing PayPal checkout style.
-  const handleBuyLifetimePayPal = async () => {
-    if (!isAuthenticated) {
-      openLogin();
-      return;
-    }
-
-    setProcessing(true);
-    setError(null);
-
-    try {
-      const returnUrl = `${SITE_URL}/checkout/success?processor=paypal`;
-      const cancelUrl = `${SITE_URL}/checkout/cancel`;
-      const result = await createPayPalOrder(returnUrl, cancelUrl);
-      window.location.href = result.approve_url;
-    } catch (err) {
-      setError(err.message);
-      setProcessing(false);
-    }
-  };
-
   // PayPal checkout: no JS SDK. Create the subscription server-side, then do a
   // clean full-page redirect to PayPal's approval page. PayPal returns the user
   // to /checkout/success?processor=paypal&subscription_id=..., where activation
@@ -284,53 +214,6 @@ export default function BecomeSupporterPage() {
     }
   };
 
-  // Staff are premium by role, not by purchase. They should still be able to
-  // buy the badge, but a Lifetime spot is capped and publicly counted, so an
-  // editor/admin account with no paid role does not get that card.
-  const staffOnlyPremium =
-    (roles.includes("administrator") || roles.includes("editor")) &&
-    !roles.some((r) => ["supporter", "lifetime", "full_bean"].includes(r));
-
-  // Mirrors SubscriptionManager::hasBlockingSubscriptionFor(userId, 'lifetime'):
-  // /billing/subscription only ever returns an active-or-lifetime row, a
-  // pending cancellation stops blocking, and a live SUPPORTER monthly plan is
-  // not a blocker because completing the Lifetime purchase cancels it. The
-  // tier check matters: full_bean_monthly carries the same plan_type, and
-  // Lifetime is a supporter product, so buying it would downgrade them.
-  const hasBlockingSubscription = hasSubscription && !subscription?.cancel_at_period_end;
-  const monthlyUpgrader =
-    subscription?.status === "active" &&
-    subscription?.plan_type === "monthly" &&
-    (subscription?.tier ?? "supporter") === "supporter";
-  const lifetimeUpgradeBlocked = hasBlockingSubscription && !monthlyUpgrader;
-  // Why the card is blocked, so it can say the true thing.
-  const lifetimeBlockedReason = !lifetimeUpgradeBlocked
-    ? ""
-    : subscription?.tier === "full_bean"
-      ? "full_bean"
-      : subscription?.plan_type === "annual"
-        ? "annual"
-        : "other";
-
-  // The Founders window has to reach existing members, not just the logged-out
-  // storefront: an established supporter is exactly who buys the $5 badge, and
-  // the badge branch in createCheckout() is deliberately ahead of the blocking
-  // -subscription guard for that reason. One helper so the member views and
-  // the checkout view cannot drift apart on props.
-  const renderFounders = () => (
-    <FoundersSection
-      founders={founders}
-      onBuyBadge={handleBuyBadge}
-      onBuyLifetimeStripe={handleBuyLifetimeStripe}
-      onBuyLifetimePayPal={handleBuyLifetimePayPal}
-      hasBadge={hasBadge}
-      isLifetime={roles.includes("lifetime")}
-      isStaff={staffOnlyPremium}
-      lifetimeBlockedReason={lifetimeBlockedReason}
-      processing={processing}
-    />
-  );
-
   if (loading || authLoading) {
     return (
       <main className="v2-primary-container">
@@ -354,11 +237,6 @@ export default function BecomeSupporterPage() {
   if (view !== "checkout") {
     return (
       <main className="v2-primary-container">
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-center max-w-2xl mx-auto">
-            {error}
-          </div>
-        )}
         <div className="rounded-xl bg-white p-8 shadow dark:bg-gray-900 dark:border dark:border-slate-800 max-w-2xl mx-auto">
           {view === "upgrade" ? (
             <div className="pt-6">
@@ -427,7 +305,6 @@ export default function BecomeSupporterPage() {
             </div>
           )}
         </div>
-        <div className="mt-10">{renderFounders()}</div>
       </main>
     );
   }
@@ -619,8 +496,6 @@ export default function BecomeSupporterPage() {
               </article>
             )}
           </div>
-
-          {renderFounders()}
 
           {/* Compare table */}
           <section className="mb-14">

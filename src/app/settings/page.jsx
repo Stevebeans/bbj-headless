@@ -1039,7 +1039,7 @@ function PremiumTab({ settings, loading, showToast }) {
   // plugin's StripeService::PLANS checkout keys.
   const PLAN_OPTIONS = {
     monthly: { label: "Monthly Supporter", price: "$6.95/mo", blurb: "Flexible monthly billing" },
-    annual: { label: "All-Access Pass", price: "$45/yr", blurb: "About 46% off vs monthly" },
+    annual: { label: "All-Access Pass", price: "$35/yr", blurb: "Save over 58% vs monthly" },
     full_bean_monthly: { label: "Full Bean Monthly", price: "$14.99/mo", blurb: "Unlimited Bean, smartest model, memory" },
     full_bean_annual: { label: "Full Bean Annual", price: "$119/yr", blurb: "A full year of the smartest Bean" },
   };
