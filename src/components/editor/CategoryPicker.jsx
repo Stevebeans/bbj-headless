@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getCategories } from "@/lib/api/editor";
+import { SURVIVOR_SEASON } from "@/lib/shows";
 
 export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSuggestion, onSave, isEditMode = false }) {
   const [seasons, setSeasons] = useState([]);
@@ -69,7 +70,10 @@ export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSug
       const yesterday = new Date(Date.now() - 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" });
 
       const subLower = sub.name.toLowerCase();
-      if (subLower.includes("live feed")) {
+      if (selectedSeason.slug === "other-shows") {
+        const show = sub.slug === "survivor" ? `Survivor ${SURVIVOR_SEASON}` : sub.name;
+        onTitleSuggestion?.(`${show} Episode # Recap & Discussion`);
+      } else if (subLower.includes("live feed")) {
         onTitleSuggestion?.(`${seasonName} - Live Feed Thread For ${today}`);
       } else if (subLower.includes("recap")) {
         onTitleSuggestion?.(`Recap Post For ${seasonName} Feeds From ${yesterday}`);
@@ -85,13 +89,13 @@ export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSug
   return (
     <div className="space-y-3">
       <div>
-        <label className="text-xs font-semibold text-secondary-500 uppercase tracking-wider">Season</label>
+        <label className="text-xs font-semibold text-secondary-500 uppercase tracking-wider">Season / Show</label>
         <select
           value={selectedSeason?.id || ""}
           onChange={handleSeasonChange}
           className="w-full mt-1 p-2 border border-gray-200 rounded text-sm bg-white focus:border-primary-400 focus:outline-none"
         >
-          <option value="">Select season...</option>
+          <option value="">Select season or show...</option>
           {seasons.map((season) => (
             <option key={season.id} value={season.id}>
               {season.name} {season.is_current ? "(Current)" : ""}
