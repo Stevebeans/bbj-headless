@@ -68,6 +68,14 @@ export async function getMyPermissions() {
   return adminFetch("/admin/my-permissions");
 }
 
+export async function getHomepageMode() {
+  return adminFetch("/admin/homepage-mode");
+}
+
+export async function setHomepageMode(mode) {
+  return adminFetch("/admin/homepage-mode", { method: "POST", body: JSON.stringify({ mode }) });
+}
+
 export async function purgeCache() {
   return adminFetch("/admin/purge-cache", { method: "POST" });
 }

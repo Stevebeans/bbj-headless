@@ -60,6 +60,14 @@ export async function POST(request) {
         cfPurgePaths.push("/");
         break;
 
+      case "homepage":
+        // Homepage mode toggle (season/offseason): homepage only, targeted purge.
+        revalidateTag("posts");
+        revalidateTag("feed-updates");
+        revalidatePath("/");
+        cfPurgePaths.push("/");
+        break;
+
       case "spoiler-bar":
         revalidateTag("spoiler-bar");
         revalidateTag("houseboard");

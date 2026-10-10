@@ -18,27 +18,30 @@ function formatUpdatedDate(post) {
   });
 }
 
-export function Hero({ post, season }) {
+export function Hero({ post, season, offseason = false }) {
   if (!post) return null;
 
   const seasonNum = season?.number ?? 0;
   const seasonName = season?.full_name || "Big Brother";
 
-  const masthead = seasonNum > 0
-    ? `Latest Big Brother ${seasonNum} Spoilers`
-    : "Latest Big Brother Spoilers";
+  // Off-season the hero is simply the newest post from any show.
+  const masthead = offseason
+    ? "Latest from Big Brother Junkies"
+    : seasonNum > 0
+      ? `Latest Big Brother ${seasonNum} Spoilers`
+      : "Latest Big Brother Spoilers";
 
   // BB22+ season slugs follow big-brother-{n}; earlier seasons use bbNN and
   // never appear as the current season, so only link when the pattern holds.
-  const seasonHref = seasonNum >= 22 ? `/bigbrother-seasons/big-brother-${seasonNum}` : null;
+  const seasonHref = !offseason && seasonNum >= 22 ? `/bigbrother-seasons/big-brother-${seasonNum}` : null;
 
-  const kickerParts = [
+  const kickerParts = offseason ? [] : [
     seasonNum > 0 ? `BB${seasonNum}` : null,
     seasonName,
   ].filter(Boolean);
   const kicker = kickerParts.join(" · ");
 
-  const badgeText = seasonName;
+  const badgeText = offseason ? "Latest" : seasonName;
 
   const commentCount = post.comment_count ?? 0;
   const updatedDate = formatUpdatedDate(post);

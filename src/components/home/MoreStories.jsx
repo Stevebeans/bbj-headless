@@ -3,7 +3,7 @@ import { SectionHeader } from "./SectionHeader";
 import { StoryCard } from "./StoryCard";
 import { FreestarSlot } from "@/components/ads/FreestarSlot";
 
-export function MoreStories({ posts = [], heroId = null }) {
+export function MoreStories({ posts = [], heroId = null, heading = "More Big Brother Stories & News" }) {
   const filteredPosts = heroId
     ? posts.filter((post) => post.id !== heroId)
     : posts;
@@ -20,7 +20,7 @@ export function MoreStories({ posts = [], heroId = null }) {
       aria-labelledby="more-stories-heading"
     >
       <SectionHeader id="more-stories-heading">
-        More Big Brother Stories &amp; News
+        {heading}
       </SectionHeader>
 
       <div className="space-y-4">

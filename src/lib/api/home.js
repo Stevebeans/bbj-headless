@@ -12,6 +12,8 @@ const DEFAULTS = {
   posts: { posts: [] },
   housePulse: { active: false, buckets: [], total: 0 },
   currentSeason: { number: 0, full_name: "" },
+  homepageMode: "season",
+  shows: [],
 };
 
 /**
@@ -35,6 +37,8 @@ export async function getHomepageData() {
       posts: data.posts || DEFAULTS.posts,
       housePulse: data.housePulse || DEFAULTS.housePulse,
       currentSeason: data.currentSeason || DEFAULTS.currentSeason,
+      homepageMode: data.homepageMode === "offseason" ? "offseason" : "season",
+      shows: Array.isArray(data.shows) ? data.shows : DEFAULTS.shows,
     };
   } catch (error) {
     console.error("Failed to fetch homepage data:", error);

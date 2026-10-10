@@ -12,6 +12,8 @@ import {
   RecentComments,
   HouseStrip,
   HousePulse,
+  WhatsAiring,
+  OurShows,
 } from "@/components/home";
 import { LiveThreadBanner } from "@/components/home/LiveThreadBanner";
 
@@ -75,6 +77,8 @@ export default async function HomePage() {
   const heroPostId = data.hero.post?.id;
   const posts = data.posts.posts || [];
   const feedUpdates = data.feedUpdates.updates || [];
+  // Off-season (admin toggle on /admin/seasons): multi-show front page.
+  const offseason = data.homepageMode === "offseason";
 
   // Freshest timestamp on the page — feed update OR blog post, whichever is
   // newer — so Google's snippet date reflects live-feed activity, not just
@@ -163,7 +167,7 @@ export default async function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <SpoilerBarWrapper />
+      {!offseason && <SpoilerBarWrapper />}
       <main className="v2-primary-container">
         {isStaging && (
           <div className="mb-4 rounded-lg border border-secondary-500/30 bg-secondary-500/10 px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
@@ -178,15 +182,21 @@ export default async function HomePage() {
           <section id="main-left" className="flex-grow space-y-4">
             <LiveThreadBanner />
             {data.hero.post && (
-              <Hero post={data.hero.post} season={seo.season} />
+              <Hero post={data.hero.post} season={seo.season} offseason={offseason} />
             )}
 
-            <HouseStrip
-              houseboard={data.houseboard.houseboard}
-              season={data.houseboard.season}
-            />
+            {offseason ? (
+              <WhatsAiring shows={data.shows} />
+            ) : (
+              <>
+                <HouseStrip
+                  houseboard={data.houseboard.houseboard}
+                  season={data.houseboard.season}
+                />
 
-            <HousePulse housePulse={data.housePulse} />
+                <HousePulse housePulse={data.housePulse} />
+              </>
+            )}
 
             <FreestarSlot placementName="bigbrotherjunkies_incontent_reusable" />
 
@@ -194,14 +204,22 @@ export default async function HomePage() {
 
             <FreestarSlot placementName="bigbrotherjunkies_incontent_reusable_Homepage2" />
 
-            <MoreStories posts={posts} heroId={heroPostId} />
+            <MoreStories
+              posts={posts}
+              heroId={heroPostId}
+              {...(offseason && { heading: "More Stories & News" })}
+            />
           </section>
 
           <Sidebar sticky={false}>
-            <SeasonStats
-              season={data.seasonStats.season}
-              players={data.seasonStats.players}
-            />
+            {offseason ? (
+              <OurShows shows={data.shows} />
+            ) : (
+              <SeasonStats
+                season={data.seasonStats.season}
+                players={data.seasonStats.players}
+              />
+            )}
             <SubscribeWidget />
             <RecentComments comments={data.recentComments.comments} />
           </Sidebar>

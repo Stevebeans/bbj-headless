@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { listAdminSeasons, trashSeason, restoreSeason } from "@/lib/api/adminContent";
 import NewSeasonModal from "./components/NewSeasonModal";
+import HomepageModeCard from "./components/HomepageModeCard";
 
 export default function AdminSeasons() {
   const [seasons, setSeasons] = useState([]);
@@ -55,6 +56,7 @@ export default function AdminSeasons() {
 
   return (
     <div>
+      <HomepageModeCard />
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-osw font-bold text-slate-800 dark:text-white">Season Management</h2>
         <button onClick={() => setShowModal(true)} className="btn-primary text-sm">+ New Season</button>
