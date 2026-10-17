@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminFetch } from "@/lib/api/admin";
-import { splitBlogDraft, draftBodyToHtml, storePrefill } from "@/lib/editor/draftHandoff";
+import { splitBlogDraft, draftBodyToHtml, storePrefill, showForDraftKind } from "@/lib/editor/draftHandoff";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/context/AuthContext";
 import TopPostsBoard from "@/components/admin/social/TopPostsBoard";
@@ -209,7 +209,11 @@ export default function AdminSocialPage() {
   const blogSplit = isBlogDraft ? splitBlogDraft(draftText) : { title: "", body: draftText };
 
   function openDraftInEditor() {
-    const ok = storePrefill({ title: blogSplit.title, html: draftBodyToHtml(blogSplit.body) });
+    const ok = storePrefill({
+      title: blogSplit.title,
+      html: draftBodyToHtml(blogSplit.body),
+      show: showForDraftKind(draft?.kind),
+    });
     if (ok) router.push("/editor/new");
   }
 

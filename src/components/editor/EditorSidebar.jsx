@@ -9,7 +9,7 @@ import HistoryPanel from "./HistoryPanel";
 import { EDITOR_SNIPPETS } from "@/config/editorSnippets";
 
 export default function EditorSidebar({
-  categoryIds, setCategoryIds,
+  categoryIds, setCategoryIds, prefillShow,
   featuredImageId, setFeaturedImageId,
   featuredImageUrl, setFeaturedImageUrl,
   cropData, onCropSave,
@@ -43,6 +43,7 @@ export default function EditorSidebar({
       <CategoryPicker
         categoryIds={categoryIds}
         setCategoryIds={setCategoryIds}
+        initialShow={prefillShow}
         onTitleSuggestion={onTitleChange}
         onSave={onSave}
         isEditMode={isEditMode}

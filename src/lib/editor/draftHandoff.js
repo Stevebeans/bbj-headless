@@ -47,10 +47,15 @@ export function draftBodyToHtml(body) {
     .join("");
 }
 
+/** Show slug a stored draft kind belongs to ('' = Big Brother). */
+export function showForDraftKind(kind) {
+  return kind === "blog_surv" ? "survivor" : "";
+}
+
 /** Social page side: stash the payload and return true on success. */
-export function storePrefill({ title, html }) {
+export function storePrefill({ title, html, show = "" }) {
   try {
-    sessionStorage.setItem(PREFILL_KEY, JSON.stringify({ title, html, ts: Date.now() }));
+    sessionStorage.setItem(PREFILL_KEY, JSON.stringify({ title, html, show, ts: Date.now() }));
     return true;
   } catch {
     return false;
@@ -66,7 +71,7 @@ export function consumePrefill() {
     const data = JSON.parse(raw);
     if (!data || typeof data.html !== "string") return null;
     if (!data.ts || Date.now() - data.ts > PREFILL_MAX_AGE_MS) return null;
-    return { title: String(data.title || ""), html: data.html };
+    return { title: String(data.title || ""), html: data.html, show: String(data.show || "") };
   } catch {
     return null;
   }

@@ -52,6 +52,7 @@ export default function EditorPage({ postId = null }) {
   // UTC 'Y-m-d H:i:s' when the post is scheduled (status "future").
   const [scheduledFor, setScheduledFor] = useState(null);
   const [categoryIds, setCategoryIds] = useState([]);
+  const [prefillShow, setPrefillShow] = useState("");
   const [featuredImageId, setFeaturedImageId] = useState(null);
   const [featuredImageUrl, setFeaturedImageUrl] = useState(null);
   const [metaDescription, setMetaDescription] = useState("");
@@ -195,6 +196,8 @@ export default function EditorPage({ postId = null }) {
     const prefill = consumePrefill();
     if (!prefill) return;
     if (prefill.title) setTitle(prefill.title);
+    // Survivor recap → the picker preselects Other Shows → Survivor instead of the BB season.
+    if (prefill.show) setPrefillShow(prefill.show);
     // The pendingContent effect applies this once the editor exists and
     // re-baselines the save guard, same as loading an existing post.
     setPendingContent(prefill.html);
@@ -613,6 +616,7 @@ export default function EditorPage({ postId = null }) {
     onUnschedule: handleUnschedule,
     categoryIds,
     setCategoryIds,
+    prefillShow,
     featuredImageId,
     setFeaturedImageId,
     featuredImageUrl,

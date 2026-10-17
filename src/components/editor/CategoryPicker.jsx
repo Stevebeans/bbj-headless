@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getCategories } from "@/lib/api/editor";
 import { SURVIVOR_SEASON } from "@/lib/shows";
 
-export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSuggestion, onSave, isEditMode = false }) {
+export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSuggestion, onSave, isEditMode = false, initialShow = "" }) {
   const [seasons, setSeasons] = useState([]);
   const [selectedSeason, setSelectedSeason] = useState(null);
   const [selectedSub, setSelectedSub] = useState(null);
   const [loading, setLoading] = useState(true);
+  const showApplied = useRef(false);
 
   useEffect(() => {
     async function load() {
@@ -32,6 +33,20 @@ export default function CategoryPicker({ categoryIds, setCategoryIds, onTitleSug
     }
     load();
   }, []);
+
+  // A show recap handed off from Social (e.g. Survivor) lands under
+  // Other Shows → that show instead of the current BB season. Applied once,
+  // after the default above, so a manual change afterwards sticks.
+  useEffect(() => {
+    if (isEditMode || !initialShow || showApplied.current || seasons.length === 0) return;
+    const otherShows = seasons.find((s) => s.slug === "other-shows");
+    const show = otherShows?.subcategories?.find((sub) => sub.slug === initialShow);
+    if (!show) return;
+    showApplied.current = true;
+    setSelectedSeason(otherShows);
+    setSelectedSub(show);
+    setCategoryIds([otherShows.id, show.id]);
+  }, [initialShow, seasons, isEditMode]);
 
   // Re-sync selections when categoryIds change externally (e.g. post loaded)
   useEffect(() => {

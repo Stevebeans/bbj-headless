@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { splitBlogDraft } from "./draftHandoff";
+import { splitBlogDraft, showForDraftKind } from "./draftHandoff";
 
 describe("splitBlogDraft", () => {
   it("splits a Big Brother headline off the body", () => {
@@ -15,5 +15,16 @@ describe("splitBlogDraft", () => {
   it("leaves drafts without a known headline untouched", () => {
     const text = "Just a recap paragraph.\n\nAnother one.";
     expect(splitBlogDraft(text)).toEqual({ title: "", body: text });
+  });
+});
+
+describe("showForDraftKind", () => {
+  it("maps the Survivor blog kind to its show slug", () => {
+    expect(showForDraftKind("blog_surv")).toBe("survivor");
+  });
+
+  it("treats every other kind as Big Brother", () => {
+    expect(showForDraftKind("blog")).toBe("");
+    expect(showForDraftKind(undefined)).toBe("");
   });
 });
