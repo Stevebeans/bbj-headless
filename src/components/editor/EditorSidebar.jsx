@@ -342,7 +342,7 @@ function LiveUpdatesBlock({
 }
 
 /**
- * Admin-only ghost byline: the post publishes under the BennyBronx account
+ * Admin-only ghost byline: the post publishes under the Bean Bot account
  * instead of the logged-in author (AI-drafted posts Steve reviewed but
  * didn't write). The swap happens server-side at publish time.
  */
@@ -358,10 +358,10 @@ function GhostBylineBlock({ checked, onChange }) {
         />
         <span>
           <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
-            Publish as BennyBronx
+            Publish as Bean Bot
           </span>
           <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Ghost byline. The author swaps when the post goes live; uncheck and update to take it back.
+            Bot byline so readers know it was AI-drafted. The author swaps when the post goes live; uncheck and update to take it back.
           </span>
         </span>
       </label>

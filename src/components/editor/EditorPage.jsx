@@ -63,7 +63,7 @@ export default function EditorPage({ postId = null }) {
   const [liveStart, setLiveStart] = useState(0);
   const [liveEnd, setLiveEnd] = useState(0);
 
-  // Ghost byline (admin-only): publish under the BennyBronx account.
+  // Ghost byline (admin-only): publish under the Bean Bot account.
   const [ghostAuthor, setGhostAuthor] = useState(false);
 
   // UI state
